@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ocupación del equipo · SkillBridge AI</title>
+<link href="../../assets/css/base.css" rel="stylesheet"/>
+<script src="../../assets/js/vendor/lucide.min.js"></script>
+</head>
+<body data-page="ocupacion" data-role="resource-manager">
+<div class="app-shell">
+<aside class="sidebar">
+<a class="sidebar-brand" href="dashboard.html">
+<span class="brand-mark"><i data-lucide="link-2"></i></span>
+<span class="brand-text">
+<span class="brand-name">SkillBridge AI</span>
+<span class="brand-role">RESOURCE MANAGER</span>
+</span>
+</a>
+<div class="sidebar-section-title">Menú principal</div>
+<nav class="sidebar-nav">
+<a class="nav-item" href="dashboard.html"><i class="nav-icon" data-lucide="home"></i><span class="nav-label">Inicio</span></a>
+<a class="nav-item active" href="ocupacion.html"><i class="nav-icon" data-lucide="users-round"></i><span class="nav-label">Ocupación del equipo</span></a>
+<a class="nav-item" href="asignaciones.html"><i class="nav-icon" data-lucide="clipboard-list"></i><span class="nav-label">Asignaciones</span></a>
+<a class="nav-item" href="ocupacion.html"><i class="nav-icon" data-lucide="users-round"></i><span class="nav-label">Colaboradores</span></a>
+<a class="nav-item" href="talent-matching.html"><i class="nav-icon" data-lucide="target"></i><span class="nav-label">AI Talent Matching</span></a>
+<a class="nav-item" href="reportes.html"><i class="nav-icon" data-lucide="bar-chart-3"></i><span class="nav-label">Reportes</span></a>
+</nav>
+<a class="sidebar-user" href="mi-cuenta.html">
+<span class="user-avatar">PV</span>
+<span class="user-info">
+<span class="user-name">Paula Vega</span>
+<span class="user-email">paula.vega@nexacorp.com</span>
+</span>
+<i class="user-chevron" data-lucide="chevron-right"></i>
+</a>
+</aside><div class="sidebar-backdrop"></div>
+<div class="app-main">
+<header class="topbar"><button aria-expanded="false" aria-label="Abrir menú" class="sidebar-toggle" type="button"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><line x1="3" x2="21" y1="6" y2="6"></line><line x1="3" x2="21" y1="12" y2="12"></line><line x1="3" x2="21" y1="18" y2="18"></line></svg></button>
+<div class="topbar-title">
+<span class="title-main">Ocupación del equipo</span>
+<span class="title-crumb">184 colaboradores · vista detallada por semana</span>
+</div>
+<div class="topbar-search" data-role="resource-manager" data-search-root="">
+<i class="search-icon" data-lucide="search"></i>
+<input autocomplete="off" class="search-input" id="topbar-search-resource-manager" placeholder="Buscar colaboradores, proyectos o habilidades…" type="text"/>
+<span class="search-kbd">⌘K</span>
+<div class="search-dropdown" data-search-dropdown=""></div>
+</div>
+<div class="topbar-actions">
+<a aria-label="Notificaciones" class="bell" href="notificaciones.html">
+<i class="bell-icon" data-lucide="bell"></i>
+<span class="bell-badge">9</span>
+</a>
+<span class="divider"></span>
+<div class="user-menu">
+<button class="user-chip" data-user-toggle="" type="button">
+<span class="user-chip-info">
+<span class="user-chip-name">Paula Vega</span>
+<span class="user-chip-role">Resource Manager</span>
+</span>
+<span class="user-chip-avatar">PV</span>
+<i class="chip-chevron" data-lucide="chevron-down"></i>
+</button>
+<div class="user-dropdown" data-user-dropdown="">
+<a href="mi-cuenta.html"><i data-lucide="user-round"></i> Mi cuenta</a>
+<a data-logout="" href="#"><i data-lucide="log-out"></i> Cerrar sesión</a>
+</div>
+</div>
+</div>
+</header>
+<main class="content">
+<div style="display: flex; align-items: center; gap: 10px;">
+<div style="display: flex; background: rgb(255, 255, 255); border: 1px solid rgb(217, 224, 234); border-radius: 8px; overflow: hidden;">
+<span style='font: 600 12px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); background: rgb(18, 41, 77); padding: 8px 15px;'>Mapa de calor</span>
+<span style='font: 500 12px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110); padding: 8px 15px;'>Por célula</span>
+<span style='font: 500 12px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110); padding: 8px 15px;'>Por habilidad</span>
+</div>
+<button class="js-fake-action" style='height: 36px; border: 1px solid rgb(217, 224, 234); background: rgb(255, 255, 255); border-radius: 7px; display: flex; align-items: center; padding: 0px 12px; font: 400 12.5px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);' type="button">Célula: Ingeniería ▾</button>
+<button class="js-fake-action" style='height: 36px; border: 1px solid rgb(217, 224, 234); background: rgb(255, 255, 255); border-radius: 7px; display: flex; align-items: center; padding: 0px 12px; font: 400 12.5px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);' type="button">Semanas 34–39 ▾</button>
+<span style='margin-left: auto; font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>Exportar CSV · Programar reporte</span>
+</div>
+<div style="display: flex; gap: 14px;">
+<div style="flex: 1 1 0%; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 5px;"><span style='font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.6px;'>SUBUTILIZADOS (&lt;75%)</span><span style='font: 600 24px "IBM Plex Sans", sans-serif; color: rgb(21, 128, 61); letter-spacing: -0.7px;'>2</span></div>
+<div style="flex: 1 1 0%; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 5px;"><span style='font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.6px;'>EN RANGO ÓPTIMO</span><span style='font: 600 24px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176); letter-spacing: -0.7px;'>4</span></div>
+<div style="flex: 1 1 0%; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 5px;"><span style='font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.6px;'>AL LÍMITE (90–100%)</span><span style='font: 600 24px "IBM Plex Sans", sans-serif; color: rgb(180, 83, 9); letter-spacing: -0.7px;'>1</span></div>
+<div style="flex: 1 1 0%; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 5px;"><span style='font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.6px;'>SOBRE-ASIGNADOS</span><span style='font: 600 24px "IBM Plex Sans", sans-serif; color: rgb(185, 28, 28); letter-spacing: -0.7px;'>2</span></div>
+<div style="flex: 1 1 0%; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 5px;"><span style='font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.6px;'>HORAS LIBRES Q3</span><span style='font: 600 24px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); letter-spacing: -0.7px;'>312 h</span></div>
+</div>
+<div style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; flex: 1 1 0%; min-height: 0px; display: flex; flex-direction: column; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<div style="display: flex; gap: 16px; margin-bottom: 14px;">
+<div style="display: flex; align-items: center; gap: 6px;"><div style="width: 11px; height: 11px; border-radius: 3px; background: rgb(231, 246, 236); border: 1px solid rgb(191, 227, 204);"></div><span style='font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>&lt; 75%</span></div>
+<div style="display: flex; align-items: center; gap: 6px;"><div style="width: 11px; height: 11px; border-radius: 3px; background: rgb(221, 233, 251); border: 1px solid rgb(195, 214, 245);"></div><span style='font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>75–89%</span></div>
+<div style="display: flex; align-items: center; gap: 6px;"><div style="width: 11px; height: 11px; border-radius: 3px; background: rgb(254, 243, 199); border: 1px solid rgb(253, 230, 138);"></div><span style='font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>90–100%</span></div>
+<div style="display: flex; align-items: center; gap: 6px;"><div style="width: 11px; height: 11px; border-radius: 3px; background: rgb(254, 226, 226); border: 1px solid rgb(254, 202, 202);"></div><span style='font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>&gt; 100%</span></div>
+<span style='margin-left: auto; font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168);'>CLIC EN UNA CELDA PARA VER EL DESGLOSE POR PROYECTO</span>
+</div>
+<div style="display: flex; padding-bottom: 9px; border-bottom: 1px solid rgb(237, 241, 246);">
+<span style='width: 240px; flex: 0 0 auto; font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.5px;'>COLABORADOR</span>
+<span style='flex: 1 1 0%; text-align: center; font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.5px;'>S34</span>
+<span style='flex: 1 1 0%; text-align: center; font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.5px;'>S35</span>
+<span style='flex: 1 1 0%; text-align: center; font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.5px;'>S36</span>
+<span style='flex: 1 1 0%; text-align: center; font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.5px;'>S37</span>
+<span style='flex: 1 1 0%; text-align: center; font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.5px;'>S38</span>
+<span style='flex: 1 1 0%; text-align: center; font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.5px;'>S39</span>
+<span style='width: 90px; flex: 0 0 auto; text-align: right; font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.5px;'>PROMEDIO</span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<div style="width: 240px; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+<div style='width: 28px; height: 28px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>MR</div>
+<div style="display: flex; flex-direction: column; gap: 1px;">
+<span style='font: 500 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Mariana Ruiz</span>
+<span style='font: 400 10px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Frontend Sr.</span>
+</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>80%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>80%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>95%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>95%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>75%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>75%</div>
+</div>
+<span style='width: 90px; flex: 0 0 auto; text-align: right; font: 600 12.5px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>83%</span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<div style="width: 240px; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+<div style='width: 28px; height: 28px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>DS</div>
+<div style="display: flex; flex-direction: column; gap: 1px;">
+<span style='font: 500 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Diego Salazar</span>
+<span style='font: 400 10px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Tech Lead</span>
+</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>95%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>95%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>90%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>80%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>80%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>60%</div>
+</div>
+<span style='width: 90px; flex: 0 0 auto; text-align: right; font: 600 12.5px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>83%</span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<div style="width: 240px; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+<div style='width: 28px; height: 28px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>TH</div>
+<div style="display: flex; flex-direction: column; gap: 1px;">
+<span style='font: 500 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Tomás Herrera</span>
+<span style='font: 400 10px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Backend Sr.</span>
+</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 226, 226); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(153, 27, 27);'>120%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 226, 226); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(153, 27, 27);'>120%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 226, 226); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(153, 27, 27);'>110%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>100%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>90%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>90%</div>
+</div>
+<span style='width: 90px; flex: 0 0 auto; text-align: right; font: 600 12.5px "IBM Plex Mono", monospace; color: rgb(185, 28, 28);'>105%</span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<div style="width: 240px; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+<div style='width: 28px; height: 28px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>CO</div>
+<div style="display: flex; flex-direction: column; gap: 1px;">
+<span style='font: 500 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Camila Ortega</span>
+<span style='font: 400 10px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Data Engineer</span>
+</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>85%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>85%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>85%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(221, 233, 251); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(30, 63, 124);'>85%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>70%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>70%</div>
+</div>
+<span style='width: 90px; flex: 0 0 auto; text-align: right; font: 600 12.5px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>80%</span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<div style="width: 240px; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+<div style='width: 28px; height: 28px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>LF</div>
+<div style="display: flex; flex-direction: column; gap: 1px;">
+<span style='font: 500 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Lucía Fernández</span>
+<span style='font: 400 10px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>DevOps</span>
+</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 226, 226); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(153, 27, 27);'>110%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 226, 226); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(153, 27, 27);'>110%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>70%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>70%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>70%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>70%</div>
+</div>
+<span style='width: 90px; flex: 0 0 auto; text-align: right; font: 600 12.5px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>83%</span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<div style="width: 240px; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+<div style='width: 28px; height: 28px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>AP</div>
+<div style="display: flex; flex-direction: column; gap: 1px;">
+<span style='font: 500 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Andrés Peña</span>
+<span style='font: 400 10px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>QA</span>
+</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>60%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>60%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>60%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>90%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>90%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(254, 243, 199); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(146, 64, 14);'>90%</div>
+</div>
+<span style='width: 90px; flex: 0 0 auto; text-align: right; font: 600 12.5px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>75%</span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<div style="width: 240px; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+<div style='width: 28px; height: 28px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>SC</div>
+<div style="display: flex; flex-direction: column; gap: 1px;">
+<span style='font: 500 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Sofía Cárdenas</span>
+<span style='font: 400 10px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>UX Designer</span>
+</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>70%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>70%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>45%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>45%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>45%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>30%</div>
+</div>
+<span style='width: 90px; flex: 0 0 auto; text-align: right; font: 600 12.5px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>51%</span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<div style="width: 240px; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;">
+<div style='width: 28px; height: 28px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>RB</div>
+<div style="display: flex; flex-direction: column; gap: 1px;">
+<span style='font: 500 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Ricardo Bastos</span>
+<span style='font: 400 10px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Platform Eng.</span>
+</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>40%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>40%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>40%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>40%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>40%</div>
+</div>
+<div style="flex: 1 1 0%; display: flex; justify-content: center; padding: 0px 3px;">
+<div style='width: 100%; height: 34px; border-radius: 5px; background: rgb(231, 246, 236); display: flex; align-items: center; justify-content: center; font: 600 12px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>40%</div>
+</div>
+<span style='width: 90px; flex: 0 0 auto; text-align: right; font: 600 12.5px "IBM Plex Mono", monospace; color: rgb(21, 128, 61);'>40%</span>
+</div>
+</div>
+</main>
+</div>
+</div>
+<script src="../../assets/js/app.js"></script>
+<script src="../../assets/js/search.js"></script>
+<script>if (window.lucide) { lucide.createIcons(); }</script>
+</body>
+</html>

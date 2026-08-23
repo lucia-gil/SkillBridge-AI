@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hola, Ana · SkillBridge AI</title>
+<link href="../../assets/css/base.css" rel="stylesheet"/>
+<script src="../../assets/js/vendor/lucide.min.js"></script>
+</head>
+<body data-page="inicio" data-role="administrador">
+<div class="app-shell">
+<aside class="sidebar">
+<a class="sidebar-brand" href="inicio.html">
+<span class="brand-mark"><i data-lucide="link-2"></i></span>
+<span class="brand-text">
+<span class="brand-name">SkillBridge AI</span>
+<span class="brand-role">ADMINISTRADOR</span>
+</span>
+</a>
+<div class="sidebar-section-title">Menú principal</div>
+<nav class="sidebar-nav">
+<a class="nav-item active" href="inicio.html"><i class="nav-icon" data-lucide="home"></i><span class="nav-label">Inicio</span></a>
+<a class="nav-item" href="usuarios.html"><i class="nav-icon" data-lucide="shield-user"></i><span class="nav-label">Usuarios y roles</span></a>
+<a class="nav-item" href="catalogo-habilidades.html"><i class="nav-icon" data-lucide="book-marked"></i><span class="nav-label">Catálogo de habilidades</span></a>
+<a class="nav-item" href="proyectos.html"><i class="nav-icon" data-lucide="folder-kanban"></i><span class="nav-label">Proyectos</span></a>
+<a class="nav-item" href="reportes.html"><i class="nav-icon" data-lucide="bar-chart-3"></i><span class="nav-label">Reportes globales</span></a>
+<a class="nav-item" href="auditoria.html"><i class="nav-icon" data-lucide="history"></i><span class="nav-label">Auditoría</span></a>
+<a class="nav-item" href="configuracion.html"><i class="nav-icon" data-lucide="settings"></i><span class="nav-label">Configuración</span></a>
+</nav>
+<a class="sidebar-user" href="mi-cuenta.html">
+<span class="user-avatar">AV</span>
+<span class="user-info">
+<span class="user-name">Ana Villalba</span>
+<span class="user-email">ana.villalba@nexacorp.com</span>
+</span>
+<i class="user-chevron" data-lucide="chevron-right"></i>
+</a>
+</aside><div class="sidebar-backdrop"></div>
+<div class="app-main">
+<header class="topbar"><button aria-expanded="false" aria-label="Abrir menú" class="sidebar-toggle" type="button"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><line x1="3" x2="21" y1="6" y2="6"></line><line x1="3" x2="21" y1="12" y2="12"></line><line x1="3" x2="21" y1="18" y2="18"></line></svg></button>
+<div class="topbar-title">
+<span class="title-main">Hola, Ana</span>
+<span class="title-crumb">Panel de administración · martes 18 de agosto, 2026</span>
+</div>
+<div class="topbar-search" data-role="administrador" data-search-root="">
+<i class="search-icon" data-lucide="search"></i>
+<input autocomplete="off" class="search-input" id="topbar-search-administrador" placeholder="Buscar colaboradores, proyectos o habilidades…" type="text"/>
+<span class="search-kbd">⌘K</span>
+<div class="search-dropdown" data-search-dropdown=""></div>
+</div>
+<div class="topbar-actions">
+<a aria-label="Notificaciones" class="bell" href="notificaciones.html">
+<i class="bell-icon" data-lucide="bell"></i>
+<span class="bell-badge">12</span>
+</a>
+<span class="divider"></span>
+<div class="user-menu">
+<button class="user-chip" data-user-toggle="" type="button">
+<span class="user-chip-info">
+<span class="user-chip-name">Ana Villalba</span>
+<span class="user-chip-role">Administrador</span>
+</span>
+<span class="user-chip-avatar">AV</span>
+<i class="chip-chevron" data-lucide="chevron-down"></i>
+</button>
+<div class="user-dropdown" data-user-dropdown="">
+<a href="mi-cuenta.html"><i data-lucide="user-round"></i> Mi cuenta</a>
+<a data-logout="" href="#"><i data-lucide="log-out"></i> Cerrar sesión</a>
+</div>
+</div>
+</div>
+</header>
+<main class="content">
+<div style="background: rgb(11, 31, 58); border-radius: 10px; padding: 20px 24px; display: flex; align-items: center; gap: 36px;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<span style='font: 600 17px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); letter-spacing: -0.3px;'>Todo operativo</span>
+<span style='font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(169, 188, 214);'>3 asuntos requieren tu atención hoy</span>
+</div>
+<div style="margin-left: auto; display: flex; gap: 34px;">
+<div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 22px "IBM Plex Mono", monospace; color: rgb(255, 255, 255);'>184</span><span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(124, 147, 181);'>usuarios</span></div>
+<div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 22px "IBM Plex Mono", monospace; color: rgb(253, 230, 138);'>3</span><span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(124, 147, 181);'>sin rol</span></div>
+<div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 22px "IBM Plex Mono", monospace; color: rgb(252, 165, 165);'>1</span><span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(124, 147, 181);'>suspendido</span></div>
+<div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 22px "IBM Plex Mono", monospace; color: rgb(255, 255, 255);'>27</span><span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(124, 147, 181);'>proyectos</span></div>
+<div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 22px "IBM Plex Mono", monospace; color: rgb(255, 255, 255);'>312</span><span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(124, 147, 181);'>habilidades</span></div>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+<div class="row-link" data-href="usuarios.html" style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 11px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;; cursor: pointer;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<div style="width: 30px; height: 30px; border-radius: 8px; background: rgb(18, 41, 77); flex: 0 0 auto;"></div>
+<span style='font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Usuarios y roles</span>
+</div>
+<div style="display: flex; align-items: baseline; gap: 9px;">
+<span style='font: 600 28px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); letter-spacing: -0.9px;'>184</span>
+<span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>3 sin rol · 1 suspendido</span>
+</div>
+<span style='font: 600 11.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>Gestionar usuarios →</span>
+</div>
+<div class="row-link" data-href="catalogo-habilidades.html" style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 11px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;; cursor: pointer;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<div style="width: 30px; height: 30px; border-radius: 8px; background: rgb(44, 91, 176); flex: 0 0 auto;"></div>
+<span style='font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Catálogo de habilidades</span>
+</div>
+<div style="display: flex; align-items: baseline; gap: 9px;">
+<span style='font: 600 28px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); letter-spacing: -0.9px;'>312</span>
+<span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>18 sin asignar a proyectos</span>
+</div>
+<span style='font: 600 11.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>Abrir catálogo →</span>
+</div>
+<div class="row-link" data-href="proyectos.html" style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 11px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;; cursor: pointer;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<div style="width: 30px; height: 30px; border-radius: 8px; background: rgb(44, 91, 176); flex: 0 0 auto;"></div>
+<span style='font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Proyectos</span>
+</div>
+<div style="display: flex; align-items: baseline; gap: 9px;">
+<span style='font: 600 28px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); letter-spacing: -0.9px;'>27</span>
+<span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>4 cierran en septiembre</span>
+</div>
+<span style='font: 600 11.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>Ver proyectos →</span>
+</div>
+<div class="row-link" data-href="auditoria.html" style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 11px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;; cursor: pointer;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<div style="width: 30px; height: 30px; border-radius: 8px; background: rgb(185, 28, 28); flex: 0 0 auto;"></div>
+<span style='font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Auditoría</span>
+</div>
+<div style="display: flex; align-items: baseline; gap: 9px;">
+<span style='font: 600 28px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); letter-spacing: -0.9px;'>1.204</span>
+<span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>12 eventos de severidad alta</span>
+</div>
+<span style='font: 600 11.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>Ver registro →</span>
+</div>
+<div class="row-link" data-href="configuracion.html" style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 11px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;; cursor: pointer;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<div style="width: 30px; height: 30px; border-radius: 8px; background: rgb(18, 41, 77); flex: 0 0 auto;"></div>
+<span style='font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Configuración</span>
+</div>
+<div style="display: flex; align-items: baseline; gap: 9px;">
+<span style='font: 600 28px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); letter-spacing: -0.9px;'>9</span>
+<span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>parámetros globales activos</span>
+</div>
+<span style='font: 600 11.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>Ajustar sistema →</span>
+</div>
+<div style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 11px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<div style="width: 30px; height: 30px; border-radius: 8px; background: rgb(91, 141, 239); flex: 0 0 auto;"></div>
+<span style='font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Asistente IA</span>
+</div>
+<div style="display: flex; align-items: baseline; gap: 9px;">
+<span style='font: 600 28px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); letter-spacing: -0.9px;'>1.482</span>
+<span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>consultas esta semana</span>
+</div>
+<button class="js-fake-action" style='font: 600 11.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);; background: none; border: none; padding: 0;' type="button">Ver consumo →</button>
+</div>
+</div>
+<div style="display: flex; gap: 18px; flex: 1 1 0%; min-height: 0px;">
+<div style="flex: 1.5 1 0%; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px; display: flex; flex-direction: column; min-width: 0px;">
+<div style="display: flex; align-items: center; margin-bottom: 12px;"><span style='font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Actividad reciente del sistema</span><span style='margin-left: auto; font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>Ver auditoría completa</span></div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<span style='width: 120px; font: 400 11px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>18 ago 09:41</span>
+<span style='width: 140px; font: 500 12px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Ana Villalba</span>
+<span style='width: 170px; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);'>Rol modificado</span>
+<span style='flex: 1 1 0%; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(107, 122, 141);'>Ricardo Bastos: Colaborador → suspendido</span>
+<span style="width: 70px; text-align: right;"><span style='font: 600 9.5px "IBM Plex Mono", monospace; padding: 3px 8px; border-radius: 11px; background: rgb(254, 226, 226); color: rgb(185, 28, 28);'>Alta</span></span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<span style='width: 120px; font: 400 11px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>18 ago 09:22</span>
+<span style='width: 140px; font: 500 12px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Paula Vega</span>
+<span style='width: 170px; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);'>Excepción de carga</span>
+<span style='flex: 1 1 0%; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(107, 122, 141);'>Tomás Herrera aprobado al 120% hasta el 5 sep</span>
+<span style="width: 70px; text-align: right;"><span style='font: 600 9.5px "IBM Plex Mono", monospace; padding: 3px 8px; border-radius: 11px; background: rgb(254, 226, 226); color: rgb(185, 28, 28);'>Alta</span></span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<span style='width: 120px; font: 400 11px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>18 ago 09:14</span>
+<span style='width: 140px; font: 500 12px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Javier Molina</span>
+<span style='width: 170px; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);'>Matching ejecutado</span>
+<span style='flex: 1 1 0%; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(107, 122, 141);'>Núcleo Retail · vacante Platform Engineer</span>
+<span style="width: 70px; text-align: right;"><span style='font: 600 9.5px "IBM Plex Mono", monospace; padding: 3px 8px; border-radius: 11px; background: rgb(237, 243, 255); color: rgb(44, 91, 176);'>Info</span></span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<span style='width: 120px; font: 400 11px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>18 ago 08:56</span>
+<span style='width: 140px; font: 500 12px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Ana Villalba</span>
+<span style='width: 170px; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);'>Habilidad creada</span>
+<span style='flex: 1 1 0%; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(107, 122, 141);'>“OpenTelemetry” añadida a DevOps &amp; Cloud</span>
+<span style="width: 70px; text-align: right;"><span style='font: 600 9.5px "IBM Plex Mono", monospace; padding: 3px 8px; border-radius: 11px; background: rgb(254, 243, 199); color: rgb(180, 83, 9);'>Media</span></span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<span style='width: 120px; font: 400 11px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>18 ago 08:31</span>
+<span style='width: 140px; font: 500 12px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Sistema</span>
+<span style='width: 170px; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);'>Notificación masiva</span>
+<span style='flex: 1 1 0%; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(107, 122, 141);'>12 correos enviados: alerta de sobrecarga</span>
+<span style="width: 70px; text-align: right;"><span style='font: 600 9.5px "IBM Plex Mono", monospace; padding: 3px 8px; border-radius: 11px; background: rgb(237, 243, 255); color: rgb(44, 91, 176);'>Info</span></span>
+</div>
+<div style="display: flex; align-items: center; padding: 10px 0px; border-bottom: 1px solid rgb(245, 247, 250);">
+<span style='width: 120px; font: 400 11px "IBM Plex Mono", monospace; color: rgb(107, 122, 141);'>17 ago 18:40</span>
+<span style='width: 140px; font: 500 12px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Diego Salazar</span>
+<span style='width: 170px; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);'>Resumen IA generado</span>
+<span style='flex: 1 1 0%; font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(107, 122, 141);'>Hilo “Migración a Java 21”</span>
+<span style="width: 70px; text-align: right;"><span style='font: 600 9.5px "IBM Plex Mono", monospace; padding: 3px 8px; border-radius: 11px; background: rgb(237, 243, 255); color: rgb(44, 91, 176);'>Info</span></span>
+</div>
+</div>
+<div style="width: 330px; flex: 0 0 auto; display: flex; flex-direction: column; gap: 16px;">
+<div style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<span style='font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Salud de la plataforma</span>
+<div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+<div style="display: flex; align-items: center; gap: 9px;">
+<div style="width: 8px; height: 8px; border-radius: 50%; background: rgb(22, 163, 74); flex: 0 0 auto;"></div>
+<span style='font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92); flex: 1 1 0%;'>Aplicación Spring Boot</span>
+<span style='font: 400 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Operativa</span>
+<span style='font: 600 11px "IBM Plex Mono", monospace; color: rgb(11, 31, 58); width: 44px; text-align: right;'>99,8%</span>
+</div>
+<div style="display: flex; align-items: center; gap: 9px;">
+<div style="width: 8px; height: 8px; border-radius: 50%; background: rgb(22, 163, 74); flex: 0 0 auto;"></div>
+<span style='font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92); flex: 1 1 0%;'>Base de datos PostgreSQL</span>
+<span style='font: 400 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Operativa</span>
+<span style='font: 600 11px "IBM Plex Mono", monospace; color: rgb(11, 31, 58); width: 44px; text-align: right;'>99,9%</span>
+</div>
+<div style="display: flex; align-items: center; gap: 9px;">
+<div style="width: 8px; height: 8px; border-radius: 50%; background: rgb(217, 119, 6); flex: 0 0 auto;"></div>
+<span style='font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92); flex: 1 1 0%;'>Servicio de matching</span>
+<span style='font: 400 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Degradado</span>
+<span style='font: 600 11px "IBM Plex Mono", monospace; color: rgb(11, 31, 58); width: 44px; text-align: right;'>97,1%</span>
+</div>
+<div style="display: flex; align-items: center; gap: 9px;">
+<div style="width: 8px; height: 8px; border-radius: 50%; background: rgb(22, 163, 74); flex: 0 0 auto;"></div>
+<span style='font: 400 12px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92); flex: 1 1 0%;'>Envío de correos</span>
+<span style='font: 400 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Operativo</span>
+<span style='font: 600 11px "IBM Plex Mono", monospace; color: rgb(11, 31, 58); width: 44px; text-align: right;'>100%</span>
+</div>
+</div>
+</div>
+<div style="background: rgb(255, 251, 235); border: 1px solid rgb(253, 230, 138); border-radius: 10px; padding: 18px 20px; flex: 1 1 0%; display: flex; flex-direction: column; gap: 11px;">
+<span style='font: 600 13px "IBM Plex Sans", sans-serif; color: rgb(146, 64, 14);'>Requiere tu atención</span>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; gap: 9px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: rgb(217, 119, 6); margin-top: 6px; flex: 0 0 auto;"></div><span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(146, 64, 14);'>3 usuarios nuevos sin rol asignado desde el 14 de agosto.</span></div>
+<div style="display: flex; gap: 9px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: rgb(220, 38, 38); margin-top: 6px; flex: 0 0 auto;"></div><span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(146, 64, 14);'>El servicio de matching está degradado (97,1% de disponibilidad).</span></div>
+<div style="display: flex; gap: 9px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: rgb(217, 119, 6); margin-top: 6px; flex: 0 0 auto;"></div><span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(146, 64, 14);'>18 habilidades del catálogo no están vinculadas a ningún proyecto.</span></div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+<script src="../../assets/js/app.js"></script>
+<script src="../../assets/js/search.js"></script>
+<script>if (window.lucide) { lucide.createIcons(); }</script>
+</body>
+</html>
