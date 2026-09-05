@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Crear cuenta · SkillBridge AI</title>
+<link href="../../assets/css/base.css" rel="stylesheet"/>
+<script src="../../assets/js/vendor/lucide.min.js"></script>
+</head>
+<body class="auth-body" data-page="registro">
+<a class="auth-back" href="../../index.html">← Volver a SkillBridge AI</a>
+<div class="auth-shell">
+<div class="auth-card">
+<div style="width: 520px; flex: 0 0 auto; background: rgb(11, 31, 58); padding: 52px 48px; display: flex; flex-direction: column; position: relative; overflow: hidden;">
+<div style="position: absolute; right: -140px; top: 200px; width: 400px; height: 400px; border-radius: 50%; background: rgb(18, 41, 77);"></div>
+<div style="display: flex; align-items: center; gap: 12px; position: relative;">
+<div style="width: 34px; height: 34px; border-radius: 9px; background: rgb(91, 141, 239);"></div>
+<span style='font: 600 19px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); letter-spacing: -0.3px;'>SkillBridge AI</span>
+</div>
+<div style="margin-top: 56px; position: relative; display: flex; flex-direction: column; gap: 26px;">
+<p style='font: 600 30px / 1.25 "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); margin: 0px; letter-spacing: -0.7px; max-width: 380px; text-wrap: pretty;'>Crea tu perfil y deja que el sistema encuentre tus proyectos.</p>
+<div style="display: flex; flex-direction: column; gap: 20px;">
+<div style="display: flex; gap: 13px;"><div style='width: 26px; height: 26px; border-radius: 50%; background: rgb(91, 141, 239); display: flex; align-items: center; justify-content: center; font: 600 11px "IBM Plex Mono", monospace; color: rgb(11, 31, 58); flex: 0 0 auto;'>1</div><div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 13px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255);'>Datos corporativos</span><span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(124, 147, 181);'>Nombre, correo @nexacorp.com y área.</span></div></div>
+<div style="display: flex; gap: 13px;"><div style='width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); display: flex; align-items: center; justify-content: center; font: 600 11px "IBM Plex Mono", monospace; color: rgb(169, 188, 214); flex: 0 0 auto;'>2</div><div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 13px "IBM Plex Sans", sans-serif; color: rgb(169, 188, 214);'>Habilidades y nivel</span><span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(78, 101, 138);'>Selecciona del catálogo y declara tu dominio.</span></div></div>
+<div style="display: flex; gap: 13px;"><div style='width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); display: flex; align-items: center; justify-content: center; font: 600 11px "IBM Plex Mono", monospace; color: rgb(169, 188, 214); flex: 0 0 auto;'>3</div><div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 13px "IBM Plex Sans", sans-serif; color: rgb(169, 188, 214);'>Validación del manager</span><span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(78, 101, 138);'>Tu rol lo asigna el Administrador tras aprobar.</span></div></div>
+</div>
+</div>
+<a class="auth-link" href="login.html" style='margin-top: auto; font: 400 11px "IBM Plex Mono", monospace; color: rgb(78, 101, 138); position: relative;'>¿Ya tienes cuenta? Inicia sesión</a>
+</div>
+<div style="flex: 1 1 0%; display: flex; align-items: center; justify-content: center; padding: 0px 60px;">
+<div style="width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 20px;">
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<div style="display: flex; align-items: center; gap: 10px;"><h1 style='font: 600 26px / 1.2 "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); margin: 0px; letter-spacing: -0.6px;'>Crear cuenta</h1><span style='font: 600 10px "IBM Plex Mono", monospace; background: rgb(237, 243, 255); color: rgb(44, 91, 176); border-radius: 10px; padding: 4px 9px;'>PASO 1 DE 3</span></div>
+<p style='font: 400 13px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(107, 122, 141); margin: 0px;'>Solo se admiten correos del dominio nexacorp.com.</p>
+</div>
+<div style="height: 5px; border-radius: 3px; background: rgb(237, 241, 246); overflow: hidden;"><div style="height: 5px; width: 33%; background: rgb(18, 41, 77); border-radius: 3px;"></div></div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+<div class="alert-box alert-error" id="reg-alert"></div><div style="display: flex; flex-direction: column; gap: 6px;"><label style='font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Nombres</label><div class="field-box" style='height: 42px; border: 1px solid rgb(203, 213, 225); border-radius: 8px; display: flex; align-items: center; padding: 0px 13px; font: 400 13.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'><input class="field-input" id="reg-nombres" placeholder="Nombres" type="text"/></div></div>
+<div style="display: flex; flex-direction: column; gap: 6px;"><label style='font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Apellidos</label><div class="field-box" style='height: 42px; border: 1px solid rgb(203, 213, 225); border-radius: 8px; display: flex; align-items: center; padding: 0px 13px; font: 400 13.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'><input class="field-input" id="reg-apellidos" placeholder="Apellidos" type="text"/></div></div>
+<div style="display: flex; flex-direction: column; gap: 6px; grid-column: span 2;"><label style='font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Correo corporativo</label><div class="field-box" style='height: 42px; border: 1px solid rgb(203, 213, 225); border-radius: 8px; display: flex; align-items: center; padding: 0px 13px; font: 400 13.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'><input class="field-input" id="reg-correo" placeholder="tu.correo@nexacorp.com" type="email"/><span id="reg-correo-badge" style='margin-left: auto; font: 600 10px "IBM Plex Mono", monospace; color: rgb(21, 128, 61); background: rgb(231, 246, 236); border-radius: 10px; padding: 3px 8px;;display:none'>DOMINIO VÁLIDO</span></div><span class="field-error" id="reg-correo-error">Usa un correo del dominio @nexacorp.com.</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px;"><label style='font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Área</label><div class="field-box" style='height: 42px; border: 1px solid rgb(203, 213, 225); border-radius: 8px; display: flex; align-items: center; padding: 0px 13px; font: 400 13.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'><select class="field-input" id="reg-area"><option>Plataforma</option><option>Backend</option><option>Frontend</option><option>Data &amp; Analytics</option><option>QA</option><option>Diseño de producto</option><option>Otra área</option></select></div></div>
+<div style="display: flex; flex-direction: column; gap: 6px;"><label style='font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Cargo</label><div class="field-box" style='height: 42px; border: 1px solid rgb(203, 213, 225); border-radius: 8px; display: flex; align-items: center; padding: 0px 13px; font: 400 13.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'><input class="field-input" id="reg-cargo" placeholder="Tu cargo" type="text"/></div></div>
+<div style="display: flex; flex-direction: column; gap: 6px;"><label style='font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Contraseña</label><div class="field-box" style="height: 42px; border: 1.5px solid rgb(91, 141, 239); border-radius: 8px; display: flex; align-items: center; padding: 0px 13px; box-shadow: rgba(91, 141, 239, 0.16) 0px 0px 0px 3px;"><span style='font: 500 15px "IBM Plex Mono", monospace; color: rgb(11, 31, 58); letter-spacing: 2px;'><input class="field-input" id="reg-password" placeholder="Crea una contraseña" type="password"/></span></div></div>
+<div style="display: flex; flex-direction: column; gap: 6px;"><label style='font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Confirmar contraseña</label><div class="field-box" style="height: 42px; border: 1px solid rgb(203, 213, 225); border-radius: 8px; display: flex; align-items: center; padding: 0px 13px;"><span style='font: 500 15px "IBM Plex Mono", monospace; color: rgb(11, 31, 58); letter-spacing: 2px;'><input class="field-input" id="reg-password2" placeholder="Repite la contraseña" type="password"/></span></div><span class="field-error" id="reg-password-error">Debe tener 8+ caracteres y coincidir en ambos campos.</span></div>
+</div>
+<div style="background: rgb(245, 247, 250); border: 1px solid rgb(228, 232, 238); border-radius: 9px; padding: 13px 15px; display: flex; flex-direction: column; gap: 8px;">
+<span id="reg-pw-strength-label" style='font: 500 10.5px "IBM Plex Mono", monospace; color: rgb(138, 151, 168); letter-spacing: 0.6px;'>SEGURIDAD DE LA CONTRASEÑA — SIN DATOS</span>
+<div id="reg-pw-bars" style="display: flex; gap: 5px;"><div class="pw-bar" style="flex: 1 1 0%; height: 4px; border-radius: 3px; background: rgb(228, 232, 238);"></div><div class="pw-bar" style="flex: 1 1 0%; height: 4px; border-radius: 3px; background: rgb(228, 232, 238);"></div><div class="pw-bar" style="flex: 1 1 0%; height: 4px; border-radius: 3px; background: rgb(228, 232, 238);"></div><div class="pw-bar" style="flex: 1 1 0%; height: 4px; border-radius: 3px; background: rgb(228, 232, 238);"></div></div>
+<div style="display: flex; gap: 18px;">
+<span id="reg-pw-check-len" style='font: 400 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>○ 8+ caracteres</span>
+<span id="reg-pw-check-upper" style='font: 400 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>○ Mayúscula y número</span>
+<span id="reg-pw-check-symbol" style='font: 400 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>○ Símbolo especial</span>
+</div>
+</div>
+<div style="display: flex; align-items: flex-start; gap: 9px;">
+<input class="check-real" id="reg-terms" type="checkbox"/>
+<span style='font: 400 12px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);'>Acepto la política de tratamiento de datos y el uso de mi perfil de habilidades en las recomendaciones de talento.</span>
+</div>
+<div style="display: flex; gap: 12px;">
+<button class="" id="reg-submit" style='flex: 1 1 0%; height: 46px; border-radius: 8px; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); box-shadow: rgba(18, 41, 77, 0.28) 0px 2px 8px;' type="button">Continuar a habilidades</button>
+<button class="js-fake-action" style='height: 46px; border: 1px solid rgb(217, 224, 234); border-radius: 8px; display: flex; align-items: center; padding: 0px 20px; font: 500 13.5px "IBM Plex Sans", sans-serif; color: rgb(74, 90, 110);' type="button">Cancelar</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="../../assets/js/app.js"></script>
+<script src="../../assets/js/auth.js"></script>
+<script>if (window.lucide) { lucide.createIcons(); }</script>
+</body>
+</html>

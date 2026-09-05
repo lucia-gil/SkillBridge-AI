@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Migración a Java 21 · SkillBridge AI</title>
+<link href="../../assets/css/base.css" rel="stylesheet"/>
+<script src="../../assets/js/vendor/lucide.min.js"></script>
+</head>
+<body data-page="foro-detalle" data-role="colaborador">
+<div class="app-shell">
+<aside class="sidebar">
+<a class="sidebar-brand" href="dashboard.html">
+<span class="brand-mark"><i data-lucide="link-2"></i></span>
+<span class="brand-text">
+<span class="brand-name">SkillBridge AI</span>
+<span class="brand-role">COLABORADOR</span>
+</span>
+</a>
+<div class="sidebar-section-title">Menú principal</div>
+<nav class="sidebar-nav">
+<a class="nav-item" href="dashboard.html"><i class="nav-icon" data-lucide="home"></i><span class="nav-label">Inicio</span></a>
+<a class="nav-item" href="perfil.html"><i class="nav-icon" data-lucide="user-round"></i><span class="nav-label">Mi perfil</span></a>
+<a class="nav-item" href="mis-proyectos.html"><i class="nav-icon" data-lucide="folder-kanban"></i><span class="nav-label">Mis proyectos</span></a>
+<a class="nav-item active" href="foros.html"><i class="nav-icon" data-lucide="message-square"></i><span class="nav-label">Foros</span></a>
+<a class="nav-item" href="asistente-ia.html"><i class="nav-icon" data-lucide="sparkles"></i><span class="nav-label">Asistente IA</span></a>
+<a class="nav-item" href="notificaciones.html"><i class="nav-icon" data-lucide="bell"></i><span class="nav-label">Notificaciones</span></a>
+</nav>
+<a class="sidebar-user" href="mi-cuenta.html">
+<span class="user-avatar">MR</span>
+<span class="user-info">
+<span class="user-name">Mariana Ruiz</span>
+<span class="user-email">mariana.ruiz@nexacorp.com</span>
+</span>
+<i class="user-chevron" data-lucide="chevron-right"></i>
+</a>
+</aside><div class="sidebar-backdrop"></div>
+<div class="app-main">
+<header class="topbar"><button aria-expanded="false" aria-label="Abrir menú" class="sidebar-toggle" type="button"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><line x1="3" x2="21" y1="6" y2="6"></line><line x1="3" x2="21" y1="12" y2="12"></line><line x1="3" x2="21" y1="18" y2="18"></line></svg></button>
+<div class="topbar-title">
+<span class="title-main">Migración a Java 21</span>
+<a class="title-crumb title-crumb-link" href="foros.html"><i class="crumb-arrow" data-lucide="arrow-left"></i>Foros › Arquitectura › Hilo #1284</a>
+</div>
+<div class="topbar-search" data-role="colaborador" data-search-root="">
+<i class="search-icon" data-lucide="search"></i>
+<input autocomplete="off" class="search-input" id="topbar-search-colaborador" placeholder="Buscar colaboradores, proyectos o habilidades…" type="text"/>
+<span class="search-kbd">⌘K</span>
+<div class="search-dropdown" data-search-dropdown=""></div>
+</div>
+<div class="topbar-actions">
+<a class="pill-link" href="asistente-ia.html"><i data-lucide="sparkles"></i> Asistente IA</a>
+<a aria-label="Notificaciones" class="bell" href="notificaciones.html">
+<i class="bell-icon" data-lucide="bell"></i>
+<span class="bell-badge">4</span>
+</a>
+<span class="divider"></span>
+<div class="user-menu">
+<button class="user-chip" data-user-toggle="" type="button">
+<span class="user-chip-info">
+<span class="user-chip-name">Mariana Ruiz</span>
+<span class="user-chip-role">Colaborador</span>
+</span>
+<span class="user-chip-avatar">MR</span>
+<i class="chip-chevron" data-lucide="chevron-down"></i>
+</button>
+<div class="user-dropdown" data-user-dropdown="">
+<a href="mi-cuenta.html"><i data-lucide="user-round"></i> Mi cuenta</a>
+<a data-logout="" href="#"><i data-lucide="log-out"></i> Cerrar sesión</a>
+</div>
+</div>
+</div>
+</header>
+<main class="content">
+<div style="flex: 1 1 0%; display: flex; flex-direction: column; gap: 14px; min-width: 0px;">
+<div style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<div style="display: flex; align-items: center; gap: 9px; margin-bottom: 8px;">
+<span style='font: 600 9.5px "IBM Plex Mono", monospace; padding: 3px 8px; border-radius: 10px; background: rgb(237, 243, 255); color: rgb(44, 91, 176);'>ARQUITECTURA</span>
+<span style='font: 600 9px "IBM Plex Mono", monospace; background: rgb(11, 31, 58); color: rgb(255, 255, 255); border-radius: 9px; padding: 3px 7px;'>FIJADO</span>
+<span style='margin-left: auto; font: 400 11px "IBM Plex Mono", monospace; color: rgb(162, 174, 189);'>23 RESPUESTAS · 412 VISTAS</span>
+</div>
+<h2 style='font: 600 21px / 1.3 "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); margin: 0px 0px 8px; letter-spacing: -0.4px;'>Migración a Java 21: qué se rompió y cómo lo resolvimos</h2>
+<span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Abierto por Diego Salazar · 17 ago 2026 · última actividad hace 1 h</span>
+</div>
+<div style="flex: 1 1 0%; min-height: 0px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+<div style="margin-left: 0px; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 15px 18px; display: flex; gap: 13px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<div style='width: 34px; height: 34px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 11px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>DS</div>
+<div style="flex: 1 1 0%; min-width: 0px; display: flex; flex-direction: column; gap: 6px;">
+<div style="display: flex; align-items: center; gap: 9px;">
+<span style='font: 600 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Diego Salazar</span>
+<span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Tech Lead Backend · Motor Cobranzas v2</span>
+<span style='margin-left: auto; font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(162, 174, 189);'>17 ago 2026, 16:20</span>
+</div>
+<p style='font: 400 12.5px / 1.65 "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92); margin: 0px; text-wrap: pretty;'>Cerramos la migración del módulo de cobranzas a Java 21 y quiero dejar registrado qué nos rompió, porque Portal Andes y Núcleo Retail van a pasar por lo mismo. Tres frentes: MapStruct 1.5 falla al generar mappers con records, los tests con Mockito inline dejaron de resolver clases selladas, y el retiro del Security Manager tumbó nuestro sandbox de plugins.</p>
+<div style="display: flex; align-items: center; gap: 16px; margin-top: 3px;">
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>▲ Útil (18)</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Responder</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Citar</span>
+</div>
+</div>
+</div>
+<div style="margin-left: 48px; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 15px 18px; display: flex; gap: 13px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<div style='width: 34px; height: 34px; border-radius: 50%; background: rgb(44, 91, 176); display: flex; align-items: center; justify-content: center; font: 600 11px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>LF</div>
+<div style="flex: 1 1 0%; min-width: 0px; display: flex; flex-direction: column; gap: 6px;">
+<div style="display: flex; align-items: center; gap: 9px;">
+<span style='font: 600 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Lucía Fernández</span>
+<span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>DevOps · Núcleo Retail</span>
+<span style='font: 600 9px "IBM Plex Mono", monospace; background: rgb(231, 246, 236); color: rgb(21, 128, 61); border-radius: 9px; padding: 2px 7px;'>✓ RESPUESTA ACEPTADA</span>
+<span style='margin-left: auto; font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(162, 174, 189);'>17 ago 2026, 17:05</span>
+</div>
+<p style='font: 400 12.5px / 1.65 "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92); margin: 0px; text-wrap: pretty;'>Confirmo lo de MapStruct: subir a 1.6.0 lo resuelve sin tocar código. Para el sandbox nosotros lo reemplazamos por contenedores efímeros con límites de recursos a nivel de Kubernetes; queda más limpio que el Security Manager y no depende de la JVM.</p>
+<div style="display: flex; align-items: center; gap: 16px; margin-top: 3px;">
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>▲ Útil (12)</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Responder</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Citar</span>
+</div>
+</div>
+</div>
+<div style="margin-left: 48px; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 15px 18px; display: flex; gap: 13px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<div style='width: 34px; height: 34px; border-radius: 50%; background: rgb(91, 141, 239); display: flex; align-items: center; justify-content: center; font: 600 11px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>MR</div>
+<div style="flex: 1 1 0%; min-width: 0px; display: flex; flex-direction: column; gap: 6px;">
+<div style="display: flex; align-items: center; gap: 9px;">
+<span style='font: 600 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Mariana Ruiz</span>
+<span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Frontend Sr. · Portal Andes</span>
+<span style='margin-left: auto; font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(162, 174, 189);'>18 ago 2026, 09:12</span>
+</div>
+<p style='font: 400 12.5px / 1.65 "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92); margin: 0px; text-wrap: pretty;'>¿El cambio de Mockito los obligó a reescribir muchos tests? En Portal Andes tenemos 1.200 pruebas y necesito estimar el esfuerzo antes de comprometer el sprint 14.</p>
+<div style="display: flex; align-items: center; gap: 16px; margin-top: 3px;">
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>▲ Útil (7)</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Responder</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Citar</span>
+</div>
+</div>
+</div>
+<div style="margin-left: 96px; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 15px 18px; display: flex; gap: 13px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<div style='width: 34px; height: 34px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 11px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>DS</div>
+<div style="flex: 1 1 0%; min-width: 0px; display: flex; flex-direction: column; gap: 6px;">
+<div style="display: flex; align-items: center; gap: 9px;">
+<span style='font: 600 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Diego Salazar</span>
+<span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Tech Lead Backend</span>
+<span style='margin-left: auto; font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(162, 174, 189);'>18 ago 2026, 09:40</span>
+</div>
+<p style='font: 400 12.5px / 1.65 "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92); margin: 0px; text-wrap: pretty;'>Menos de lo que temes: de 860 tests tocamos 41, casi todos por mocks de clases finales. Subiendo a Mockito 5.12 y JUnit 5.11 el resto pasó sin cambios. Nos tomó día y medio entre dos personas.</p>
+<div style="display: flex; align-items: center; gap: 16px; margin-top: 3px;">
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>▲ Útil (9)</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Responder</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Citar</span>
+</div>
+</div>
+</div>
+<div style="margin-left: 0px; background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 15px 18px; display: flex; gap: 13px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<div style='width: 34px; height: 34px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 11px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>CO</div>
+<div style="flex: 1 1 0%; min-width: 0px; display: flex; flex-direction: column; gap: 6px;">
+<div style="display: flex; align-items: center; gap: 9px;">
+<span style='font: 600 12.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Camila Ortega</span>
+<span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Data Engineer</span>
+<span style='margin-left: auto; font: 400 10.5px "IBM Plex Mono", monospace; color: rgb(162, 174, 189);'>18 ago 2026, 11:30</span>
+</div>
+<p style='font: 400 12.5px / 1.65 "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92); margin: 0px; text-wrap: pretty;'>Agrego un dato para quien migre con Kafka: los serializadores propios que usaban reflexión sobre campos privados necesitan `--add-opens`. Lo documenté en la guía de la célula de datos.</p>
+<div style="display: flex; align-items: center; gap: 16px; margin-top: 3px;">
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>▲ Útil (5)</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Responder</span>
+<span style='font: 500 11px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Citar</span>
+</div>
+</div>
+</div>
+</div>
+<div style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 13px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<div style='width: 32px; height: 32px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 11px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); flex: 0 0 auto;'>MR</div>
+<span style='flex: 1 1 0%; font: 400 12.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Escribe tu respuesta…</span>
+<button class="js-fake-action" style='height: 34px; border-radius: 7px; background: rgb(18, 41, 77); display: flex; align-items: center; padding: 0px 16px; font: 600 12px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255);' type="button">Publicar</button>
+</div>
+</div>
+<div style="width: 334px; flex: 0 0 auto; display: flex; flex-direction: column; gap: 14px;">
+<div style="background: rgb(11, 31, 58); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 11px;">
+<div style="display: flex; align-items: center; gap: 8px;">
+<div style="width: 20px; height: 20px; border-radius: 6px; background: rgb(91, 141, 239);"></div>
+<span style='font: 600 13px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255);'>Resumen del hilo</span>
+</div>
+<p style='font: 400 12px / 1.65 "IBM Plex Sans", sans-serif; color: rgb(196, 210, 229); margin: 0px; text-wrap: pretty;'>Tres causas de ruptura al migrar a Java 21: generación de mappers con records (MapStruct 1.5), mocks de clases selladas (Mockito) y el retiro del Security Manager.</p>
+<div style="height: 1px; background: rgba(255, 255, 255, 0.12);"></div>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<span style='font: 500 10px "IBM Plex Mono", monospace; color: rgb(124, 147, 181); letter-spacing: 0.6px;'>ACCIONES ACORDADAS</span>
+<span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(169, 188, 214);'>1. Subir MapStruct a 1.6.0</span>
+<span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(169, 188, 214);'>2. Mockito 5.12 + JUnit 5.11</span>
+<span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(169, 188, 214);'>3. Sandbox con contenedores efímeros en K8s</span>
+<span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(169, 188, 214);'>4. Documentar `--add-opens` para Kafka</span>
+</div>
+<span style='font: 400 10px "IBM Plex Mono", monospace; color: rgb(78, 101, 138);'>GENERADO POR IA · 18 AGO 09:05 · 23 MENSAJES</span>
+</div>
+<div style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<span style='font: 600 13px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Participantes</span>
+<div style="display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px;">
+<div style='width: 30px; height: 30px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255);'>DS</div>
+<div style='width: 30px; height: 30px; border-radius: 50%; background: rgb(44, 91, 176); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255);'>LF</div>
+<div style='width: 30px; height: 30px; border-radius: 50%; background: rgb(91, 141, 239); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255);'>MR</div>
+<div style='width: 30px; height: 30px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255);'>DS</div>
+<div style='width: 30px; height: 30px; border-radius: 50%; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 10px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255);'>CO</div>
+<div style='width: 30px; height: 30px; border-radius: 50%; background: rgb(228, 232, 238); display: flex; align-items: center; justify-content: center; font: 600 9.5px "IBM Plex Mono", monospace; color: rgb(90, 107, 128);'>+7</div>
+</div>
+</div>
+<div style="background: rgb(255, 255, 255); border: 1px solid rgb(228, 232, 238); border-radius: 10px; padding: 18px 20px; flex: 1 1 0%; box-shadow: rgba(11, 31, 58, 0.04) 0px 1px 2px;">
+<span style='font: 600 13px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Hilos relacionados</span>
+<div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+<div style="display: flex; flex-direction: column; gap: 2px;"><span style='font: 500 12px / 1.4 "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Estrategia de índices para el catálogo de habilidades</span><span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Datos e IA · 19 respuestas</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px;"><span style='font: 500 12px / 1.4 "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Helm charts compartidos entre proyectos</span><span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>DevOps &amp; Cloud · 31 respuestas</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px;"><span style='font: 500 12px / 1.4 "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'>Manejo de sesiones con Spring Security</span><span style='font: 400 10.5px "IBM Plex Sans", sans-serif; color: rgb(138, 151, 168);'>Backend · 14 respuestas</span></div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+<script src="../../assets/js/app.js"></script>
+<script src="../../assets/js/search.js"></script>
+<script>if (window.lucide) { lucide.createIcons(); }</script>
+</body>
+</html>

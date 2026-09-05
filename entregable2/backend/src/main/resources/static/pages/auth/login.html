@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión · SkillBridge AI</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<script src="../../assets/js/vendor/lucide.min.js"></script>
+</head>
+<body class="auth-body" data-page="login">
+<a class="auth-back" href="../../index.html">← Volver a SkillBridge AI</a>
+<div class="auth-shell">
+  <div class="auth-card">
+
+<div style="width: 640px; flex: 0 0 auto; background: rgb(11, 31, 58); padding: 56px; display: flex; flex-direction: column; position: relative; overflow: hidden;">
+<div style="position: absolute; right: -120px; top: 120px; width: 420px; height: 420px; border-radius: 50%; background: rgb(18, 41, 77);"></div>
+<div style="position: absolute; right: 60px; bottom: -90px; width: 260px; height: 260px; border-radius: 50%; background: rgba(91, 141, 239, 0.14);"></div>
+<div style="display: flex; align-items: center; gap: 12px; position: relative;">
+<div style="width: 34px; height: 34px; border-radius: 9px; background: rgb(91, 141, 239);"></div>
+<span style='font: 600 19px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); letter-spacing: -0.3px;'>SkillBridge AI</span>
+</div>
+<div style="margin-top: auto; position: relative;">
+<p style='font: 600 40px / 1.15 "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); margin: 0px 0px 18px; letter-spacing: -1px; max-width: 460px; text-wrap: pretty;'>El talento correcto, en el proyecto correcto.</p>
+<p style='font: 400 15px / 1.6 "IBM Plex Sans", sans-serif; color: rgb(169, 188, 214); margin: 0px 0px 34px; max-width: 420px; text-wrap: pretty;'>Centraliza colaboradores, proyectos, habilidades y conocimiento. Con recomendación de talento asistida por IA y explicación de cada criterio.</p>
+<div style="display: flex; gap: 34px;">
+<div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 24px "IBM Plex Mono", monospace; color: rgb(91, 141, 239);'>184</span><span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(124, 147, 181);'>colaboradores</span></div>
+<div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 24px "IBM Plex Mono", monospace; color: rgb(91, 141, 239);'>27</span><span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(124, 147, 181);'>proyectos activos</span></div>
+<div style="display: flex; flex-direction: column; gap: 3px;"><span style='font: 600 24px "IBM Plex Mono", monospace; color: rgb(91, 141, 239);'>312</span><span style='font: 400 11.5px "IBM Plex Sans", sans-serif; color: rgb(124, 147, 181);'>habilidades mapeadas</span></div>
+</div>
+</div>
+<span style='margin-top: 44px; font: 400 11px "IBM Plex Mono", monospace; color: rgb(78, 101, 138); position: relative;'>NexaCorp · Intranet corporativa · v2.4.0</span>
+</div>
+<div style="flex: 1 1 0%; display: flex; align-items: center; justify-content: center; background: rgb(255, 255, 255);">
+<div style="width: 392px; display: flex; flex-direction: column; gap: 22px;">
+<div style="display: flex; flex-direction: column; gap: 7px;">
+<h1 style='font: 600 27px / 1.2 "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); margin: 0px; letter-spacing: -0.6px;'>Iniciar sesión</h1>
+<p style='font: 400 13.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(107, 122, 141); margin: 0px;'>Usa tu cuenta corporativa de NexaCorp.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px;">
+<div class="alert-box alert-error" id="login-alert"></div><div style="display: flex; flex-direction: column; gap: 6px;">
+<label style='font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Correo corporativo</label>
+<div class="field-box" style='height: 44px; border: 1px solid rgb(203, 213, 225); border-radius: 8px; background: rgb(255, 255, 255); display: flex; align-items: center; padding: 0px 13px; font: 400 13.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58);'><input autocomplete="username" class="field-input" id="login-email" placeholder="tu.correo@nexacorp.com" type="email"/></div><span class="field-error" id="login-email-error">Ingresa un correo corporativo válido (@nexacorp.com).</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<label style='font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Contraseña</label>
+<div class="field-box" style="height: 44px; border: 1.5px solid rgb(91, 141, 239); border-radius: 8px; background: rgb(255, 255, 255); display: flex; align-items: center; padding: 0px 13px; box-shadow: rgba(91, 141, 239, 0.16) 0px 0px 0px 3px;">
+<span style='font: 500 15px "IBM Plex Mono", monospace; color: rgb(11, 31, 58); letter-spacing: 2px;'><input autocomplete="current-password" class="field-input" id="login-password" placeholder="Tu contraseña" type="password"/></span>
+<span style='margin-left: auto; font: 500 11.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'><button class="pw-toggle" data-toggle-pw="login-password" type="button">Mostrar</button></span>
+</div><span class="field-error" id="login-password-error">Ingresa tu contraseña.</span>
+</div>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between;">
+<div style="display: flex; align-items: center; gap: 8px;">
+<input checked="checked" class="check-real" id="login-remember" type="checkbox"/>
+<span style='font: 400 12.5px "IBM Plex Sans", sans-serif; color: rgb(60, 74, 92);'>Mantener sesión activa</span>
+</div>
+<a class="auth-link" href="restablecer-password.html" style='font: 500 12.5px "IBM Plex Sans", sans-serif; color: rgb(44, 91, 176);'>¿Olvidaste tu contraseña?</a>
+</div>
+<button class="" id="login-submit" style='height: 46px; border-radius: 8px; background: rgb(18, 41, 77); display: flex; align-items: center; justify-content: center; font: 600 14px "IBM Plex Sans", sans-serif; color: rgb(255, 255, 255); box-shadow: rgba(18, 41, 77, 0.28) 0px 2px 8px;' type="button">Entrar</button>
+<div style="display: flex; align-items: center; gap: 12px;"><div style="flex: 1 1 0%; height: 1px; background: rgb(228, 232, 238);"></div><span style='font: 400 11px "IBM Plex Mono", monospace; color: rgb(138, 151, 168);'>O BIEN</span><div style="flex: 1 1 0%; height: 1px; background: rgb(228, 232, 238);"></div></div>
+<button type="button" class="js-fake-action" style='width: 100%; height: 44px; border: 1px solid rgb(203, 213, 225); border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; font: 500 13.5px "IBM Plex Sans", sans-serif; color: rgb(11, 31, 58); background: #fff;'>
+<div style="width: 16px; height: 16px; border-radius: 4px; background: rgb(44, 91, 176);"></div>Continuar con SSO corporativo
+        </button>
+<div style="border-radius: 8px; background: rgb(245, 247, 250); border: 1px solid rgb(228, 232, 238); padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start;">
+<div style="width: 6px; height: 6px; border-radius: 50%; background: rgb(22, 163, 74); margin-top: 6px; flex: 0 0 auto;"></div>
+<span style='font: 400 11.5px / 1.5 "IBM Plex Sans", sans-serif; color: rgb(107, 122, 141);'>El acceso a módulos depende de tu rol: Colaborador, Project Manager, Resource Manager o Administrador.</span>
+</div>
+<details class="demo-accounts">
+<summary>Cuentas de demostración (frontend hardcodeado)</summary>
+<div class="demo-accounts-list">
+<div class="demo-account-row"><span>mariana.ruiz@nexacorp.com · Colaborador</span><button data-fill-account="mariana.ruiz@nexacorp.com" type="button">Usar</button></div>
+<div class="demo-account-row"><span>javier.molina@nexacorp.com · Project Manager</span><button data-fill-account="javier.molina@nexacorp.com" type="button">Usar</button></div>
+<div class="demo-account-row"><span>paula.vega@nexacorp.com · Resource Manager</span><button data-fill-account="paula.vega@nexacorp.com" type="button">Usar</button></div>
+<div class="demo-account-row"><span>ana.villalba@nexacorp.com · Administrador</span><button data-fill-account="ana.villalba@nexacorp.com" type="button">Usar</button></div>
+<div class="demo-account-row"><span>Contraseña para las 4 cuentas</span><strong>Nexa2026*</strong></div>
+</div>
+</details></div>
+</div>
+<div style="text-align:center;margin-top:4px"><span style="font:400 12.5px 'IBM Plex Sans',sans-serif;color:#6B7A8D">¿No tienes cuenta? </span><a class="auth-link" href="registro.html" style="font:500 12.5px 'IBM Plex Sans',sans-serif;color:#2C5BB0">Crear cuenta</a></div>
+  </div>
+</div>
+<script src="../../assets/js/app.js"></script>
+<script src="../../assets/js/auth.js"></script>
+<script>if (window.lucide) { lucide.createIcons(); }</script>
+</body>
+</html>
