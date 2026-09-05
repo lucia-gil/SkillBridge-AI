@@ -1,0 +1,47 @@
+# Configuración base (perfil "local"): apunta a un MySQL en tu máquina o a
+# la instancia de Cloud SQL a través del Cloud SQL Auth Proxy (ver README de
+# despliegue). Para desplegar en Cloud Run se activa el perfil "gcp".
+
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: skillbridge-ai
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:skillbridge}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # El esquema lo crea/versiona schema.sql (ejecutado a mano o vía CI),
+      # no Hibernate: "validate" solo confirma que las entidades calzan con
+      # las tablas reales y falla rápido si alguien las desincroniza.
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  thymeleaf:
+    cache: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  health:
+    db:
+      enabled: true
+
+logging:
+  level:
+    org.hibernate.SQL: WARN
