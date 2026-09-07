@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Talent Matching · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <section class="card card-pad">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-4);">
+          <div>
+            <h2 style="font-size:var(--fs-md);">Recomendación para Núcleo Retail · Platform Engineer (60% dedicación)</h2>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:4px;">Modelo de matching v3 · 184 colaboradores evaluados · ejecutado hoy 09:14</p>
+          </div>
+          <div style="display:flex; align-items:center; gap:var(--space-4);">
+            <span class="label-mono">PESO: HABILIDADES 50% · EXPERIENCIA 30% · DISPONIBILIDAD 20%</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="adjust-weights-btn">Ajustar criterios</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 1.1fr 1fr;">
+        <section class="card">
+          <div class="card-header"><div class="card-header-text"><h2>5 candidatos sugeridos</h2><p>Ordenados por score de match</p></div></div>
+          <div class="card-body" style="display:flex; flex-direction:column; gap:var(--space-3);" id="candidate-list"></div>
+          <div class="callout warn" style="margin:0 var(--space-6) var(--space-6);">
+            <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
+            <span class="callout-body">Tomás Herrera y Diego Salazar aparecen en la lista pero su asignación requeriría aprobación del Resource Manager por exceso de carga.</span>
+          </div>
+        </section>
+
+        <section class="card card-pad" id="candidate-detail"></section>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "project-manager", active: "ai-talent-matching.html", title: "AI Talent Matching", subtitle: "Núcleo Retail › Vacante: Platform Engineer" });
+  if (!cfg) return;
+
+  var selected = MOCK.matchingCandidates[0];
+
+  function renderList() {
+    document.getElementById("candidate-list").innerHTML = MOCK.matchingCandidates.map(function (c) {
+      var isSel = c.nombre === selected.nombre;
+      return '<div class="candidate-row' + (isSel ? " selected" : "") + '" data-candidate="' + c.nombre + '">' +
+        '<span class="avatar">' + c.iniciales + '</span>' +
+        '<div class="candidate-row-text"><div class="candidate-row-name">' + c.nombre + (c.top ? '<span class="badge badge-green">TOP MATCH</span>' : "") + '</div><div class="candidate-row-role">' + c.cargo + "</div></div>" +
+        '<div style="text-align:center;"><div class="label-mono">SCORE</div><div style="font-family:var(--font-mono); font-weight:700; font-size:var(--fs-md); color:var(--navy-700);">' + c.score + "%</div></div>" +
+        '<div class="candidate-row-avail">' + c.disponible + '% libre<div class="text-tertiary" style="font-size:10px;">disponibilidad</div></div>' +
+        "</div>";
+    }).join("");
+    document.querySelectorAll("[data-candidate]").forEach(function (row) {
+      row.addEventListener("click", function () {
+        selected = MOCK.matchingCandidates.filter(function (c) { return c.nombre === row.dataset.candidate; })[0];
+        renderList(); renderDetail();
+      });
+    });
+  }
+
+  function renderDetail() {
+    var c = selected;
+    var html = '<div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-5);">' +
+      '<span class="avatar avatar-lg" style="background:var(--navy-700);">' + c.iniciales + '</span>' +
+      '<div><h3 style="font-size:var(--fs-md);">' + c.nombre + '</h3><p class="text-tertiary" style="font-size:var(--fs-xs);">Por qué la recomienda el sistema</p></div>' +
+      '<div style="margin-left:auto; text-align:center;"><div style="font-size:var(--fs-xl); font-weight:700; color:var(--navy-700);">' + c.score + '%</div><div class="label-mono">MATCH</div></div></div>';
+
+    html += '<p class="label-mono" style="margin-bottom:var(--space-2);">Criterios evaluados</p>';
+    c.criterios.forEach(function (crit) {
+      html += '<div class="criteria-bar-row"><div class="criteria-bar-top"><span class="criteria-bar-name">' + crit.nombre + '</span><span class="criteria-bar-pct">' + crit.pct + '%</span></div>' +
+        '<div class="progress-bar"><div class="progress-bar-fill" style="width:' + crit.pct + '%;"></div></div>' +
+        '<span class="criteria-bar-detail">' + crit.detalle + " — " + crit.extra + '</span></div>';
+    });
+
+    if (c.habilidadesCoincidentes) {
+      html += '<p class="label-mono" style="margin:var(--space-5) 0 var(--space-2);">Habilidades coincidentes</p><div style="display:flex; flex-direction:column; gap:6px;">';
+      c.habilidadesCoincidentes.forEach(function (h) {
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; font-size:var(--fs-xs);"><span>' + h.nombre + ' <span class="text-tertiary">req. ' + h.requerido + '</span></span><span class="skill-pill" data-level="' + capitalize(h.tiene) + '" style="font-size:10px; padding:2px 8px;">' + h.tiene + "</span></div>";
+      });
+      html += "</div>";
+    }
+
+    html += '<div class="callout info" style="margin-top:var(--space-5);"><span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-sparkles"></use></svg></span>' +
+      '<span class="callout-body"><span class="callout-title">Explicación en lenguaje natural</span>' + c.explicacion + '</span></div>';
+
+    html += '<div class="btn-group" style="margin-top:var(--space-5); justify-content:flex-end;">' +
+      '<button type="button" class="btn btn-secondary" id="discard-btn">Descartar</button>' +
+      '<button type="button" class="btn btn-primary" id="propose-btn">Proponer asignación</button></div>';
+
+    document.getElementById("candidate-detail").innerHTML = html;
+
+    document.getElementById("propose-btn").addEventListener("click", function () {
+      SBAI.toast.show("Propuesta de asignación de <strong>" + c.nombre + "</strong> enviada a Núcleo Retail.", { type: "success" });
+    });
+    document.getElementById("discard-btn").addEventListener("click", function () {
+      SBAI.toast.show(c.nombre + " descartado de esta vacante.");
+    });
+  }
+
+  function capitalize(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
+
+  document.getElementById("adjust-weights-btn").addEventListener("click", function () {
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Ajustar criterios de matching</h2><p>Solo afecta esta búsqueda</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Peso de habilidades</label><input class="input" type="range" min="0" max="100" value="50"></div>' +
+      '<div class="field"><label class="field-label">Peso de experiencia</label><input class="input" type="range" min="0" max="100" value="30"></div>' +
+      '<div class="field"><label class="field-label">Peso de disponibilidad</label><input class="input" type="range" min="0" max="100" value="20"></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" data-modal-close>Recalcular</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector(".btn-primary").addEventListener("click", function () { SBAI.toast.show("Recalculando matches con los nuevos pesos…"); });
+  });
+
+  renderList();
+  renderDetail();
+});
+</script>
+</body>
+</html>

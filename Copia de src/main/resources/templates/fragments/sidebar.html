@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--
+  fragments/sidebar.html — Referencia 1:1 del sidebar que hoy genera
+  static/js/shell.js (función sidebarHtml). En la migración a Spring
+  Boot + Thymeleaf, este archivo reemplaza a shell.js: el controlador
+  pasa "role" (String) y "navItems" (List<NavItem{label,icon,href,badge}>)
+  y "user" (UserSummary{iniciales,nombre,correo}) al modelo, y las demás
+  plantillas hacen:
+
+      <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+  Se sirve como HTML aislado (no se carga con fetch) precisamente para
+  que sea un include real en Thymeleaf; en la demo estática equivalente,
+  shell.js construye el mismo marcado en memoria para evitar depender de
+  fetch() entre archivos file://, que los navegadores bloquean por CORS.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside class="sidebar" th:fragment="sidebar">
+  <div class="sidebar-brand">
+    <span class="sidebar-brand-mark"><svg class="icon"><use href="/img/icons.svg#icon-logo"></use></svg></span>
+    <span class="sidebar-brand-text">SkillBridge AI</span>
+  </div>
+
+  <div class="sidebar-role-badge" th:text="${roleLabel}">ROL</div>
+
+  <nav class="sidebar-nav" aria-label="Navegación principal">
+    <!-- th:each="item : ${navItems}" -->
+    <a class="sidebar-nav-item" th:classappend="${item.href == activeHref} ? 'active'"
+       th:href="${item.href}" th:each="item : ${navItems}">
+      <svg class="icon"><use th:attr="href='/img/icons.svg#' + ${item.icon}"></use></svg>
+      <span class="sidebar-nav-item-label" th:text="${item.label}">Label</span>
+      <span class="counter-badge" th:if="${item.badge != null and item.badge > 0}" th:text="${item.badge}">0</span>
+    </a>
+  </nav>
+
+  <!-- position: relative en .sidebar-footer (layout.css) es obligatorio:
+       es el contenedor de posicionamiento del panel absoluto de abajo.
+       Sin él, el panel toma como referencia a .sidebar (position: sticky,
+       height: 100vh) y termina renderizando fuera de la pantalla. -->
+  <div class="sidebar-footer">
+    <button type="button" class="sidebar-user" data-dropdown-trigger="user-menu-sidebar">
+      <span class="avatar avatar-sm" th:text="${user.iniciales}">MR</span>
+      <span class="sidebar-user-text">
+        <span class="sidebar-user-name" th:text="${user.nombre}">Nombre</span>
+        <span class="sidebar-user-email" th:text="${user.correo}">correo@nexacorp.com</span>
+      </span>
+      <svg class="icon"><use href="/img/icons.svg#icon-more-h"></use></svg>
+    </button>
+    <div th:replace="~{fragments/modals :: user-menu('user-menu-sidebar', 'align-left')}"></div>
+  </div>
+</aside>
+</body>
+</html>

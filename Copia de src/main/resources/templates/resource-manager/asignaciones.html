@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asignaciones · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5); flex-wrap:wrap; gap:var(--space-3);">
+          <div>
+            <h2 style="font-size:var(--fs-md);">Tablero de validación</h2>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Arrastra una tarjeta entre columnas para cambiar su estado de validación</p>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="new-request-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Registrar asignación</button>
+        </div>
+        <div class="kanban-board" id="kanban-board"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "resource-manager", active: "asignaciones.html", title: "Asignaciones", subtitle: "Vista global de validación de carga" });
+  if (!cfg) return;
+
+  var COLUMNS = [
+    { key: "Sin cubrir", label: "Sin cubrir", desc: "Vacantes pendientes de asignar" },
+    { key: "Bloqueada", label: "Bloqueada", desc: "Excede el límite de carga" },
+    { key: "En revisión", label: "En revisión", desc: "Pendiente de validar" },
+    { key: "Al límite", label: "Al límite", desc: "90–100% de carga" },
+    { key: "Validada", label: "Validada", desc: "Dentro de los límites" }
+  ];
+
+  function renderKpi() {
+    var counts = { total: MOCK.assignments.length };
+    COLUMNS.forEach(function (c) { counts[c.key] = MOCK.assignments.filter(function (a) { return a.validacion === c.key; }).length; });
+    document.getElementById("kpi-grid").innerHTML = [
+      { label: "TOTAL ASIGNACIONES", value: counts.total },
+      { label: "BLOQUEADAS", value: counts["Bloqueada"], cls: "down" },
+      { label: "EN REVISIÓN", value: counts["En revisión"], cls: "warn" },
+      { label: "SIN CUBRIR", value: counts["Sin cubrir"], cls: "warn" }
+    ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>'; }).join("");
+  }
+
+  var validCls = { "Validada": "badge-green", "Al límite": "badge-amber", "En revisión": "badge-blue", "Bloqueada": "badge-red", "Sin cubrir": "badge-neutral" };
+
+  function renderBoard() {
+    document.getElementById("kanban-board").innerHTML = COLUMNS.map(function (col) {
+      var items = MOCK.assignments.map(function (a, idx) { return { a: a, idx: idx }; }).filter(function (o) { return o.a.validacion === col.key; });
+      var cards = items.map(function (o) {
+        var a = o.a;
+        var nombre = a.colaborador || a.vacanteNombre;
+        return '<div class="kanban-card" draggable="true" data-idx="' + o.idx + '">' +
+          '<div class="kanban-card-top"><span class="avatar avatar-sm" style="width:24px; height:24px; font-size:10px;">' + a.iniciales + '</span><span class="kanban-card-name">' + nombre + '</span></div>' +
+          '<div class="kanban-card-meta"><span>' + a.proyecto + '</span><span class="mono">' + a.dedicacion + '%</span></div>' +
+          '</div>';
+      }).join("") || '<div class="text-tertiary" style="font-size:var(--fs-xs); text-align:center; padding:var(--space-4) 0;">Sin tarjetas</div>';
+
+      return '<div class="kanban-column" data-column="' + col.key + '">' +
+        '<div class="kanban-column-header"><span class="kanban-column-title">' + col.label + ' <span class="text-tertiary mono" style="font-size:11px;">(' + items.length + ')</span></span><span class="kanban-column-sub">' + col.desc + '</span></div>' +
+        '<div class="kanban-column-drop" style="display:flex; flex-direction:column; gap:var(--space-3); min-height:40px;">' + cards + '</div>' +
+        '</div>';
+    }).join("");
+
+    wireDragDrop();
+    wireCardClicks();
+  }
+
+  function wireCardClicks() {
+    document.querySelectorAll(".kanban-card").forEach(function (card) {
+      card.addEventListener("click", function () {
+        var a = MOCK.assignments[card.dataset.idx];
+        var nombre = a.colaborador || a.vacanteNombre;
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>' + nombre + '</h2><p>' + a.proyecto + ' · ' + a.periodo + '</p></div>' +
+          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+          '<div class="modal-body"><div class="info-row"><span class="info-row-label">Dedicación</span><span class="info-row-value mono">' + a.dedicacion + '%</span></div>' +
+          '<div class="info-row"><span class="info-row-label">Carga total</span><span class="info-row-value mono">' + (a.cargaTotal !== null ? a.cargaTotal + "%" : "—") + '</span></div>' +
+          '<div class="info-row"><span class="info-row-label">Validación actual</span><span class="badge ' + (validCls[a.validacion] || "badge-neutral") + '">' + a.validacion + '</span></div></div>' +
+          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>' +
+          (a.validacion === "Bloqueada" ? '<button type="button" class="btn btn-primary" id="approve-modal-btn">Aprobar excepción</button>' :
+            a.validacion !== "Validada" ? '<button type="button" class="btn btn-primary" id="validate-modal-btn">Validar</button>' : "") + '</div></div>';
+        var backdrop = SBAI.modal.open(html);
+        var approveBtn = backdrop.querySelector("#approve-modal-btn");
+        var validateBtn = backdrop.querySelector("#validate-modal-btn");
+        if (approveBtn) approveBtn.addEventListener("click", function () {
+          a.validacion = "Al límite"; SBAI.modal.close(backdrop); renderKpi(); renderBoard();
+          SBAI.toast.show("Excepción aprobada para <strong>" + nombre + "</strong>.", { type: "success" });
+        });
+        if (validateBtn) validateBtn.addEventListener("click", function () {
+          a.validacion = "Validada"; SBAI.modal.close(backdrop); renderKpi(); renderBoard();
+          SBAI.toast.show("<strong>" + nombre + "</strong> quedó validado.", { type: "success" });
+        });
+      });
+    });
+  }
+
+  function wireDragDrop() {
+    var dragIdx = null;
+    document.querySelectorAll(".kanban-card").forEach(function (card) {
+      card.addEventListener("dragstart", function () { dragIdx = card.dataset.idx; card.classList.add("dragging"); });
+      card.addEventListener("dragend", function () { card.classList.remove("dragging"); });
+    });
+    document.querySelectorAll(".kanban-column").forEach(function (col) {
+      col.addEventListener("dragover", function (e) { e.preventDefault(); col.classList.add("drop-target"); });
+      col.addEventListener("dragleave", function () { col.classList.remove("drop-target"); });
+      col.addEventListener("drop", function (e) {
+        e.preventDefault();
+        col.classList.remove("drop-target");
+        if (dragIdx === null) return;
+        var a = MOCK.assignments[dragIdx];
+        var newState = col.dataset.column;
+        if (a.validacion === newState) return;
+        var nombre = a.colaborador || a.vacanteNombre;
+        a.validacion = newState;
+        renderKpi();
+        renderBoard();
+        SBAI.toast.show("<strong>" + nombre + "</strong> pasó a <strong>" + newState + "</strong>.", { type: "success" });
+      });
+    });
+  }
+
+  document.getElementById("new-request-btn").addEventListener("click", function () {
+    var collabOptions = MOCK.collaborators.map(function (c) { return "<option>" + c.nombre + "</option>"; }).join("");
+    var projOptions = MOCK.projects.map(function (p) { return "<option>" + p.nombre + "</option>"; }).join("");
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Registrar asignación</h2></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Colaborador</label><select class="select" id="nr-collab">' + collabOptions + '</select></div>' +
+      '<div class="field"><label class="field-label">Proyecto</label><select class="select" id="nr-proj">' + projOptions + '</select></div>' +
+      '<div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" id="nr-pct" value="20" min="5" max="100" step="5"></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="nr-confirm">Registrar</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#nr-confirm").addEventListener("click", function () {
+      var nombre = backdrop.querySelector("#nr-collab").value;
+      var proyecto = backdrop.querySelector("#nr-proj").value;
+      var pct = Number(backdrop.querySelector("#nr-pct").value);
+      var c = MOCK.findCollaborator(nombre);
+      var total = c.ocupacionProm + pct;
+      MOCK.assignments.unshift({ colaborador: nombre, iniciales: c.iniciales, proyecto: proyecto, dedicacion: pct, periodo: "por definir", cargaTotal: total, validacion: total > 100 ? "Bloqueada" : "En revisión" });
+      SBAI.modal.close(backdrop);
+      renderKpi(); renderBoard();
+      SBAI.toast.show("Asignación de <strong>" + nombre + "</strong> registrada en “" + (total > 100 ? "Bloqueada" : "En revisión") + "”.", { type: "success" });
+    });
+  });
+
+  renderKpi();
+  renderBoard();
+});
+</script>
+</body>
+</html>
