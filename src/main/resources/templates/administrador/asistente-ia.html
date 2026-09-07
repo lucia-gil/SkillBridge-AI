@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asistente IA · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content page-content-wide" id="page-content">
+
+      <div class="chat-layout">
+        <div style="display:flex; flex-direction:column; gap:var(--space-4);">
+          <button type="button" class="btn btn-secondary btn-block" id="new-convo-btn">
+            <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Nueva conversación</button>
+          <div>
+            <p class="label-mono" style="margin-bottom:var(--space-2); padding:0 var(--space-2);">Historial</p>
+            <div id="chat-history"></div>
+          </div>
+        </div>
+
+        <section class="card chat-window">
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-suggestions" id="chat-suggestions"></div>
+          <div class="chat-composer">
+            <input type="text" class="input" id="chat-input" placeholder="Pregunta sobre usuarios, auditoría o el estado de la plataforma…">
+            <button type="button" class="chat-composer-send" id="chat-send" disabled><svg class="icon"><use href="../../static/img/icons.svg#icon-arrow-up"></use></svg></button>
+          </div>
+          <p class="chat-disclaimer">Como Administrador, el asistente consulta usuarios, proyectos, habilidades y el registro de auditoría completo.</p>
+        </section>
+
+        <div style="display:flex; flex-direction:column; gap:var(--space-4);">
+          <p class="label-mono">Contexto cargado</p>
+          <div class="ai-context-card"><div class="ai-context-card-title">184 usuarios</div><div class="ai-context-card-sub">Roles y estado de cuenta</div></div>
+          <div class="ai-context-card"><div class="ai-context-card-title">27 proyectos</div><div class="ai-context-card-sub">312 habilidades mapeadas</div></div>
+          <div class="ai-context-card"><div class="ai-context-card-title">Auditoría completa</div><div class="ai-context-card-sub">Últimas 24 horas de eventos</div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/ai-assistant.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "administrador", active: "asistente-ia.html", title: "Asistente IA", subtitle: "Contexto: usuarios, plataforma y auditoría" });
+  if (!cfg) return;
+
+  SBAI.ai.renderHistory("administrador", document.getElementById("chat-history"));
+  var messagesEl = document.getElementById("chat-messages");
+  SBAI.ai.renderConversation("administrador", messagesEl);
+
+  var suggestions = MOCK.aiSuggestions.administrador;
+  document.getElementById("chat-suggestions").innerHTML = suggestions.map(function (s) { return '<button type="button" class="chat-suggestion-chip" data-ai-suggestion>' + s + "</button>"; }).join("");
+
+  var input = document.getElementById("chat-input"), sendBtn = document.getElementById("chat-send");
+  SBAI.ai.wireComposer("administrador", { input: input, sendBtn: sendBtn, messagesEl: messagesEl });
+  SBAI.ai.wireSuggestionChips("administrador", document.getElementById("chat-suggestions"), function (text) {
+    input.value = text; sendBtn.disabled = false;
+    SBAI.ai.sendMessage("administrador", text, messagesEl);
+    input.value = ""; sendBtn.disabled = true;
+  });
+
+  document.getElementById("new-convo-btn").addEventListener("click", function () {
+    messagesEl.innerHTML = '<div class="chat-date-sep">' + MOCK.meta.todayLabel.toUpperCase() + '</div>' +
+      '<div class="chat-msg assistant"><div class="chat-bubble">Hola de nuevo, Ana. ¿Sobre qué quieres que te ayude: usuarios, la salud de la plataforma o auditoría?</div><div class="chat-meta">ASISTENTE SKILLBRIDGE</div></div>';
+    SBAI.toast.show("Nueva conversación iniciada.");
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proyectos · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <section class="card">
+        <div class="table-toolbar">
+          <div>
+            <strong id="proj-count"></strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="proj-subtitle"></p>
+          </div>
+          <div class="table-filters">
+            <select class="select" data-filter-scope="proyectos-admin" data-filter-key="estado">
+              <option value="todos">Estado: todos</option><option>Activo</option><option>En riesgo</option><option>Planeado</option><option>Bloqueado</option><option>Cerrado</option>
+            </select>
+            <select class="select" data-filter-scope="proyectos-admin" data-filter-key="cliente">
+              <option value="todos">Cliente: todos</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Proyecto</th><th>Cliente</th><th>PM</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="proj-body"></tbody>
+          </table>
+        </div>
+        <div class="state-panel" data-filter-empty="proyectos-admin" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+          <span class="state-panel-title">Sin proyectos con estos filtros</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "administrador", active: "proyectos.html", title: "Proyectos", subtitle: "Vista global de los " + MOCK.projects.length + " proyectos con datos completos" });
+  if (!cfg) return;
+
+  document.getElementById("proj-count").textContent = MOCK.projects.length + " proyectos en esta vista";
+  document.getElementById("proj-subtitle").textContent = MOCK.meta.stats.proyectosActivos + " proyectos activos en la organización";
+
+  var estadoBadge = { "Activo": "badge-green", "En riesgo": "badge-amber", "Planeado": "badge-neutral", "Bloqueado": "badge-red", "Cerrado": "badge-neutral" };
+  var clienteSelect = document.querySelector('[data-filter-key="cliente"]');
+  Array.from(new Set(MOCK.projects.map(function (p) { return p.cliente; }))).forEach(function (c) { clienteSelect.insertAdjacentHTML("beforeend", "<option>" + c + "</option>"); });
+
+  document.getElementById("proj-body").innerHTML = MOCK.projects.map(function (p) {
+    return '<tr data-filter-row="proyectos-admin" data-f-estado="' + p.estado + '" data-f-cliente="' + p.cliente + '">' +
+      '<td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);">' + p.iniciales + '</span>' +
+      '<span class="cell-person-text"><span class="cell-person-name">' + p.nombre + '</span><span class="cell-person-sub">' + p.codigo + '</span></span></td>' +
+      "<td>" + p.cliente + "</td><td>" + p.pm + "</td>" +
+      "<td>" + p.inicio + " → " + p.fin + "</td><td>" + p.equipo + "</td>" +
+      '<td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" style="width:' + p.avance + '%;"></div></div><span class="progress-value">' + p.avance + '%</span></div></td>' +
+      '<td><span class="badge ' + (estadoBadge[p.estado] || "badge-neutral") + '">' + p.estado + '</span></td>' +
+      '<td class="cell-actions"><button type="button" data-view-project="' + p.nombre + '">Ver detalle</button></td></tr>';
+  }).join("");
+
+  document.querySelectorAll("[data-view-project]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var p = MOCK.findProject(btn.dataset.viewProject);
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>' + p.nombre + '</h2><p>' + p.codigo + ' · ' + p.cliente + '</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);">' + p.descripcion + '</p>' +
+        '<div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">' + p.stack.map(function (t) { return '<span class="badge badge-neutral">' + t + "</span>"; }).join("") + '</div>' +
+        '<div class="info-row"><span class="info-row-label">Project Manager</span><span class="info-row-value">' + p.pm + '</span></div>' +
+        '<div class="info-row"><span class="info-row-label">Equipo</span><span class="info-row-value">' + p.equipo + ' personas</span></div>' +
+        '<div class="info-row"><span class="info-row-label">Avance</span><span class="info-row-value mono">' + p.avance + '%</span></div></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
+      SBAI.modal.open(html);
+    });
+  });
+
+  window.SBAI.tableFilter.init(document);
+});
+</script>
+</body>
+</html>

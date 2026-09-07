@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asignaciones · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <div class="callout danger" id="overload-callout">
+        <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
+        <span class="callout-body"><span class="callout-title">Tomás Herrera (120%) supera el límite de carga.</span> La asignación quedó bloqueada hasta que Paula Vega apruebe la excepción.
+          <div class="callout-actions"><button type="button" class="btn btn-secondary btn-sm" id="request-exception-btn">Solicitar excepción</button></div>
+        </span>
+      </div>
+
+      <section class="card">
+        <div class="table-toolbar">
+          <div>
+            <strong>Asignaciones de mis proyectos</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">8 asignaciones · 1 bloqueada · 1 en revisión</p>
+          </div>
+          <div class="table-filters">
+            <select class="select" data-filter-scope="asig-pm" data-filter-key="proyecto"><option value="todos">Proyecto: todos</option></select>
+            <select class="select" data-filter-scope="asig-pm" data-filter-key="estado">
+              <option value="todos">Estado: todos</option><option>Validada</option><option>Al límite</option><option>En revisión</option><option>Bloqueada</option><option>Sin cubrir</option>
+            </select>
+            <select class="select" data-filter-scope="asig-pm" data-filter-key="periodo">
+              <option value="todos">Periodo: todos</option><option value="q3-2026">Q3 2026</option><option value="q4-2026">Q4 2026</option>
+            </select>
+            <button type="button" class="btn btn-primary btn-sm" id="request-assignment-btn">
+              <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Solicitar asignación</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Colaborador</th><th>Proyecto</th><th>Dedicación</th><th>Periodo</th><th>Carga total</th><th>Validación</th><th>Acciones</th></tr></thead>
+            <tbody id="asig-body"></tbody>
+          </table>
+        </div>
+        <div class="state-panel" data-filter-empty="asig-pm" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-target"></use></svg></span>
+          <span class="state-panel-title">Sin asignaciones con estos filtros</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "project-manager", active: "asignaciones.html", title: "Asignaciones de mis proyectos" });
+  if (!cfg) return;
+
+  var kpi = MOCK.assignmentsKpi;
+  document.getElementById("kpi-grid").innerHTML = [
+    { label: "TOTAL ASIGNACIONES", value: kpi.total }, { label: "VALIDADAS", value: kpi.validadas },
+    { label: "EN REVISIÓN", value: kpi.enRevision, cls: "warn" }, { label: "BLOQUEADAS POR CARGA", value: kpi.bloqueadas, cls: "down" },
+    { label: "VACANTES SIN CUBRIR", value: kpi.vacantes, cls: "warn" }
+  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>'; }).join("");
+
+  var pmProjects = ["Portal Andes", "App Móvil Aurora", "Núcleo Retail", "Motor Cobranzas v2"];
+  var pmAssignments = MOCK.assignments.filter(function (a) { return pmProjects.indexOf(a.proyecto) !== -1; });
+  var projSelect = document.querySelector('[data-filter-key="proyecto"]');
+  pmProjects.forEach(function (p) { projSelect.insertAdjacentHTML("beforeend", "<option>" + p + "</option>"); });
+
+  var validCls = { "Validada": "badge-green", "Al límite": "badge-amber", "En revisión": "badge-blue", "Bloqueada": "badge-red", "Sin cubrir": "badge-neutral" };
+  document.getElementById("asig-body").innerHTML = pmAssignments.map(function (a) {
+    var nombre = a.colaborador || a.vacanteNombre;
+    return '<tr data-filter-row="asig-pm" data-f-proyecto="' + a.proyecto + '" data-f-estado="' + a.validacion + '" data-f-periodo="q3-2026">' +
+      '<td class="cell-person"><span class="avatar avatar-sm">' + a.iniciales + '</span><span class="cell-person-name">' + nombre + '</span></td>' +
+      "<td>" + a.proyecto + "</td><td class=\"mono\">" + a.dedicacion + "%</td><td>" + a.periodo + "</td>" +
+      "<td class=\"mono\">" + (a.cargaTotal !== null ? a.cargaTotal + "%" : "—") + "</td>" +
+      '<td><span class="badge ' + (validCls[a.validacion] || "badge-neutral") + '">' + a.validacion + "</span></td>" +
+      '<td class="cell-actions"><button type="button" data-edit-assign="' + nombre + '">Editar</button><button type="button" class="danger" data-release-assign="' + nombre + '">Liberar</button></td></tr>';
+  }).join("");
+
+  document.querySelectorAll("[data-edit-assign]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar asignación</h2><p>' + btn.dataset.editAssign + '</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" value="45" min="5" max="100" step="5"></div></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" data-modal-close>Guardar</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector(".btn-primary").addEventListener("click", function () { SBAI.toast.show("Asignación de <strong>" + btn.dataset.editAssign + "</strong> actualizada.", { type: "success" }); });
+    });
+  });
+  document.querySelectorAll("[data-release-assign]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      SBAI.modal.confirm({
+        title: "¿Liberar a " + btn.dataset.releaseAssign + "?", desc: "Se eliminará esta asignación del proyecto.",
+        confirmLabel: "Liberar", variant: "destructive",
+        onConfirm: function () {
+          var row = btn.closest("tr"); row.style.opacity = "0.4";
+          SBAI.toast.show("<strong>" + btn.dataset.releaseAssign + "</strong> fue liberado del proyecto.", { type: "success" });
+        }
+      });
+    });
+  });
+
+  document.getElementById("request-exception-btn").addEventListener("click", function () {
+    SBAI.toast.show("Excepción de carga solicitada a Paula Vega (Resource Manager).", { type: "success" });
+  });
+
+  document.getElementById("request-assignment-btn").addEventListener("click", function () {
+    var collabOptions = MOCK.collaborators.map(function (c) { return "<option>" + c.nombre + "</option>"; }).join("");
+    var projOptions = pmProjects.map(function (p) { return "<option>" + p + "</option>"; }).join("");
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Solicitar asignación</h2></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Colaborador</label><select class="select">' + collabOptions + '</select></div>' +
+      '<div class="field"><label class="field-label">Proyecto</label><select class="select">' + projOptions + '</select></div>' +
+      '<div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" value="20" min="5" max="100" step="5"></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" data-modal-close>Enviar solicitud</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector(".btn-primary").addEventListener("click", function () { SBAI.toast.show("Solicitud enviada al Resource Manager para validación de carga.", { type: "success" }); });
+  });
+
+  window.SBAI.tableFilter.init(document);
+});
+</script>
+</body>
+</html>

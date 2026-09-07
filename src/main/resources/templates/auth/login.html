@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<svg style="display:none"><use></use></svg>
+
+<div class="auth-shell">
+  <aside class="auth-aside">
+    <div class="auth-aside-top">
+      <div class="auth-aside-brand">
+        <span class="sidebar-brand-mark"><svg class="icon"><use href="../../static/img/icons.svg#icon-logo"></use></svg></span>
+        <span class="sidebar-brand-text">SkillBridge AI</span>
+      </div>
+      <h1 class="auth-aside-headline">El talento correcto, en el proyecto correcto.</h1>
+      <p class="auth-aside-sub">Centraliza colaboradores, proyectos, habilidades y conocimiento. Con recomendación de talento asistida por IA y explicación de cada criterio.</p>
+    </div>
+    <div class="auth-aside-stats">
+      <div><div class="auth-aside-stat-value" id="stat-colaboradores">184</div><div class="auth-aside-stat-label">Colaboradores</div></div>
+      <div><div class="auth-aside-stat-value" id="stat-proyectos">27</div><div class="auth-aside-stat-label">Proyectos activos</div></div>
+      <div><div class="auth-aside-stat-value" id="stat-habilidades">312</div><div class="auth-aside-stat-label">Habilidades mapeadas</div></div>
+    </div>
+    <p class="auth-aside-footer">NexaCorp · Intranet corporativa · v2.4.0</p>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <div class="auth-card-logo-mobile">
+        <span class="sidebar-brand-mark" style="background:var(--navy-700)"><svg class="icon"><use href="../../static/img/icons.svg#icon-logo"></use></svg></span>
+        <span style="font-weight:600;color:var(--text-primary)">SkillBridge AI</span>
+      </div>
+
+      <h2 class="auth-card-title">Iniciar sesión</h2>
+      <p class="auth-card-sub">Usa tu cuenta corporativa de NexaCorp.</p>
+
+      <form class="auth-card-body" id="login-form" novalidate>
+        <div class="field" id="field-email">
+          <label class="field-label" for="login-email">Correo corporativo</label>
+          <input class="input" type="email" id="login-email" name="email" placeholder="nombre.apellido@nexacorp.com" value="mariana.ruiz@nexacorp.com" autocomplete="username" required>
+          <div class="field-error"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-circle"></use></svg>Escribe un correo válido.</div>
+        </div>
+
+        <div class="field" id="field-password">
+          <label class="field-label" for="login-password">Contraseña</label>
+          <div class="input-wrap">
+            <input class="input" type="password" id="login-password" name="password" placeholder="••••••••••" value="SkillBridge#2026" autocomplete="current-password" required>
+            <button type="button" class="input-action" data-toggle-password="login-password">Mostrar</button>
+          </div>
+          <div class="field-error"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-circle"></use></svg>Ingresa tu contraseña.</div>
+        </div>
+
+        <div class="field-row" style="align-items:center; justify-content:space-between; margin-bottom: var(--space-6);">
+          <label class="checkbox-row" style="margin:0;">
+            <input type="checkbox" id="keep-session" checked>
+            <span class="checkbox-label">Mantener sesión activa</span>
+          </label>
+          <a href="recuperar-password.html" style="font-size:var(--fs-sm); font-weight:500;">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Entrar</button>
+
+        <div class="auth-divider"><span>o bien</span></div>
+
+        <button type="button" class="btn btn-secondary btn-block btn-lg" id="sso-btn">Continuar con SSO corporativo</button>
+      </form>
+
+      <p class="auth-card-sub" style="text-align:center; margin-top:var(--space-6);">El acceso a módulos depende de tu rol: Colaborador, Project Manager, Resource Manager o Administrador.</p>
+      <p class="auth-footer-link">¿No tienes cuenta? <a href="registro.html">Crea una cuenta</a></p>
+    </div>
+  </main>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("stat-colaboradores").textContent = MOCK.meta.stats.colaboradores;
+  document.getElementById("stat-proyectos").textContent = MOCK.meta.stats.proyectosActivos;
+  document.getElementById("stat-habilidades").textContent = MOCK.meta.stats.habilidadesMapeadas;
+
+  document.querySelectorAll("[data-toggle-password]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var input = document.getElementById(btn.dataset.togglePassword);
+      var show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.textContent = show ? "Ocultar" : "Mostrar";
+    });
+  });
+
+  function validateEmail() {
+    var el = document.getElementById("login-email");
+    var field = document.getElementById("field-email");
+    var ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim());
+    field.classList.toggle("has-error", !ok);
+    return ok;
+  }
+  function validatePassword() {
+    var el = document.getElementById("login-password");
+    var field = document.getElementById("field-password");
+    var ok = el.value.trim().length > 0;
+    field.classList.toggle("has-error", !ok);
+    return ok;
+  }
+  document.getElementById("login-email").addEventListener("blur", validateEmail);
+  document.getElementById("login-password").addEventListener("blur", validatePassword);
+
+  document.getElementById("login-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var okEmail = validateEmail();
+    var okPass = validatePassword();
+    if (!okEmail || !okPass) {
+      SBAI.toast.show("Revisa los campos marcados antes de continuar.", { type: "error" });
+      return;
+    }
+    SBAI.modal.openRolePicker();
+  });
+
+  document.getElementById("sso-btn").addEventListener("click", function () {
+    SBAI.toast.show("Redirigiendo a Azure AD (SSO simulado)…");
+    setTimeout(function () { SBAI.modal.openRolePicker(); }, 500);
+  });
+});
+</script>
+</body>
+</html>
