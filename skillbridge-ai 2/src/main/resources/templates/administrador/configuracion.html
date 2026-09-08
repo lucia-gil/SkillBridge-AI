@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuración · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="detail-grid">
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-5);">Acceso y sesión</h3>
+            <div class="field-row">
+              <div class="field"><label class="field-label">Dominio corporativo permitido</label><input class="input" value="nexacorp.com" disabled><span class="field-hint">Define qué correos pueden registrarse</span></div>
+              <div class="field"><label class="field-label">Duración máxima de sesión</label>
+                <select class="select" id="cfg-session"><option value="8h">8 horas</option><option value="24h">24 horas</option><option value="7d">7 días</option></select></div>
+            </div>
+            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Exigir doble factor a todos los administradores</span><span class="toggle-row-desc">Aplica en el próximo inicio de sesión de cada cuenta</span></div><label class="toggle"><input type="checkbox" checked data-cfg="2fa-admins"><span class="toggle-track"></span></label></div>
+            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Bloquear invitaciones fuera del dominio corporativo</span></div><label class="toggle"><input type="checkbox" checked data-cfg="dominio-estricto"><span class="toggle-track"></span></label></div>
+          </section>
+
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-2);">Notificaciones globales</h3>
+            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Resumen semanal por correo a todos los usuarios</span></div><label class="toggle"><input type="checkbox" checked data-cfg="resumen-global"><span class="toggle-track"></span></label></div>
+            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Alertas automáticas de sobrecarga a Resource Managers</span></div><label class="toggle"><input type="checkbox" checked data-cfg="alertas-sobrecarga"><span class="toggle-track"></span></label></div>
+            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Notificar cambios de rol a otros administradores</span></div><label class="toggle"><input type="checkbox" checked data-cfg="notificar-roles"><span class="toggle-track"></span></label></div>
+          </section>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-5);">Asistente IA</h3>
+            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Habilitar el asistente IA para todos los roles</span></div><label class="toggle"><input type="checkbox" checked data-cfg="ia-habilitado"><span class="toggle-track"></span></label></div>
+            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Permitir que el asistente use historial de conversación</span></div><label class="toggle"><input type="checkbox" checked data-cfg="ia-historial"><span class="toggle-track"></span></label></div>
+            <div class="field" style="margin-top:var(--space-4);"><label class="field-label">Límite mensual de consultas por usuario</label>
+              <select class="select" id="cfg-ia-limit"><option value="500">500 consultas</option><option value="1000" selected>1.000 consultas</option><option value="sin-limite">Sin límite</option></select></div>
+          </section>
+
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-5);">Apariencia y localización</h3>
+            <div class="field"><label class="field-label">Idioma predeterminado</label>
+              <select class="select" id="cfg-lang"><option>Español</option><option>Português</option><option>English</option></select></div>
+            <div class="toggle-row" style="margin-top:var(--space-2);"><div class="toggle-row-text"><span class="toggle-row-title">Modo oscuro por defecto para nuevos usuarios</span></div><label class="toggle"><input type="checkbox" data-cfg="modo-oscuro"><span class="toggle-track"></span></label></div>
+          </section>
+
+          <div class="btn-group" style="justify-content:flex-end;">
+            <button type="button" class="btn btn-primary" id="save-config-btn">Guardar configuración</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "administrador", active: "configuracion.html", title: "Configuración", subtitle: "Ajustes generales de la plataforma" });
+  if (!cfg) return;
+
+  document.querySelectorAll("[data-cfg]").forEach(function (input) {
+    var key = "cfg_" + input.dataset.cfg;
+    input.checked = SBAI.state.getToggle(key, input.checked);
+    input.addEventListener("change", function () {
+      SBAI.state.setToggle(key, input.checked);
+      SBAI.toast.show(input.checked ? "Opción activada." : "Opción desactivada.");
+    });
+  });
+
+  document.getElementById("save-config-btn").addEventListener("click", function () {
+    SBAI.toast.show("Configuración general guardada.", { type: "success" });
+  });
+});
+</script>
+</body>
+</html>

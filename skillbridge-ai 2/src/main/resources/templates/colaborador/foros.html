@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foros · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div style="display:grid; grid-template-columns:240px 1fr; gap:var(--space-6); align-items:start;">
+        <div style="display:flex; flex-direction:column; gap:var(--space-5);">
+          <section class="card card-pad">
+            <p class="label-mono" style="margin-bottom:var(--space-3);">Categorías</p>
+            <div id="category-list" style="display:flex; flex-direction:column; gap:2px;"></div>
+          </section>
+          <section class="card card-pad" style="background:var(--violet-bg); border-color:var(--violet-border);">
+            <p style="font-size:var(--fs-xs); font-weight:600; color:var(--violet-fg); margin-bottom:6px;">Resúmenes con IA</p>
+            <p style="font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.5;">Los hilos con más de 15 respuestas generan un resumen automático de las conclusiones.</p>
+            <p class="label-mono" style="margin-top:var(--space-3); color:var(--violet-fg);">38 hilos resumidos</p>
+          </section>
+        </div>
+
+        <section class="card">
+          <div class="table-toolbar">
+            <div class="segmented" id="sort-tabs">
+              <button type="button" class="segmented-btn active" data-sort="recientes">Recientes</button>
+              <button type="button" class="segmented-btn" data-sort="respondidos">Más respondidos</button>
+              <button type="button" class="segmented-btn" data-sort="sinresponder">Sin responder</button>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="new-thread-btn">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo hilo</button>
+          </div>
+          <p class="text-tertiary" style="font-size:var(--fs-xs); padding:var(--space-4) var(--space-6) 0;" id="thread-count-label">248 hilos · 1.904 respuestas · 62 participantes activos</p>
+          <div id="thread-list"></div>
+          <div class="state-panel" data-filter-empty="hilos" hidden>
+            <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg></span>
+            <span class="state-panel-title">Sin hilos en esta categoría</span>
+            <span class="state-panel-desc">Prueba con otra categoría o crea el primer hilo.</span>
+          </div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "colaborador", active: "foros.html", title: "Foros", subtitle: "Conocimiento compartido · 248 hilos" });
+  if (!cfg) return;
+
+  var activeCategory = "todos";
+  var activeSort = "recientes";
+
+  function renderCategories() {
+    var all = [{ nombre: "Todos los hilos", cantidad: 248, slug: "todos" }].concat(
+      MOCK.forumCategoriesCount.map(function (c) { return { nombre: c.nombre, cantidad: c.cantidad, slug: c.nombre }; })
+    );
+    document.getElementById("category-list").innerHTML = all.map(function (c) {
+      return '<button type="button" class="dropdown-item' + (c.slug === activeCategory ? "" : "") + '" data-cat="' + c.slug + '" style="justify-content:space-between; ' + (c.slug === activeCategory ? "background:var(--navy-100); font-weight:600;" : "") + '">' +
+        '<span>' + c.nombre + '</span><span class="text-tertiary">' + c.cantidad + "</span></button>";
+    }).join("");
+    document.querySelectorAll("[data-cat]").forEach(function (btn) {
+      btn.addEventListener("click", function () { activeCategory = btn.dataset.cat; renderCategories(); renderThreads(); });
+    });
+  }
+
+  function renderThreads() {
+    var list = MOCK.forumThreads.slice();
+    if (activeCategory !== "todos") list = list.filter(function (t) { return t.categoria === activeCategory; });
+    if (activeSort === "recientes") { /* orden natural (ya viene de más reciente a más antiguo) */ }
+    if (activeSort === "respondidos") list.sort(function (a, b) { return b.respuestas - a.respuestas; });
+    if (activeSort === "sinresponder") list = list.filter(function (t) { return t.respuestas === 0; });
+
+    var wrap = document.getElementById("thread-list");
+    var empty = document.querySelector('[data-filter-empty="hilos"]');
+    if (!list.length) { wrap.innerHTML = ""; empty.hidden = false; return; }
+    empty.hidden = true;
+
+    wrap.innerHTML = list.map(function (t) {
+      var ai = t.resumenIA ? '<div class="thread-row-ai"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg><span>' + t.resumenIA.slice(0, 150) + '…</span></div>' : "";
+      return '<div class="thread-row" data-open-thread="' + t.id + '">' +
+        '<span class="avatar avatar-sm">' + t.iniciales + '</span>' +
+        '<div class="thread-row-body"><div class="thread-row-title">' + (t.fijado ? '<span class="badge badge-blue">FIJADO</span>' : "") + t.titulo + '</div>' +
+        '<div class="thread-row-meta">' + t.categoria + " · " + t.autor + " · " + t.tiempo + " · " + t.vistas + ' vistas</div>' + ai + "</div>" +
+        '<div class="thread-row-count"><div class="thread-row-count-num">' + t.respuestas + '</div><div class="thread-row-count-label">Respuestas</div></div>' +
+        "</div>";
+    }).join("");
+    wrap.querySelectorAll("[data-open-thread]").forEach(function (row) {
+      row.addEventListener("click", function () { window.location.href = "foro-hilo.html"; });
+    });
+  }
+
+  document.querySelectorAll("#sort-tabs [data-sort]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("#sort-tabs [data-sort]").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      activeSort = btn.dataset.sort;
+      renderThreads();
+    });
+  });
+
+  document.getElementById("new-thread-btn").addEventListener("click", function () {
+    var cats = MOCK.forumCategoriesCount.map(function (c) { return '<option>' + c.nombre + '</option>'; }).join("");
+    var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+      '<div class="modal-header"><div><h2>Nuevo hilo</h2><p>Comparte una pregunta o hallazgo con la comunidad técnica.</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Título</label><input class="input" id="new-thread-title" placeholder="¿Cómo resolviste...?"></div>' +
+      '<div class="field"><label class="field-label">Categoría</label><select class="select" id="new-thread-cat">' + cats + '</select></div>' +
+      '<div class="field"><label class="field-label">Mensaje</label><textarea class="input" id="new-thread-body" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="Describe el contexto..."></textarea></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="publish-thread-btn">Publicar hilo</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#publish-thread-btn").addEventListener("click", function () {
+      var title = backdrop.querySelector("#new-thread-title").value.trim();
+      if (!title) { SBAI.toast.show("Escribe un título para tu hilo.", { type: "error" }); return; }
+      var user = MOCK.roleUsers.colaborador;
+      MOCK.forumThreads.unshift({ id: "t-new-" + Date.now(), titulo: title, categoria: backdrop.querySelector("#new-thread-cat").value, autor: user.nombre, iniciales: user.iniciales, tiempo: "ahora", respuestas: 0, vistas: 1, fijado: false });
+      SBAI.modal.close(backdrop);
+      activeCategory = "todos"; activeSort = "recientes";
+      renderCategories(); renderThreads();
+      SBAI.toast.show("Hilo publicado en <strong>Foros</strong>.", { type: "success" });
+    });
+  });
+
+  renderCategories();
+  renderThreads();
+});
+</script>
+</body>
+</html>

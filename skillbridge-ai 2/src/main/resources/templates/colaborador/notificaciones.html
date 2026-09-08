@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notificaciones · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="detail-grid">
+        <section class="card">
+          <div class="table-toolbar">
+            <div class="tabs" id="notif-tabs">
+              <button type="button" class="tab-btn active" data-filter-scope="notif" data-filter-key="tab" data-filter-value="todas">Todas</button>
+              <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="sinleer" id="tab-sinleer">Sin leer</button>
+              <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="asignaciones">Asignaciones</button>
+              <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="foros">Foros</button>
+              <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="alertas">Alertas</button>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="mark-all-btn">Marcar todas como leídas</button>
+          </div>
+          <div id="notif-groups"></div>
+          <div class="state-panel" data-filter-empty="notif" hidden>
+            <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg></span>
+            <span class="state-panel-title">No hay notificaciones aquí</span>
+            <span class="state-panel-desc">Cambia de pestaña para ver otro tipo de aviso.</span>
+          </div>
+        </section>
+
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Preferencias de aviso</h3>
+          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Nuevas asignaciones</span></div><label class="toggle"><input type="checkbox" checked data-pref="asignaciones"><span class="toggle-track"></span></label></div>
+          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Alertas de sobrecarga</span></div><label class="toggle"><input type="checkbox" checked data-pref="sobrecarga"><span class="toggle-track"></span></label></div>
+          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Respuestas en foros</span></div><label class="toggle"><input type="checkbox" data-pref="foros"><span class="toggle-track"></span></label></div>
+          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Recomendaciones de IA</span></div><label class="toggle"><input type="checkbox" data-pref="ia"><span class="toggle-track"></span></label></div>
+          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Resumen semanal</span></div><label class="toggle"><input type="checkbox" data-pref="resumen"><span class="toggle-track"></span></label></div>
+          <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:var(--space-4); line-height:1.5;">Las notificaciones activadas aquí también llegan a <strong id="pref-email"></strong> según su frecuencia configurada.</p>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var role = "colaborador";
+  var cfg = SBAI.shell.init({ role: role, active: "notificaciones.html", title: "Centro de notificaciones", subtitle: "" });
+  if (!cfg) return;
+
+  var ROUTES = { n2: "asistente-ia.html", n5: "foros.html", n4: "foro-hilo.html", n6: "proyectos.html" };
+  var list = MOCK.notifications.colaborador;
+
+  function updateSubtitle() {
+    var unread = SBAI.state.getUnreadCount(role);
+    document.querySelector(".topbar-subtitle").textContent = unread + " sin leer · " + list.length + " en total";
+    document.getElementById("tab-sinleer").textContent = "Sin leer (" + unread + ")";
+  }
+
+  var GROUP_LABEL = { hoy: "HOY · " + MOCK.meta.todayLabel.split(",")[0].toUpperCase() + " DE AGOSTO", ayer: "AYER · LUNES 17 DE AGOSTO", semana: "SEMANA PASADA" };
+
+  function render() {
+    var groups = {};
+    list.forEach(function (n) { (groups[n.grupo] = groups[n.grupo] || []).push(n); });
+    var html = "";
+    ["hoy", "ayer", "semana"].forEach(function (g) {
+      if (!groups[g]) return;
+      html += '<p class="label-mono" style="padding:var(--space-4) var(--space-6) var(--space-2);">' + GROUP_LABEL[g] + "</p>";
+      groups[g].forEach(function (n) {
+        var read = SBAI.state.isRead(role, n.id);
+        html += '<div class="notif-item' + (read ? "" : " unread") + '" data-filter-row="notif" data-f-tab="' + n.categoria + '" data-notif-id="' + n.id + '">' +
+          '<span class="notif-item-icon ' + n.tipo + '"><svg class="icon icon-sm"><use href="/img/icons.svg#' + n.icon + '"></use></svg></span>' +
+          '<span class="notif-item-body"><span class="notif-item-title">' + n.titulo + '</span>' +
+          '<span class="notif-item-desc">' + n.desc + '</span>' +
+          '<span class="notif-item-time">' + n.hora + '</span>' +
+          (n.accion ? '<button type="button" class="notif-item-action" data-notif-action="' + n.id + '">' + n.accion + " →</button>" : "") +
+          "</span></div>";
+      });
+    });
+    document.getElementById("notif-groups").innerHTML = html;
+
+    document.querySelectorAll("[data-notif-action]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var id = btn.dataset.notifAction;
+        SBAI.state.markRead(role, id);
+        updateSubtitle();
+        SBAI.shell.refreshBadges(role, cfg);
+        if (ROUTES[id]) { window.location.href = ROUTES[id]; return; }
+        SBAI.toast.show("Acción registrada: <strong>" + btn.textContent.replace("→", "").trim() + "</strong>.", { type: "success" });
+      });
+    });
+    document.querySelectorAll('[data-filter-row="notif"]').forEach(function (row) {
+      row.addEventListener("click", function () {
+        SBAI.state.markRead(role, row.dataset.notifId);
+        row.classList.remove("unread");
+        updateSubtitle();
+        SBAI.shell.refreshBadges(role, cfg);
+      });
+    });
+
+    window.SBAI.tableFilter.registerCustomMatcher("notif", "tab", function (row, value) {
+      if (value === "sinleer") return !SBAI.state.isRead(role, row.dataset.notifId);
+      return row.dataset.fTab === value;
+    });
+    window.SBAI.tableFilter.applyScope("notif");
+  }
+
+  document.getElementById("mark-all-btn").addEventListener("click", function () {
+    SBAI.state.markAllRead(role);
+    document.querySelectorAll(".notif-item.unread").forEach(function (el) { el.classList.remove("unread"); });
+    updateSubtitle();
+    SBAI.shell.refreshBadges(role, cfg);
+    SBAI.toast.show("Todas las notificaciones se marcaron como leídas.", { type: "success" });
+  });
+
+  document.getElementById("pref-email").textContent = MOCK.roleUsers.colaborador.correo;
+  document.querySelectorAll("[data-pref]").forEach(function (input) {
+    var key = "pref_" + role + "_" + input.dataset.pref;
+    input.checked = SBAI.state.getToggle(key, input.checked);
+    input.addEventListener("change", function () { SBAI.state.setToggle(key, input.checked); });
+  });
+
+  updateSubtitle();
+  render();
+  window.SBAI.tableFilter.init(document);
+});
+</script>
+</body>
+</html>
