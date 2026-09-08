@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de administración · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <div class="detail-grid" style="margin-top:var(--space-6);">
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-2);">Salud de la plataforma</h3>
+          <div id="health-list"></div>
+        </section>
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Requiere tu atención</h3>
+          <div id="attention-list" style="display:flex; flex-direction:column; gap:var(--space-3);"></div>
+        </section>
+      </div>
+
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
+          <div>
+            <strong>Usuarios y roles</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="users-subtitle"></p>
+          </div>
+          <div class="table-filters">
+            <button type="button" class="btn btn-primary btn-sm" id="invite-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
+            <a href="usuarios.html" class="btn btn-secondary btn-sm">Ver todos</a>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Área</th><th>Último acceso</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="users-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-4);">
+          <h3 style="font-size:var(--fs-md);">Catálogo de habilidades · más demandadas</h3>
+          <a href="habilidades.html" class="btn btn-secondary btn-sm">Ver catálogo completo</a>
+        </div>
+        <div id="skills-list"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "administrador", active: "inicio.html", title: "Panel de administración", subtitle: "NexaCorp · SkillBridge AI " + MOCK.meta.version });
+  if (!cfg) return;
+
+  var r = MOCK.adminReport;
+  document.getElementById("kpi-grid").innerHTML = [
+    { label: "COLABORADORES ACTIVOS", value: r.colaboradoresActivos, meta: "+" + r.colaboradoresDelta + " este mes", cls: "up" },
+    { label: "PROYECTOS EN CURSO", value: r.proyectosEnCurso, meta: r.proyectosCierranSep + " cierran en septiembre" },
+    { label: "OCUPACIÓN PROMEDIO", value: r.ocupacionPromedio + "%", meta: "meta " + r.ocupacionMeta + "%", cls: "warn" },
+    { label: "CONSULTAS AL ASISTENTE IA", value: r.consultasIA.toLocaleString("es-CO"), meta: "+" + r.consultasDelta + "% vs. semana anterior", cls: "up" }
+  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
+
+  document.getElementById("health-list").innerHTML = MOCK.platformHealth.map(function (h) {
+    return '<div class="health-row"><span class="health-row-name"><span class="health-dot ' + h.estado + '"></span>' + h.nombre + '</span><span class="health-row-value">' + h.label + ' · ' + h.pct + '</span></div>';
+  }).join("");
+
+  document.getElementById("attention-list").innerHTML = MOCK.attentionItems.map(function (t) {
+    return '<div class="callout warn" style="margin:0;"><span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span><span class="callout-body">' + t + '</span></div>';
+  }).join("");
+
+  document.getElementById("users-subtitle").textContent = MOCK.usersKpi.total + " usuarios · " + MOCK.usersKpi.sinRol + " sin rol · " + MOCK.usersKpi.suspendidos + " suspendido";
+
+  var rolBadge = { "Administrador": "badge-blue", "Project Manager": "badge-neutral", "Resource Manager": "badge-neutral", "Colaborador": "badge-neutral" };
+  function renderUsers() {
+    document.getElementById("users-body").innerHTML = MOCK.usersTable.slice(0, 6).map(function (u) {
+      return '<tr><td class="cell-person"><span class="avatar avatar-sm">' + u.iniciales + '</span><span class="cell-person-text"><span class="cell-person-name">' + u.nombre + '</span><span class="cell-person-sub">' + u.correo + '</span></span></td>' +
+        '<td><span class="badge ' + (rolBadge[u.rol] || "badge-neutral") + '">' + u.rol + '</span></td><td>' + u.area + '</td>' +
+        '<td class="text-tertiary" style="font-size:var(--fs-xs);">' + u.ultimoAcceso + '</td>' +
+        '<td><span class="badge ' + (u.estado === "Activo" ? "badge-green" : "badge-red") + '">' + u.estado + '</span></td>' +
+        '<td class="cell-actions"><button type="button" data-edit-role="' + u.nombre + '">Editar rol</button>' +
+        (u.estado === "Activo" ? '<button type="button" class="danger" data-suspend-user="' + u.nombre + '">Suspender</button>' : '<button type="button" data-reactivate-user="' + u.nombre + '">Reactivar</button>') + '</td></tr>';
+    }).join("");
+
+    document.querySelectorAll("[data-edit-role]").forEach(function (btn) {
+      btn.addEventListener("click", function () { SBAI.toast.show("Abre el editor de rol de <strong>" + btn.dataset.editRole + "</strong> (misma acción disponible en Usuarios y roles)."); });
+    });
+    document.querySelectorAll("[data-suspend-user]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var nombre = btn.dataset.suspendUser;
+        SBAI.modal.confirm({
+          title: "¿Suspender a " + nombre + "?", desc: "Perderá acceso a la plataforma de inmediato.", confirmLabel: "Suspender", variant: "destructive",
+          onConfirm: function () {
+            MOCK.usersTable.filter(function (u) { return u.nombre === nombre; })[0].estado = "Bloqueado";
+            SBAI.toast.show("<strong>" + nombre + "</strong> fue suspendido.", { type: "success" });
+            renderUsers();
+          }
+        });
+      });
+    });
+    document.querySelectorAll("[data-reactivate-user]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var nombre = btn.dataset.reactivateUser;
+        MOCK.usersTable.filter(function (u) { return u.nombre === nombre; })[0].estado = "Activo";
+        SBAI.toast.show("<strong>" + nombre + "</strong> fue reactivado.", { type: "success" });
+        renderUsers();
+      });
+    });
+  }
+  renderUsers();
+
+  document.getElementById("invite-btn").addEventListener("click", function () {
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Se enviará una invitación al correo corporativo</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" placeholder="nombre.apellido@nexacorp.com"></div>' +
+      '<div class="field"><label class="field-label">Rol asignado</label><select class="select"><option>Colaborador</option><option>Project Manager</option><option>Resource Manager</option><option>Administrador</option></select></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="invite-confirm">Enviar invitación</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#invite-confirm").addEventListener("click", function () {
+      var correo = backdrop.querySelector('input[type="email"]').value.trim();
+      SBAI.modal.close(backdrop);
+      SBAI.toast.show(correo ? "Invitación enviada a <strong>" + correo + "</strong>." : "Invitación enviada.", { type: "success" });
+    });
+  });
+
+  var topSkills = MOCK.skillsCatalog.slice().sort(function (a, b) { return b.personas - a.personas; }).slice(0, 5);
+  var maxP = Math.max.apply(null, topSkills.map(function (s) { return s.personas; }));
+  document.getElementById("skills-list").innerHTML = topSkills.map(function (s) {
+    var demBadge = { "Alta": "badge-red", "Media": "badge-amber", "Baja": "badge-neutral" }[s.demanda] || "badge-neutral";
+    return '<div style="display:flex; align-items:center; gap:var(--space-4); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">' +
+      '<span style="flex:1; font-size:var(--fs-sm); font-weight:500;">' + s.nombre + '</span>' +
+      '<div class="progress-bar" style="max-width:140px;"><div class="progress-bar-fill" style="width:' + Math.round((s.personas / maxP) * 100) + '%;"></div></div>' +
+      '<span class="mono text-tertiary" style="font-size:var(--fs-xs); min-width:64px; text-align:right;">' + s.personas + ' personas</span>' +
+      '<span class="badge ' + demBadge + '">Demanda ' + s.demanda + '</span></div>';
+  }).join("");
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reportes · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <div class="detail-grid" style="margin-top:var(--space-6);">
+        <section class="card card-pad">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
+            <div>
+              <h2 style="font-size:var(--fs-md);">Avance por sprint</h2>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de historias cerradas sobre el plan · sprints S9–S14</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-download"></use></svg>Exportar</button>
+          </div>
+          <div class="bar-chart" id="sprint-chart"></div>
+        </section>
+
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Ocupación del equipo</h3>
+          <div id="team-occupancy"></div>
+        </section>
+      </div>
+
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="card-header"><div class="card-header-text"><h2>Detalle por proyecto</h2><p>Historias, horas invertidas y desviación de plazo</p></div></div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Proyecto</th><th>Historias (cerradas / totales)</th><th>Horas invertidas</th><th>Desviación de plazo</th><th>Riesgo</th></tr></thead>
+            <tbody id="detail-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "project-manager", active: "reportes.html", title: "Reportes", subtitle: "Desempeño de mis 4 proyectos · Q3 2026" });
+  if (!cfg) return;
+
+  var r = MOCK.pmReport;
+
+  document.getElementById("kpi-grid").innerHTML = [
+    { label: "AVANCE PONDERADO", value: r.avancePonderado + "%", delta: r.avanceDelta, unit: "pts" },
+    { label: "HISTORIAS CERRADAS", value: r.historiasCerradas, delta: r.historiasDelta, unit: "" },
+    { label: "DESVIACIÓN DE PLAZO", value: r.desviacionPlazo, meta: r.desviacionNota, cls: "warn" },
+    { label: "HORAS ASIGNADAS", value: r.horasAsignadas.toLocaleString("es-CO"), meta: "de " + r.horasDisponibles.toLocaleString("es-CO") + " h disponibles" }
+  ].map(function (k) {
+    var meta = k.meta || (typeof k.delta === "number" ? (k.delta >= 0 ? "+" : "") + k.delta + (k.unit ? " " + k.unit : "") + " vs. mes anterior" : "");
+    var cls = k.cls || (typeof k.delta === "number" ? (k.delta >= 0 ? "up" : "down") : "");
+    return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + cls + '">' + meta + '</span></div>';
+  }).join("");
+
+  var maxSprint = Math.max.apply(null, r.sprints.map(function (s) { return s.pct; }));
+  document.getElementById("sprint-chart").innerHTML = r.sprints.map(function (s, i) {
+    var h = Math.round((s.pct / maxSprint) * 100);
+    return '<div class="bar-chart-col"><span class="bar-chart-value">' + s.pct + '%</span>' +
+      '<div class="bar-chart-track"><div class="bar-chart-fill' + (i === r.sprints.length - 1 ? " accent" : "") + '" style="height:' + h + '%;"></div></div>' +
+      '<span class="bar-chart-label">' + s.s + '</span></div>';
+  }).join("");
+
+  document.getElementById("team-occupancy").innerHTML = r.ocupacionEquipo.map(function (o) {
+    var cls = o.pct > 100 ? "red" : o.pct >= 90 ? "amber" : "";
+    return '<div style="margin-bottom:var(--space-4);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:6px;"><span style="font-weight:500;">' + o.nombre + '</span><span class="mono" style="font-weight:600;">' + o.pct + '%</span></div>' +
+      '<div class="progress-bar"><div class="progress-bar-fill ' + cls + '" style="width:' + Math.min(o.pct, 100) + '%;"></div></div></div>';
+  }).join("");
+
+  var riesgoBadge = { "Bajo": "badge-green", "Medio": "badge-amber", "Alto": "badge-red" };
+  document.getElementById("detail-body").innerHTML = r.detalleProyectos.map(function (p) {
+    return "<tr><td class=\"cell-primary\">" + p.proyecto + "</td><td class=\"mono\">" + p.historias + "</td><td class=\"mono\">" + p.horas + "</td>" +
+      "<td class=\"mono\">" + p.desviacion + '</td><td><span class="badge ' + (riesgoBadge[p.riesgo] || "badge-neutral") + '">' + p.riesgo + "</span></td></tr>";
+  }).join("");
+
+  document.getElementById("export-btn").addEventListener("click", function () {
+    SBAI.toast.show("Generando exportable de reportes en PDF…");
+  });
+});
+</script>
+</body>
+</html>

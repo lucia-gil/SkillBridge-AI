@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usuarios y roles · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
+          <div>
+            <strong id="users-count"></strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Cuentas con acceso a SkillBridge AI</p>
+          </div>
+          <div class="table-filters">
+            <input type="text" class="input" data-filter-scope="users" data-filter-key="q" placeholder="Buscar por nombre o correo…" style="width:210px; height:38px; font-size:var(--fs-xs);">
+            <select class="select" data-filter-scope="users" data-filter-key="rol">
+              <option value="todos">Rol: todos</option><option>Colaborador</option><option>Project Manager</option><option>Resource Manager</option><option>Administrador</option>
+            </select>
+            <select class="select" data-filter-scope="users" data-filter-key="estado">
+              <option value="todos">Estado: todos</option><option>Activo</option><option>Bloqueado</option>
+            </select>
+            <button type="button" class="btn btn-primary btn-sm" id="invite-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Área</th><th>Último acceso</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="users-body"></tbody>
+          </table>
+        </div>
+        <div class="state-panel" data-filter-empty="users" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+          <span class="state-panel-title">Sin usuarios con estos filtros</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "administrador", active: "usuarios.html", title: "Usuarios y roles", subtitle: MOCK.usersTable.length + " cuentas visibles en esta demo" });
+  if (!cfg) return;
+
+  function renderKpi() {
+    var sinRol = MOCK.usersKpi.sinRol, suspendidos = MOCK.usersTable.filter(function (u) { return u.estado === "Bloqueado"; }).length;
+    document.getElementById("kpi-grid").innerHTML = [
+      { label: "TOTAL USUARIOS", value: MOCK.usersKpi.total },
+      { label: "SIN ROL ASIGNADO", value: sinRol, cls: "warn" },
+      { label: "SUSPENDIDOS", value: suspendidos, cls: "down" },
+      { label: "ADMINISTRADORES", value: MOCK.usersTable.filter(function (u) { return u.rol === "Administrador"; }).length }
+    ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>'; }).join("");
+  }
+
+  var rolBadge = { "Administrador": "badge-blue", "Project Manager": "badge-neutral", "Resource Manager": "badge-neutral", "Colaborador": "badge-neutral" };
+
+  function renderRows() {
+    document.getElementById("users-count").textContent = MOCK.usersTable.length + " usuarios";
+    document.getElementById("users-body").innerHTML = MOCK.usersTable.map(function (u) {
+      return '<tr data-filter-row="users" data-f-rol="' + u.rol + '" data-f-estado="' + u.estado + '" data-f-search="' + u.nombre.toLowerCase() + " " + u.correo.toLowerCase() + '">' +
+        '<td class="cell-person"><span class="avatar avatar-sm">' + u.iniciales + '</span><span class="cell-person-text"><span class="cell-person-name">' + u.nombre + '</span><span class="cell-person-sub">' + u.correo + '</span></span></td>' +
+        '<td><span class="badge ' + (rolBadge[u.rol] || "badge-neutral") + '">' + u.rol + '</span></td><td>' + u.area + '</td>' +
+        '<td class="text-tertiary" style="font-size:var(--fs-xs);">' + u.ultimoAcceso + '</td>' +
+        '<td><span class="badge ' + (u.estado === "Activo" ? "badge-green" : "badge-red") + '">' + u.estado + '</span></td>' +
+        '<td class="cell-actions"><button type="button" data-edit-role="' + u.nombre + '">Editar rol</button>' +
+        (u.estado === "Activo" ? '<button type="button" class="danger" data-suspend-user="' + u.nombre + '">Suspender</button>' : '<button type="button" data-reactivate-user="' + u.nombre + '">Reactivar</button>') + '</td></tr>';
+    }).join("");
+
+    document.querySelectorAll("[data-edit-role]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var u = MOCK.usersTable.filter(function (x) { return x.nombre === btn.dataset.editRole; })[0];
+        var opts = ["Colaborador", "Project Manager", "Resource Manager", "Administrador"].map(function (r) { return "<option" + (r === u.rol ? " selected" : "") + ">" + r + "</option>"; }).join("");
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar rol</h2><p>' + u.nombre + ' · ' + u.correo + '</p></div>' +
+          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+          '<div class="modal-body"><div class="field"><label class="field-label">Rol</label><select class="select" id="edit-role-select">' + opts + '</select></div>' +
+          '<p class="field-hint">El cambio queda registrado en Auditoría con tu usuario y la hora exacta.</p></div>' +
+          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="save-role-btn">Guardar rol</button></div></div>';
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelector("#save-role-btn").addEventListener("click", function () {
+          var nuevo = backdrop.querySelector("#edit-role-select").value;
+          u.rol = nuevo;
+          SBAI.modal.close(backdrop);
+          renderRows();
+          window.SBAI.tableFilter.applyScope("users");
+          SBAI.toast.show("<strong>" + u.nombre + "</strong> ahora tiene el rol " + nuevo + ".", { type: "success" });
+        });
+      });
+    });
+    document.querySelectorAll("[data-suspend-user]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var nombre = btn.dataset.suspendUser;
+        SBAI.modal.confirm({
+          title: "¿Suspender a " + nombre + "?", desc: "Perderá acceso a la plataforma de inmediato.", confirmLabel: "Suspender", variant: "destructive",
+          onConfirm: function () {
+            MOCK.usersTable.filter(function (u) { return u.nombre === nombre; })[0].estado = "Bloqueado";
+            SBAI.toast.show("<strong>" + nombre + "</strong> fue suspendido.", { type: "success" });
+            renderRows(); renderKpi();
+            window.SBAI.tableFilter.applyScope("users");
+          }
+        });
+      });
+    });
+    document.querySelectorAll("[data-reactivate-user]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var nombre = btn.dataset.reactivateUser;
+        MOCK.usersTable.filter(function (u) { return u.nombre === nombre; })[0].estado = "Activo";
+        SBAI.toast.show("<strong>" + nombre + "</strong> fue reactivado.", { type: "success" });
+        renderRows(); renderKpi();
+        window.SBAI.tableFilter.applyScope("users");
+      });
+    });
+  }
+
+  document.getElementById("invite-btn").addEventListener("click", function () {
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Se enviará una invitación al correo corporativo</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" id="invite-email" placeholder="nombre.apellido@nexacorp.com"></div>' +
+      '<div class="field"><label class="field-label">Rol asignado</label><select class="select" id="invite-role"><option>Colaborador</option><option>Project Manager</option><option>Resource Manager</option><option>Administrador</option></select></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="invite-confirm">Enviar invitación</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#invite-confirm").addEventListener("click", function () {
+      var correo = backdrop.querySelector("#invite-email").value.trim();
+      if (!correo || !/^[^\s@]+@nexacorp\.com$/i.test(correo)) {
+        SBAI.toast.show("Ingresa un correo corporativo válido (@nexacorp.com).", { type: "error" });
+        return;
+      }
+      SBAI.modal.close(backdrop);
+      SBAI.toast.show("Invitación enviada a <strong>" + correo + "</strong>.", { type: "success" });
+    });
+  });
+
+  renderKpi();
+  renderRows();
+  window.SBAI.tableFilter.init(document);
+});
+</script>
+</body>
+</html>

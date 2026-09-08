@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis proyectos · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <div class="tabs">
+        <button type="button" class="tab-btn active" data-tab="actuales">Proyectos actuales</button>
+        <button type="button" class="tab-btn" data-tab="historial">Historial completo</button>
+      </div>
+
+      <div id="tab-actuales" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:var(--space-5);">
+        <div th:if="${proyectosActivos.isEmpty()}" class="text-tertiary" style="grid-column:1/-1; text-align:center; padding:var(--space-6);">No tienes proyectos activos por ahora.</div>
+        <div class="card card-pad" th:each="p : ${proyectosActivos}">
+          <div style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">
+            <span class="avatar" style="border-radius:var(--radius-md); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:600;" th:text="${p.nombre}">Proyecto</div>
+              <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${p.rolLabel}">Rol</div>
+            </div>
+            <span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span>
+          </div>
+          <p class="text-secondary" style="font-size:var(--fs-sm); line-height:1.5; margin-bottom:var(--space-4);"
+             th:text="${#strings.abbreviate(p.descripcion ?: 'Sin descripción.', 130)}">Descripción</p>
+          <div class="progress-inline" style="margin-bottom:var(--space-4);">
+            <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div>
+            <span class="progress-value" th:text="${p.avance} + '%'">0%</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="label-mono" th:text="${p.cargaPorcentaje} + '% dedicación'">0%</span>
+            <button type="button" class="btn btn-tertiary btn-sm" th:attr="data-view-project=${p.proyectoId}">Ver detalle →</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="card" id="tab-historial" hidden>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Proyecto</th><th>Rol</th><th>Periodo</th><th>Dedicación</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              <tr th:if="${historial.isEmpty()}"><td colspan="6" class="text-tertiary" style="text-align:center; padding:var(--space-6);">Todavía no tienes asignaciones registradas.</td></tr>
+              <tr th:each="h : ${historial}">
+                <td class="cell-primary" th:text="${h.nombre}">Proyecto</td>
+                <td th:text="${h.rolLabel}">Rol</td>
+                <td th:text="${h.periodoLabel}">Periodo</td>
+                <td class="mono" th:text="${h.cargaPorcentaje} + '%'">0%</td>
+                <td><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></td>
+                <td class="cell-actions"><button type="button" th:attr="data-view-project=${h.proyectoId}">Ver detalle</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Detalle precalculado por proyecto (misma idea que administrador/proyectos.html,
+           pero de solo lectura: sin formularios de asignar/cambiar estado). -->
+      <div id="project-detail-templates" hidden>
+        <template th:each="d : ${detalles}" th:attr="data-project-id=${d.id}">
+          <div>
+            <div class="modal-header">
+              <div><h2 th:text="${d.nombre}">Proyecto</h2><p th:text="${d.estadoLabel} + ' · PM: ' + ${d.pmNombre}">Estado</p></div>
+              <button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
+              <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
+                <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:text="${t}">Tech</span>
+              </div>
+              <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
+              <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
+
+              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Equipo activo</h3>
+              <div th:if="${d.equipo.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin colaboradores asignados todavía.</div>
+              <div th:each="m : ${d.equipo}" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-2) 0; border-bottom:1px solid var(--border-subtle);">
+                <span class="avatar avatar-sm" th:text="${m.iniciales}">MR</span>
+                <span style="flex:1; min-width:0;">
+                  <div style="font-size:var(--fs-sm); font-weight:500;" th:text="${m.nombre}">Nombre</div>
+                  <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${m.rolLabel} + ' · ' + ${m.cargaPorcentaje} + '%'">rol</div>
+                </span>
+              </div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div>
+          </div>
+        </template>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll("[data-view-project]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.viewProject;
+      var tpl = document.querySelector('#project-detail-templates template[data-project-id="' + id + '"]');
+      if (!tpl) return;
+      SBAI.modal.open('<div class="modal modal-wide" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
+    });
+  });
+
+  document.querySelectorAll("[data-tab]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("[data-tab]").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      document.getElementById("tab-actuales").hidden = btn.dataset.tab !== "actuales";
+      document.getElementById("tab-historial").hidden = btn.dataset.tab !== "historial";
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de administración · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid">
+        <div class="kpi-tile"><span class="kpi-tile-label">COLABORADORES ACTIVOS</span><span class="kpi-tile-value" th:text="${kpiColaboradoresActivos}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">PROYECTOS EN CURSO</span><span class="kpi-tile-value" th:text="${kpiProyectosEnCurso}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">ASIGNACIONES ACTIVAS</span><span class="kpi-tile-value" th:text="${kpiAsignacionesActivas}">0</span></div>
+      </div>
+
+      <div class="detail-grid" style="margin-top:var(--space-6);">
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Proyectos por estado</h3>
+          <div th:if="${proyectosPorEstado.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no hay proyectos creados.</div>
+          <div th:each="e : ${proyectosPorEstado}" class="info-row">
+            <span class="info-row-label"><span class="badge" th:classappend="${e.badgeClass}" th:text="${e.label}">Estado</span></span>
+            <span class="info-row-value mono" th:text="${e.conteo} + (${e.conteo == 1} ? ' proyecto' : ' proyectos')">0 proyectos</span>
+          </div>
+        </section>
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Requiere tu atención</h3>
+          <div style="display:flex; flex-direction:column; gap:var(--space-3);">
+            <div class="callout warn" style="margin:0;" th:if="${usuariosSinRol > 0}">
+              <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
+              <span class="callout-body"><span th:text="${usuariosSinRol}">0</span> usuario(s) sin rol fijo asignado — <a href="usuarios.html">revisar</a>.</span>
+            </div>
+            <div class="callout warn" style="margin:0;" th:if="${habilidadesSinAsignar > 0}">
+              <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
+              <span class="callout-body"><span th:text="${habilidadesSinAsignar}">0</span> habilidad(es) del catálogo sin ningún proyecto asociado — <a href="habilidades.html">revisar</a>.</span>
+            </div>
+            <div class="callout warn" style="margin:0;" th:each="o : ${sobrecargados}">
+              <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
+              <span class="callout-body"><strong th:text="${o.nombre}">Nombre</strong> está sobre-asignado (<span th:text="${o.promedio}">0</span>% de carga activa) — <a href="reportes.html">ver reportes</a>.</span>
+            </div>
+            <p class="text-tertiary" style="font-size:var(--fs-sm);"
+               th:if="${usuariosSinRol == 0 and habilidadesSinAsignar == 0 and sobrecargados.isEmpty()}">
+              Sin pendientes por ahora.
+            </p>
+          </div>
+        </section>
+      </div>
+
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${totalUsuarios} + ' usuarios'">0 usuarios</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Vista rápida de las últimas cuentas</p>
+          </div>
+          <div class="table-filters">
+            <button type="button" class="btn btn-primary btn-sm" id="invite-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
+            <a href="usuarios.html" class="btn btn-secondary btn-sm">Ver todos</a>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Cargo</th><th>Cuenta desde</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr th:each="u : ${usuariosPreview}">
+                <td class="cell-person">
+                  <span class="avatar avatar-sm" th:text="${u.iniciales}">MR</span>
+                  <span class="cell-person-text"><span class="cell-person-name" th:text="${u.nombreCompleto}">Nombre</span><span class="cell-person-sub" th:text="${u.correo}">correo</span></span>
+                </td>
+                <td><span class="badge" th:classappend="${u.rolBadgeClass}" th:text="${u.rolLabel}">Rol</span></td>
+                <td th:text="${u.cargo}">—</td>
+                <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${u.cuentaDesde}">—</td>
+                <td><span class="badge" th:classappend="${u.estadoBadgeClass}" th:text="${u.estadoLabel}">Estado</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-4);">
+          <h3 style="font-size:var(--fs-md);">Catálogo de habilidades · más declaradas</h3>
+          <a href="habilidades.html" class="btn btn-secondary btn-sm">Ver catálogo completo</a>
+        </div>
+        <div th:if="${topHabilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
+        <div th:each="s : ${topHabilidades}" style="display:flex; align-items:center; gap:var(--space-4); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+          <span style="flex:1; font-size:var(--fs-sm); font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
+          <div class="progress-bar" style="max-width:140px;"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
+          <span class="mono text-tertiary" style="font-size:var(--fs-xs); min-width:110px; text-align:right;" th:text="${s.vacantes()} + ' persona(s)'">0 personas</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+document.addEventListener("DOMContentLoaded", function () {
+  var submitForm = window.SBAI.submitForm;
+
+  document.getElementById("invite-btn").addEventListener("click", function () {
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Autoriza un correo corporativo para autoregistro</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" id="invite-email" placeholder="nombre.apellido@nexacorp.com"></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="invite-confirm">Enviar invitación</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#invite-confirm").addEventListener("click", function () {
+      var correo = backdrop.querySelector("#invite-email").value.trim();
+      if (!correo) { SBAI.toast.show("Ingresa un correo.", { type: "error" }); return; }
+      submitForm("/administrador/inicio/invitar", { correo: correo });
+    });
+  });
+});
+</script>
+</body>
+</html>

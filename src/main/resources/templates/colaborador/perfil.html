@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi perfil · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="detail-grid">
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+
+          <section class="card">
+            <div class="card-body" id="perfil-header"></div>
+          </section>
+
+          <section class="card">
+            <div class="card-header">
+              <div class="card-header-text"><h2>Habilidades y nivel de dominio</h2><p>Escala global: Básico · Intermedio · Avanzado · Experto</p></div>
+              <button type="button" class="btn btn-primary btn-sm" id="add-skill-open">
+                <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Agregar habilidad</button>
+            </div>
+            <div class="card-body">
+              <div style="display:flex; flex-wrap:wrap; gap:var(--space-3);" id="skills-list"></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header"><div class="card-header-text"><h2>Historial de proyectos</h2></div></div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead><tr><th>Proyecto</th><th>Cliente</th><th>Rol</th><th>Periodo</th><th>Estado</th></tr></thead>
+                <tbody id="historial-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Carga de trabajo</h3>
+            <div class="progress-inline" style="margin-bottom:var(--space-2);"><div class="progress-bar"><div class="progress-bar-fill amber" style="width:80%;"></div></div><span class="progress-value">80%</span></div>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);">dentro del límite (100%)</p>
+            <div class="info-row"><span class="info-row-label">Portal Andes</span><span class="info-row-value">45%</span></div>
+            <div class="info-row"><span class="info-row-label">App Móvil Aurora</span><span class="info-row-value">35%</span></div>
+            <div class="info-row"><span class="info-row-label">Capacidad libre</span><span class="info-row-value" style="color:var(--green-fg);">20%</span></div>
+          </section>
+
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Datos de colaborador</h3>
+            <div id="perfil-info-rows"></div>
+          </section>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "colaborador", active: "perfil.html", title: "Mi perfil", subtitle: "Colaboradores › Mariana Ruiz" });
+  if (!cfg) return;
+  var u = MOCK.roleUsers.colaborador;
+
+  document.getElementById("perfil-header").innerHTML =
+    '<div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">' +
+    '<span class="avatar avatar-lg" style="background:var(--navy-700);">' + u.iniciales + '</span>' +
+    '<div style="flex:1; min-width:200px;"><h2 style="font-size:var(--fs-lg);">' + u.nombre + '</h2>' +
+    '<p class="text-tertiary" style="margin-top:2px;">' + u.cargo + " · " + u.celula + '</p>' +
+    '<div style="display:flex; gap:var(--space-2); margin-top:var(--space-3);"><span class="badge badge-green">DISPONIBLE ' + u.disponibilidad + '%</span><span class="badge badge-blue">' + u.rolLabel + '</span></div></div>' +
+    '<button type="button" class="btn btn-secondary btn-sm" id="change-photo-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-camera"></use></svg>Cambiar foto</button>' +
+    "</div>";
+  document.getElementById("change-photo-btn").addEventListener("click", function () {
+    SBAI.toast.show("Selecciona una imagen desde tu equipo (deshabilitado en esta demo).");
+  });
+
+  document.getElementById("perfil-info-rows").innerHTML = [
+    ["ID colaborador", u.id], ["Área", u.area], ["Ubicación", u.ubicacion],
+    ["Ingreso", "12 feb 2022"], ["Manager", u.manager], ["Correo", u.correo]
+  ].map(function (r) { return '<div class="info-row"><span class="info-row-label">' + r[0] + '</span><span class="info-row-value">' + r[1] + "</span></div>"; }).join("");
+
+  function renderSkills() {
+    document.getElementById("skills-list").innerHTML = MOCK.marianaSkills.map(function (s) {
+      return '<span class="skill-pill" data-level="' + s.nivel + '">' + s.nombre + " · " + s.nivel + ' <span style="opacity:.65;">(' + s.anios + ')</span></span>';
+    }).join("");
+  }
+  renderSkills();
+
+  document.getElementById("historial-body").innerHTML = MOCK.marianaHistorial.map(function (h) {
+    var badgeCls = { "En curso": "badge-blue", "En riesgo": "badge-amber", "Cerrado": "badge-neutral" }[h.estado] || "badge-neutral";
+    return "<tr><td class=\"cell-primary\">" + h.proyecto + "</td><td>" + h.cliente + "</td><td>" + h.rol + "</td><td>" + h.periodo + "</td>" +
+      '<td><span class="badge ' + badgeCls + '">' + h.estado + "</span></td></tr>";
+  }).join("");
+
+  document.getElementById("add-skill-open").addEventListener("click", function () {
+    var options = MOCK.skillsCatalog.map(function (s) { return '<option value="' + s.nombre + '">' + s.nombre + "</option>"; }).join("");
+    var html = '<div class="modal" role="dialog" aria-modal="true">' +
+      '<div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia, pendiente de validación.</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Habilidad</label><select class="select" id="new-skill-name">' + options + '</select></div>' +
+      '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#confirm-add-skill").addEventListener("click", function () {
+      var nombre = backdrop.querySelector("#new-skill-name").value;
+      var nivel = backdrop.querySelector("#new-skill-level").value;
+      MOCK.marianaSkills.push({ nombre: nombre, nivel: nivel, anios: "nuevo" });
+      renderSkills();
+      SBAI.modal.close(backdrop);
+      SBAI.toast.show("<strong>" + nombre + "</strong> agregada a tu perfil como " + nivel + ".", { type: "success" });
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo de habilidades · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="detail-grid" style="grid-template-columns: 1fr 2.4fr;">
+        <section class="card card-pad">
+          <p class="label-mono" style="margin-bottom:var(--space-3);">Categorías</p>
+          <div id="category-list"></div>
+        </section>
+
+        <section class="card">
+          <div class="table-toolbar">
+            <div>
+              <strong id="skills-count"></strong>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="skills-subtitle"></p>
+            </div>
+            <div class="table-filters">
+              <input type="text" class="input" data-filter-scope="skills" data-filter-key="q" placeholder="Buscar habilidad…" id="skills-search" style="width:190px; height:38px; font-size:var(--fs-xs);">
+              <select class="select" data-filter-scope="skills" data-filter-key="demanda">
+                <option value="todos">Demanda: todas</option><option>Alta</option><option>Media</option><option>Baja</option>
+              </select>
+              <button type="button" class="btn btn-primary btn-sm" id="add-skill-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Agregar habilidad</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Habilidad</th><th>Categoría</th><th>Personas</th><th>Proyectos</th><th>Nivel medio</th><th>Demanda</th></tr></thead>
+              <tbody id="skills-body"></tbody>
+            </table>
+          </div>
+          <div class="state-panel" data-filter-empty="skills" hidden>
+            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
+            <span class="state-panel-title">Sin habilidades con estos filtros</span>
+          </div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "administrador", active: "habilidades.html", title: "Catálogo de habilidades", subtitle: MOCK.meta.stats.habilidadesMapeadas + " habilidades mapeadas · " + MOCK.skillCategories.length + " categorías" });
+  if (!cfg) return;
+
+  document.getElementById("category-list").innerHTML = MOCK.skillCategories.map(function (c) {
+    return '<div class="info-row"><span class="info-row-label">' + c.nombre + '</span><span class="info-row-value mono">' + c.cantidad + '</span></div>';
+  }).join("");
+
+  document.getElementById("skills-count").textContent = MOCK.skillsCatalog.length + " habilidades en este catálogo";
+  document.getElementById("skills-subtitle").textContent = MOCK.meta.stats.habilidadesMapeadas + " habilidades mapeadas en la plataforma";
+
+  var demBadge = { "Alta": "badge-red", "Media": "badge-amber", "Baja": "badge-neutral" };
+
+  function renderRows() {
+    document.getElementById("skills-body").innerHTML = MOCK.skillsCatalog.map(function (s) {
+      return '<tr data-filter-row="skills" data-f-demanda="' + s.demanda + '" data-f-search="' + s.nombre.toLowerCase() + '">' +
+        '<td class="cell-primary">' + s.nombre + '</td><td>' + s.categoria + '</td>' +
+        '<td class="mono">' + s.personas + '</td><td class="mono">' + s.proyectos + '</td><td>' + s.nivelMedio + '</td>' +
+        '<td><span class="badge ' + (demBadge[s.demanda] || "badge-neutral") + '">' + s.demanda + '</span></td></tr>';
+    }).join("");
+  }
+  renderRows();
+
+  document.getElementById("add-skill-btn").addEventListener("click", function () {
+    var catOptions = MOCK.skillCategories.map(function (c) { return "<option>" + c.nombre + "</option>"; }).join("");
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="new-skill-name" placeholder="Ej. OpenTelemetry"></div>' +
+      '<div class="field"><label class="field-label">Categoría</label><select class="select" id="new-skill-cat">' + catOptions + '</select></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="new-skill-confirm">Agregar</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#new-skill-confirm").addEventListener("click", function () {
+      var nombre = backdrop.querySelector("#new-skill-name").value.trim();
+      if (!nombre) { SBAI.toast.show("Escribe un nombre para la habilidad.", { type: "error" }); return; }
+      var categoria = backdrop.querySelector("#new-skill-cat").value;
+      MOCK.skillsCatalog.unshift({ nombre: nombre, categoria: categoria, personas: 0, proyectos: 0, nivelMedio: "—", demanda: "Baja" });
+      SBAI.modal.close(backdrop);
+      renderRows();
+      window.SBAI.tableFilter.applyScope("skills");
+      SBAI.toast.show("<strong>" + nombre + "</strong> se agregó al catálogo de " + categoria + ".", { type: "success" });
+    });
+  });
+
+  window.SBAI.tableFilter.init(document);
+
+  var params = new URLSearchParams(window.location.search);
+  var buscar = params.get("buscar");
+  if (buscar) {
+    document.getElementById("skills-search").value = buscar;
+    window.SBAI.tableFilter.setFilter("skills", "q", buscar);
+    SBAI.toast.show("Filtrado por <strong>" + buscar + "</strong> desde la búsqueda global.");
+  }
+});
+</script>
+</body>
+</html>

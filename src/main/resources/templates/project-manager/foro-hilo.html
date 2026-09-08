@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detalle de hilo · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <a href="foros.html" class="breadcrumb"><svg class="icon icon-sm" style="vertical-align:-3px;"><use href="../../static/img/icons.svg#icon-arrow-left"></use></svg> Foros <span class="sep">›</span> <span id="bc-cat"></span> <span class="sep">›</span> <span class="current">Hilo</span></a>
+
+      <div class="detail-grid" style="margin-top:var(--space-5);">
+        <div>
+          <section class="card card-pad">
+            <div style="display:flex; gap:var(--space-2); align-items:center; margin-bottom:var(--space-3);">
+              <span class="badge badge-blue" id="thread-cat"></span>
+              <span class="badge badge-neutral" id="thread-pinned" hidden>FIJADO</span>
+              <span class="text-tertiary label-mono" id="thread-stats"></span>
+            </div>
+            <h1 style="font-size:var(--fs-xl); letter-spacing:-0.01em; margin-bottom:var(--space-2);" id="thread-title"></h1>
+            <p class="text-tertiary" style="font-size:var(--fs-sm);" id="thread-meta"></p>
+          </section>
+
+          <section class="card" style="margin-top:var(--space-5);">
+            <div class="card-body" id="posts-list"></div>
+          </section>
+
+          <section class="card card-pad" style="margin-top:var(--space-5);">
+            <div style="display:flex; gap:var(--space-3); align-items:flex-start;">
+              <span class="avatar avatar-sm" id="reply-avatar"></span>
+              <div style="flex:1;">
+                <textarea class="input" id="reply-text" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="Escribe tu respuesta como Project Manager…"></textarea>
+                <div style="display:flex; justify-content:flex-end; margin-top:var(--space-3);">
+                  <button type="button" class="btn btn-primary" id="publish-reply-btn">Publicar</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:var(--space-5);">
+          <section class="card card-pad">
+            <p style="font-size:var(--fs-xs); font-weight:600; margin-bottom:var(--space-2);">Resumen del hilo</p>
+            <p style="font-size:var(--fs-sm); color:var(--text-secondary); line-height:1.6; margin-bottom:var(--space-3);" id="thread-summary"></p>
+            <p class="label-mono" style="margin-bottom:var(--space-2);">Acciones acordadas</p>
+            <ol style="padding-left:18px; display:flex; flex-direction:column; gap:6px; font-size:var(--fs-xs); color:var(--text-secondary);" id="thread-actions"></ol>
+            <p class="text-tertiary" style="font-size:10px; margin-top:var(--space-3); font-family:var(--font-mono);" id="thread-summary-meta"></p>
+          </section>
+
+          <section class="card card-pad">
+            <p class="label-mono" style="margin-bottom:var(--space-3);">Participantes</p>
+            <div class="avatar-stack" id="participants"></div>
+          </section>
+
+          <section class="card card-pad">
+            <p class="label-mono" style="margin-bottom:var(--space-3);">Hilos relacionados</p>
+            <div id="related-threads" style="display:flex; flex-direction:column; gap:var(--space-3);"></div>
+          </section>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "project-manager", active: "foros.html", title: MOCK.threadDetail.titulo, subtitle: "Foros › " + MOCK.threadDetail.categoria });
+  if (!cfg) return;
+
+  var t = MOCK.threadDetail;
+  document.getElementById("bc-cat").textContent = t.categoria;
+  document.getElementById("thread-cat").textContent = t.categoria;
+  document.getElementById("thread-pinned").hidden = !t.fijado;
+  document.getElementById("thread-title").textContent = t.titulo;
+  document.getElementById("thread-meta").textContent = "Abierto por " + t.autor + " · " + t.abierto + " · última actividad " + t.ultimaActividad;
+  document.getElementById("thread-summary").textContent = t.resumenIA;
+  document.getElementById("thread-summary-meta").textContent = t.resumenGeneradoInfo;
+  document.getElementById("thread-actions").innerHTML = t.accionesAcordadas.map(function (a) { return "<li>" + a + "</li>"; }).join("");
+  document.getElementById("participants").innerHTML = t.participantes.map(function (p) { return '<span class="avatar avatar-sm">' + p + "</span>"; }).join("") +
+    (t.participantesExtra ? '<span class="avatar avatar-sm" style="background:var(--surface-sunken); color:var(--text-tertiary);">+' + t.participantesExtra + "</span>" : "");
+  document.getElementById("related-threads").innerHTML = t.hilosRelacionados.map(function (r) {
+    return '<a href="#" style="color:inherit; display:block;"><div style="font-size:var(--fs-xs); font-weight:500;">' + r.titulo + '</div><div class="text-tertiary" style="font-size:10px; margin-top:2px;">' + r.categoria + " · " + r.respuestas + " respuestas</div></a>";
+  }).join("");
+
+  function renderStats() {
+    document.getElementById("thread-stats").textContent = t.posts.length + " RESPUESTAS · " + t.vistas + " VISTAS";
+  }
+
+  function renderPosts() {
+    document.getElementById("posts-list").innerHTML = t.posts.map(function (p) {
+      return '<article class="post">' +
+        '<span class="avatar avatar-sm">' + p.iniciales + '</span>' +
+        '<div class="post-body"><div class="post-author-row"><span class="post-author-name">' + p.autor + '</span><span class="post-author-role">' + p.cargo + '</span>' +
+        (p.aceptada ? '<span class="badge badge-green">✓ RESPUESTA ACEPTADA</span>' : "") +
+        '<span class="text-tertiary" style="font-size:11px; margin-left:auto;">' + p.tiempo + '</span></div>' +
+        '<p class="post-text">' + p.texto + '</p>' +
+        '<div class="post-actions"><button type="button" data-vote><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-thumbs-up"></use></svg>Útil (' + p.util + ')</button>' +
+        '<button type="button">Responder</button><button type="button">Citar</button></div></div></article>';
+    }).join("");
+    document.querySelectorAll("[data-vote]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (btn.classList.contains("voted")) return;
+        btn.classList.add("voted");
+        var n = parseInt(btn.textContent.match(/\((\d+)\)/)[1], 10) + 1;
+        btn.innerHTML = '<svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-thumbs-up"></use></svg>Útil (' + n + ')';
+      });
+    });
+  }
+
+  var me = MOCK.roleUsers.pm;
+  document.getElementById("reply-avatar").textContent = me.iniciales;
+  document.getElementById("publish-reply-btn").addEventListener("click", function () {
+    var text = document.getElementById("reply-text").value.trim();
+    if (!text) { SBAI.toast.show("Escribe una respuesta antes de publicar.", { type: "error" }); return; }
+    t.posts.push({ autor: me.nombre, iniciales: me.iniciales, cargo: me.cargo, tiempo: "ahora", util: 0, aceptada: false, texto: text });
+    document.getElementById("reply-text").value = "";
+    renderPosts();
+    renderStats();
+    SBAI.toast.show("Tu respuesta se publicó en el hilo.", { type: "success" });
+  });
+
+  renderStats();
+  renderPosts();
+});
+</script>
+</body>
+</html>

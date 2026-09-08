@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditoría · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid">
+        <div class="kpi-tile"><span class="kpi-tile-label">EVENTOS DE SEVERIDAD ALTA</span><span class="kpi-tile-value" th:text="${altaCount}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">EVENTOS DE SEVERIDAD MEDIA</span><span class="kpi-tile-value" th:text="${mediaCount}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">EVENTOS INFORMATIVOS</span><span class="kpi-tile-value" th:text="${infoCount}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">TOTAL (ÚLTIMOS 200)</span><span class="kpi-tile-value" th:text="${eventos.size()}">0</span></div>
+      </div>
+
+      <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 2.4fr 1fr;">
+        <section class="card">
+          <div class="table-toolbar">
+            <div>
+              <strong th:text="${eventos.size()} + ' eventos recientes'">0 eventos</strong>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Registro de acciones sobre roles, proyectos y asignaciones</p>
+            </div>
+            <div class="table-filters">
+              <select class="select" data-filter-scope="audit" data-filter-key="tipo">
+                <option value="todos">Tipo: todos</option>
+                <option value="seguridad">Seguridad</option><option value="roles">Roles y usuarios</option>
+                <option value="asignaciones">Proyectos y asignaciones</option><option value="ia">Sistema</option>
+              </select>
+              <select class="select" data-filter-scope="audit" data-filter-key="severidad">
+                <option value="todos">Severidad: todas</option><option value="Alta">Alta</option><option value="Media">Media</option><option value="Info">Info</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th><th>Origen</th><th>Severidad</th></tr></thead>
+              <tbody>
+                <tr th:each="a : ${eventos}" data-filter-row="audit" th:attr="data-f-tipo=${a.tipoCrudo}, data-f-severidad=${a.severidadCrudo}">
+                  <td class="mono text-tertiary" style="font-size:var(--fs-xs);" th:text="${a.fechaLabel}">fecha</td>
+                  <td th:text="${a.usuarioLabel}">Usuario</td>
+                  <td class="cell-primary" th:text="${a.accion}">Acción</td>
+                  <td th:text="${a.detalle}">Detalle</td>
+                  <td class="mono text-tertiary" style="font-size:var(--fs-xs);" th:text="${a.origenLabel}">Origen</td>
+                  <td><span class="badge" th:classappend="${a.severidadBadgeClass}" th:text="${a.severidadCrudo}">Severidad</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="state-panel" data-filter-empty="audit" hidden>
+            <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-shield"></use></svg></span>
+            <span class="state-panel-title">Sin eventos con estos filtros</span>
+          </div>
+        </section>
+
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Usuarios con más eventos</h3>
+          <div th:if="${topUsuarios.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Sin eventos registrados todavía.</div>
+          <div th:each="u : ${topUsuarios}" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+            <span class="avatar avatar-sm" th:text="${u.iniciales}">MR</span>
+            <span style="flex:1; font-size:var(--fs-sm); font-weight:500;" th:text="${u.nombre}">Nombre</span>
+            <span class="mono text-tertiary" style="font-size:var(--fs-xs);" th:text="${u.eventos} + ' eventos'">0 eventos</span>
+          </div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+document.addEventListener("DOMContentLoaded", function () {
+  window.SBAI.tableFilter.init(document);
+});
+</script>
+</body>
+</html>
