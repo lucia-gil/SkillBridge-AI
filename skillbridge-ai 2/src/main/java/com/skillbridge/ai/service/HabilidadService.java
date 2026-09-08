@@ -2,8 +2,11 @@ package com.skillbridge.ai.service;
 
 import com.skillbridge.ai.dto.CategoriaConConteo;
 import com.skillbridge.ai.dto.HabilidadFila;
+import com.skillbridge.ai.dto.HabilidadPerfilFila;
 import com.skillbridge.ai.model.CategoriaHabilidad;
 import com.skillbridge.ai.model.Habilidad;
+import com.skillbridge.ai.model.PerfilHabilidad;
+import com.skillbridge.ai.model.PerfilHabilidadId;
 import com.skillbridge.ai.repository.CategoriaHabilidadRepository;
 import com.skillbridge.ai.repository.HabilidadRepository;
 import com.skillbridge.ai.repository.PerfilHabilidadRepository;
@@ -13,7 +16,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -121,6 +126,62 @@ public class HabilidadService {
                     "No se puede eliminar \"" + nombre + "\": está en uso en perfiles o requisitos de proyecto.");
         }
         auditoriaService.registrar(actorId, "HABILIDAD_ELIMINADA", "habilidad", id, null, null, nombre);
+    }
+
+    // ─────────────── Habilidades declaradas por un colaborador (colaborador/perfil.html) ───────────────
+
+    private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    public List<HabilidadPerfilFila> misHabilidades(Long perfilId) {
+        Map<Long, Habilidad> catalogo = habilidadRepository.findAllConCategoriaOrderByNombre().stream()
+                .collect(Collectors.toMap(Habilidad::getId, h -> h));
+        return perfilHabilidadRepository.findById_PerfilId(perfilId).stream()
+                .map(ph -> {
+                    Habilidad h = catalogo.get(ph.getId().getHabilidadId());
+                    if (h == null) return null; // habilidad borrada del catálogo desde que se declaró: se omite
+                    String desde = ph.getFechaDeclaracion() != null ? ph.getFechaDeclaracion().format(FORMATO_FECHA) : "—";
+                    return new HabilidadPerfilFila(h.getId(), h.getNombre(), h.getCategoria().getNombre(), ph.getNivel(), desde);
+                })
+                .filter(java.util.Objects::nonNull)
+                .sorted((a, b) -> a.getNombre().compareToIgnoreCase(b.getNombre()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Agrega (o, si ya existía, actualiza el nivel de) una habilidad en el
+     * perfil del colaborador que hace la petición - misma escala Básico(1)/
+     * Intermedio(3)/Avanzado(4)/Experto(5) que auth/registro.html usa al
+     * registrarse (ver AuthService.nivelDesdeTexto), reproducida aquí porque
+     * ese método de AuthService es privado y este flujo corre fuera del
+     * registro.
+     */
+    @Transactional
+    public void agregarAlPerfil(Long perfilId, Long habilidadId, String nivelTexto, Long actorUsuarioId) {
+        Habilidad h = habilidadRepository.findById(habilidadId)
+                .orElseThrow(() -> new OperacionInvalidaException("Selecciona una habilidad válida del catálogo."));
+        int nivel = nivelDesdeTexto(nivelTexto);
+        PerfilHabilidadId id = new PerfilHabilidadId(perfilId, habilidadId);
+        PerfilHabilidad ph = perfilHabilidadRepository.findById(id).orElse(null);
+        boolean yaExistia = ph != null;
+        if (ph == null) {
+            ph = new PerfilHabilidad(perfilId, habilidadId, nivel);
+        } else {
+            ph.setNivel(nivel);
+        }
+        perfilHabilidadRepository.save(ph);
+        auditoriaService.registrar(actorUsuarioId, yaExistia ? "PERFIL_HABILIDAD_ACTUALIZADA" : "PERFIL_HABILIDAD_AGREGADA",
+                "perfil_habilidad", perfilId, null, null, h.getNombre() + " · " + nivelTexto);
+    }
+
+    private int nivelDesdeTexto(String nivelTexto) {
+        if (nivelTexto == null) return 1;
+        return switch (nivelTexto.trim().toLowerCase()) {
+            case "básico", "basico" -> 1;
+            case "intermedio" -> 3;
+            case "avanzado" -> 4;
+            case "experto" -> 5;
+            default -> 1;
+        };
     }
 
     private String validarNombre(String nombre) {

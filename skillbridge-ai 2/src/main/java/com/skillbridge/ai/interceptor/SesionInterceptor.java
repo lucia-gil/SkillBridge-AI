@@ -28,6 +28,12 @@ import java.util.Optional;
  *    importa para la seguridad),
  *  - si esta logueado pero entra a una seccion de un rol que no es el
  *    suyo, se le redirige a su propio inicio (no a login).
+ *
+ * "/cuenta/**" y "/notificaciones/**" son un caso aparte: son un único
+ * controlador (CuentaController, NotificacionesController) que sirven a
+ * los 4 roles por igual, así que solo exigen sesion activa - sin el
+ * redireccionamiento por rol especifico que si aplica a "/administrador/**"
+ * y compania.
  */
 @Component
 public class SesionInterceptor implements HandlerInterceptor {
@@ -46,8 +52,9 @@ public class SesionInterceptor implements HandlerInterceptor {
         response.setHeader("Pragma", "no-cache");
 
         String ruta = request.getRequestURI().substring(request.getContextPath().length());
+        boolean rutaCompartidaEntreRoles = ruta.startsWith("/cuenta/") || ruta.startsWith("/notificaciones/");
         String rolRequerido = rolRequeridoPara(ruta);
-        if (rolRequerido == null) {
+        if (rolRequerido == null && !rutaCompartidaEntreRoles) {
             return true; // ruta no protegida
         }
 
@@ -74,7 +81,7 @@ public class SesionInterceptor implements HandlerInterceptor {
             session.setAttribute(SesionKeys.USUARIO, sesion);
         }
 
-        if (!rolRequerido.equals(rolEfectivoActual)) {
+        if (!rutaCompartidaEntreRoles && !rolRequerido.equals(rolEfectivoActual)) {
             response.sendRedirect(request.getContextPath() + "/" + Roles.slug(rolEfectivoActual) + "/inicio.html");
             return false;
         }

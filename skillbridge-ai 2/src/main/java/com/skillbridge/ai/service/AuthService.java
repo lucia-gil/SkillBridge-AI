@@ -50,8 +50,6 @@ public class AuthService {
     private static final long VENTANA_MS = 10 * 60 * 1000L;
 
     private static final Pattern PATRON_NOMBRE = Pattern.compile("^[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]{2,50}$");
-    private static final Pattern PATRON_CORREO_DOMINIO = Pattern.compile(
-            "^[A-Za-z0-9+_.-]+@nexacorp\\.com$", Pattern.CASE_INSENSITIVE);
 
     private final UsuarioRepository usuarioRepository;
     private final PerfilRepository perfilRepository;
@@ -59,6 +57,7 @@ public class AuthService {
     private final HabilidadRepository habilidadRepository;
     private final PerfilHabilidadRepository perfilHabilidadRepository;
     private final AuditoriaService auditoriaService;
+    private final ConfiguracionService configuracionService;
     private final JdbcTemplate jdbcTemplate;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -70,6 +69,7 @@ public class AuthService {
                         HabilidadRepository habilidadRepository,
                         PerfilHabilidadRepository perfilHabilidadRepository,
                         AuditoriaService auditoriaService,
+                        ConfiguracionService configuracionService,
                         JdbcTemplate jdbcTemplate) {
         this.usuarioRepository = usuarioRepository;
         this.perfilRepository = perfilRepository;
@@ -77,7 +77,20 @@ public class AuthService {
         this.habilidadRepository = habilidadRepository;
         this.perfilHabilidadRepository = perfilHabilidadRepository;
         this.auditoriaService = auditoriaService;
+        this.configuracionService = configuracionService;
         this.jdbcTemplate = jdbcTemplate;
+    }
+
+    /**
+     * Dominio de correo aceptado en el registro - antes era un Pattern fijo
+     * a "nexacorp.com"; ahora lee configuracion_global.dominio_correo_permitido
+     * (RF08) para que el campo "Dominio corporativo permitido" del panel de
+     * Configuración del Administrador tenga un efecto real en vez de ser
+     * decorativo.
+     */
+    private Pattern patronCorreoDominio() {
+        String dominio = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com");
+        return Pattern.compile("^[A-Za-z0-9+_.-]+@" + Pattern.quote(dominio.trim()) + "$", Pattern.CASE_INSENSITIVE);
     }
 
     public BCryptPasswordEncoder passwordEncoder() {
@@ -223,10 +236,11 @@ public class AuthService {
             errores.put("apellidos", "Solo letras y espacios (2-50 caracteres).");
         }
 
+        String dominioPermitido = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com");
         if (correo == null || correo.isEmpty()) {
             errores.put("correo", "El correo corporativo es obligatorio.");
-        } else if (!PATRON_CORREO_DOMINIO.matcher(correo).matches()) {
-            errores.put("correo", "Usa un correo @nexacorp.com.");
+        } else if (!patronCorreoDominio().matcher(correo).matches()) {
+            errores.put("correo", "Usa un correo @" + dominioPermitido + ".");
         }
 
         String contrasena = req.contrasena();

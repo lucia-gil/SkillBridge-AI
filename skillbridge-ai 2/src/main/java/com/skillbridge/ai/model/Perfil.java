@@ -17,6 +17,16 @@ public class Perfil {
     @Column(name = "usuario_id", nullable = false, unique = true)
     private Long usuarioId;
 
+    // Asociacion de SOLO LECTURA hacia el mismo usuario_id: el campo
+    // usuarioId de arriba sigue siendo el que se escribe (setUsuarioId, ya
+    // usado por AuthService/UsuarioService); esta relacion evita tener que
+    // hacer un segundo query manual a UsuarioRepository cada vez que una
+    // pantalla de Proyectos/Foros/Notificaciones necesita el nombre_completo
+    // o correo de la persona duena de un perfil.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", insertable = false, updatable = false)
+    private Usuario usuario;
+
     @Column(name = "cargo", length = 100)
     private String cargo;
 
@@ -52,6 +62,10 @@ public class Perfil {
 
     public void setUsuarioId(Long usuarioId) {
         this.usuarioId = usuarioId;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
     }
 
     public String getCargo() {

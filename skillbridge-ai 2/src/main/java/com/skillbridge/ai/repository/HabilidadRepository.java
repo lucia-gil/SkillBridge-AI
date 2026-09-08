@@ -21,4 +21,8 @@ public interface HabilidadRepository extends JpaRepository<Habilidad, Long> {
 
     @Query("select h from Habilidad h join fetch h.categoria where h.id = :id")
     Optional<Habilidad> findByIdConCategoria(Long id);
+
+    // Para el KPI "habilidades sin proyecto asociado" de Reportes globales.
+    @Query("select count(h) from Habilidad h where h.id not in (select phr.id.habilidadId from ProyectoHabilidadRequerida phr)")
+    long contarSinProyectoAsociado();
 }

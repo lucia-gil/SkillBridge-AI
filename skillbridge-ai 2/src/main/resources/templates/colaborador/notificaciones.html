@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,12 +10,10 @@
 <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
-
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
       <div class="detail-grid">
@@ -23,14 +21,38 @@
           <div class="table-toolbar">
             <div class="tabs" id="notif-tabs">
               <button type="button" class="tab-btn active" data-filter-scope="notif" data-filter-key="tab" data-filter-value="todas">Todas</button>
-              <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="sinleer" id="tab-sinleer">Sin leer</button>
-              <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="asignaciones">Asignaciones</button>
-              <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="foros">Foros</button>
-              <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="alertas">Alertas</button>
+              <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="sinleer" th:text="'Sin leer (' + ${noLeidas} + ')'">Sin leer</button>
+              <button type="button" class="tab-btn" th:each="t : ${tiposPresentes}"
+                      data-filter-scope="notif" data-filter-key="tab" th:attr="data-filter-value=${t.key}" th:text="${t.value}">Tipo</button>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="mark-all-btn">Marcar todas como leídas</button>
+            <form method="post" th:action="@{/notificaciones/marcar-todas}">
+              <input type="hidden" name="volver" th:value="${volver}">
+              <button type="submit" class="btn btn-secondary btn-sm">Marcar todas como leídas</button>
+            </form>
           </div>
-          <div id="notif-groups"></div>
+          <div>
+            <div th:if="${notificaciones.isEmpty()}" class="state-panel">
+              <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg></span>
+              <span class="state-panel-title">No tienes notificaciones todavía</span>
+              <span class="state-panel-desc">Aparecerán aquí cuando ocurra algo que te concierna (una asignación, una respuesta en foros).</span>
+            </div>
+            <div th:each="n : ${notificaciones}" class="notif-item" th:classappend="${n.leida} ? '' : 'unread'"
+                 data-filter-row="notif" th:attr="data-f-tab=${n.tipoCodigo}">
+              <span class="notif-item-icon" th:classappend="${n.iconClass}">
+                <svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${n.iconId}"></use></svg>
+              </span>
+              <span class="notif-item-body">
+                <span class="notif-item-title" th:text="${n.titulo}">Título</span>
+                <span class="notif-item-desc" th:text="${n.detalle}">Descripción</span>
+                <span class="notif-item-time" th:text="${n.fechaLabel}">fecha</span>
+              </span>
+              <a th:if="${n.enlaceAccion}" th:href="${n.enlaceAccion}" class="notif-item-action">Ver →</a>
+              <form method="post" th:action="@{'/notificaciones/' + ${n.id} + '/marcar-leida'}" th:if="${!n.leida}">
+                <input type="hidden" name="volver" th:value="${volver}">
+                <button type="submit" class="btn btn-tertiary btn-sm">Marcar leída</button>
+              </form>
+            </div>
+          </div>
           <div class="state-panel" data-filter-empty="notif" hidden>
             <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg></span>
             <span class="state-panel-title">No hay notificaciones aquí</span>
@@ -40,12 +62,19 @@
 
         <section class="card card-pad">
           <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Preferencias de aviso</h3>
-          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Nuevas asignaciones</span></div><label class="toggle"><input type="checkbox" checked data-pref="asignaciones"><span class="toggle-track"></span></label></div>
-          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Alertas de sobrecarga</span></div><label class="toggle"><input type="checkbox" checked data-pref="sobrecarga"><span class="toggle-track"></span></label></div>
-          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Respuestas en foros</span></div><label class="toggle"><input type="checkbox" data-pref="foros"><span class="toggle-track"></span></label></div>
-          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Recomendaciones de IA</span></div><label class="toggle"><input type="checkbox" data-pref="ia"><span class="toggle-track"></span></label></div>
-          <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Resumen semanal</span></div><label class="toggle"><input type="checkbox" data-pref="resumen"><span class="toggle-track"></span></label></div>
-          <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:var(--space-4); line-height:1.5;">Las notificaciones activadas aquí también llegan a <strong id="pref-email"></strong> según su frecuencia configurada.</p>
+          <form method="post" th:action="@{/notificaciones/preferencias}">
+            <input type="hidden" name="volver" th:value="${volver}">
+            <div class="toggle-row" th:each="tipo : ${tiposEvento}">
+              <div class="toggle-row-text"><span class="toggle-row-title" th:text="${T(com.skillbridge.ai.service.PreferenciaNotificacionService).etiqueta(tipo)}">Tipo</span></div>
+              <label class="toggle"><input type="checkbox" th:name="${tipo}" th:checked="${preferencias.get(tipo)}"><span class="toggle-track"></span></label>
+            </div>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:var(--space-4); line-height:1.5;">
+              Activado = también por correo a <strong th:text="${user.correo}">correo</strong>; desactivado = solo dentro de la plataforma.
+            </p>
+            <div class="btn-group" style="justify-content:flex-end; margin-top:var(--space-3);">
+              <button type="submit" class="btn btn-primary btn-sm">Guardar preferencias</button>
+            </div>
+          </form>
         </section>
       </div>
 
@@ -53,95 +82,14 @@
   </div>
 </div>
 
-<script src="/js/mock-data.js"></script>
-<script src="/js/state.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/table-filter.js"></script>
 <script src="/js/command-palette.js"></script>
-<script src="/js/modal.js"></script>
-<script src="/js/shell.js"></script>
-<script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 document.addEventListener("DOMContentLoaded", function () {
-  var role = "colaborador";
-  var cfg = SBAI.shell.init({ role: role, active: "notificaciones.html", title: "Centro de notificaciones", subtitle: "" });
-  if (!cfg) return;
-
-  var ROUTES = { n2: "asistente-ia.html", n5: "foros.html", n4: "foro-hilo.html", n6: "proyectos.html" };
-  var list = MOCK.notifications.colaborador;
-
-  function updateSubtitle() {
-    var unread = SBAI.state.getUnreadCount(role);
-    document.querySelector(".topbar-subtitle").textContent = unread + " sin leer · " + list.length + " en total";
-    document.getElementById("tab-sinleer").textContent = "Sin leer (" + unread + ")";
-  }
-
-  var GROUP_LABEL = { hoy: "HOY · " + MOCK.meta.todayLabel.split(",")[0].toUpperCase() + " DE AGOSTO", ayer: "AYER · LUNES 17 DE AGOSTO", semana: "SEMANA PASADA" };
-
-  function render() {
-    var groups = {};
-    list.forEach(function (n) { (groups[n.grupo] = groups[n.grupo] || []).push(n); });
-    var html = "";
-    ["hoy", "ayer", "semana"].forEach(function (g) {
-      if (!groups[g]) return;
-      html += '<p class="label-mono" style="padding:var(--space-4) var(--space-6) var(--space-2);">' + GROUP_LABEL[g] + "</p>";
-      groups[g].forEach(function (n) {
-        var read = SBAI.state.isRead(role, n.id);
-        html += '<div class="notif-item' + (read ? "" : " unread") + '" data-filter-row="notif" data-f-tab="' + n.categoria + '" data-notif-id="' + n.id + '">' +
-          '<span class="notif-item-icon ' + n.tipo + '"><svg class="icon icon-sm"><use href="/img/icons.svg#' + n.icon + '"></use></svg></span>' +
-          '<span class="notif-item-body"><span class="notif-item-title">' + n.titulo + '</span>' +
-          '<span class="notif-item-desc">' + n.desc + '</span>' +
-          '<span class="notif-item-time">' + n.hora + '</span>' +
-          (n.accion ? '<button type="button" class="notif-item-action" data-notif-action="' + n.id + '">' + n.accion + " →</button>" : "") +
-          "</span></div>";
-      });
-    });
-    document.getElementById("notif-groups").innerHTML = html;
-
-    document.querySelectorAll("[data-notif-action]").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        var id = btn.dataset.notifAction;
-        SBAI.state.markRead(role, id);
-        updateSubtitle();
-        SBAI.shell.refreshBadges(role, cfg);
-        if (ROUTES[id]) { window.location.href = ROUTES[id]; return; }
-        SBAI.toast.show("Acción registrada: <strong>" + btn.textContent.replace("→", "").trim() + "</strong>.", { type: "success" });
-      });
-    });
-    document.querySelectorAll('[data-filter-row="notif"]').forEach(function (row) {
-      row.addEventListener("click", function () {
-        SBAI.state.markRead(role, row.dataset.notifId);
-        row.classList.remove("unread");
-        updateSubtitle();
-        SBAI.shell.refreshBadges(role, cfg);
-      });
-    });
-
-    window.SBAI.tableFilter.registerCustomMatcher("notif", "tab", function (row, value) {
-      if (value === "sinleer") return !SBAI.state.isRead(role, row.dataset.notifId);
-      return row.dataset.fTab === value;
-    });
-    window.SBAI.tableFilter.applyScope("notif");
-  }
-
-  document.getElementById("mark-all-btn").addEventListener("click", function () {
-    SBAI.state.markAllRead(role);
-    document.querySelectorAll(".notif-item.unread").forEach(function (el) { el.classList.remove("unread"); });
-    updateSubtitle();
-    SBAI.shell.refreshBadges(role, cfg);
-    SBAI.toast.show("Todas las notificaciones se marcaron como leídas.", { type: "success" });
-  });
-
-  document.getElementById("pref-email").textContent = MOCK.roleUsers.colaborador.correo;
-  document.querySelectorAll("[data-pref]").forEach(function (input) {
-    var key = "pref_" + role + "_" + input.dataset.pref;
-    input.checked = SBAI.state.getToggle(key, input.checked);
-    input.addEventListener("change", function () { SBAI.state.setToggle(key, input.checked); });
-  });
-
-  updateSubtitle();
-  render();
   window.SBAI.tableFilter.init(document);
 });
 </script>

@@ -3,8 +3,10 @@
   fragments/topbar.html — Referencia 1:1 del topbar generado hoy por
   static/js/shell.js (función topbarHtml). Modelo esperado del
   controlador: "title", "subtitle", "unreadCount", "notifications"
-  (últimas 4), "user". Ver fragments/sidebar.html para el porqué de que
-  hoy viva en JS en vez de vía fetch().
+  (últimas 4, tipo List<NotificacionFila> - ver ShellModelBuilder, que las
+  arma desde NotificacionService/tabla real "notificaciones"), "user". Ver
+  fragments/sidebar.html para el porqué de que hoy viva en JS en vez de vía
+  fetch().
 -->
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
@@ -42,15 +44,15 @@
           <button type="button" class="btn btn-tertiary btn-sm" data-action="mark-all-read-quick">Marcar leídas</button>
         </div>
         <div class="notif-panel-list">
-          <!-- th:each="n : ${notifications}" -->
+          <!-- th:each="n : ${notifications}" (List<NotificacionFila>) -->
           <div class="notif-item" th:classappend="${n.leida} ? '' : 'unread'" th:each="n : ${notifications}">
-            <span class="notif-item-icon" th:classappend="${n.tipo}">
-              <svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${n.icon}"></use></svg>
+            <span class="notif-item-icon" th:classappend="${n.iconClass}">
+              <svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${n.iconId}"></use></svg>
             </span>
             <span class="notif-item-body">
               <span class="notif-item-title" th:text="${n.titulo}">Título</span>
-              <span class="notif-item-desc" th:text="${n.desc}">Descripción</span>
-              <span class="notif-item-time" th:text="${n.hora}">00:00</span>
+              <span class="notif-item-desc" th:text="${n.detalle}">Descripción</span>
+              <span class="notif-item-time" th:text="${n.fechaLabel}">00:00</span>
             </span>
           </div>
         </div>

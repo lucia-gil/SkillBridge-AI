@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillbridge.ai.dto.*;
 import com.skillbridge.ai.service.AuthService;
+import com.skillbridge.ai.service.ConfiguracionService;
 import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,10 +31,12 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final ConfiguracionService configuracionService;
     private final ObjectMapper objectMapper;
 
-    public AuthController(AuthService authService, ObjectMapper objectMapper) {
+    public AuthController(AuthService authService, ConfiguracionService configuracionService, ObjectMapper objectMapper) {
         this.authService = authService;
+        this.configuracionService = configuracionService;
         this.objectMapper = objectMapper;
     }
 
@@ -86,7 +89,17 @@ public class AuthController {
             vieja.invalidate();
         }
         HttpSession nueva = request.getSession(true);
-        nueva.setMaxInactiveInterval(30 * 60);
+        // Duración de sesión configurable (RF08): antes 30 min fijos; ahora lee
+        // configuracion_global.expiracion_sesion_minutos, para que el valor que
+        // el Administrador ajusta en Configuración tenga efecto real.
+        String minutosTexto = configuracionService.valor(configuracionService.obtenerMapa(), "expiracion_sesion_minutos", "30");
+        int minutos;
+        try {
+            minutos = Math.max(1, Integer.parseInt(minutosTexto.trim()));
+        } catch (NumberFormatException ex) {
+            minutos = 30;
+        }
+        nueva.setMaxInactiveInterval(minutos * 60);
         nueva.setAttribute(SesionKeys.USUARIO, resultado.getUsuarioSesion());
 
         return "redirect:" + homeDe(resultado.getUsuarioSesion());

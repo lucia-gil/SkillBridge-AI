@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,36 +10,50 @@
 <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
-
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="kpi-grid">
+        <div class="kpi-tile"><span class="kpi-tile-label">EVENTOS DE SEVERIDAD ALTA</span><span class="kpi-tile-value" th:text="${altaCount}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">EVENTOS DE SEVERIDAD MEDIA</span><span class="kpi-tile-value" th:text="${mediaCount}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">EVENTOS INFORMATIVOS</span><span class="kpi-tile-value" th:text="${infoCount}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">TOTAL (ÚLTIMOS 200)</span><span class="kpi-tile-value" th:text="${eventos.size()}">0</span></div>
+      </div>
 
       <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 2.4fr 1fr;">
         <section class="card">
           <div class="table-toolbar">
             <div>
-              <strong id="log-count"></strong>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Registro de acciones sobre roles, asignaciones e IA</p>
+              <strong th:text="${eventos.size()} + ' eventos recientes'">0 eventos</strong>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Registro de acciones sobre roles, proyectos y asignaciones</p>
             </div>
             <div class="table-filters">
               <select class="select" data-filter-scope="audit" data-filter-key="tipo">
-                <option value="todos">Tipo: todos</option><option value="roles">Roles y usuarios</option><option value="asignaciones">Asignaciones</option><option value="ia">Sistema / IA</option>
+                <option value="todos">Tipo: todos</option>
+                <option value="seguridad">Seguridad</option><option value="roles">Roles y usuarios</option>
+                <option value="asignaciones">Proyectos y asignaciones</option><option value="ia">Sistema</option>
               </select>
               <select class="select" data-filter-scope="audit" data-filter-key="severidad">
-                <option value="todos">Severidad: todas</option><option>Alta</option><option>Media</option><option>Info</option>
+                <option value="todos">Severidad: todas</option><option value="Alta">Alta</option><option value="Media">Media</option><option value="Info">Info</option>
               </select>
             </div>
           </div>
           <div class="table-scroll">
             <table class="data-table">
               <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th><th>Origen</th><th>Severidad</th></tr></thead>
-              <tbody id="audit-body"></tbody>
+              <tbody>
+                <tr th:each="a : ${eventos}" data-filter-row="audit" th:attr="data-f-tipo=${a.tipoCrudo}, data-f-severidad=${a.severidadCrudo}">
+                  <td class="mono text-tertiary" style="font-size:var(--fs-xs);" th:text="${a.fechaLabel}">fecha</td>
+                  <td th:text="${a.usuarioLabel}">Usuario</td>
+                  <td class="cell-primary" th:text="${a.accion}">Acción</td>
+                  <td th:text="${a.detalle}">Detalle</td>
+                  <td class="mono text-tertiary" style="font-size:var(--fs-xs);" th:text="${a.origenLabel}">Origen</td>
+                  <td><span class="badge" th:classappend="${a.severidadBadgeClass}" th:text="${a.severidadCrudo}">Severidad</span></td>
+                </tr>
+              </tbody>
             </table>
           </div>
           <div class="state-panel" data-filter-empty="audit" hidden>
@@ -50,7 +64,12 @@
 
         <section class="card card-pad">
           <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Usuarios con más eventos</h3>
-          <div id="top-users"></div>
+          <div th:if="${topUsuarios.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Sin eventos registrados todavía.</div>
+          <div th:each="u : ${topUsuarios}" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+            <span class="avatar avatar-sm" th:text="${u.iniciales}">MR</span>
+            <span style="flex:1; font-size:var(--fs-sm); font-weight:500;" th:text="${u.nombre}">Nombre</span>
+            <span class="mono text-tertiary" style="font-size:var(--fs-xs);" th:text="${u.eventos} + ' eventos'">0 eventos</span>
+          </div>
         </section>
       </div>
 
@@ -58,44 +77,13 @@
   </div>
 </div>
 
-<script src="/js/mock-data.js"></script>
-<script src="/js/state.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/table-filter.js"></script>
 <script src="/js/command-palette.js"></script>
-<script src="/js/modal.js"></script>
-<script src="/js/shell.js"></script>
-<script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
 document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "administrador", active: "auditoria.html", title: "Auditoría", subtitle: "Trazabilidad completa de acciones en la plataforma" });
-  if (!cfg) return;
-
-  var b = MOCK.auditSeverityBreakdown;
-  document.getElementById("kpi-grid").innerHTML = [
-    { label: "EVENTOS DE SEVERIDAD ALTA", value: b.alta, cls: "down" },
-    { label: "EVENTOS DE SEVERIDAD MEDIA", value: b.media, cls: "warn" },
-    { label: "EVENTOS INFORMATIVOS (24H)", value: b.info },
-    { label: "TOTAL REGISTRADO HOY", value: b.alta + b.media + b.info }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>'; }).join("");
-
-  document.getElementById("log-count").textContent = MOCK.auditLog.length + " eventos recientes";
-
-  var sevBadge = { "Alta": "badge-red", "Media": "badge-amber", "Info": "badge-neutral" };
-  document.getElementById("audit-body").innerHTML = MOCK.auditLog.map(function (a) {
-    return '<tr data-filter-row="audit" data-f-tipo="' + a.tipo + '" data-f-severidad="' + a.severidad + '">' +
-      '<td class="mono text-tertiary" style="font-size:var(--fs-xs);">' + a.fecha + '</td>' +
-      "<td>" + a.usuario + "</td><td class=\"cell-primary\">" + a.accion + "</td><td>" + a.detalle + "</td>" +
-      '<td class="mono text-tertiary" style="font-size:var(--fs-xs);">' + a.origen + '</td>' +
-      '<td><span class="badge ' + (sevBadge[a.severidad] || "badge-neutral") + '">' + a.severidad + '</span></td></tr>';
-  }).join("");
-
-  document.getElementById("top-users").innerHTML = MOCK.auditTopUsers.map(function (u) {
-    return '<div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">' +
-      '<span class="avatar avatar-sm">' + u.iniciales + '</span><span style="flex:1; font-size:var(--fs-sm); font-weight:500;">' + u.nombre + '</span>' +
-      '<span class="mono text-tertiary" style="font-size:var(--fs-xs);">' + u.eventos + ' eventos</span></div>';
-  }).join("");
-
   window.SBAI.tableFilter.init(document);
 });
 </script>

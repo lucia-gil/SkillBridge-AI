@@ -6,23 +6,32 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
- * Sirve el resto del frontend de SkillBridge AI que NO forma parte de los
- * 2 CRUD ni de login/registro pedidos en esta entrega (inicio, proyectos,
- * reportes, foros, asistente IA, etc. de los 4 roles). Estas paginas
- * siguen siendo la demo con datos simulados (mock-data.js) que ya existia
- * -no se les agrego persistencia real-, pero ahora se sirven via Spring
- * MVC/Thymeleaf en vez de como archivos estaticos, con las rutas de
- * CSS/JS/iconos ya corregidas (ver corrida de correccion global sobre
- * "../../static/").
+ * Sirve lo que del frontend de SkillBridge AI sigue siendo la demo con
+ * datos simulados (mock-data.js): Project Manager y Resource Manager
+ * completos (fuera de alcance de esta entrega), y el Asistente IA de
+ * Administrador y Colaborador (excluido explícitamente aunque esos dos
+ * roles sí se hicieron reales - ver README, "Alcance").
  *
- * Cada pagina sigue usando su shell JS original (static/js/shell.js,
- * SBAI.shell.init), que decide que sidebar/topbar mostrar leyendo el rol
- * activo de sessionStorage. Como el login real de esta entrega NO pasa por
- * ese mecanismo (usa HttpSession en el servidor), cada plantilla de aqui
- * recibe "rolSlug" y lo escribe a sessionStorage con un script minimo
- * antes de que corra shell.js, para que la sesion del navegador quede
- * sincronizada con la sesion real del servidor y esas paginas sigan
- * funcionando exactamente igual que antes.
+ * Administrador y Colaborador YA NO pasan por aquí para el resto de sus
+ * páginas: cada una tiene su propio @Controller con datos y persistencia
+ * reales (AdminInicioController, AdminProyectosController,
+ * AdminReportesController, AdminAuditoriaController,
+ * AdminConfiguracionController, ColaboradorInicioController,
+ * ColaboradorPerfilController, ColaboradorProyectosController,
+ * ForosController, ForoHiloController, CuentaController y
+ * NotificacionesController, estos dos últimos compartidos entre ambos
+ * roles). Mapear esas mismas rutas también aquí produciría un error de
+ * "Ambiguous mapping" al arrancar Spring, por eso se retiraron de las
+ * listas de abajo.
+ *
+ * Las páginas que sí sirve este controlador siguen usando su shell JS
+ * original (static/js/shell.js, SBAI.shell.init), que decide qué
+ * sidebar/topbar mostrar leyendo el rol activo de sessionStorage. Como el
+ * login real de esta entrega NO pasa por ese mecanismo (usa HttpSession en
+ * el servidor), cada plantilla de aquí recibe "rolSlug" y lo escribe a
+ * sessionStorage con un script mínimo antes de que corra shell.js, para
+ * que la sesión del navegador quede sincronizada con la sesión real del
+ * servidor y esas páginas sigan funcionando exactamente igual que antes.
  */
 @Controller
 public class SitioController {
@@ -39,31 +48,16 @@ public class SitioController {
         return "auth/recuperar-password";
     }
 
-    @GetMapping({
-            "/administrador/inicio.html",
-            "/administrador/proyectos.html",
-            "/administrador/reportes.html",
-            "/administrador/auditoria.html",
-            "/administrador/configuracion.html",
-            "/administrador/mi-cuenta.html",
-            "/administrador/notificaciones.html",
-            "/administrador/asistente-ia.html"
-    })
+    // Único mock que le queda a Administrador: el chatbot de IA está fuera
+    // de alcance por pedido explícito, aunque el resto del rol es real.
+    @GetMapping("/administrador/asistente-ia.html")
     public String administrador(HttpServletRequest request, Model model) {
         model.addAttribute("rolSlug", "administrador");
         return vista(request);
     }
 
-    @GetMapping({
-            "/colaborador/inicio.html",
-            "/colaborador/perfil.html",
-            "/colaborador/proyectos.html",
-            "/colaborador/foros.html",
-            "/colaborador/foro-hilo.html",
-            "/colaborador/notificaciones.html",
-            "/colaborador/mi-cuenta.html",
-            "/colaborador/asistente-ia.html"
-    })
+    // Ídem para Colaborador.
+    @GetMapping("/colaborador/asistente-ia.html")
     public String colaborador(HttpServletRequest request, Model model) {
         model.addAttribute("rolSlug", "colaborador");
         return vista(request);

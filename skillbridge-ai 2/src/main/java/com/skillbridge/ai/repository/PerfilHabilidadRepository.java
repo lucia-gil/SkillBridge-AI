@@ -13,6 +13,10 @@ public interface PerfilHabilidadRepository extends JpaRepository<PerfilHabilidad
 
     List<PerfilHabilidad> findById_PerfilId(Long perfilId);
 
+    long countById_PerfilId(Long perfilId);
+
+    long countById_PerfilIdAndValidadoPorIdIsNotNull(Long perfilId);
+
     @Query("select avg(p.nivel) from PerfilHabilidad p where p.id.habilidadId = :habilidadId")
     Double promedioNivel(Long habilidadId);
 }

@@ -21,7 +21,15 @@ public class WebConfig implements WebMvcConfigurer {
                         "/administrador/**",
                         "/resource-manager/**",
                         "/project-manager/**",
-                        "/colaborador/**"
+                        "/colaborador/**",
+                        // "Mi cuenta" y "Notificaciones" son un único controlador
+                        // compartido por los 4 roles (CuentaController,
+                        // NotificacionesController) y viven fuera de esos 4
+                        // prefijos - sin esto, un POST directo a /cuenta/** o
+                        // /notificaciones/** sin sesión no se redirige a login,
+                        // revienta con NullPointerException (ver SesionInterceptor).
+                        "/cuenta/**",
+                        "/notificaciones/**"
                 );
     }
 }

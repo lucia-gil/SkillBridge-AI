@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,94 +10,72 @@
 <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
-
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="kpi-grid">
+        <div class="kpi-tile"><span class="kpi-tile-label">COLABORADORES ACTIVOS</span><span class="kpi-tile-value" th:text="${kpis.colaboradoresActivos}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">PROYECTOS EN CURSO</span><span class="kpi-tile-value" th:text="${kpis.proyectosEnCurso}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">HABILIDADES EN CATÁLOGO</span><span class="kpi-tile-value" th:text="${kpis.habilidadesCatalogo}">0</span><span class="kpi-tile-meta warn" th:text="${kpis.habilidadesSinAsignar} + ' sin proyecto asociado'"></span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">ASIGNACIONES ACTIVAS</span><span class="kpi-tile-value" th:text="${kpis.asignacionesActivas}">0</span></div>
+      </div>
 
       <div class="detail-grid" style="margin-top:var(--space-6);">
         <section class="card card-pad">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
             <div>
-              <h2 style="font-size:var(--fs-md);">Vacantes por habilidad</h2>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Brechas abiertas en toda la organización</p>
+              <h2 style="font-size:var(--fs-md);">Habilidades más declaradas</h2>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Cuántos colaboradores declaran cada habilidad en su perfil</p>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar</button>
           </div>
-          <div id="skills-demand"></div>
+          <div th:if="${topHabilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
+          <div th:each="s : ${topHabilidades}" style="margin-bottom:var(--space-3);">
+            <div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;">
+              <span style="font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
+              <span class="text-tertiary mono" th:text="${s.vacantes()} + ' persona(s)'">0 personas</span>
+            </div>
+            <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
+          </div>
         </section>
 
         <section class="card card-pad">
           <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Proyectos por estado</h3>
-          <div id="project-status"></div>
+          <div th:if="${proyectosPorEstado.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no hay proyectos creados.</div>
+          <div th:each="e : ${proyectosPorEstado}" class="info-row">
+            <span class="info-row-label"><span class="badge" th:classappend="${e.badgeClass}" th:text="${e.label}">Estado</span></span>
+            <span class="info-row-value mono" th:text="${e.conteo} + (${e.conteo == 1} ? ' proyecto' : ' proyectos')">0 proyectos</span>
+          </div>
         </section>
       </div>
 
       <section class="card card-pad" style="margin-top:var(--space-6);">
         <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Ocupación por colaborador</h3>
-        <div id="team-occupancy"></div>
+        <div th:if="${ocupacion.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no hay asignaciones activas.</div>
+        <div class="table-scroll" th:unless="${ocupacion.isEmpty()}">
+          <table class="data-table">
+            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación (suma de dedicaciones activas)</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr th:each="o : ${ocupacion}">
+                <td class="cell-person"><span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span><span class="cell-person-name" th:text="${o.nombre}">Nombre</span></td>
+                <td th:text="${o.cargo}">Cargo</td>
+                <td class="mono" th:text="${o.promedio} + '%'">0%</td>
+                <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
     </main>
   </div>
 </div>
 
-<script src="/js/mock-data.js"></script>
-<script src="/js/state.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
-<script src="/js/table-filter.js"></script>
 <script src="/js/command-palette.js"></script>
-<script src="/js/modal.js"></script>
-<script src="/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "administrador", active: "reportes.html", title: "Reportes globales", subtitle: "Vista consolidada de toda la plataforma · Q3 2026" });
-  if (!cfg) return;
-
-  var r = MOCK.adminReport;
-  document.getElementById("kpi-grid").innerHTML = [
-    { label: "COLABORADORES ACTIVOS", value: r.colaboradoresActivos, meta: "+" + r.colaboradoresDelta + " este mes", cls: "up" },
-    { label: "PROYECTOS EN CURSO", value: r.proyectosEnCurso, meta: r.proyectosCierranSep + " cierran en septiembre" },
-    { label: "HABILIDADES EN CATÁLOGO", value: r.habilidadesCatalogo, meta: r.habilidadesSinAsignar + " sin proyecto asociado", cls: "warn" },
-    { label: "CONSULTAS AL ASISTENTE IA", value: r.consultasIA.toLocaleString("es-CO"), meta: "+" + r.consultasDelta + "% vs. semana anterior", cls: "up" }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
-
-  var maxDemand = Math.max.apply(null, r.vacantesPorHabilidad.map(function (s) { return s.vacantes; }));
-  document.getElementById("skills-demand").innerHTML = r.vacantesPorHabilidad.map(function (s) {
-    return '<div style="margin-bottom:var(--space-3);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;"><span style="font-weight:500;">' + s.nombre + '</span><span class="text-tertiary mono">' + s.vacantes + ' vacantes</span></div>' +
-      '<div class="progress-bar"><div class="progress-bar-fill" style="width:' + Math.round((s.vacantes / maxDemand) * 100) + '%;"></div></div></div>';
-  }).join("");
-
-  var estados = {};
-  MOCK.projects.forEach(function (p) { estados[p.estado] = (estados[p.estado] || 0) + 1; });
-  var estadoBadge = { "Activo": "badge-green", "En riesgo": "badge-amber", "Planeado": "badge-neutral", "Bloqueado": "badge-red", "Cerrado": "badge-neutral" };
-  document.getElementById("project-status").innerHTML = Object.keys(estados).map(function (e) {
-    return '<div class="info-row"><span class="info-row-label"><span class="badge ' + (estadoBadge[e] || "badge-neutral") + '">' + e + '</span></span><span class="info-row-value mono">' + estados[e] + ' proyecto' + (estados[e] === 1 ? "" : "s") + '</span></div>';
-  }).join("");
-
-  function estadoInfo(v) {
-    if (v > 100) return { badge: "badge-red", label: "Sobre-asignado" };
-    if (v >= 90) return { badge: "badge-amber", label: "Al límite" };
-    if (v >= 60) return { badge: "badge-green", label: "Óptimo" };
-    return { badge: "badge-neutral", label: "Subutilizado" };
-  }
-  document.getElementById("team-occupancy").innerHTML = '<div class="table-scroll"><table class="data-table"><thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación promedio</th><th>Estado</th></tr></thead><tbody>' +
-    MOCK.rmReport.ocupacionPorColaborador.map(function (o) {
-      var ei = estadoInfo(o.promedio);
-      return '<tr><td class="cell-person"><span class="avatar avatar-sm">' + o.iniciales + '</span><span class="cell-person-name">' + o.nombre + '</span></td>' +
-        "<td>" + o.cargo + '</td><td class="mono">' + o.promedio + '%</td><td><span class="badge ' + ei.badge + '">' + ei.label + "</span></td></tr>";
-    }).join("") + '</tbody></table></div>';
-
-  document.getElementById("export-btn").addEventListener("click", function () {
-    SBAI.toast.show("Generando exportable de reportes globales en PDF…");
-  });
-});
-</script>
+<script src="/js/topbar-actions.js"></script>
 </body>
 </html>
