@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,108 +10,155 @@
 <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
-
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="detail-grid">
-        <section class="card">
-          <div class="table-toolbar">
-            <div class="tabs" id="pm-forum-tabs">
-              <button type="button" class="tab-btn active" data-scope="mios">De mis proyectos</button>
-              <button type="button" class="tab-btn" data-scope="todos">Todos</button>
-              <button type="button" class="tab-btn" data-scope="sinresponder">Sin responder</button>
-              <button type="button" class="tab-btn" data-scope="conresumen">Con resumen IA</button>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" id="new-thread-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo hilo</button>
-          </div>
-          <div id="thread-list"></div>
-        </section>
-
+      <div style="display:grid; grid-template-columns:240px 1fr; gap:var(--space-6); align-items:start;">
         <div style="display:flex; flex-direction:column; gap:var(--space-5);">
-          <section class="callout ai">
-            <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></span>
-            <span class="callout-body"><span class="callout-title">Qué discute tu equipo</span>
-            Esta semana los hilos de tus proyectos giran en torno a la migración a Java 21 y a los Helm charts compartidos. Dos decisiones técnicas pendientes podrían afectar el cronograma de Núcleo Retail.
-            <div class="text-tertiary" style="font-size:10px; margin-top:6px; font-family:var(--font-mono);">RESUMEN SEMANAL GENERADO POR IA</div></span>
-          </section>
-
           <section class="card card-pad">
-            <p class="label-mono" style="margin-bottom:var(--space-3);">Actividad por proyecto</p>
-            <div id="activity-by-project"></div>
-          </section>
-
-          <section class="card card-pad">
-            <p class="label-mono" style="margin-bottom:var(--space-3);">Requiere tu respuesta</p>
-            <div id="needs-reply"></div>
+            <p class="label-mono" style="margin-bottom:var(--space-3);">Tus proyectos</p>
+            <p class="field-hint" style="margin-bottom:var(--space-3);">Cada hilo pertenece a un proyecto: aqui se agrupan por los proyectos que gestionas.</p>
+            <div id="category-list" style="display:flex; flex-direction:column; gap:2px;">
+              <button type="button" class="dropdown-item active" data-proyecto="todos" style="justify-content:space-between; background:var(--navy-100); font-weight:600;">
+                <span>Todos los hilos</span><span class="text-tertiary" th:text="${hilos.size()}">0</span>
+              </button>
+              <button type="button" class="dropdown-item" th:each="p : ${proyectos}" th:attr="data-proyecto=${p.id()}" style="justify-content:space-between;">
+                <span th:text="${p.nombre()}">Proyecto</span><span class="text-tertiary" th:text="${p.numHilos()}">0</span>
+              </button>
+            </div>
           </section>
         </div>
+
+        <section class="card">
+          <div class="table-toolbar">
+            <div class="segmented" id="sort-tabs">
+              <button type="button" class="segmented-btn active" data-sort="recientes">Recientes</button>
+              <button type="button" class="segmented-btn" data-sort="respondidos">Mas respondidos</button>
+              <button type="button" class="segmented-btn" data-sort="sinresponder">Sin responder</button>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="new-thread-btn" th:if="${!proyectos.isEmpty()}">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo hilo</button>
+          </div>
+
+          <div th:if="${hilos.isEmpty()}" class="state-panel">
+            <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg></span>
+            <span class="state-panel-title">Todavia no hay hilos</span>
+            <span class="state-panel-desc" th:text="${proyectos.isEmpty()} ? 'No gestionas proyectos donde publicar.' : 'Se el primero en abrir uno en alguno de tus proyectos.'">-</span>
+          </div>
+
+          <div th:unless="${hilos.isEmpty()}">
+            <p class="text-tertiary" style="font-size:var(--fs-xs); padding:var(--space-4) var(--space-6) 0;"
+               th:text="${hilos.size()} + ' hilos · ' + ${totalRespuestas} + ' respuestas'">0 hilos</p>
+            <div id="thread-list">
+              <a class="thread-row" th:each="t : ${hilos}" th:href="'foro-hilo.html?id=' + ${t.id}"
+                 th:attr="data-proyecto-id=${t.proyectoId}, data-num-respuestas=${t.numRespuestas}"
+                 style="text-decoration:none; color:inherit;">
+                <span class="avatar avatar-sm" th:text="${t.autorIniciales}">AA</span>
+                <div class="thread-row-body">
+                  <div class="thread-row-title">
+                    <span class="badge badge-green" th:if="${t.tieneAceptada}" style="margin-right:6px;">RESUELTO</span>
+                    <span th:text="${t.titulo}">Titulo</span>
+                  </div>
+                  <div class="thread-row-meta" th:text="${t.proyectoNombre} + ' · ' + ${t.autorNombre} + ' · ' + ${t.fechaLabel} + ' · ' + ${t.numVistas} + ' vistas'">meta</div>
+                </div>
+                <div class="thread-row-count"><div class="thread-row-count-num" th:text="${t.numRespuestas}">0</div><div class="thread-row-count-label">Respuestas</div></div>
+              </a>
+            </div>
+            <div class="state-panel" id="dynamic-empty" hidden>
+              <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg></span>
+              <span class="state-panel-title">Sin hilos con este filtro</span>
+              <span class="state-panel-desc">Prueba con otro proyecto o con "Recientes".</span>
+            </div>
+          </div>
+        </section>
       </div>
 
     </main>
   </div>
 </div>
 
-<script src="/js/mock-data.js"></script>
-<script src="/js/state.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
-<script src="/js/table-filter.js"></script>
 <script src="/js/command-palette.js"></script>
 <script src="/js/modal.js"></script>
-<script src="/js/shell.js"></script>
-<script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+var PROYECTOS_CON_HILOS = /*[[${proyectos}]]*/ [];
+
 document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "project-manager", active: "foros.html", title: "Foros", subtitle: "Filtrado por mis proyectos · 62 hilos" });
-  if (!cfg) return;
+  var submitForm = window.SBAI.submitForm;
+  var wrap = document.getElementById("thread-list");
+  var originalOrder = wrap ? Array.prototype.slice.call(wrap.querySelectorAll(".thread-row")) : [];
+  var activeProyecto = "todos";
+  var activeSort = "recientes";
 
-  var pmProjects = ["Portal Andes", "App Móvil Aurora", "Núcleo Retail", "Motor Cobranzas v2"];
-  var activeScope = "mios";
-
-  function render() {
-    var list = MOCK.forumThreads.slice();
-    if (activeScope === "mios") list = list.filter(function (t) { return t.proyecto && pmProjects.indexOf(t.proyecto) !== -1; });
-    if (activeScope === "sinresponder") list = list.filter(function (t) { return t.respuestas === 0; });
-    if (activeScope === "conresumen") list = list.filter(function (t) { return !!t.resumenIA; });
-
-    document.getElementById("thread-list").innerHTML = list.map(function (t) {
-      var ai = t.resumenIA ? '<div class="thread-row-ai"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg><span>' + t.resumenIA.slice(0, 140) + '…</span></div>' : "";
-      return '<div class="thread-row" data-open-thread="' + t.id + '"><span class="avatar avatar-sm">' + t.iniciales + '</span>' +
-        '<div class="thread-row-body"><div class="thread-row-title">' + (t.fijado ? '<span class="badge badge-blue">FIJADO</span>' : "") + t.titulo + '</div>' +
-        '<div class="thread-row-meta">' + t.categoria + " · " + t.autor + " · " + t.tiempo + " · " + t.vistas + ' vistas' + (t.proyecto ? " · " + t.proyecto : "") + '</div>' + ai + "</div>" +
-        '<div class="thread-row-count"><div class="thread-row-count-num">' + t.respuestas + '</div><div class="thread-row-count-label">Respuestas</div></div></div>';
-    }).join("") || '<div class="state-panel"><span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg></span><span class="state-panel-title">Sin hilos en esta vista</span></div>';
-
-    document.querySelectorAll("[data-open-thread]").forEach(function (row) { row.addEventListener("click", function () { window.location.href = "foro-hilo.html"; }); });
+  function aplicar() {
+    if (!wrap) return;
+    var visibles = originalOrder.filter(function (row) {
+      if (activeProyecto !== "todos" && row.dataset.proyectoId !== activeProyecto) return false;
+      if (activeSort === "sinresponder" && row.dataset.numRespuestas !== "0") return false;
+      return true;
+    });
+    if (activeSort === "respondidos") {
+      visibles = visibles.slice().sort(function (a, b) {
+        return parseInt(b.dataset.numRespuestas, 10) - parseInt(a.dataset.numRespuestas, 10);
+      });
+    }
+    originalOrder.forEach(function (row) { row.hidden = true; });
+    visibles.forEach(function (row) { row.hidden = false; wrap.appendChild(row); });
+    var empty = document.getElementById("dynamic-empty");
+    if (empty) empty.hidden = visibles.length !== 0;
   }
 
-  document.querySelectorAll("#pm-forum-tabs [data-scope]").forEach(function (btn) {
+  document.querySelectorAll("[data-proyecto]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      document.querySelectorAll("#pm-forum-tabs [data-scope]").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll("[data-proyecto]").forEach(function (b) {
+        b.classList.remove("active");
+        b.style.background = ""; b.style.fontWeight = "";
+      });
       btn.classList.add("active");
-      activeScope = btn.dataset.scope;
-      render();
+      btn.style.background = "var(--navy-100)"; btn.style.fontWeight = "600";
+      activeProyecto = btn.dataset.proyecto;
+      aplicar();
     });
   });
 
-  document.getElementById("activity-by-project").innerHTML = MOCK.threadActivityByProject.map(function (a) {
-    return '<div class="info-row"><span class="info-row-label">' + a.proyecto + '</span><span class="info-row-value">' + a.hilos + " hilos</span></div>";
-  }).join("");
-
-  document.getElementById("needs-reply").innerHTML = MOCK.threadsNeedingReply.map(function (r) {
-    return '<a href="foro-hilo.html" style="display:block; color:inherit; padding:var(--space-2) 0; border-bottom:1px solid var(--border-subtle);">' +
-      '<div style="font-size:var(--fs-xs); font-weight:500;">' + r.titulo + '</div><div class="text-tertiary" style="font-size:10px; margin-top:2px;">' + r.autor + " · " + r.tiempo + "</div></a>";
-  }).join("");
-
-  document.getElementById("new-thread-btn").addEventListener("click", function () {
-    SBAI.toast.show("Usa “Nuevo hilo” desde la vista de Colaborador — aquí puedes moderar y responder los hilos de tu equipo.");
+  document.querySelectorAll("#sort-tabs [data-sort]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("#sort-tabs [data-sort]").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      activeSort = btn.dataset.sort;
+      aplicar();
+    });
   });
 
-  render();
+  var newThreadBtn = document.getElementById("new-thread-btn");
+  if (newThreadBtn) {
+    newThreadBtn.addEventListener("click", function () {
+      var options = PROYECTOS_CON_HILOS.map(function (p) { return '<option value="' + p.id + '">' + p.nombre + '</option>'; }).join("");
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+        '<div class="modal-header"><div><h2>Nuevo hilo</h2><p>Comparte una pregunta o hallazgo con tu equipo de proyecto.</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div class="field"><label class="field-label">Proyecto</label><select class="select" id="new-thread-proj">' + options + '</select></div>' +
+        '<div class="field"><label class="field-label">Titulo</label><input class="input" id="new-thread-title" placeholder="Como resolviste...?"></div>' +
+        '<div class="field"><label class="field-label">Mensaje</label><textarea class="input" id="new-thread-body" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="Describe el contexto..."></textarea></div></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="publish-thread-btn">Publicar hilo</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#publish-thread-btn").addEventListener("click", function () {
+        var titulo = backdrop.querySelector("#new-thread-title").value.trim();
+        var contenido = backdrop.querySelector("#new-thread-body").value.trim();
+        if (!titulo) { SBAI.toast.show("Escribe un titulo para tu hilo.", { type: "error" }); return; }
+        if (!contenido) { SBAI.toast.show("Escribe un mensaje para tu hilo.", { type: "error" }); return; }
+        submitForm("/project-manager/foros/nuevo-hilo", {
+          proyectoId: backdrop.querySelector("#new-thread-proj").value, titulo: titulo, contenido: contenido
+        });
+      });
+    });
+  }
 });
 </script>
 </body>

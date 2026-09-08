@@ -7,31 +7,24 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * Sirve lo que del frontend de SkillBridge AI sigue siendo la demo con
- * datos simulados (mock-data.js): Project Manager y Resource Manager
- * completos (fuera de alcance de esta entrega), y el Asistente IA de
- * Administrador y Colaborador (excluido explícitamente aunque esos dos
- * roles sí se hicieron reales - ver README, "Alcance").
+ * datos simulados (mock-data.js): Resource Manager completo (fuera de
+ * alcance de esta entrega) y las paginas de Project Manager que aun no se
+ * hicieron reales, mas el Asistente IA de Administrador y Colaborador
+ * (excluido explicitamente).
  *
- * Administrador y Colaborador YA NO pasan por aquí para el resto de sus
- * páginas: cada una tiene su propio @Controller con datos y persistencia
- * reales (AdminInicioController, AdminProyectosController,
- * AdminReportesController, AdminAuditoriaController,
- * AdminConfiguracionController, ColaboradorInicioController,
- * ColaboradorPerfilController, ColaboradorProyectosController,
- * ForosController, ForoHiloController, CuentaController y
- * NotificacionesController, estos dos últimos compartidos entre ambos
- * roles). Mapear esas mismas rutas también aquí produciría un error de
- * "Ambiguous mapping" al arrancar Spring, por eso se retiraron de las
- * listas de abajo.
+ * Administrador y Colaborador ya no pasan por aqui para el resto de sus
+ * paginas: cada una tiene su propio @Controller con datos y persistencia
+ * reales. DESDE ESTA ENTREGA, el Project Manager tambien tiene reales sus
+ * CRUD de Proyectos, Asignaciones y Foros (ProyectosPmController,
+ * AsignacionesPmController, ForosPmController, ForoHiloPmController), por
+ * eso esas rutas se retiraron de la lista de abajo: mapearlas tambien aqui
+ * produciria un error de "Ambiguous mapping" al arrancar Spring.
  *
- * Las páginas que sí sirve este controlador siguen usando su shell JS
- * original (static/js/shell.js, SBAI.shell.init), que decide qué
- * sidebar/topbar mostrar leyendo el rol activo de sessionStorage. Como el
- * login real de esta entrega NO pasa por ese mecanismo (usa HttpSession en
- * el servidor), cada plantilla de aquí recibe "rolSlug" y lo escribe a
- * sessionStorage con un script mínimo antes de que corra shell.js, para
- * que la sesión del navegador quede sincronizada con la sesión real del
- * servidor y esas páginas sigan funcionando exactamente igual que antes.
+ * Las paginas que si sirve este controlador siguen usando su shell JS
+ * original (static/js/shell.js), que decide que sidebar/topbar mostrar
+ * leyendo el rol activo de sessionStorage. Como el login real usa
+ * HttpSession en el servidor, cada plantilla recibe "rolSlug" y lo escribe
+ * a sessionStorage antes de que corra shell.js.
  */
 @Controller
 public class SitioController {
@@ -48,29 +41,26 @@ public class SitioController {
         return "auth/recuperar-password";
     }
 
-    // Único mock que le queda a Administrador: el chatbot de IA está fuera
-    // de alcance por pedido explícito, aunque el resto del rol es real.
+    // Unico mock que le queda a Administrador: el chatbot de IA esta fuera
+    // de alcance por pedido explicito, aunque el resto del rol es real.
     @GetMapping("/administrador/asistente-ia.html")
     public String administrador(HttpServletRequest request, Model model) {
         model.addAttribute("rolSlug", "administrador");
         return vista(request);
     }
 
-    // Ídem para Colaborador.
+    // Idem para Colaborador.
     @GetMapping("/colaborador/asistente-ia.html")
     public String colaborador(HttpServletRequest request, Model model) {
         model.addAttribute("rolSlug", "colaborador");
         return vista(request);
     }
 
+    // Project Manager: solo quedan como mock las paginas aun no migradas.
+    // proyectos/asignaciones/foros/foro-hilo YA tienen controlador real.
     @GetMapping({
-            "/project-manager/inicio.html",
-            "/project-manager/proyectos.html",
             "/project-manager/proyecto-detalle.html",
-            "/project-manager/asignaciones.html",
             "/project-manager/ai-talent-matching.html",
-            "/project-manager/foros.html",
-            "/project-manager/foro-hilo.html",
             "/project-manager/asistente-ia.html",
             "/project-manager/reportes.html",
             "/project-manager/mi-cuenta.html",

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,133 +10,197 @@
 <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
-
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
       <section class="card">
         <div class="table-toolbar">
           <div>
-            <strong id="proj-count">7 proyectos</strong>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">4 activos · 1 en riesgo · 1 bloqueado · 1 cerrado</p>
+            <strong th:text="${proyectos.size()} + ' proyectos'">0 proyectos</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Proyectos que gestionas como Project Manager</p>
           </div>
           <div class="table-filters">
             <select class="select" data-filter-scope="proyectos-pm" data-filter-key="estado">
-              <option value="todos">Estado: todos</option><option>Activo</option><option>En riesgo</option><option>Planeado</option><option>Bloqueado</option><option>Cerrado</option>
+              <option value="todos">Estado: todos</option>
+              <option value="planificacion">Planificacion</option><option value="activo">Activo</option>
+              <option value="en_pausa">En pausa</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option>
             </select>
-            <select class="select" data-filter-scope="proyectos-pm" data-filter-key="cliente">
-              <option value="todos">Cliente: todos</option>
-            </select>
-            <select class="select" data-filter-scope="proyectos-pm" data-filter-key="tecnologia">
-              <option value="todos">Tecnología: todas</option>
-              <option>Java 21</option><option>React 18</option><option>Kubernetes</option><option>Kafka</option><option>Terraform</option>
-            </select>
-            <button type="button" class="btn btn-primary btn-sm" id="new-project-btn">
-              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Crear proyecto</button>
+            <button type="button" class="btn btn-primary btn-sm" id="new-project-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo proyecto</button>
           </div>
         </div>
-        <div class="table-scroll">
+        <div th:if="${proyectos.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+          <span class="state-panel-title">Todavia no gestionas proyectos</span>
+          <span class="state-panel-desc">Crea tu primer proyecto con el boton "Nuevo proyecto".</span>
+        </div>
+        <div class="table-scroll" th:unless="${proyectos.isEmpty()}">
           <table class="data-table">
-            <thead><tr><th>Proyecto</th><th>Cliente</th><th>PM</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody id="proj-body"></tbody>
+            <thead><tr><th>Proyecto</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              <tr th:each="p : ${proyectos}" data-filter-row="proyectos-pm" th:attr="data-f-estado=${p.estadoCrudo}">
+                <td class="cell-person">
+                  <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
+                  <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span></span>
+                </td>
+                <td th:text="${p.fechaInicioLabel} + ' -> ' + ${p.fechaFinLabel}">fechas</td>
+                <td th:text="${p.equipo.size()}">0</td>
+                <td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div><span class="progress-value" th:text="${p.avance} + '%'">0%</span></div></td>
+                <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
+                <td class="cell-actions"><button type="button" th:attr="data-view-project=${p.id}">Ver detalle</button></td>
+              </tr>
+            </tbody>
           </table>
         </div>
         <div class="state-panel" data-filter-empty="proyectos-pm" hidden>
           <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
           <span class="state-panel-title">Sin proyectos con estos filtros</span>
-          <span class="state-panel-desc">Ajusta el estado, cliente o tecnología para ver más resultados.</span>
-        </div>
-        <div class="table-footer">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);">Mostrando <span id="visible-count">7</span> de 27 proyectos</span>
-          <div class="pagination" id="pagination"></div>
         </div>
       </section>
+
+      <!-- Detalle precalculado por proyecto (mismo patron que el panel del admin) -->
+      <div id="project-detail-templates" hidden>
+        <template th:each="d : ${proyectos}" th:attr="data-project-id=${d.id}">
+          <div>
+            <div class="modal-header">
+              <div><h2 th:text="${d.nombre}">Proyecto</h2><p th:text="${d.estadoLabel} + ' · PM: ' + ${d.pmNombre}">Estado</p></div>
+              <button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripcion.'">Descripcion</p>
+              <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
+                <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:text="${t}">Tech</span>
+              </div>
+              <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' -> ' + ${d.fechaFinLabel}">fechas</span></div>
+              <div class="info-row"><span class="info-row-label">Avance (heuristico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
+              <div class="info-row"><span class="info-row-label">Colaboradores requeridos</span><span class="info-row-value" th:text="${d.colaboradoresRequeridos}">0</span></div>
+
+              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Equipo activo</h3>
+              <div th:if="${d.equipo.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin colaboradores asignados todavia.</div>
+              <div th:each="m : ${d.equipo}" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-2) 0; border-bottom:1px solid var(--border-subtle);">
+                <span class="avatar avatar-sm" th:text="${m.iniciales}">MR</span>
+                <span style="flex:1; min-width:0;">
+                  <div style="font-size:var(--fs-sm); font-weight:500;" th:text="${m.nombre}">Nombre</div>
+                  <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${m.rolLabel} + ' · ' + ${m.cargaPorcentaje} + '%'">rol</div>
+                </span>
+                <button type="button" class="danger" th:attr="data-finalizar-asignacion=${m.asignacionId}">Finalizar</button>
+              </div>
+
+              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Asignar colaborador</h3>
+              <div class="field-row">
+                <div class="field"><label class="field-label">Colaborador</label>
+                  <select class="select" data-field="perfilId">
+                    <option th:each="p : ${perfiles}" th:value="${p.perfilId()}" th:text="${p.nombre()} + ' · ' + ${p.correo()}">Colaborador</option>
+                  </select>
+                </div>
+                <div class="field"><label class="field-label">Rol en el proyecto</label>
+                  <select class="select" data-field="rolEnProyecto"><option value="colaborador">Colaborador</option><option value="project_manager">Project Manager</option></select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label class="field-label">Dedicacion (%)</label><input class="input" type="number" min="1" max="100" value="50" data-field="cargaPorcentaje"></div>
+                <div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" data-field="fechaInicio"></div>
+              </div>
+              <div class="btn-group" style="justify-content:flex-end; margin-bottom:var(--space-5);">
+                <button type="button" class="btn btn-secondary btn-sm" th:attr="data-asignar-proyecto=${d.id}">Asignar</button>
+              </div>
+
+              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Cambiar estado</h3>
+              <div class="field-row">
+                <div class="field">
+                  <select class="select" data-field="estado">
+                    <option value="planificacion" th:selected="${d.estadoCrudo == 'planificacion'}">Planificacion</option>
+                    <option value="activo" th:selected="${d.estadoCrudo == 'activo'}">Activo</option>
+                    <option value="en_pausa" th:selected="${d.estadoCrudo == 'en_pausa'}">En pausa</option>
+                    <option value="completado" th:selected="${d.estadoCrudo == 'completado'}">Completado</option>
+                    <option value="cancelado" th:selected="${d.estadoCrudo == 'cancelado'}">Cancelado</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" th:attr="data-cambiar-estado=${d.id}" style="align-self:flex-start;">Guardar estado</button>
+              </div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div>
+          </div>
+        </template>
+      </div>
 
     </main>
   </div>
 </div>
 
-<script src="/js/mock-data.js"></script>
-<script src="/js/state.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/table-filter.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/modal.js"></script>
-<script src="/js/shell.js"></script>
-<script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "project-manager", active: "proyectos.html", title: "Proyectos", subtitle: "Gestión de proyectos › Listado" });
-  if (!cfg) return;
+  if (window.SBAI.tableFilter) window.SBAI.tableFilter.init(document);
+  var submitForm = window.SBAI.submitForm;
 
-  var estadoBadge = { "Activo": "badge-green", "En riesgo": "badge-amber", "Planeado": "badge-neutral", "Bloqueado": "badge-red", "Cerrado": "badge-neutral" };
-
-  var clienteSelect = document.querySelector('[data-filter-key="cliente"]');
-  var clientes = Array.from(new Set(MOCK.projects.map(function (p) { return p.cliente; })));
-  clientes.forEach(function (c) { clienteSelect.insertAdjacentHTML("beforeend", '<option>' + c + "</option>"); });
-
-  document.getElementById("proj-body").innerHTML = MOCK.projects.map(function (p) {
-    return '<tr data-filter-row="proyectos-pm" data-f-estado="' + p.estado + '" data-f-cliente="' + p.cliente + '" data-f-tecnologia="' + p.stack.join(",") + '">' +
-      '<td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);">' + p.iniciales + '</span>' +
-      '<span class="cell-person-text"><span class="cell-person-name">' + p.nombre + '</span><span class="cell-person-sub">' + p.codigo + '</span></span></td>' +
-      "<td>" + p.cliente + "</td><td>" + p.pm + "</td>" +
-      "<td>" + p.inicio + " → " + p.fin + "</td><td>" + p.equipo + "</td>" +
-      '<td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" style="width:' + p.avance + '%;"></div></div><span class="progress-value">' + p.avance + '%</span></div></td>' +
-      '<td><span class="badge ' + (estadoBadge[p.estado] || "badge-neutral") + '">' + p.estado + '</span></td>' +
-      '<td class="cell-actions">' + (p.nombre === "Núcleo Retail" ? '<a href="proyecto-detalle.html">Ver detalle</a>' : '<button type="button" data-toast-detail="' + p.nombre + '">Ver detalle</button>') +
-      ' <button type="button" data-edit-project="' + p.nombre + '">Editar</button></td></tr>';
-  }).join("");
-
-  document.querySelectorAll("[data-toast-detail]").forEach(function (btn) {
-    btn.addEventListener("click", function () { SBAI.toast.show("El detalle completo está disponible para <strong>Núcleo Retail</strong> en esta demo. Los demás proyectos usan el mismo layout."); });
-  });
-  document.querySelectorAll("[data-edit-project]").forEach(function (btn) {
+  document.querySelectorAll("[data-view-project]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var p = MOCK.findProject(btn.dataset.editProject);
-      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar ' + p.nombre + '</h2><p>' + p.codigo + '</p></div>' +
-        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" value="' + p.nombre + '"></div>' +
-        '<div class="field"><label class="field-label">Estado</label><select class="select"><option' + (p.estado === "Activo" ? " selected" : "") + '>Activo</option><option' + (p.estado === "En riesgo" ? " selected" : "") + '>En riesgo</option><option' + (p.estado === "Planeado" ? " selected" : "") + '>Planeado</option><option' + (p.estado === "Bloqueado" ? " selected" : "") + '>Bloqueado</option><option' + (p.estado === "Cerrado" ? " selected" : "") + '>Cerrado</option></select></div></div>' +
-        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" data-modal-close>Guardar cambios</button></div></div>';
-      var backdrop = SBAI.modal.open(html);
-      backdrop.querySelectorAll(".btn-primary").forEach(function (b) { b.addEventListener("click", function () { SBAI.toast.show("Cambios guardados en <strong>" + p.nombre + "</strong>.", { type: "success" }); }); });
+      var id = btn.dataset.viewProject;
+      var tpl = document.querySelector('#project-detail-templates template[data-project-id="' + id + '"]');
+      if (!tpl) return;
+      var backdrop = SBAI.modal.open('<div class="modal modal-wide" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
+
+      backdrop.querySelectorAll("[data-finalizar-asignacion]").forEach(function (b) {
+        b.addEventListener("click", function () { submitForm("/project-manager/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar", {}); });
+      });
+      var asignarBtn = backdrop.querySelector("[data-asignar-proyecto]");
+      if (asignarBtn) {
+        asignarBtn.addEventListener("click", function () {
+          var proyectoId = asignarBtn.dataset.asignarProyecto;
+          submitForm("/project-manager/proyectos/" + proyectoId + "/asignar", {
+            perfilId: backdrop.querySelector('[data-field="perfilId"]').value,
+            rolEnProyecto: backdrop.querySelector('[data-field="rolEnProyecto"]').value,
+            cargaPorcentaje: backdrop.querySelector('[data-field="cargaPorcentaje"]').value,
+            fechaInicio: backdrop.querySelector('[data-field="fechaInicio"]').value
+          });
+        });
+      }
+      var estadoBtn = backdrop.querySelector("[data-cambiar-estado]");
+      if (estadoBtn) {
+        estadoBtn.addEventListener("click", function () {
+          var proyectoId = estadoBtn.dataset.cambiarEstado;
+          submitForm("/project-manager/proyectos/" + proyectoId + "/estado", { estado: backdrop.querySelector('[data-field="estado"]').value });
+        });
+      }
     });
   });
 
   document.getElementById("new-project-btn").addEventListener("click", function () {
-    var html = '<div class="modal modal-wide" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Crear proyecto</h2><p>Define los datos base; podrás completar el equipo después.</p></div>' +
+    var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+      '<div class="modal-header"><div><h2>Nuevo proyecto</h2><p>Seras el Project Manager de este proyecto.</p></div>' +
       '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field-row"><div class="field"><label class="field-label">Nombre del proyecto</label><input class="input" id="np-nombre" placeholder="Nombre"></div>' +
-      '<div class="field"><label class="field-label">Cliente</label><input class="input" id="np-cliente" placeholder="Cliente"></div></div>' +
-      '<div class="field-row"><div class="field"><label class="field-label">Inicio</label><input class="input" type="date"></div><div class="field"><label class="field-label">Fin estimado</label><input class="input" type="date"></div></div></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="create-project-confirm">Crear proyecto</button></div></div>';
+      '<div class="modal-body">' +
+      '<div class="field"><label class="field-label">Nombre</label><input class="input" id="np-nombre"></div>' +
+      '<div class="field"><label class="field-label">Descripcion</label><textarea class="input" id="np-desc" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
+      '<div class="field"><label class="field-label">Tecnologias (separadas por coma)</label><input class="input" id="np-tech" placeholder="React, Node.js, PostgreSQL"></div>' +
+      '<div class="field-row"><div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" id="np-inicio"></div>' +
+      '<div class="field"><label class="field-label">Fecha de fin estimada</label><input class="input" type="date" id="np-fin"></div></div>' +
+      '<div class="field"><label class="field-label">Colaboradores requeridos</label><input class="input" type="number" min="0" value="3" id="np-colab"></div>' +
+      '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
     var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#create-project-confirm").addEventListener("click", function () {
-      var nombre = backdrop.querySelector("#np-nombre").value.trim() || "Nuevo proyecto";
-      SBAI.modal.close(backdrop);
-      SBAI.toast.show("<strong>" + nombre + "</strong> creado como Planeado. Agrega el equipo desde su detalle.", { type: "success" });
+    backdrop.querySelector("#np-confirm").addEventListener("click", function () {
+      var nombre = backdrop.querySelector("#np-nombre").value.trim();
+      var inicio = backdrop.querySelector("#np-inicio").value;
+      if (!nombre) { SBAI.toast.show("Ingresa un nombre para el proyecto.", { type: "error" }); return; }
+      if (!inicio) { SBAI.toast.show("Selecciona la fecha de inicio.", { type: "error" }); return; }
+      submitForm("/project-manager/proyectos", {
+        nombre: nombre,
+        descripcion: backdrop.querySelector("#np-desc").value,
+        tecnologias: backdrop.querySelector("#np-tech").value,
+        fechaInicio: inicio,
+        fechaFinEstimada: backdrop.querySelector("#np-fin").value,
+        colaboradoresRequeridos: backdrop.querySelector("#np-colab").value
+      });
     });
-  });
-
-  window.SBAI.tableFilter.registerCustomMatcher("proyectos-pm", "tecnologia", function (row, value) {
-    return row.dataset.fTecnologia.split(",").indexOf(value) !== -1;
-  });
-  window.SBAI.tableFilter.init(document);
-
-  var pageEl = document.getElementById("pagination");
-  [1, 2, 3, 4].forEach(function (n) {
-    var btn = document.createElement("button");
-    btn.type = "button"; btn.className = "page-btn" + (n === 1 ? " active" : ""); btn.textContent = n;
-    btn.addEventListener("click", function () {
-      document.querySelectorAll(".page-btn").forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      SBAI.toast.show("Página " + n + " simulada — esta demo incluye 7 de los 27 proyectos.");
-    });
-    pageEl.appendChild(btn);
   });
 });
 </script>
