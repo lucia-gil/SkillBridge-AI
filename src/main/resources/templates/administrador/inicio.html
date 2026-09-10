@@ -20,20 +20,29 @@
 
       <div class="detail-grid" style="margin-top:var(--space-6);">
         <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-2);">Salud de la plataforma</h3>
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-2);">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-database"></use></svg></span>
+            <h3 style="font-size:var(--fs-md);">Salud de la plataforma</h3>
+          </div>
           <div id="health-list"></div>
         </section>
         <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Requiere tu atención</h3>
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+            <span class="card-header-icon amber"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
+            <h3 style="font-size:var(--fs-md);">Requiere tu atención</h3>
+          </div>
           <div id="attention-list" style="display:flex; flex-direction:column; gap:var(--space-3);"></div>
         </section>
       </div>
 
       <section class="card" style="margin-top:var(--space-6);">
         <div class="table-toolbar">
-          <div>
-            <strong>Usuarios y roles</strong>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="users-subtitle"></p>
+          <div class="card-header-icon-row">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+            <div>
+              <strong>Usuarios y roles</strong>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="users-subtitle"></p>
+            </div>
           </div>
           <div class="table-filters">
             <button type="button" class="btn btn-primary btn-sm" id="invite-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
@@ -50,7 +59,10 @@
 
       <section class="card card-pad" style="margin-top:var(--space-6);">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-4);">
-          <h3 style="font-size:var(--fs-md);">Catálogo de habilidades · más demandadas</h3>
+          <div class="card-header-icon-row">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
+            <h3 style="font-size:var(--fs-md);">Catálogo de habilidades · más demandadas</h3>
+          </div>
           <a href="habilidades.html" class="btn btn-secondary btn-sm">Ver catálogo completo</a>
         </div>
         <div id="skills-list"></div>
@@ -75,11 +87,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var r = MOCK.adminReport;
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "COLABORADORES ACTIVOS", value: r.colaboradoresActivos, meta: "+" + r.colaboradoresDelta + " este mes", cls: "up" },
-    { label: "PROYECTOS EN CURSO", value: r.proyectosEnCurso, meta: r.proyectosCierranSep + " cierran en septiembre" },
-    { label: "OCUPACIÓN PROMEDIO", value: r.ocupacionPromedio + "%", meta: "meta " + r.ocupacionMeta + "%", cls: "warn" },
-    { label: "CONSULTAS AL ASISTENTE IA", value: r.consultasIA.toLocaleString("es-CO"), meta: "+" + r.consultasDelta + "% vs. semana anterior", cls: "up" }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
+    { label: "COLABORADORES ACTIVOS", value: r.colaboradoresActivos, meta: "+" + r.colaboradoresDelta + " este mes", cls: "up", icon: "icon-users", accent: "green" },
+    { label: "PROYECTOS EN CURSO", value: r.proyectosEnCurso, meta: r.proyectosCierranSep + " cierran en septiembre", icon: "icon-folder", accent: "blue" },
+    { label: "OCUPACIÓN PROMEDIO", value: r.ocupacionPromedio + "%", meta: "meta " + r.ocupacionMeta + "%", cls: "warn", icon: "icon-layers", accent: "amber" },
+    { label: "CONSULTAS AL ASISTENTE IA", value: r.consultasIA.toLocaleString("es-CO"), meta: "+" + r.consultasDelta + "% vs. semana anterior", cls: "up", icon: "icon-sparkles", accent: "green" }
+  ].map(function (k) { return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
 
   document.getElementById("health-list").innerHTML = MOCK.platformHealth.map(function (h) {
     return '<div class="health-row"><span class="health-row-name"><span class="health-dot ' + h.estado + '"></span>' + h.nombre + '</span><span class="health-row-value">' + h.label + ' · ' + h.pct + '</span></div>';
