@@ -21,7 +21,7 @@
   var LS_FLAG_PREFIX = "sbai_flag_";
 
   // Prefijo relativo desde cualquier templates/<grupo>/<archivo>.html hasta static/
-  var STATIC = "/";
+  var STATIC = "../../static/";
 
   var ROLE_HOME = {
     colaborador: "../colaborador/inicio.html",
@@ -64,6 +64,7 @@
         { label: "Inicio", icon: "icon-home", href: "inicio.html" },
         { label: "Mi perfil", icon: "icon-user", href: "perfil.html" },
         { label: "Mis proyectos", icon: "icon-folder", href: "proyectos.html" },
+        { label: "Calendario", icon: "icon-calendar", href: "calendario.html" },
         { label: "Foros", icon: "icon-message", href: "foros.html" },
         { label: "Asistente IA", icon: "icon-sparkles", href: "asistente-ia.html" },
         { label: "Notificaciones", icon: "icon-bell", href: "notificaciones.html", badge: function () { return getUnreadCount("colaborador"); } }
@@ -75,6 +76,7 @@
       items: [
         { label: "Inicio", icon: "icon-home", href: "inicio.html" },
         { label: "Proyectos", icon: "icon-folder", href: "proyectos.html" },
+        { label: "Calendario", icon: "icon-calendar", href: "calendario.html" },
         { label: "Asignaciones", icon: "icon-target", href: "asignaciones.html" },
         { label: "AI Talent Matching", icon: "icon-search-check", href: "ai-talent-matching.html", badge: function () { return MOCK.matchingVacancy.otrasVacantes.length + 1; } },
         { label: "Foros", icon: "icon-message", href: "foros.html" },

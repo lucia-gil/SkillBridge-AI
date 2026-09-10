@@ -173,7 +173,31 @@
     { codigo: "PRJ-SV-2026", nombre: "Data Lake Seguros Vital", iniciales: "SV", cliente: "Seguros Vital", pm: "Paula Vega",
       inicio: "01 ago 2026", fin: "30 abr 2027", equipo: 6, avance: 22, estado: "Bloqueado",
       descripcion: "Data lake corporativo para consolidar pólizas, siniestros y cobranzas de Seguros Vital en una capa analítica única.",
-      stack: ["Apache Kafka", "PostgreSQL", "Python", "Terraform"] }
+      stack: ["Apache Kafka", "PostgreSQL", "Python", "Terraform"] },
+    { codigo: "PRJ-FX-2026", nombre: "Motor de Fraude FinTrust", iniciales: "FX", cliente: "FinTrust Pagos", pm: "Javier Molina",
+      inicio: "12 abr 2026", fin: "20 dic 2026", equipo: 6, avance: 55, estado: "Activo",
+      descripcion: "Motor de detección de fraude en tiempo real para FinTrust Pagos, con reglas configurables y modelos de scoring sobre el histórico de transacciones.",
+      stack: ["Java 21", "Spring Boot 3.3", "Kafka", "PostgreSQL", "Python"] },
+    { codigo: "PRJ-ED-2026", nombre: "Portal Educativo Andes+", iniciales: "ED", cliente: "Fundación Andes+", pm: "Paula Vega",
+      inicio: "01 oct 2026", fin: "01 jun 2027", equipo: 4, avance: 5, estado: "Planeado",
+      descripcion: "Portal de becas y seguimiento académico para la Fundación Andes+, con panel para tutores y reportes de deserción temprana.",
+      stack: ["React 18", "Java / Spring Boot", "PostgreSQL", "Figma"] },
+    { codigo: "PRJ-HL-2026", nombre: "App Salud Vitalis", iniciales: "HL", cliente: "Vitalis Salud", pm: "Javier Molina",
+      inicio: "18 may 2026", fin: "18 nov 2026", equipo: 5, avance: 29, estado: "En riesgo",
+      descripcion: "App de telemedicina para Vitalis Salud: agenda de citas, historia clínica básica y videoconsulta. Retraso por integración con el proveedor de videollamadas.",
+      stack: ["React Native", "Java / Spring Boot", "PostgreSQL", "WebRTC"] },
+    { codigo: "PRJ-LG-2026", nombre: "Optimizador Rutas LogiSur", iniciales: "LG", cliente: "LogiSur", pm: "Paula Vega",
+      inicio: "03 feb 2026", fin: "03 oct 2026", equipo: 5, avance: 72, estado: "Activo",
+      descripcion: "Optimizador de rutas de última milla para LogiSur, con recálculo dinámico según tráfico y ventanas de entrega.",
+      stack: ["Java 21", "Spring Boot", "PostgreSQL", "Python", "Kubernetes"] },
+    { codigo: "PRJ-RT-2026", nombre: "CRM Retail Andino", iniciales: "RT", cliente: "Retail Andino", pm: "Javier Molina",
+      inicio: "10 mar 2026", fin: "10 sep 2026", equipo: 5, avance: 40, estado: "Bloqueado",
+      descripcion: "CRM omnicanal para Retail Andino, bloqueado a la espera de la definición del modelo de fidelización por parte del cliente.",
+      stack: ["React 18", "Java / Spring Boot", "PostgreSQL"] },
+    { codigo: "PRJ-IOT-2026", nombre: "Plataforma IoT Sensores Sol", iniciales: "IO", cliente: "Grupo Sol", pm: "Paula Vega",
+      inicio: "15 nov 2026", fin: "15 jul 2027", equipo: 6, avance: 0, estado: "Planeado",
+      descripcion: "Plataforma de ingesta y monitoreo de sensores IoT en tiendas de Grupo Sol, para inventario en tiempo real y alertas de cadena de frío.",
+      stack: ["Kafka", "Kubernetes", "Python", "Terraform", "PostgreSQL"] }
   ];
 
   function findProject(nombre) {
@@ -183,6 +207,116 @@
     return null;
   }
   MOCK.findProject = findProject;
+  /* ---------------------------------------------------------
+   * Calendario - Eventos de proyecto (mock 1:1 con eventos_proyecto)
+   * tipo: "reunion" | "entregable" | "hito" (tipos_evento)
+   * audiencia: "todos" | "solo_pm" | "solo_colaboradores" (tipos_audiencia)
+   * estado: "pendiente" | "cumplido" | "atrasado" | "cancelado"
+   * --------------------------------------------------------- */
+  MOCK.projectEvents = [
+    { id: "ev1", proyecto: "Portal Andes", tipo: "reunion", titulo: "Daily de sprint 13",
+      fechaInicio: "2026-08-18T09:00:00", fechaFin: "2026-08-18T09:15:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/portal-andes-daily",
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev2", proyecto: "Portal Andes", tipo: "entregable", titulo: "Entrega modulo de autenticacion",
+      fechaInicio: "2026-08-19T18:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev3", proyecto: "Portal Andes", tipo: "hito", titulo: "Demo sprint 13 con BanCredit",
+      fechaInicio: "2026-08-25T15:00:00", fechaFin: "2026-08-25T16:00:00",
+      ubicacion: "Sala BanCredit, piso 4", enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev4", proyecto: "App Móvil Aurora", tipo: "reunion", titulo: "Retro sprint 7",
+      fechaInicio: "2026-08-18T16:00:00", fechaFin: "2026-08-18T17:00:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/aurora-retro",
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev5", proyecto: "App Móvil Aurora", tipo: "entregable", titulo: "QA de accesibilidad AA del checkout",
+      fechaInicio: "2026-08-22T18:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev6", proyecto: "Núcleo Retail", tipo: "reunion", titulo: "Kickoff de equipo ampliado",
+      fechaInicio: "2026-09-01T10:00:00", fechaFin: "2026-09-01T11:30:00",
+      ubicacion: "Sala Andes 2", enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev7", proyecto: "Motor Cobranzas v2", tipo: "hito", titulo: "Entrega final y hand-off",
+      fechaInicio: "2026-09-10T17:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev8", proyecto: "Portal Andes", tipo: "reunion", titulo: "Revision de arquitectura con Diego",
+      fechaInicio: "2026-08-14T11:00:00", fechaFin: "2026-08-14T12:00:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/portal-andes-arq",
+      audiencia: "solo_pm", estado: "cumplido", creadoPor: "Javier Molina" },
+    { id: "ev9", proyecto: "App Móvil Aurora", tipo: "entregable", titulo: "Cierre de sprint 6",
+      fechaInicio: "2026-08-12T18:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "atrasado", creadoPor: "Javier Molina" },
+    { id: "ev10", proyecto: "Núcleo Retail", tipo: "reunion", titulo: "Alineacion con Grupo Sol",
+      fechaInicio: "2026-08-20T09:30:00", fechaFin: "2026-08-20T10:00:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/nucleo-retail-sol",
+      audiencia: "solo_pm", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev11", proyecto: "App Móvil Aurora", tipo: "hito", titulo: "Entrega de la beta cerrada",
+      fechaInicio: "2026-08-28T12:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev12", proyecto: "Núcleo Retail", tipo: "entregable", titulo: "Definición final de catálogo unificado",
+      fechaInicio: "2026-09-04T18:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev13", proyecto: "Motor Cobranzas v2", tipo: "reunion", titulo: "Revisión de reglas de mora con Seguros Vital",
+      fechaInicio: "2026-08-27T10:00:00", fechaFin: "2026-08-27T11:00:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/cobranzas-reglas",
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev14", proyecto: "Portal Andes", tipo: "entregable", titulo: "Migración del módulo de pagos a producción",
+      fechaInicio: "2026-09-05T20:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev15", proyecto: "App Móvil Aurora", tipo: "reunion", titulo: "Revisión de diseño con Sofía",
+      fechaInicio: "2026-08-21T14:00:00", fechaFin: "2026-08-21T14:45:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/aurora-diseno",
+      audiencia: "solo_pm", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev16", proyecto: "Núcleo Retail", tipo: "hito", titulo: "Arranque de fase de plataforma",
+      fechaInicio: "2026-09-15T09:00:00", fechaFin: null,
+      ubicacion: "Sala Andes 2", enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev17", proyecto: "Motor Cobranzas v2", tipo: "entregable", titulo: "Certificación de trazabilidad para auditoría",
+      fechaInicio: "2026-09-08T18:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev18", proyecto: "Portal Andes", tipo: "reunion", titulo: "Retro sprint 13",
+      fechaInicio: "2026-08-29T16:00:00", fechaFin: "2026-08-29T17:00:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/portal-andes-retro13",
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev19", proyecto: "App Móvil Aurora", tipo: "entregable", titulo: "Publicación en TestFlight",
+      fechaInicio: "2026-08-08T18:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "cumplido", creadoPor: "Javier Molina" },
+    { id: "ev20", proyecto: "Motor Cobranzas v2", tipo: "hito", titulo: "Cierre de UAT con Seguros Vital",
+      fechaInicio: "2026-08-05T15:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "cumplido", creadoPor: "Javier Molina" }
+  ];
+
+  MOCK.eventTypeMeta = {
+    reunion: { label: "Reunion", accent: "blue", icon: "icon-users" },
+    entregable: { label: "Entregable", accent: "red", icon: "icon-folder" },
+    hito: { label: "Hito", accent: "green", icon: "icon-target" }
+  };
+  MOCK.eventStatusBadge = { pendiente: "badge-blue", cumplido: "badge-green", atrasado: "badge-red", cancelado: "badge-neutral" };
+
+  MOCK.eventComments = {
+    ev1: [
+      { autor: "Mariana Ruiz", iniciales: "MR", contenido: "Voy a llegar 5 min tarde, tengo otra daily antes.", tiempo: "hace 2 h" }
+    ],
+    ev3: [
+      { autor: "Diego Salazar", iniciales: "DS", contenido: "Confirmo asistencia, llevo el ambiente de staging listo.", tiempo: "ayer" },
+      { autor: "Javier Molina", iniciales: "JM", contenido: "Perfecto, yo llevo las slides.", tiempo: "ayer" }
+    ],
+    ev6: [
+      { autor: "Camila Ortega", iniciales: "CO", contenido: "Confirmado el enlace virtual para quienes no puedan ir presencial?", tiempo: "hace 3 dias" }
+    ]
+  };
+  MOCK.findEvent = function (id) { return MOCK.projectEvents.filter(function (e) { return e.id === id; })[0] || null; };
+
 
   /* ---------------------------------------------------------
    * Asignaciones (colaborador × proyecto)

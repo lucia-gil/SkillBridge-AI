@@ -29,7 +29,7 @@
     }).join("");
 
     return (
-      '<div class="sidebar-brand"><span class="sidebar-brand-mark">' + icon("icon-logo") + '</span><span class="sidebar-brand-text">SkillBridge AI</span></div>' +
+      '<div class="sidebar-brand"><img class="sidebar-brand-mark" src="' + window.SBAI.state.STATIC + 'img/logo-icon.png" alt="SkillBridge AI"><span class="sidebar-brand-text">SkillBridge AI</span></div>' +
       '<div class="sidebar-role-badge">' + config.label + "</div>" +
       '<nav class="sidebar-nav" aria-label="Navegación principal">' + items + "</nav>" +
       '<div class="sidebar-footer">' +
@@ -67,7 +67,7 @@
       '<button type="button" class="topbar-search" data-open-command-palette><svg class="icon"><use href="' + window.SBAI.state.STATIC + 'img/icons.svg#icon-search"></use></svg>' +
       '<span>Buscar colaboradores, proyectos o habilidades…</span><kbd>⌘K</kbd></button>' +
       '<div class="topbar-actions">' +
-      '<a class="topbar-ai-btn" href="asistente-ia.html">' + icon("icon-sparkles") + "<span>Asistente IA</span></a>" +
+      '<a class="topbar-ai-btn" href="asistente-ia.html"><img class="topbar-ai-icon" src="' + window.SBAI.state.STATIC + 'img/logo-ai-icon.png" alt="">' + "<span>Asistente IA</span></a>" +
       '<div class="dropdown">' +
       '<button type="button" class="topbar-icon-btn" data-dropdown-trigger="notif-panel" aria-label="Notificaciones">' + icon("icon-bell") +
       (unread > 0 ? '<span class="counter-badge" data-unread-badge>' + unread + "</span>" : "") + "</button>" +
@@ -129,10 +129,7 @@
       var logoutBtn = e.target.closest('[data-action="logout"]');
       if (logoutBtn) {
         window.SBAI.state.clearSession();
-        // Cierre de sesion real: invalida la HttpSession del servidor
-        // (antes solo se limpiaba sessionStorage, que era el mecanismo de
-        // la demo sin backend, y no cerraba ninguna sesion de verdad).
-        window.location.href = "/auth/logout";
+        window.location.href = window.SBAI.state.LOGIN_PATH;
         return;
       }
       var markAllBtn = e.target.closest('[data-action="mark-all-read-quick"]');
