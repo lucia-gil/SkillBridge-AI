@@ -409,6 +409,9 @@
 .data-table tbody tr[data-f-demanda="Alta"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
 .data-table tbody tr[data-f-demanda="Media"]:hover { box-shadow: inset 3px 0 0 0 var(--amber-fg); }
 .data-table tbody tr[data-f-demanda="Baja"]:hover { box-shadow: inset 3px 0 0 0 var(--border-strong); }
+.data-table tbody tr[data-f-severidad="Alta"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
+.data-table tbody tr[data-f-severidad="Media"]:hover { box-shadow: inset 3px 0 0 0 var(--amber-fg); }
+.data-table tbody tr[data-f-severidad="Info"]:hover { box-shadow: inset 3px 0 0 0 var(--blue-fg); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table thead.sticky-head th { position: sticky; top: 0; background: var(--surface); z-index: 1; box-shadow: 0 1px 0 0 var(--border-subtle); }
 @keyframes table-row-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
