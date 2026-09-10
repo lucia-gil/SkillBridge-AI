@@ -1023,6 +1023,17 @@
 .event-comment-time { font-size: 10px; color: var(--text-tertiary); font-family: var(--font-mono); margin-left: 6px; }
 .event-comment-text { font-size: var(--fs-sm); color: var(--text-secondary); margin-top: 2px; line-height: var(--lh-normal); }
 
+/* Separador de fecha remarcado para el centro de notificaciones */
+.notif-date-header {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky; top: 0; z-index: 1;
+}
+.notif-date-header-icon { color: var(--blue-fg); flex-shrink: 0; }
+.notif-date-header-text { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-primary); }
+
 .event-card {
   display: flex; gap: var(--space-4);
   background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
