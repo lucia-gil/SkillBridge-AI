@@ -16,8 +16,8 @@
     <header class="topbar" id="sbai-topbar"></header>
     <main class="page-content" id="page-content">
 
-      <section class="card">
-        <div class="table-toolbar">
+      <section class="card" style="display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2)); overflow:hidden;">
+        <div class="table-toolbar" style="flex-shrink:0;">
           <div>
             <strong id="proj-count">7 proyectos</strong>
             <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">4 activos · 1 en riesgo · 1 bloqueado · 1 cerrado</p>
@@ -37,18 +37,20 @@
               <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Crear proyecto</button>
           </div>
         </div>
-        <div class="table-scroll">
+
+        <div class="table-scroll" style="flex:1; overflow-y:auto;">
           <table class="data-table">
-            <thead><tr><th>Proyecto</th><th>Cliente</th><th>PM</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead class="sticky-head"><tr><th>Proyecto</th><th>Cliente</th><th>PM</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody id="proj-body"></tbody>
           </table>
+          <div class="state-panel" data-filter-empty="proyectos-pm" hidden>
+            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+            <span class="state-panel-title">Sin proyectos con estos filtros</span>
+            <span class="state-panel-desc">Ajusta el estado, cliente o tecnología para ver más resultados.</span>
+          </div>
         </div>
-        <div class="state-panel" data-filter-empty="proyectos-pm" hidden>
-          <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
-          <span class="state-panel-title">Sin proyectos con estos filtros</span>
-          <span class="state-panel-desc">Ajusta el estado, cliente o tecnología para ver más resultados.</span>
-        </div>
-        <div class="table-footer">
+
+        <div class="table-footer" style="flex-shrink:0;">
           <span class="text-tertiary" style="font-size:var(--fs-xs);">Mostrando <span id="visible-count">7</span> de 27 proyectos</span>
           <div class="pagination" id="pagination"></div>
         </div>
@@ -77,17 +79,22 @@ document.addEventListener("DOMContentLoaded", function () {
   var clientes = Array.from(new Set(MOCK.projects.map(function (p) { return p.cliente; })));
   clientes.forEach(function (c) { clienteSelect.insertAdjacentHTML("beforeend", '<option>' + c + "</option>"); });
 
-  document.getElementById("proj-body").innerHTML = MOCK.projects.map(function (p) {
-    return '<tr data-filter-row="proyectos-pm" data-f-estado="' + p.estado + '" data-f-cliente="' + p.cliente + '" data-f-tecnologia="' + p.stack.join(",") + '">' +
+  document.getElementById("proj-body").innerHTML = MOCK.projects.map(function (p, i) {
+    return '<tr data-filter-row="proyectos-pm" data-f-estado="' + p.estado + '" data-f-cliente="' + p.cliente + '" data-f-tecnologia="' + p.stack.join(",") + '" style="animation-delay:' + (i * 30) + 'ms;">' +
       '<td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);">' + p.iniciales + '</span>' +
       '<span class="cell-person-text"><span class="cell-person-name">' + p.nombre + '</span><span class="cell-person-sub">' + p.codigo + '</span></span></td>' +
       "<td>" + p.cliente + "</td><td>" + p.pm + "</td>" +
       "<td>" + p.inicio + " → " + p.fin + "</td><td>" + p.equipo + "</td>" +
-      '<td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" style="width:' + p.avance + '%;"></div></div><span class="progress-value">' + p.avance + '%</span></div></td>' +
+      '<td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" data-target="' + p.avance + '" style="width:0%;"></div></div><span class="progress-value">' + p.avance + '%</span></div></td>' +
       '<td><span class="badge ' + (estadoBadge[p.estado] || "badge-neutral") + '">' + p.estado + '</span></td>' +
       '<td class="cell-actions">' + (p.nombre === "Núcleo Retail" ? '<a href="proyecto-detalle.html">Ver detalle</a>' : '<button type="button" data-toast-detail="' + p.nombre + '">Ver detalle</button>') +
       ' <button type="button" data-edit-project="' + p.nombre + '">Editar</button></td></tr>';
   }).join("");
+
+  // Anima las barras de avance de 0 al valor real, con un pequeño stagger
+  document.querySelectorAll(".progress-bar-fill[data-target]").forEach(function (bar, i) {
+    setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 150 + i * 40);
+  });
 
   document.querySelectorAll("[data-toast-detail]").forEach(function (btn) {
     btn.addEventListener("click", function () { SBAI.toast.show("El detalle completo está disponible para <strong>Núcleo Retail</strong> en esta demo. Los demás proyectos usan el mismo layout."); });

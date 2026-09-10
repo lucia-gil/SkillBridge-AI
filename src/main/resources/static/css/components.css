@@ -386,9 +386,16 @@
   border-bottom: 1px solid var(--border-subtle);
   vertical-align: middle;
 }
-.data-table tbody tr { transition: background var(--dur-fast) var(--ease-standard); }
-.data-table tbody tr:hover { background: var(--surface-sunken); }
+.data-table tbody tr { transition: background var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard); animation: table-row-in 0.3s var(--ease-standard) backwards; }
+.data-table tbody tr:hover { background: var(--surface-sunken); box-shadow: inset 3px 0 0 0 var(--blue-accent); }
+.data-table tbody tr[data-f-estado="Activo"]:hover { box-shadow: inset 3px 0 0 0 var(--green-fg); }
+.data-table tbody tr[data-f-estado="En riesgo"]:hover { box-shadow: inset 3px 0 0 0 var(--amber-fg); }
+.data-table tbody tr[data-f-estado="Bloqueado"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
+.data-table tbody tr[data-f-estado="Cerrado"]:hover, .data-table tbody tr[data-f-estado="Planeado"]:hover { box-shadow: inset 3px 0 0 0 var(--border-strong); }
 .data-table tbody tr:last-child td { border-bottom: none; }
+.data-table thead.sticky-head th { position: sticky; top: 0; background: var(--surface); z-index: 1; box-shadow: 0 1px 0 0 var(--border-subtle); }
+@keyframes table-row-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .data-table tbody tr { animation: none; } }
 .cell-primary { font-weight: var(--fw-medium); color: var(--text-primary); }
 .cell-person { display: flex; align-items: center; gap: var(--space-3); }
 .cell-person-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
