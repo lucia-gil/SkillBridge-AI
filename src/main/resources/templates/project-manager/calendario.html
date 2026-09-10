@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario · SkillBridge AI</title>
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<link rel="stylesheet" href="../../static/css/base.css">
+<link rel="stylesheet" href="../../static/css/components.css">
+<link rel="stylesheet" href="../../static/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <section class="card" style="margin-bottom:var(--space-5);">
+        <div class="table-toolbar">
+          <div class="segmented" id="tipo-tabs">
+            <button type="button" class="segmented-btn active" data-tipo="todos">Todos</button>
+            <button type="button" class="segmented-btn" data-tipo="reunion">Reuniones</button>
+            <button type="button" class="segmented-btn" data-tipo="entregable">Entregables</button>
+            <button type="button" class="segmented-btn" data-tipo="hito">Hitos</button>
+          </div>
+          <div style="display:flex; gap:var(--space-3);">
+            <select class="select" id="proyecto-filter" style="max-width:200px;">
+              <option value="todos">Todos mis proyectos</option>
+            </select>
+            <button type="button" class="btn btn-primary btn-sm" id="new-event-btn">
+              <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Nuevo evento</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div id="agenda-list"></div>
+        <div class="state-panel" id="agenda-empty" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-calendar"></use></svg></span>
+          <span class="state-panel-title">Sin eventos con este filtro</span>
+          <span class="state-panel-desc">Prueba con otro tipo o proyecto, o crea uno nuevo.</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="../../static/js/mock-data.js"></script>
+<script src="../../static/js/state.js"></script>
+<script src="../../static/js/toast.js"></script>
+<script src="../../static/js/dropdown.js"></script>
+<script src="../../static/js/table-filter.js"></script>
+<script src="../../static/js/command-palette.js"></script>
+<script src="../../static/js/modal.js"></script>
+<script src="../../static/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "project-manager", active: "calendario.html", title: "Calendario", subtitle: "Eventos de tus proyectos" });
+  if (!cfg) return;
+
+  var MIS_PROYECTOS = ["Portal Andes", "App Móvil Aurora", "Núcleo Retail", "Motor Cobranzas v2"];
+  var TODAY = new Date(2026, 7, 18);
+  var activeTipo = "todos";
+  var activeProyecto = "todos";
+
+  document.getElementById("proyecto-filter").innerHTML += MIS_PROYECTOS.map(function (p) {
+    return '<option value="' + p + '">' + p + "</option>";
+  }).join("");
+
+  var MESES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+  var DIAS = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+
+  function dateOnly(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function fmtHora(d) { var h = d.getHours(), m = d.getMinutes(); var ap = h >= 12 ? "PM" : "AM"; var h12 = h % 12 || 12; return h12 + (m ? ":" + String(m).padStart(2, "0") : "") + " " + ap; }
+  function fmtFechaLarga(d) { return DIAS[d.getDay()] + " " + d.getDate() + " " + MESES[d.getMonth()]; }
+
+  function groupFor(d) {
+    var diff = Math.round((dateOnly(d) - TODAY) / 86400000);
+    if (diff < 0) return "pasados";
+    if (diff === 0) return "hoy";
+    if (diff === 1) return "manana";
+    if (diff <= 7) return "semana";
+    return "proximamente";
+  }
+  var GROUP_LABEL = { hoy: "HOY", manana: "MAÑANA", semana: "ESTA SEMANA", proximamente: "PRÓXIMAMENTE", pasados: "EVENTOS PASADOS" };
+  var GROUP_ORDER = ["hoy", "manana", "semana", "proximamente", "pasados"];
+
+  // Como PM, Javier ve TODOS los eventos de sus proyectos (incluidos los
+  // de audiencia "solo_pm"): a diferencia de un colaborador, su
+  // rol_en_proyecto = 'project_manager' lo califica para ambas audiencias.
+  function getVisibleEvents() {
+    return MOCK.projectEvents.filter(function (e) { return MIS_PROYECTOS.indexOf(e.proyecto) !== -1; });
+  }
+
+  function renderAgenda() {
+    var list = getVisibleEvents();
+    if (activeTipo !== "todos") list = list.filter(function (e) { return e.tipo === activeTipo; });
+    if (activeProyecto !== "todos") list = list.filter(function (e) { return e.proyecto === activeProyecto; });
+    list.sort(function (a, b) { return new Date(a.fechaInicio) - new Date(b.fechaInicio); });
+
+    var wrap = document.getElementById("agenda-list");
+    var empty = document.getElementById("agenda-empty");
+    if (!list.length) { wrap.innerHTML = ""; empty.hidden = false; return; }
+    empty.hidden = true;
+
+    var grouped = {};
+    list.forEach(function (e) {
+      var g = groupFor(new Date(e.fechaInicio));
+      (grouped[g] = grouped[g] || []).push(e);
+    });
+
+    var html = "";
+    GROUP_ORDER.forEach(function (g) {
+      if (!grouped[g]) return;
+      html += '<p class="agenda-day-label">' + GROUP_LABEL[g] + "</p>";
+      html += grouped[g].map(function (e) {
+        var meta = MOCK.eventTypeMeta[e.tipo];
+        var d = new Date(e.fechaInicio);
+        var lugar = e.enlaceVirtual ? "Virtual" : (e.ubicacion || "");
+        return '<div class="agenda-item accent-' + meta.accent + '" data-open-event="' + e.id + '">' +
+          '<div class="agenda-item-time"><div class="agenda-item-time-hour">' + fmtHora(d) + '</div><div class="agenda-item-time-day">' + fmtFechaLarga(d) + '</div></div>' +
+          '<span class="agenda-item-icon ' + meta.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + meta.icon + '"></use></svg></span>' +
+          '<div class="agenda-item-body"><div class="agenda-item-title">' + e.titulo + (e.audiencia !== "todos" ? ' <span class="agenda-item-audience">Solo PM</span>' : "") + '</div>' +
+          '<div class="agenda-item-meta"><span>' + e.proyecto + '</span>' + (lugar ? "<span>· " + lugar + "</span>" : "") + '<span class="badge ' + MOCK.eventStatusBadge[e.estado] + '">' + e.estado + "</span></div></div>" +
+          "</div>";
+      }).join("");
+    });
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll("[data-open-event]").forEach(function (row) {
+      row.addEventListener("click", function () { openEventModal(row.dataset.openEvent); });
+    });
+  }
+
+  function commentHtml(c) {
+    return '<div class="event-comment"><span class="avatar avatar-sm">' + c.iniciales + '</span>' +
+      '<div class="event-comment-body"><span class="event-comment-author">' + c.autor + '</span><span class="event-comment-time">' + c.tiempo + '</span>' +
+      '<div class="event-comment-text">' + c.contenido + "</div></div></div>";
+  }
+
+  function openEventModal(id) {
+    var e = MOCK.findEvent(id);
+    var meta = MOCK.eventTypeMeta[e.tipo];
+    var d = new Date(e.fechaInicio);
+    var comments = MOCK.eventComments[id] || [];
+    var lugarHtml = e.enlaceVirtual
+      ? '<a href="' + e.enlaceVirtual + '" target="_blank" rel="noopener">' + e.enlaceVirtual + " ↗</a>"
+      : (e.ubicacion || "Sin ubicación registrada");
+
+    var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+      '<div class="modal-header"><div><h2>' + e.titulo + '</h2><p>' + e.proyecto + ' · ' + fmtFechaLarga(d) + ' · ' + fmtHora(d) + '</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body">' +
+      '<div style="display:flex; gap:var(--space-2); flex-wrap:wrap; margin-bottom:var(--space-5);">' +
+      '<span class="badge badge-neutral">' + meta.label + '</span>' +
+      '<span class="badge ' + MOCK.eventStatusBadge[e.estado] + '" id="status-badge">' + e.estado + '</span>' +
+      (e.audiencia !== "todos" ? '<span class="agenda-item-audience">Solo PM</span>' : "") +
+      '</div>' +
+      '<div class="info-row"><span class="info-row-label">Lugar / enlace</span><span class="info-row-value">' + lugarHtml + '</span></div>' +
+      '<div class="info-row"><span class="info-row-label">Creado por</span><span class="info-row-value">' + e.creadoPor + '</span></div>' +
+      (e.descripcion ? '<p class="text-secondary" style="margin-top:var(--space-4); line-height:1.6;">' + e.descripcion + '</p>' : "") +
+      (e.estado !== "cancelado" ? '<div class="btn-group" style="margin-top:var(--space-5);">' +
+        (e.estado !== "cumplido" ? '<button type="button" class="btn btn-secondary btn-sm" id="mark-done-btn">Marcar cumplido</button>' : "") +
+        '<button type="button" class="btn btn-destructive btn-sm" id="cancel-event-btn">Cancelar evento</button></div>' : "") +
+      '<h3 style="font-size:var(--fs-sm); margin:var(--space-6) 0 var(--space-3);">Comentarios</h3>' +
+      '<div id="event-comments">' + (comments.length ? comments.map(commentHtml).join("") : '<p class="text-tertiary" style="font-size:var(--fs-xs);">Todavía no hay comentarios.</p>') + '</div>' +
+      '<div class="field" style="margin-top:var(--space-4);">' +
+      '<textarea class="input" id="new-comment" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="Escribe un comentario…"></textarea>' +
+      '</div>' +
+      '<div style="display:flex; justify-content:flex-end;"><button type="button" class="btn btn-primary btn-sm" id="add-comment-btn">Comentar</button></div>' +
+      '</div></div>';
+
+    var backdrop = SBAI.modal.open(html);
+
+    backdrop.querySelector("#add-comment-btn").addEventListener("click", function () {
+      var ta = backdrop.querySelector("#new-comment");
+      var text = ta.value.trim();
+      if (!text) return;
+      MOCK.eventComments[id] = MOCK.eventComments[id] || [];
+      MOCK.eventComments[id].push({ autor: "Javier Molina", iniciales: "JM", contenido: text, tiempo: "ahora" });
+      backdrop.querySelector("#event-comments").innerHTML = MOCK.eventComments[id].map(commentHtml).join("");
+      ta.value = "";
+      SBAI.toast.show("Comentario publicado.", { type: "success" });
+    });
+
+    var doneBtn = backdrop.querySelector("#mark-done-btn");
+    if (doneBtn) doneBtn.addEventListener("click", function () {
+      e.estado = "cumplido";
+      SBAI.modal.close(backdrop);
+      renderAgenda();
+      SBAI.toast.show("Evento marcado como <strong>cumplido</strong>.", { type: "success" });
+    });
+    var cancelBtn = backdrop.querySelector("#cancel-event-btn");
+    if (cancelBtn) cancelBtn.addEventListener("click", function () {
+      SBAI.modal.confirm({
+        title: "¿Cancelar este evento?",
+        desc: "Se marcará como cancelado. El equipo del proyecto verá el cambio en su calendario.",
+        confirmLabel: "Cancelar evento",
+        variant: "destructive",
+        onConfirm: function () {
+          e.estado = "cancelado";
+          SBAI.modal.close(backdrop);
+          renderAgenda();
+          SBAI.toast.show("Evento cancelado.", { type: "success" });
+        }
+      });
+    });
+  }
+
+  document.getElementById("new-event-btn").addEventListener("click", function () {
+    var projOptions = MIS_PROYECTOS.map(function (p) { return "<option>" + p + "</option>"; }).join("");
+    var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+      '<div class="modal-header"><div><h2>Nuevo evento</h2><p>Se agrega al calendario de todo el equipo del proyecto.</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body">' +
+      '<div class="field-row">' +
+      '<div class="field"><label class="field-label">Proyecto</label><select class="select" id="ev-proyecto">' + projOptions + '</select></div>' +
+      '<div class="field"><label class="field-label">Tipo</label><select class="select" id="ev-tipo"><option value="reunion">Reunión</option><option value="entregable">Entregable</option><option value="hito">Hito</option></select></div>' +
+      '</div>' +
+      '<div class="field"><label class="field-label">Título</label><input class="input" id="ev-titulo" placeholder="Ej. Demo sprint 14"></div>' +
+      '<div class="field-row">' +
+      '<div class="field"><label class="field-label">Fecha y hora de inicio</label><input class="input" type="datetime-local" id="ev-fecha"></div>' +
+      '<div class="field"><label class="field-label">Audiencia</label><select class="select" id="ev-audiencia"><option value="todos">Todo el equipo</option><option value="solo_pm">Solo Project Manager</option></select></div>' +
+      '</div>' +
+      '<div class="field-row">' +
+      '<div class="field"><label class="field-label">Ubicación (opcional)</label><input class="input" id="ev-ubicacion" placeholder="Ej. Sala Andes 2"></div>' +
+      '<div class="field"><label class="field-label">Enlace virtual (opcional)</label><input class="input" id="ev-enlace" placeholder="https://meet.nexacorp.com/…"></div>' +
+      '</div>' +
+      '<div class="field"><label class="field-label">Descripción (opcional)</label><textarea class="input" id="ev-desc" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
+      '</div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="create-event-confirm">Crear evento</button></div></div>';
+
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#create-event-confirm").addEventListener("click", function () {
+      var titulo = backdrop.querySelector("#ev-titulo").value.trim();
+      var fecha = backdrop.querySelector("#ev-fecha").value;
+      if (!titulo || !fecha) { SBAI.toast.show("Falta el título o la fecha del evento.", { type: "error" }); return; }
+      MOCK.projectEvents.push({
+        id: "ev-new-" + Date.now(),
+        proyecto: backdrop.querySelector("#ev-proyecto").value,
+        tipo: backdrop.querySelector("#ev-tipo").value,
+        titulo: titulo,
+        descripcion: backdrop.querySelector("#ev-desc").value.trim() || null,
+        fechaInicio: fecha,
+        fechaFin: null,
+        ubicacion: backdrop.querySelector("#ev-ubicacion").value.trim() || null,
+        enlaceVirtual: backdrop.querySelector("#ev-enlace").value.trim() || null,
+        audiencia: backdrop.querySelector("#ev-audiencia").value,
+        estado: "pendiente",
+        creadoPor: "Javier Molina"
+      });
+      SBAI.modal.close(backdrop);
+      renderAgenda();
+      SBAI.toast.show("Evento <strong>" + titulo + "</strong> creado.", { type: "success" });
+    });
+  });
+
+  document.querySelectorAll("#tipo-tabs [data-tipo]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("#tipo-tabs [data-tipo]").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      activeTipo = btn.dataset.tipo;
+      renderAgenda();
+    });
+  });
+  document.getElementById("proyecto-filter").addEventListener("change", function (e) {
+    activeProyecto = e.target.value;
+    renderAgenda();
+  });
+
+  renderAgenda();
+});
+</script>
+</body>
+</html>

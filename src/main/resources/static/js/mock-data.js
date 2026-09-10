@@ -207,6 +207,76 @@
     return null;
   }
   MOCK.findProject = findProject;
+  /* ---------------------------------------------------------
+   * Calendario - Eventos de proyecto (mock 1:1 con eventos_proyecto)
+   * tipo: "reunion" | "entregable" | "hito" (tipos_evento)
+   * audiencia: "todos" | "solo_pm" | "solo_colaboradores" (tipos_audiencia)
+   * estado: "pendiente" | "cumplido" | "atrasado" | "cancelado"
+   * --------------------------------------------------------- */
+  MOCK.projectEvents = [
+    { id: "ev1", proyecto: "Portal Andes", tipo: "reunion", titulo: "Daily de sprint 13",
+      fechaInicio: "2026-08-18T09:00:00", fechaFin: "2026-08-18T09:15:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/portal-andes-daily",
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev2", proyecto: "Portal Andes", tipo: "entregable", titulo: "Entrega modulo de autenticacion",
+      fechaInicio: "2026-08-19T18:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev3", proyecto: "Portal Andes", tipo: "hito", titulo: "Demo sprint 13 con BanCredit",
+      fechaInicio: "2026-08-25T15:00:00", fechaFin: "2026-08-25T16:00:00",
+      ubicacion: "Sala BanCredit, piso 4", enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev4", proyecto: "App Movil Aurora", tipo: "reunion", titulo: "Retro sprint 7",
+      fechaInicio: "2026-08-18T16:00:00", fechaFin: "2026-08-18T17:00:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/aurora-retro",
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev5", proyecto: "App Movil Aurora", tipo: "entregable", titulo: "QA de accesibilidad AA del checkout",
+      fechaInicio: "2026-08-22T18:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev6", proyecto: "Nucleo Retail", tipo: "reunion", titulo: "Kickoff de equipo ampliado",
+      fechaInicio: "2026-09-01T10:00:00", fechaFin: "2026-09-01T11:30:00",
+      ubicacion: "Sala Andes 2", enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev7", proyecto: "Motor Cobranzas v2", tipo: "hito", titulo: "Entrega final y hand-off",
+      fechaInicio: "2026-09-10T17:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "pendiente", creadoPor: "Javier Molina" },
+    { id: "ev8", proyecto: "Portal Andes", tipo: "reunion", titulo: "Revision de arquitectura con Diego",
+      fechaInicio: "2026-08-14T11:00:00", fechaFin: "2026-08-14T12:00:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/portal-andes-arq",
+      audiencia: "solo_pm", estado: "cumplido", creadoPor: "Javier Molina" },
+    { id: "ev9", proyecto: "App Movil Aurora", tipo: "entregable", titulo: "Cierre de sprint 6",
+      fechaInicio: "2026-08-12T18:00:00", fechaFin: null,
+      ubicacion: null, enlaceVirtual: null,
+      audiencia: "todos", estado: "atrasado", creadoPor: "Javier Molina" },
+    { id: "ev10", proyecto: "Nucleo Retail", tipo: "reunion", titulo: "Alineacion con Grupo Sol",
+      fechaInicio: "2026-08-20T09:30:00", fechaFin: "2026-08-20T10:00:00",
+      ubicacion: null, enlaceVirtual: "https://meet.nexacorp.com/nucleo-retail-sol",
+      audiencia: "solo_pm", estado: "pendiente", creadoPor: "Javier Molina" }
+  ];
+
+  MOCK.eventTypeMeta = {
+    reunion: { label: "Reunion", accent: "blue", icon: "icon-users" },
+    entregable: { label: "Entregable", accent: "red", icon: "icon-folder" },
+    hito: { label: "Hito", accent: "green", icon: "icon-target" }
+  };
+  MOCK.eventStatusBadge = { pendiente: "badge-blue", cumplido: "badge-green", atrasado: "badge-red", cancelado: "badge-neutral" };
+
+  MOCK.eventComments = {
+    ev1: [
+      { autor: "Mariana Ruiz", iniciales: "MR", contenido: "Voy a llegar 5 min tarde, tengo otra daily antes.", tiempo: "hace 2 h" }
+    ],
+    ev3: [
+      { autor: "Diego Salazar", iniciales: "DS", contenido: "Confirmo asistencia, llevo el ambiente de staging listo.", tiempo: "ayer" },
+      { autor: "Javier Molina", iniciales: "JM", contenido: "Perfecto, yo llevo las slides.", tiempo: "ayer" }
+    ],
+    ev6: [
+      { autor: "Camila Ortega", iniciales: "CO", contenido: "Confirmado el enlace virtual para quienes no puedan ir presencial?", tiempo: "hace 3 dias" }
+    ]
+  };
+  MOCK.findEvent = function (id) { return MOCK.projectEvents.filter(function (e) { return e.id === id; })[0] || null; };
+
 
   /* ---------------------------------------------------------
    * Asignaciones (colaborador × proyecto)
@@ -607,7 +677,7 @@
     administrador: ["Resume la auditoría de las últimas 24 horas", "¿Qué módulos usan más el asistente IA?", "¿Cuántas habilidades no están vinculadas a proyectos?"]
   };
 
-  MOCK.aiFallbackReply = "Todavía no tenemos un dato preparado para esa consulta específica en esta demo, pero en producción el asistente respondería usando datos de perfiles, asignaciones, proyectos y foros a los que tu rol tiene acceso.";
+  MOCK.aiFallbackReply = "Todavía no tengo un dato preparado para esa consulta específica en esta demo, pero en producción el asistente respondería usando datos de perfiles, asignaciones, proyectos y foros a los que tu rol tiene acceso.";
 
   /* ---------------------------------------------------------
    * Salud de la plataforma (Admin)
