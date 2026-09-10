@@ -41,6 +41,12 @@
 --  mente (p. ej. comentarios sobre el foro en vez de sobre eventos),
 --  el cambio es acotado y fácil de mover.
 -- =====================================================================
+
+-- DROP SCHEMA + CREATE SCHEMA: permite correr este archivo completo las
+-- veces que haga falta sin arrastrar tablas de un intento anterior a medio
+-- crear, y sin el "Error 1046: No database selected" de MySQL Workbench si
+-- la pestaña de la consola no tenía un schema default ya elegido.
+DROP SCHEMA IF EXISTS skillbridge_db;
 CREATE SCHEMA skillbridge_db
     DEFAULT CHARACTER SET utf8mb4
     DEFAULT COLLATE utf8mb4_unicode_ci;
@@ -707,3 +713,236 @@ INSERT INTO habilidades (nombre, categoria_id) VALUES
  ('Terraform', (SELECT id FROM categorias_habilidad WHERE nombre = 'DevOps & Cloud')),
  ('Figma', (SELECT id FROM categorias_habilidad WHERE nombre = 'Diseño')),
  ('Selenium', (SELECT id FROM categorias_habilidad WHERE nombre = 'QA'));
+
+-- =====================================================================
+-- DATOS DE PRUEBA ADICIONALES — equipo de ejemplo para probar el rol de
+-- Colaborador (incluye Project Manager, que también es una cuenta
+-- "colaborador" a nivel de usuarios: el rol de PM es contextual, por
+-- proyecto, vía asignaciones.rol_en_proyecto, no un rol organizacional
+-- fijo) y el rol de Administrador (el admin semilla ya viene arriba).
+-- Contraseña real para TODAS las cuentas de prueba de abajo:
+-- "Colaborador123!" (hash BCrypt real generado con la librería bcrypt,
+-- verificable por Spring Security BCryptPasswordEncoder — cámbienla antes
+-- de exponer esto públicamente, igual que la del admin).
+-- =====================================================================
+
+-- Correos autorizados del equipo de prueba (ya "usados": simulan cuentas
+-- que ya completaron el registro, para no tener que pasar por el flujo de
+-- alta manualmente al probar la app).
+INSERT INTO correos_autorizados (correo, autorizado_por_id, origen_carga, utilizado, fecha_uso) VALUES
+ ('carla.mendoza@nexacorp.com',  1, 'individual', TRUE, NOW()),
+ ('luis.ramirez@nexacorp.com',   1, 'individual', TRUE, NOW()),
+ ('sofia.vega@nexacorp.com',     1, 'masiva_csv', TRUE, NOW()),
+ ('diego.torres@nexacorp.com',   1, 'masiva_csv', TRUE, NOW()),
+ ('andrea.salazar@nexacorp.com', 1, 'individual', TRUE, NOW());
+
+-- Usuarios de prueba: 4 cuentas "normales" (rol_organizacional NULL — serán
+-- Project Manager o Colaborador según el proyecto, vía asignaciones) + 1
+-- Resource Manager (rol organizacional fijo, para cubrir también ese caso
+-- ya que el catálogo lo soporta).
+INSERT INTO usuarios (correo, contrasena_hash, nombre_completo, rol_organizacional, estado) VALUES
+ ('carla.mendoza@nexacorp.com',  '$2b$10$pJKAMeoRR.zBFw2q4ocDeOyrNa2OWPkebeiueR1D3tZWdvsxwVeCq', 'Carla Mendoza',  NULL,               'activo'),
+ ('luis.ramirez@nexacorp.com',   '$2b$10$pJKAMeoRR.zBFw2q4ocDeOyrNa2OWPkebeiueR1D3tZWdvsxwVeCq', 'Luis Ramírez',   NULL,               'activo'),
+ ('sofia.vega@nexacorp.com',     '$2b$10$pJKAMeoRR.zBFw2q4ocDeOyrNa2OWPkebeiueR1D3tZWdvsxwVeCq', 'Sofía Vega',     NULL,               'activo'),
+ ('diego.torres@nexacorp.com',   '$2b$10$pJKAMeoRR.zBFw2q4ocDeOyrNa2OWPkebeiueR1D3tZWdvsxwVeCq', 'Diego Torres',   NULL,               'activo'),
+ ('andrea.salazar@nexacorp.com', '$2b$10$pJKAMeoRR.zBFw2q4ocDeOyrNa2OWPkebeiueR1D3tZWdvsxwVeCq', 'Andrea Salazar', 'resource_manager', 'activo');
+
+-- Perfiles (usuario_id resuelto por correo: no se hardcodean ids, siguiendo
+-- la misma convención que el script ya usa para categoria_id/habilidad_id).
+INSERT INTO perfiles (usuario_id, cargo, disponibilidad_porcentaje, experiencia_anios, biografia, estado) VALUES
+ ((SELECT id FROM usuarios WHERE correo = 'carla.mendoza@nexacorp.com'),  'Project Manager',       100, 6, 'PM con experiencia liderando equipos de desarrollo backend y móvil.', 'activo'),
+ ((SELECT id FROM usuarios WHERE correo = 'luis.ramirez@nexacorp.com'),   'Desarrollador Backend', 100, 3, 'Backend developer especializado en Java y Spring Boot.', 'activo'),
+ ((SELECT id FROM usuarios WHERE correo = 'sofia.vega@nexacorp.com'),     'Ingeniera DevOps',      100, 4, 'DevOps con foco en Kubernetes, Docker y CI/CD.', 'activo'),
+ ((SELECT id FROM usuarios WHERE correo = 'diego.torres@nexacorp.com'),   'Desarrollador Frontend', 80, 2, 'Frontend developer, React y Thymeleaf.', 'activo'),
+ ((SELECT id FROM usuarios WHERE correo = 'andrea.salazar@nexacorp.com'), 'Resource Manager',      100, 8, 'Encargada de asignación de recursos entre proyectos.', 'activo');
+
+-- Habilidades declaradas por cada perfil (nivel 1-5), algunas validadas
+-- por el admin (validado_por_id) para probar también ese flujo.
+INSERT INTO perfil_habilidad (perfil_id, habilidad_id, nivel, validado_por_id) VALUES
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'Spring Boot'), 4, 1),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'Java'), 4, 1),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'Java'), 5, 1),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'Spring Boot'), 5, 1),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'MySQL'), 3, NULL),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'sofia.vega@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'Kubernetes'), 5, 1),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'sofia.vega@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'Docker'), 5, 1),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'sofia.vega@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'Terraform'), 3, NULL),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'diego.torres@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'React'), 4, NULL),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'diego.torres@nexacorp.com'),
+  (SELECT id FROM habilidades WHERE nombre = 'Thymeleaf'), 2, NULL);
+
+-- ---------------------------------------------------------------------
+-- Proyectos de prueba: uno activo con equipo completo (PM + 2
+-- colaboradores), uno en planificación (para probar vacantes/otro estado),
+-- y uno completado (para probar historial de asignaciones finalizadas —
+-- el mecanismo de clave_activa de la sección 9).
+-- ---------------------------------------------------------------------
+INSERT INTO proyectos (nombre, descripcion, tecnologias, estado, colaboradores_requeridos, fecha_inicio, fecha_fin_estimada) VALUES
+ ('Plataforma de Matching IA', 'Motor de AI Talent Matching para asignar colaboradores a proyectos según habilidades.', JSON_ARRAY('Java','Spring Boot','MySQL'), 'activo', 3, '2026-08-01', '2026-12-15'),
+ ('Portal de Autoservicio RRHH', 'Portal donde cada colaborador actualiza su propio perfil y disponibilidad.', JSON_ARRAY('React','Thymeleaf'), 'planificacion', 2, '2026-10-01', NULL),
+ ('Migración Legacy a Cloud', 'Migración del sistema de facturación legacy a Cloud SQL + Cloud Run.', JSON_ARRAY('Docker','Kubernetes','Terraform'), 'completado', 2, '2026-03-01', '2026-07-31');
+
+INSERT INTO proyecto_habilidad_requerida (proyecto_id, habilidad_id, nivel_requerido) VALUES
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'), (SELECT id FROM habilidades WHERE nombre = 'Java'), 4),
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'), (SELECT id FROM habilidades WHERE nombre = 'Spring Boot'), 4),
+ ((SELECT id FROM proyectos WHERE nombre = 'Portal de Autoservicio RRHH'), (SELECT id FROM habilidades WHERE nombre = 'React'), 3),
+ ((SELECT id FROM proyectos WHERE nombre = 'Migración Legacy a Cloud'), (SELECT id FROM habilidades WHERE nombre = 'Kubernetes'), 4);
+
+-- ---------------------------------------------------------------------
+-- Asignaciones: cubre rol_en_proyecto='project_manager' (Carla),
+-- rol_en_proyecto='colaborador' activo (Luis, Sofía, Diego), Y una fila
+-- FINALIZADA (Sofía en el proyecto ya completado) para probar en vivo que
+-- el historial funciona: dos filas para la misma persona, pero en
+-- proyectos distintos y con distinto estado, conviven sin chocar contra
+-- el UNIQUE de clave_activa.
+-- Luis queda con 60% + 50% = 110% de carga total activa (por encima del
+-- limite_carga_colaborador=100 de configuracion_global) a propósito, para
+-- poder probar el flujo de excepciones_carga de abajo con un caso real.
+-- ---------------------------------------------------------------------
+INSERT INTO asignaciones (proyecto_id, perfil_id, rol_en_proyecto, carga_porcentaje, estado, fecha_inicio, fecha_fin) VALUES
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  'project_manager', 100, 'activa', '2026-08-01', NULL),
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  'colaborador', 60, 'activa', '2026-08-01', NULL),
+ ((SELECT id FROM proyectos WHERE nombre = 'Portal de Autoservicio RRHH'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  'colaborador', 50, 'activa', '2026-10-01', NULL),
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'sofia.vega@nexacorp.com'),
+  'colaborador', 40, 'activa', '2026-08-15', NULL),
+ ((SELECT id FROM proyectos WHERE nombre = 'Portal de Autoservicio RRHH'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'diego.torres@nexacorp.com'),
+  'colaborador', 70, 'activa', '2026-10-01', NULL),
+ ((SELECT id FROM proyectos WHERE nombre = 'Migración Legacy a Cloud'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'sofia.vega@nexacorp.com'),
+  'colaborador', 100, 'finalizada', '2026-03-01', '2026-07-31');
+
+-- Excepción de carga real: Luis queda en 110% (60+50) — por encima del
+-- límite configurado (100%) — se solicita y se aprueba una excepción.
+INSERT INTO excepciones_carga (asignacion_id, solicitado_por_id, aprobado_por_id, porcentaje_aprobado, fecha_limite, estado, motivo, fecha_resolucion) VALUES
+ ((SELECT a.id FROM asignaciones a
+     JOIN proyectos pr ON pr.id = a.proyecto_id
+     JOIN perfiles p ON p.id = a.perfil_id JOIN usuarios u ON u.id = p.usuario_id
+   WHERE u.correo = 'luis.ramirez@nexacorp.com' AND pr.nombre = 'Portal de Autoservicio RRHH'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  110, '2026-12-31', 'aprobada', 'Cobertura temporal mientras se contrata un backend adicional para el Portal de Autoservicio RRHH.', NOW());
+
+-- ---------------------------------------------------------------------
+-- Foro, resumen de IA, chat — actividad de ejemplo en el proyecto activo.
+-- ---------------------------------------------------------------------
+INSERT INTO foro_publicaciones (proyecto_id, autor_id, publicacion_padre_id, titulo, contenido, etiquetas, es_solucion, num_vistas) VALUES
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  NULL, '¿Cómo calculamos el score de compatibilidad?', 'Estoy definiendo los pesos del matching, ¿alguien tiene una propuesta de fórmula?', JSON_ARRAY('matching','ia'), FALSE, 12);
+
+INSERT INTO foro_publicaciones (proyecto_id, autor_id, publicacion_padre_id, titulo, contenido, etiquetas, es_solucion, num_vistas) VALUES
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  (SELECT id FROM foro_publicaciones WHERE titulo = '¿Cómo calculamos el score de compatibilidad?'),
+  NULL, 'Sugiero 50% habilidades + 30% experiencia + 20% disponibilidad, ya está en configuracion_global así que solo hay que leerlo de ahí en vez de hardcodearlo.', NULL, TRUE, 5);
+
+INSERT INTO resumenes_ia (publicacion_id, resumen, modelo_utilizado) VALUES
+ ((SELECT id FROM foro_publicaciones WHERE titulo = '¿Cómo calculamos el score de compatibilidad?'),
+  'El hilo define la fórmula del score de matching: 50% habilidades, 30% experiencia, 20% disponibilidad, tomados de configuracion_global. Respuesta de Luis marcada como solución.', 'claude-sonnet-5');
+
+INSERT INTO chat_salas (proyecto_id, nombre) VALUES
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'), 'General - Matching IA');
+
+INSERT INTO chat_mensajes (sala_id, autor_id, contenido) VALUES
+ ((SELECT id FROM chat_salas WHERE nombre = 'General - Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  'Buenas equipo, quedamos en revisar el score el jueves.'),
+ ((SELECT id FROM chat_salas WHERE nombre = 'General - Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  'De acuerdo, dejo la propuesta en el foro.');
+
+-- ---------------------------------------------------------------------
+-- Notificaciones y preferencias — para Luis (con la excepción de carga) y
+-- Carla (como PM).
+-- ---------------------------------------------------------------------
+INSERT INTO notificaciones (perfil_id, tipo_id, titulo, detalle, leida, canal, enlace_accion) VALUES
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  (SELECT id FROM tipos_notificacion WHERE codigo = 'alerta'),
+  'Carga por encima del límite', 'Tu carga total activa es 110%, por encima del límite configurado (100%).', FALSE, 'app_mail', '/asignaciones/mias'),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  (SELECT id FROM tipos_notificacion WHERE codigo = 'solicitud'),
+  'Excepción de carga aprobada', 'Tu excepción de carga para el Portal de Autoservicio RRHH fue aprobada.', TRUE, 'app', '/excepciones/mias'),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  (SELECT id FROM tipos_notificacion WHERE codigo = 'info'),
+  'Nuevo colaborador asignado', 'Sofía Vega fue asignada a Plataforma de Matching IA (40%).', TRUE, 'app', '/proyectos/plataforma-matching-ia');
+
+INSERT INTO preferencias_notificacion (perfil_id, tipo_evento, canal) VALUES
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'), 'alertas_criticas', 'app_mail'),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'), 'solicitudes_aprobacion', 'solo_app'),
+ ((SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'), 'resultados_ia', 'app_mail');
+
+-- ---------------------------------------------------------------------
+-- Eventos de proyecto + comentarios (tablas nuevas del v4).
+-- ---------------------------------------------------------------------
+INSERT INTO eventos_proyecto (proyecto_id, creado_por_id, tipo_id, titulo, descripcion, fecha_inicio, fecha_fin, enlace_virtual, audiencia_id, estado) VALUES
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  (SELECT id FROM tipos_evento WHERE codigo = 'reunion'),
+  'Revisión de score de matching', 'Reunión para cerrar la fórmula del score.', '2026-09-17 15:00:00', '2026-09-17 16:00:00', 'https://meet.example.com/matching-ia',
+  (SELECT id FROM tipos_audiencia WHERE codigo = 'todos'), 'pendiente'),
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  (SELECT id FROM tipos_evento WHERE codigo = 'entregable'),
+  'Entrega del motor de matching v1', 'Primera versión funcional del motor de matching.', '2026-10-15 23:59:00', NULL, NULL,
+  (SELECT id FROM tipos_audiencia WHERE codigo = 'todos'), 'pendiente'),
+ ((SELECT id FROM proyectos WHERE nombre = 'Plataforma de Matching IA'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  (SELECT id FROM tipos_evento WHERE codigo = 'reunion'),
+  'Sync solo PMs - riesgos del proyecto', 'Reunión de seguimiento restringida a Project Managers.', '2026-09-10 10:00:00', '2026-09-10 10:30:00', 'https://meet.example.com/pm-sync',
+  (SELECT id FROM tipos_audiencia WHERE codigo = 'solo_pm'), 'cumplido');
+
+INSERT INTO comentarios_evento (evento_id, autor_id, contenido) VALUES
+ ((SELECT id FROM eventos_proyecto WHERE titulo = 'Revisión de score de matching'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'luis.ramirez@nexacorp.com'),
+  'Confirmo asistencia, llevo la propuesta de pesos del foro.'),
+ ((SELECT id FROM eventos_proyecto WHERE titulo = 'Revisión de score de matching'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'sofia.vega@nexacorp.com'),
+  'Yo me conecto 10 minutos tarde, tengo otra reunión antes.');
+
+-- ---------------------------------------------------------------------
+-- IA: embeddings + log de recomendaciones (RF05), para completar el
+-- circuito de datos que ambos roles (Administrador y Colaborador/PM)
+-- pueden llegar a consultar.
+-- ---------------------------------------------------------------------
+INSERT INTO conocimiento_embeddings (tipo_origen, referencia_id, contenido_indexado, vector_embedding) VALUES
+ ('publicacion_foro',
+  (SELECT id FROM foro_publicaciones WHERE titulo = '¿Cómo calculamos el score de compatibilidad?'),
+  '¿Cómo calculamos el score de compatibilidad? Estoy definiendo los pesos del matching...',
+  JSON_ARRAY(0.012, -0.034, 0.087, 0.005, -0.099));
+
+INSERT INTO recomendaciones_ia_log (proyecto_id, perfil_recomendado_id, solicitado_por_id, puntaje_compatibilidad, explicacion, fue_asignado) VALUES
+ ((SELECT id FROM proyectos WHERE nombre = 'Portal de Autoservicio RRHH'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'diego.torres@nexacorp.com'),
+  (SELECT p.id FROM perfiles p JOIN usuarios u ON u.id = p.usuario_id WHERE u.correo = 'carla.mendoza@nexacorp.com'),
+  87.50, 'Coincide en React (nivel 4/5, requerido 3/5) y tiene disponibilidad suficiente (80%).', TRUE);
+
+-- ---------------------------------------------------------------------
+-- Auditoría — un par de eventos de ejemplo, cubriendo acción del admin y
+-- acción de un PM, con valor_anterior/valor_nuevo poblados (ampliación v4).
+-- ---------------------------------------------------------------------
+INSERT INTO auditoria_logs (usuario_id, accion, entidad_afectada, entidad_id, valor_anterior, valor_nuevo, detalle) VALUES
+ (1, 'AUTORIZAR_CORREO', 'correos_autorizados',
+  (SELECT id FROM correos_autorizados WHERE correo = 'carla.mendoza@nexacorp.com'),
+  NULL, JSON_OBJECT('correo','carla.mendoza@nexacorp.com','utilizado', false),
+  'Administrador autoriza el correo de Carla Mendoza para registro.'),
+ ((SELECT id FROM usuarios WHERE correo = 'carla.mendoza@nexacorp.com'), 'APROBAR_EXCEPCION_CARGA', 'excepciones_carga',
+  (SELECT id FROM excepciones_carga LIMIT 1),
+  JSON_OBJECT('estado','pendiente'), JSON_OBJECT('estado','aprobada','porcentaje_aprobado',110),
+  'Carla Mendoza (PM) aprueba la excepción de carga de Luis Ramírez.');
