@@ -16,9 +16,9 @@
     <header class="topbar" id="sbai-topbar"></header>
     <main class="page-content" id="page-content">
 
-      <div class="detail-grid">
-        <section class="card">
-          <div class="table-toolbar">
+      <div class="detail-grid" style="height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2));">
+        <section class="card" style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
+          <div class="table-toolbar" style="flex-shrink:0;">
             <div class="tabs" id="notif-tabs">
               <button type="button" class="tab-btn active" data-filter-scope="notif" data-filter-key="tab" data-filter-value="todas">Todas</button>
               <button type="button" class="tab-btn" data-filter-scope="notif" data-filter-key="tab" data-filter-value="sinleer" id="tab-sinleer">Sin leer</button>
@@ -28,16 +28,21 @@
             </div>
             <button type="button" class="btn btn-secondary btn-sm" id="mark-all-btn">Marcar todas como leídas</button>
           </div>
-          <div id="notif-groups"></div>
-          <div class="state-panel" data-filter-empty="notif" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-bell"></use></svg></span>
-            <span class="state-panel-title">No hay notificaciones aquí</span>
-            <span class="state-panel-desc">Cambia de pestaña para ver otro tipo de aviso.</span>
+          <div style="flex:1; overflow-y:auto;">
+            <div id="notif-groups"></div>
+            <div class="state-panel" data-filter-empty="notif" hidden>
+              <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-bell"></use></svg></span>
+              <span class="state-panel-title">No hay notificaciones aquí</span>
+              <span class="state-panel-desc">Cambia de pestaña para ver otro tipo de aviso.</span>
+            </div>
           </div>
         </section>
 
-        <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Preferencias de aviso</h3>
+        <section class="card card-pad" style="height:100%; overflow-y:auto;">
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-sliders"></use></svg></span>
+            <h3 style="font-size:var(--fs-md);">Preferencias de aviso</h3>
+          </div>
           <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Nuevas asignaciones</span></div><label class="toggle"><input type="checkbox" checked data-pref="asignaciones"><span class="toggle-track"></span></label></div>
           <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Alertas de sobrecarga</span></div><label class="toggle"><input type="checkbox" checked data-pref="sobrecarga"><span class="toggle-track"></span></label></div>
           <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Respuestas en foros</span></div><label class="toggle"><input type="checkbox" data-pref="foros"><span class="toggle-track"></span></label></div>
@@ -82,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var html = "";
     ["hoy", "ayer", "semana"].forEach(function (g) {
       if (!groups[g]) return;
-      html += '<p class="label-mono" style="padding:var(--space-4) var(--space-6) var(--space-2);">' + GROUP_LABEL[g] + "</p>";
+      html += '<p class="label-mono" style="padding:var(--space-4) var(--space-6) var(--space-2); position:sticky; top:0; background:var(--surface); z-index:1;">' + GROUP_LABEL[g] + "</p>";
       groups[g].forEach(function (n) {
         var read = SBAI.state.isRead(role, n.id);
         html += '<div class="notif-item' + (read ? "" : " unread") + '" data-filter-row="notif" data-f-tab="' + n.categoria + '" data-notif-id="' + n.id + '">' +
