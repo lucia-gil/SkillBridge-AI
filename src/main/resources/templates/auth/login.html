@@ -12,15 +12,114 @@
 <link rel="stylesheet" href="../../static/css/base.css">
 <link rel="stylesheet" href="../../static/css/components.css">
 <link rel="stylesheet" href="../../static/css/layout.css">
+
+<!-- ESTILOS AGREGADOS PARA LAS MEJORAS VISUALES -->
+<style>
+  .auth-shell {
+    background-color: var(--canvas);
+  }
+
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-3);
+    padding: var(--space-8) var(--space-8);
+    width: 100%;
+    max-width: 460px;
+  }
+
+  .input-wrap .input {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+    padding: var(--space-3) var(--space-4);
+    transition: box-shadow var(--dur-fast), border-color var(--dur-fast);
+  }
+
+  .input-wrap .input:focus {
+    border-color: var(--blue-accent);
+    box-shadow: var(--shadow-focus);
+    outline: none;
+  }
+
+  .auth-card-header {
+    text-align: center;
+    margin-bottom: var(--space-4);
+  }
+  .auth-card-header img {
+    height: 112px;
+    width: auto;
+    object-fit: contain;
+    margin: 0 auto;
+    display: block;
+  }
+
+  .auth-card-title,
+  .auth-card-sub {
+    text-align: center;
+  }
+
+  .auth-card-body .field-row a {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+
+  .auth-aside-graphic {
+    position: absolute;
+    inset: 0;
+    top: 0; right: auto; bottom: auto; left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .auth-aside-stats {
+    display: flex;
+    gap: var(--space-4);
+    margin-top: auto;
+    padding-bottom: var(--space-6);
+  }
+
+  .auth-stat-pill {
+    background-color: rgba(40, 207, 197, 0.10);
+    border: 1px solid rgba(40, 207, 197, 0.22);
+    color: #ffffff;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    transition: transform var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
+  }
+
+  .auth-stat-pill:hover {
+    transform: translateY(-2px);
+    background-color: rgba(40, 207, 197, 0.16);
+  }
+
+  .auth-aside-stat-value {
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-bold);
+    line-height: var(--lh-tight);
+    color: #ffffff;
+  }
+
+  .auth-aside-stat-label {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: rgba(255, 255, 255, 0.65);
+  }
+</style>
 </head>
 <body>
 <svg style="display:none"><use></use></svg>
 
 <div class="auth-shell">
   <aside class="auth-aside">
-    <!-- Gráfico decorativo: retoma el motivo del logo (nodos conectados)
-         para dar textura al panel sin depender de fotos. Puramente
-         ornamental, no lleva alt text. -->
     <svg class="auth-aside-graphic" viewBox="0 0 700 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <path d="M -40.0 -130.9 L -8.8 -118.2 L 22.4 -102.0 L 53.6 -83.7 L 84.8 -64.6 L 116.0 -46.6 L 147.2 -31.1 L 178.4 -19.4 L 209.6 -12.5 L 240.8 -10.8 L 272.0 -14.3 L 303.2 -22.5 L 334.4 -34.6 L 365.6 -49.1 L 396.8 -64.6 L 428.0 -79.4 L 459.2 -92.0 L 490.4 -100.9 L 521.6 -105.3 L 552.8 -104.5 L 584.0 -98.5 L 615.2 -87.5 L 646.4 -72.6 L 677.6 -54.9 L 708.8 -35.9 L 740.0 -17.3" stroke="#28cfc5" stroke-opacity="0.10" stroke-width="1.6" fill="none"/>
       <path d="M -40.0 51.7 L -8.8 54.0 L 22.4 46.8 L 53.6 31.8 L 84.8 11.7 L 116.0 -9.8 L 147.2 -28.8 L 178.4 -41.8 L 209.6 -46.3 L 240.8 -41.2 L 272.0 -27.0 L 303.2 -5.7 L 334.4 19.6 L 365.6 45.1 L 396.8 66.9 L 428.0 81.7 L 459.2 87.5 L 490.4 83.8 L 521.6 71.4 L 552.8 52.7 L 584.0 31.3 L 615.2 10.9 L 646.4 -4.6 L 677.6 -12.4 L 708.8 -10.9 L 740.0 0.1" stroke="#27c7c7" stroke-opacity="0.11" stroke-width="1.6" fill="none"/>
@@ -53,19 +152,31 @@
         <li><span class="auth-feature-icon"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-bar-chart"></use></svg></span>Reportes y auditoría en tiempo real</li>
       </ul>
     </div>
+
+    <!-- Estadísticas: pills translúcidas, dentro de la paleta -->
     <div class="auth-aside-stats">
-      <div class="auth-stat-pill"><span class="auth-aside-stat-value" id="stat-colaboradores">184</span><span class="auth-aside-stat-label">Colaboradores</span></div>
-      <div class="auth-stat-pill"><span class="auth-aside-stat-value" id="stat-proyectos">27</span><span class="auth-aside-stat-label">Proyectos activos</span></div>
-      <div class="auth-stat-pill"><span class="auth-aside-stat-value" id="stat-habilidades">312</span><span class="auth-aside-stat-label">Habilidades mapeadas</span></div>
+      <div class="auth-stat-pill">
+        <span class="auth-aside-stat-value" id="stat-colaboradores">184</span>
+        <span class="auth-aside-stat-label">Colaboradores</span>
+      </div>
+      <div class="auth-stat-pill">
+        <span class="auth-aside-stat-value" id="stat-proyectos">27</span>
+        <span class="auth-aside-stat-label">Proyectos activos</span>
+      </div>
+      <div class="auth-stat-pill">
+        <span class="auth-aside-stat-value" id="stat-habilidades">312</span>
+        <span class="auth-aside-stat-label">Habilidades mapeadas</span>
+      </div>
     </div>
     <p class="auth-aside-footer">NexaCorp · Intranet corporativa · v2.4.0</p>
   </aside>
 
   <main class="auth-main">
     <div class="auth-card card card-pad">
-      <div class="auth-card-logo-mobile">
-        <img class="sidebar-brand-mark" src="../../static/img/logo-icon.png" alt="SkillBridge AI">
-        <span style="font-weight:600;color:var(--text-primary)">SkillBridge AI</span>
+
+      <!-- Logo horizontal, centrado con margin:0 auto -->
+      <div class="auth-card-header">
+        <img src="../../static/img/logo-horizontal.png" alt="SkillBridge AI">
       </div>
 
       <h2 class="auth-card-title">Iniciar sesión</h2>
@@ -103,10 +214,11 @@
 
         <div class="auth-divider"><span>o bien</span></div>
 
-        <button type="button" class="btn btn-secondary btn-block btn-lg" id="sso-btn">Continuar con SSO corporativo</button>
+        <button type="button" class="btn btn-block btn-lg" id="sso-btn" style="background-color: #1a73e8; color: white; border: none; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: var(--radius-md); font-weight: var(--fw-medium);">
+          <svg style="height: 20px; width: 20px; fill: white;" viewBox="0 0 24 24"><path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/></svg>
+          Continuar con Google
+        </button>
       </form>
-
-      <p class="auth-card-sub" style="text-align:center; margin-top:var(--space-6);">El acceso a módulos depende de tu rol: Colaborador, Project Manager, Resource Manager o Administrador.</p>
     </div>
   </main>
 </div>
@@ -160,7 +272,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   document.getElementById("sso-btn").addEventListener("click", function () {
-    SBAI.toast.show("Redirigiendo a Azure AD (SSO simulado)…");
+    SBAI.toast.show("Redirigiendo a SSO Corporativo (Simulado)…");
     setTimeout(function () { SBAI.modal.openRolePicker(); }, 500);
   });
 });
