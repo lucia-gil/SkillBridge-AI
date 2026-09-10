@@ -607,7 +607,7 @@
     administrador: ["Resume la auditoría de las últimas 24 horas", "¿Qué módulos usan más el asistente IA?", "¿Cuántas habilidades no están vinculadas a proyectos?"]
   };
 
-  MOCK.aiFallbackReply = "Todavía no tengo un dato preparado para esa consulta específica en esta demo, pero en producción el asistente respondería usando datos de perfiles, asignaciones, proyectos y foros a los que tu rol tiene acceso.";
+  MOCK.aiFallbackReply = "Todavía no tenemos un dato preparado para esa consulta específica en esta demo, pero en producción el asistente respondería usando datos de perfiles, asignaciones, proyectos y foros a los que tu rol tiene acceso.";
 
   /* ---------------------------------------------------------
    * Salud de la plataforma (Admin)
