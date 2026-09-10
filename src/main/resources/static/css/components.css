@@ -981,11 +981,18 @@
 .event-card-time { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-secondary); font-weight: var(--fw-medium); }
 
 /* Match score ring (AI Talent Matching) */
-.match-ring { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
-.match-ring-value { font-family: var(--font-mono); font-weight: var(--fw-semibold); font-size: var(--fs-sm); }
-.candidate-row { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4); border-radius: var(--radius-md); border: 1.5px solid var(--border-subtle); cursor: pointer; background: var(--surface); }
-.candidate-row:hover { border-color: var(--blue-accent); }
+.match-ring { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; transition: transform var(--dur-base) var(--ease-standard); }
+.match-ring::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--surface); }
+.match-ring-value { position: relative; z-index: 1; font-family: var(--font-mono); font-weight: var(--fw-semibold); font-size: var(--fs-sm); }
+.match-ring-sm { width: 40px; height: 40px; }
+.match-ring-sm::before { inset: 4px; }
+.match-ring-sm .match-ring-value { font-size: var(--fs-xs); }
+.candidate-row { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4); border-radius: var(--radius-md); border: 1.5px solid var(--border-subtle); cursor: pointer; background: var(--surface); transition: border-color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard); animation: candidate-row-in 0.35s var(--ease-standard) backwards; }
+.candidate-row:hover { border-color: var(--blue-accent); transform: translateY(-2px); box-shadow: var(--shadow-1); }
+.candidate-row:hover .match-ring { transform: scale(1.08); }
 .candidate-row.selected { border-color: var(--navy-700); background: var(--navy-100); }
+@keyframes candidate-row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .candidate-row { animation: none; } }
 .candidate-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .candidate-row-name { font-size: var(--fs-sm); font-weight: var(--fw-semibold); display: flex; align-items: center; gap: var(--space-2); }
 .candidate-row-role { font-size: var(--fs-xs); color: var(--text-tertiary); }

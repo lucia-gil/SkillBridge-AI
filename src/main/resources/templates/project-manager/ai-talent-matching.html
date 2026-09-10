@@ -18,9 +18,12 @@
 
       <section class="card card-pad">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-4);">
-          <div>
-            <h2 style="font-size:var(--fs-md);">Recomendación para Núcleo Retail · Platform Engineer (60% dedicación)</h2>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:4px;">Modelo de matching v3 · 184 colaboradores evaluados · ejecutado hoy 09:14</p>
+          <div class="card-header-icon-row">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-search-check"></use></svg></span>
+            <div>
+              <h2 style="font-size:var(--fs-md);">Recomendación para Núcleo Retail · Platform Engineer (60% dedicación)</h2>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:4px;">Modelo de matching v3 · 184 colaboradores evaluados · ejecutado hoy 09:14</p>
+            </div>
           </div>
           <div style="display:flex; align-items:center; gap:var(--space-4);">
             <span class="label-mono">PESO: HABILIDADES 50% · EXPERIENCIA 30% · DISPONIBILIDAD 20%</span>
@@ -31,7 +34,12 @@
 
       <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 1.1fr 1fr;">
         <section class="card">
-          <div class="card-header"><div class="card-header-text"><h2>5 candidatos sugeridos</h2><p>Ordenados por score de match</p></div></div>
+          <div class="card-header">
+            <div class="card-header-icon-row">
+              <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+              <div class="card-header-text"><h2>5 candidatos sugeridos</h2><p>Ordenados por score de match</p></div>
+            </div>
+          </div>
           <div class="card-body" style="display:flex; flex-direction:column; gap:var(--space-3);" id="candidate-list"></div>
           <div class="callout warn" style="margin:0 var(--space-6) var(--space-6);">
             <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
@@ -61,13 +69,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var selected = MOCK.matchingCandidates[0];
 
+  function scoreColor(score) {
+    if (score >= 90) return "var(--green-fg)";
+    if (score >= 75) return "var(--blue-fg)";
+    if (score >= 60) return "var(--amber-fg)";
+    return "var(--red-fg)";
+  }
+  function ringStyle(score) {
+    return "background: conic-gradient(" + scoreColor(score) + " " + score + "%, var(--border-subtle) 0); color:" + scoreColor(score) + ";";
+  }
+
   function renderList() {
-    document.getElementById("candidate-list").innerHTML = MOCK.matchingCandidates.map(function (c) {
+    document.getElementById("candidate-list").innerHTML = MOCK.matchingCandidates.map(function (c, i) {
       var isSel = c.nombre === selected.nombre;
-      return '<div class="candidate-row' + (isSel ? " selected" : "") + '" data-candidate="' + c.nombre + '">' +
+      return '<div class="candidate-row' + (isSel ? " selected" : "") + '" data-candidate="' + c.nombre + '" style="animation-delay:' + (i * 40) + 'ms;">' +
         '<span class="avatar">' + c.iniciales + '</span>' +
         '<div class="candidate-row-text"><div class="candidate-row-name">' + c.nombre + (c.top ? '<span class="badge badge-green">TOP MATCH</span>' : "") + '</div><div class="candidate-row-role">' + c.cargo + "</div></div>" +
-        '<div style="text-align:center;"><div class="label-mono">SCORE</div><div style="font-family:var(--font-mono); font-weight:700; font-size:var(--fs-md); color:var(--navy-700);">' + c.score + "%</div></div>" +
+        '<div class="match-ring match-ring-sm" style="' + ringStyle(c.score) + '"><span class="match-ring-value">' + c.score + "%</span></div>" +
         '<div class="candidate-row-avail">' + c.disponible + '% libre<div class="text-tertiary" style="font-size:10px;">disponibilidad</div></div>' +
         "</div>";
     }).join("");
@@ -84,12 +102,12 @@ document.addEventListener("DOMContentLoaded", function () {
     var html = '<div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-5);">' +
       '<span class="avatar avatar-lg" style="background:var(--navy-700);">' + c.iniciales + '</span>' +
       '<div><h3 style="font-size:var(--fs-md);">' + c.nombre + '</h3><p class="text-tertiary" style="font-size:var(--fs-xs);">Por qué la recomienda el sistema</p></div>' +
-      '<div style="margin-left:auto; text-align:center;"><div style="font-size:var(--fs-xl); font-weight:700; color:var(--navy-700);">' + c.score + '%</div><div class="label-mono">MATCH</div></div></div>';
+      '<div class="match-ring" style="width:72px; height:72px; margin-left:auto; ' + ringStyle(c.score) + '"><span class="match-ring-value" style="font-size:var(--fs-md);">' + c.score + '%</span></div></div>';
 
     html += '<p class="label-mono" style="margin-bottom:var(--space-2);">Criterios evaluados</p>';
-    c.criterios.forEach(function (crit) {
+    c.criterios.forEach(function (crit, i) {
       html += '<div class="criteria-bar-row"><div class="criteria-bar-top"><span class="criteria-bar-name">' + crit.nombre + '</span><span class="criteria-bar-pct">' + crit.pct + '%</span></div>' +
-        '<div class="progress-bar"><div class="progress-bar-fill" style="width:' + crit.pct + '%;"></div></div>' +
+        '<div class="progress-bar"><div class="progress-bar-fill crit-bar" data-target="' + crit.pct + '" style="width:0%;"></div></div>' +
         '<span class="criteria-bar-detail">' + crit.detalle + " — " + crit.extra + '</span></div>';
     });
 
@@ -101,7 +119,7 @@ document.addEventListener("DOMContentLoaded", function () {
       html += "</div>";
     }
 
-    html += '<div class="callout info" style="margin-top:var(--space-5);"><span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-sparkles"></use></svg></span>' +
+    html += '<div class="callout info" style="margin-top:var(--space-5);"><span class="callout-icon"><img src="../../static/img/logo-ai-icon.png" alt=""></span>' +
       '<span class="callout-body"><span class="callout-title">Explicación en lenguaje natural</span>' + c.explicacion + '</span></div>';
 
     html += '<div class="btn-group" style="margin-top:var(--space-5); justify-content:flex-end;">' +
@@ -109,6 +127,11 @@ document.addEventListener("DOMContentLoaded", function () {
       '<button type="button" class="btn btn-primary" id="propose-btn">Proponer asignación</button></div>';
 
     document.getElementById("candidate-detail").innerHTML = html;
+
+    // Anima las barras de criterios de 0 al valor real
+    document.querySelectorAll(".crit-bar").forEach(function (bar, i) {
+      setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 100 + i * 100);
+    });
 
     document.getElementById("propose-btn").addEventListener("click", function () {
       SBAI.toast.show("Propuesta de asignación de <strong>" + c.nombre + "</strong> enviada a Núcleo Retail.", { type: "success" });
