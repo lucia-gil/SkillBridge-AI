@@ -46,6 +46,10 @@
             <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
             <span class="callout-body">Tomás Herrera y Diego Salazar aparecen en la lista pero ya están al límite de carga en otros proyectos.</span>
           </div>
+          <div style="padding:0 var(--space-6) var(--space-6);">
+            <p class="label-mono" style="margin-bottom:var(--space-3);">Comparativa de score</p>
+            <div class="bar-chart" id="score-chart" style="height:110px;"></div>
+          </div>
         </section>
 
         <section class="card card-pad" id="candidate-detail"></section>
@@ -150,6 +154,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("vacancy-select").addEventListener("change", function () {
     SBAI.toast.show("Recalculando candidatos para la vacante seleccionada…");
+  });
+
+  // Comparativa visual de los 5 scores (llena el espacio que queda bajo
+  // la lista, más corta que el panel de detalle de la derecha).
+  var maxScore = 100;
+  document.getElementById("score-chart").innerHTML = MOCK.matchingCandidates.map(function (c) {
+    var primerNombre = c.nombre.split(" ")[0];
+    return '<div class="bar-chart-col" data-candidate-chart="' + c.nombre + '"><span class="bar-chart-value">' + c.score + '%</span>' +
+      '<div class="bar-chart-track"><div class="bar-chart-fill" data-target-h="' + c.score + '" style="height:0%; background:' + scoreColor(c.score) + ';"></div></div>' +
+      '<span class="bar-chart-label">' + primerNombre + '</span></div>';
+  }).join("");
+  document.querySelectorAll("#score-chart .bar-chart-fill[data-target-h]").forEach(function (bar, i) {
+    setTimeout(function () { bar.style.height = bar.dataset.targetH + "%"; }, 100 + i * 60);
+  });
+  document.querySelectorAll("#score-chart .bar-chart-col").forEach(function (col) {
+    col.addEventListener("click", function () {
+      var nombre = col.dataset.candidateChart;
+      selected = MOCK.matchingCandidates.filter(function (c) { return c.nombre === nombre; })[0];
+      renderList(); renderDetail();
+    });
   });
 
   renderList();
