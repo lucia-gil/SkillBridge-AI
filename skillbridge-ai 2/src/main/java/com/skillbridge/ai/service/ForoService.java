@@ -77,6 +77,7 @@ public class ForoService {
         if (proyectoIds.isEmpty()) return List.of();
         return foroPublicacionRepository.listarHilosDeProyectos(proyectoIds).stream()
                 .map(this::aFila)
+                .sorted((a, b) -> Boolean.compare(b.isEsFijado(), a.isEsFijado()))
                 .collect(Collectors.toList());
     }
 
@@ -87,7 +88,7 @@ public class ForoService {
         return new HiloFila(f.getId(), f.getTitulo(), f.getProyectoId(), f.getProyecto().getNombre(),
                 f.getAutor().getUsuario().getNombreCompleto(),
                 f.getFechaPublicacion() != null ? f.getFechaPublicacion().format(FORMATO) : "",
-                numRespuestas, f.getNumVistas(), tieneAceptada);
+                numRespuestas, f.getNumVistas(), tieneAceptada, Boolean.TRUE.equals(f.getEsFijado()));
     }
 
     @Transactional
@@ -185,5 +186,17 @@ public class ForoService {
         });
         respuesta.setEsSolucion(true);
         foroPublicacionRepository.save(respuesta);
+    }
+
+    /** Fija o desfija un hilo raiz (aparece primero en la lista). Usado por el Project Manager. */
+    @Transactional
+    public void establecerFijado(Long hiloId, boolean valor) {
+        ForoPublicacion hilo = foroPublicacionRepository.findById(hiloId)
+                .orElseThrow(() -> new OperacionInvalidaException("El hilo ya no existe."));
+        if (hilo.getPublicacionPadreId() != null) {
+            throw new OperacionInvalidaException("Solo se puede fijar un hilo, no una respuesta.");
+        }
+        hilo.setEsFijado(valor);
+        foroPublicacionRepository.save(hilo);
     }
 }

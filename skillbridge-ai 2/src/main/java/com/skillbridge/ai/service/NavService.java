@@ -40,6 +40,7 @@ public class NavService {
                 items.add(new NavItem("Inicio", "icon-home", "inicio.html"));
                 items.add(new NavItem("Proyectos", "icon-folder", "proyectos.html"));
                 items.add(new NavItem("Asignaciones", "icon-target", "asignaciones.html"));
+                items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
                 items.add(new NavItem("AI Talent Matching", "icon-search-check", "ai-talent-matching.html"));
                 items.add(new NavItem("Foros", "icon-message", "foros.html"));
                 items.add(new NavItem("Asistente IA", "icon-sparkles", "asistente-ia.html"));
@@ -49,6 +50,7 @@ public class NavService {
                 items.add(new NavItem("Inicio", "icon-home", "inicio.html"));
                 items.add(new NavItem("Mi perfil", "icon-user", "perfil.html"));
                 items.add(new NavItem("Mis proyectos", "icon-folder", "proyectos.html"));
+                items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
                 items.add(new NavItem("Foros", "icon-message", "foros.html"));
                 items.add(new NavItem("Asistente IA", "icon-sparkles", "asistente-ia.html"));
                 items.add(new NavItem("Notificaciones", "icon-bell", "notificaciones.html"));

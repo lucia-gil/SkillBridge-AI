@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuración · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <form id="cfg-form" method="post" th:action="@{/administrador/configuracion}">
+      <div class="detail-grid">
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-5);">Acceso y sesión</h3>
+            <div class="field-row">
+              <div class="field"><label class="field-label">Dominio corporativo permitido</label>
+                <input class="input" name="dominio_correo_permitido" th:value="${cfg.get('dominio_correo_permitido')?.valor}">
+                <span class="field-hint">Correos con este dominio pueden registrarse (efecto real en /auth/registro.html)</span></div>
+              <div class="field"><label class="field-label">Minutos de inactividad antes de cerrar sesión</label>
+                <input class="input" type="number" min="1" name="expiracion_sesion_minutos" th:value="${cfg.get('expiracion_sesion_minutos')?.valor}">
+                <span class="field-hint">Se aplica al iniciar sesión</span></div>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-row-text"><span class="toggle-row-title">Exigir doble factor a todos los administradores</span>
+                <span class="toggle-row-desc">Parámetro guardado; esta entrega no implementa el flujo de 2FA todavía</span></div>
+              <label class="toggle"><input type="checkbox" name="doble_factor_obligatorio_admin" th:checked="${cfg.get('doble_factor_obligatorio_admin')?.valor == 'true'}"><span class="toggle-track"></span></label>
+            </div>
+          </section>
+
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-2);">Límites de asignación</h3>
+            <p class="field-hint" style="margin-bottom:var(--space-4);">Se aplican al asignar colaboradores en Proyectos.</p>
+            <div class="field-row">
+              <div class="field"><label class="field-label">Límite de carga por colaborador (%)</label>
+                <input class="input" type="number" min="1" max="100" name="limite_carga_colaborador" th:value="${cfg.get('limite_carga_colaborador')?.valor}"></div>
+              <div class="field"><label class="field-label">Máximo de proyectos simultáneos</label>
+                <input class="input" type="number" min="1" name="maximo_proyectos_simultaneos" th:value="${cfg.get('maximo_proyectos_simultaneos')?.valor}"></div>
+            </div>
+            <div class="field"><label class="field-label">Umbral (%) de auto-aprobación de asignaciones menores</label>
+              <input class="input" type="number" min="0" max="100" name="auto_aprobar_asignaciones_menores_a" th:value="${cfg.get('auto_aprobar_asignaciones_menores_a')?.valor}">
+              <span class="field-hint">Parámetro guardado; esta entrega no tiene un flujo de aprobación de asignaciones que lo consuma</span></div>
+          </section>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-2);">Asistente IA y AI Talent Matching</h3>
+            <p class="field-hint" style="margin-bottom:var(--space-4);">Estos parámetros quedan guardados; ninguno de los dos motores de IA está implementado en esta entrega (ver README).</p>
+            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Habilitar el asistente IA</span></div>
+              <label class="toggle"><input type="checkbox" name="asistente_ia_habilitado" th:checked="${cfg.get('asistente_ia_habilitado')?.valor == 'true'}"><span class="toggle-track"></span></label></div>
+            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Generar resúmenes con IA en hilos de foro</span></div>
+              <label class="toggle"><input type="checkbox" name="resumenes_ia_foros_activos" th:checked="${cfg.get('resumenes_ia_foros_activos')?.valor == 'true'}"><span class="toggle-track"></span></label></div>
+            <div class="field-row" style="margin-top:var(--space-3);">
+              <div class="field"><label class="field-label">Peso habilidades (%)</label><input class="input" type="number" min="0" max="100" name="peso_matching_habilidades" th:value="${cfg.get('peso_matching_habilidades')?.valor}"></div>
+              <div class="field"><label class="field-label">Peso experiencia (%)</label><input class="input" type="number" min="0" max="100" name="peso_matching_experiencia" th:value="${cfg.get('peso_matching_experiencia')?.valor}"></div>
+            </div>
+            <div class="field"><label class="field-label">Peso disponibilidad (%)</label><input class="input" type="number" min="0" max="100" name="peso_matching_disponibilidad" th:value="${cfg.get('peso_matching_disponibilidad')?.valor}"></div>
+          </section>
+
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-5);">Apariencia y localización</h3>
+            <div class="field"><label class="field-label">Idioma predeterminado</label>
+              <input class="input" name="idioma_por_defecto" th:value="${cfg.get('idioma_por_defecto')?.valor}">
+              <span class="field-hint">Parámetro guardado; la interfaz de esta entrega solo está disponible en español</span></div>
+            <div class="field" style="margin-top:var(--space-3);"><label class="field-label">Zona horaria predeterminada</label>
+              <input class="input" name="zona_horaria_defecto" th:value="${cfg.get('zona_horaria_defecto')?.valor}">
+              <span class="field-hint">Parámetro guardado; las fechas de esta entrega usan la zona horaria del servidor</span></div>
+          </section>
+
+          <div class="btn-group" style="justify-content:flex-end;">
+            <button type="submit" class="btn btn-primary">Guardar configuración</button>
+          </div>
+        </div>
+      </div>
+      </form>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+</script>
+</body>
+</html>

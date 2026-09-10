@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crear cuenta · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+
+<div class="auth-shell">
+  <aside class="auth-aside">
+    <div class="auth-aside-top">
+      <div class="auth-aside-brand">
+        <span class="sidebar-brand-mark"><svg class="icon"><use href="/img/icons.svg#icon-logo"></use></svg></span>
+        <span class="sidebar-brand-text">SkillBridge AI</span>
+      </div>
+      <h1 class="auth-aside-headline">Crea tu perfil y deja que el sistema encuentre tus proyectos.</h1>
+      <p class="auth-aside-sub">Tres pasos: datos corporativos, tus habilidades y nivel, y la confirmación final. Tu rol final lo asigna el Administrador.</p>
+    </div>
+    <p class="auth-aside-footer">Solo se admiten correos del dominio nexacorp.com, y deben haber sido autorizados antes por un Administrador.</p>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card auth-card-wide">
+      <a class="auth-back-link" href="login.html"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-arrow-left"></use></svg>Inicia sesión</a>
+      <h2 class="auth-card-title">Crear cuenta</h2>
+      <p class="auth-card-sub">Crea tu perfil y deja que el sistema encuentre tus proyectos.</p>
+
+      <div th:if="${errores != null and errores['_global'] != null}" th:text="${errores['_global']}"
+           style="background:#fdecea; border:1px solid #d32f2f; color:#b71c1c; padding:10px 14px; border-radius:8px; margin-top:var(--space-5); font-size:var(--fs-sm);"></div>
+
+      <div class="wizard-steps" style="margin-top:var(--space-8);">
+        <div class="wizard-step active" data-step-indicator="1">
+          <span class="wizard-step-dot">1</span><span class="wizard-step-label">Datos corporativos</span>
+          <span class="wizard-step-line"></span>
+        </div>
+        <div class="wizard-step" data-step-indicator="2">
+          <span class="wizard-step-dot">2</span><span class="wizard-step-label">Habilidades y nivel</span>
+          <span class="wizard-step-line"></span>
+        </div>
+        <div class="wizard-step" data-step-indicator="3">
+          <span class="wizard-step-dot">3</span><span class="wizard-step-label">Confirmación</span>
+        </div>
+      </div>
+
+      <p class="label-mono" id="step-label" style="margin-bottom:var(--space-4);">PASO 1 DE 3</p>
+
+      <form id="registro-form" th:action="@{/auth/registro.html}" method="post">
+      <input type="hidden" id="habilidades-json" name="habilidadesJson" value="[]">
+
+      <!-- ================= PASO 1 ================= -->
+      <section class="wizard-panel active" data-panel="1">
+        <p class="field-hint" style="margin-bottom:var(--space-5);">Solo se admiten correos del dominio nexacorp.com, previamente autorizados por un Administrador.</p>
+
+        <div class="field-row">
+          <div class="field" th:classappend="${errores != null and errores['nombres'] != null} ? 'has-error'">
+            <label class="field-label" for="reg-nombres">Nombres</label>
+            <input class="input" id="reg-nombres" name="nombres" placeholder="Ricardo" th:value="${valNombres} ?: ''">
+            <div class="field-error" th:if="${errores != null and errores['nombres'] != null}" style="display:flex;" th:text="${errores['nombres']}">Escribe tus nombres.</div>
+          </div>
+          <div class="field" th:classappend="${errores != null and errores['apellidos'] != null} ? 'has-error'">
+            <label class="field-label" for="reg-apellidos">Apellidos</label>
+            <input class="input" id="reg-apellidos" name="apellidos" placeholder="Bastos" th:value="${valApellidos} ?: ''">
+            <div class="field-error" th:if="${errores != null and errores['apellidos'] != null}" style="display:flex;" th:text="${errores['apellidos']}">Escribe tus apellidos.</div>
+          </div>
+        </div>
+
+        <div class="field" id="field-reg-email" th:classappend="${errores != null and errores['correo'] != null} ? 'has-error'">
+          <label class="field-label" for="reg-email">Correo corporativo</label>
+          <input class="input" type="email" id="reg-email" name="correo" placeholder="nombre.apellido@nexacorp.com" th:value="${valCorreo} ?: ''">
+          <label class="checkbox-row" style="margin-top:2px;">
+            <input type="checkbox" id="reg-domain-check" disabled>
+            <span class="checkbox-label label-mono" id="reg-domain-label" style="color:var(--green-fg);">DOMINIO VÁLIDO</span>
+          </label>
+          <div class="field-error" th:if="${errores != null and errores['correo'] != null}" style="display:flex;" th:text="${errores['correo']}">Usa un correo @nexacorp.com.</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label class="field-label" for="reg-area">Área</label>
+            <select class="select" id="reg-area">
+              <option>Plataforma</option><option>Ingeniería de Software</option><option>Delivery</option>
+              <option>Datos</option><option>Diseño</option><option>Calidad</option><option>TI Corporativa</option>
+            </select>
+            <p class="field-hint">Solo referencial: no forma parte del esquema de datos todavía.</p>
+          </div>
+          <div class="field"><label class="field-label" for="reg-cargo">Cargo</label>
+            <input class="input" id="reg-cargo" name="cargo" placeholder="Platform Engineer" th:value="${valCargo} ?: ''">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field" th:classappend="${errores != null and errores['contrasena'] != null} ? 'has-error'">
+            <label class="field-label" for="reg-pass">Contraseña</label>
+            <div class="input-wrap"><input class="input" type="password" id="reg-pass" name="contrasena" placeholder="••••••••••••">
+              <button type="button" class="input-action" data-toggle-password="reg-pass">Mostrar</button></div>
+            <div class="field-error" th:if="${errores != null and errores['contrasena'] != null}" style="display:flex;" th:text="${errores['contrasena']}">Contraseña inválida.</div>
+          </div>
+          <div class="field" th:classappend="${errores != null and errores['contrasena2'] != null} ? 'has-error'">
+            <label class="field-label" for="reg-pass2">Confirmar contraseña</label>
+            <div class="input-wrap"><input class="input" type="password" id="reg-pass2" name="contrasena2" placeholder="••••••••••••">
+              <button type="button" class="input-action" data-toggle-password="reg-pass2">Mostrar</button></div>
+            <div class="field-error" th:if="${errores != null and errores['contrasena2'] != null}" style="display:flex;" th:text="${errores['contrasena2']}">Las contraseñas no coinciden.</div>
+          </div>
+        </div>
+
+        <div class="pw-strength" data-level="0" id="pw-strength">
+          <div class="pw-strength-bars"><span class="pw-strength-bar"></span><span class="pw-strength-bar"></span><span class="pw-strength-bar"></span><span class="pw-strength-bar"></span></div>
+          <span class="pw-strength-label" id="pw-strength-label">SEGURIDAD DE LA CONTRASEÑA</span>
+          <div class="pw-checklist">
+            <div class="pw-check unmet" data-check="len">
+              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="/img/icons.svg#icon-check"></use></svg></span>12 caracteres</div>
+            <div class="pw-check unmet" data-check="upnum">
+              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="/img/icons.svg#icon-check"></use></svg></span>Mayúscula y número</div>
+            <div class="pw-check unmet" data-check="special">
+              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="/img/icons.svg#icon-check"></use></svg></span>Símbolo especial</div>
+            <div class="pw-check unmet" data-check="match">
+              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="/img/icons.svg#icon-check"></use></svg></span>Las contraseñas coinciden</div>
+          </div>
+        </div>
+
+        <label class="checkbox-row" style="margin-top:var(--space-6);">
+          <input type="checkbox" id="reg-policy">
+          <span class="checkbox-label">Acepto la política de tratamiento de datos y el uso de mi perfil de habilidades en las recomendaciones de talento.</span>
+        </label>
+
+        <div class="btn-group" style="margin-top:var(--space-6); justify-content:flex-end;">
+          <a href="login.html" class="btn btn-secondary">Cancelar</a>
+          <button type="button" class="btn btn-primary" data-go-step="2">Continuar a habilidades</button>
+        </div>
+      </section>
+
+      <!-- ================= PASO 2 ================= -->
+      <section class="wizard-panel" data-panel="2">
+        <p class="field-hint" style="margin-bottom:var(--space-5);">Selecciona del catálogo y declara tu dominio. Necesitas al menos una habilidad para continuar.</p>
+
+        <div class="field-row" style="align-items:flex-end;">
+          <div class="field" style="margin-bottom:0;"><label class="field-label" for="skill-select">Habilidad</label>
+            <select class="select" id="skill-select"></select>
+          </div>
+          <div class="field" style="margin-bottom:0; max-width:180px;"><label class="field-label" for="skill-level-select">Nivel</label>
+            <select class="select" id="skill-level-select">
+              <option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-secondary" id="add-skill-btn" style="height:44px;">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar</button>
+        </div>
+
+        <div id="skills-added" style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin:var(--space-5) 0;"></div>
+        <div class="field-error" id="skills-error" th:text="${errores != null and errores['habilidades'] != null} ? ${errores['habilidades']} : 'Agrega al menos una habilidad para continuar.'"
+             th:style="${errores != null and errores['habilidades'] != null} ? 'display:flex;margin-bottom:var(--space-4);' : 'margin-bottom:var(--space-4);'">Agrega al menos una habilidad para continuar.</div>
+
+        <div class="btn-group" style="margin-top:var(--space-4); justify-content:space-between;">
+          <button type="button" class="btn btn-secondary" data-go-step="1">Volver</button>
+          <button type="button" class="btn btn-primary" data-go-step="3">Continuar a confirmación</button>
+        </div>
+      </section>
+
+      <!-- ================= PASO 3 ================= -->
+      <section class="wizard-panel" data-panel="3">
+        <div class="callout info" style="margin-bottom:var(--space-6);">
+          <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-info"></use></svg></span>
+          <span class="callout-body">Tu rol en la plataforma lo asigna el Administrador después de crear tu cuenta. Al confirmar, tu cuenta queda activa de inmediato para que puedas iniciar sesión.</span>
+        </div>
+
+        <div class="card" style="margin:var(--space-5) 0;">
+          <div class="card-header"><div class="card-header-text"><h3>Resumen de tu solicitud</h3></div></div>
+          <div class="card-body" id="summary-body"></div>
+        </div>
+
+        <div class="btn-group" style="justify-content:space-between;">
+          <button type="button" class="btn btn-secondary" data-go-step="2">Volver</button>
+          <button type="submit" class="btn btn-primary" id="submit-registration">Crear mi cuenta</button>
+        </div>
+      </section>
+
+      </form>
+
+    </div>
+  </main>
+</div>
+
+<script th:inline="javascript">
+  var ERROR_HABILIDADES = /*[[${errores != null and errores['habilidades'] != null}]]*/ false;
+</script>
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/modal.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var addedSkills = [];
+
+  document.querySelectorAll("[data-toggle-password]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var input = document.getElementById(btn.dataset.togglePassword);
+      var show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.textContent = show ? "Ocultar" : "Mostrar";
+    });
+  });
+
+  /* ---- Dominio válido reactivo ---- */
+  var emailInput = document.getElementById("reg-email");
+  function checkDomain() {
+    var ok = /@nexacorp\.com$/i.test(emailInput.value.trim());
+    document.getElementById("reg-domain-check").checked = ok;
+    var label = document.getElementById("reg-domain-label");
+    label.textContent = ok ? "DOMINIO VÁLIDO" : "DOMINIO NO VÁLIDO";
+    label.style.color = ok ? "var(--green-fg)" : "var(--red-fg)";
+    document.getElementById("field-reg-email").classList.toggle("has-error", !ok);
+    return ok;
+  }
+  emailInput.addEventListener("input", checkDomain);
+  checkDomain();
+
+  /* ---- Medidor de fuerza de contraseña ----
+     Las 4 casillas (12 caracteres, mayúscula+número, símbolo, coinciden) se
+     exigen TODAS para avanzar (antes solo pedía 2 de 4, lo que dejaba pasar
+     al paso 2 contraseñas que el servidor iba a rechazar igual: el
+     checklist prometía 4 requisitos pero solo exigía la mitad). */
+  var passInput = document.getElementById("reg-pass");
+  var pass2Input = document.getElementById("reg-pass2");
+  function evalPassword() {
+    var v = passInput.value;
+    var lenOk = v.length >= 12;
+    var upNumOk = /[A-Z]/.test(v) && /[0-9]/.test(v);
+    var specialOk = /[^A-Za-z0-9]/.test(v);
+    var matchOk = v.length > 0 && v === pass2Input.value;
+    setCheck("len", lenOk); setCheck("upnum", upNumOk); setCheck("special", specialOk); setCheck("match", matchOk);
+    var level = [lenOk, upNumOk, specialOk, matchOk].filter(Boolean).length;
+    var wrap = document.getElementById("pw-strength");
+    wrap.dataset.level = String(level);
+    var labels = ["MUY DÉBIL", "DÉBIL", "MEDIA", "FUERTE", "MUY FUERTE"];
+    document.getElementById("pw-strength-label").textContent = "SEGURIDAD DE LA CONTRASEÑA — " + labels[level];
+    return { lenOk: lenOk, upNumOk: upNumOk, specialOk: specialOk, matchOk: matchOk, level: level };
+  }
+  function setCheck(name, ok) {
+    var el = document.querySelector('[data-check="' + name + '"]');
+    el.classList.toggle("met", ok);
+    el.classList.toggle("unmet", !ok);
+    el.classList.toggle("is-invalid", !ok && (name === "match" ? pass2Input.value.length > 0 : passInput.value.length > 0));
+  }
+  passInput.addEventListener("input", evalPassword);
+  pass2Input.addEventListener("input", evalPassword);
+
+  /* ---- Paso 2: habilidades ---- */
+  var skillSelect = document.getElementById("skill-select");
+  function refreshSkillOptions() {
+    var used = addedSkills.map(function (s) { return s.nombre; });
+    skillSelect.innerHTML = MOCK.skillsCatalog
+      .filter(function (s) { return used.indexOf(s.nombre) === -1; })
+      .map(function (s) { return '<option value="' + s.nombre + '">' + s.nombre + "</option>"; }).join("");
+  }
+  refreshSkillOptions();
+
+  function renderAddedSkills() {
+    var el = document.getElementById("skills-added");
+    el.innerHTML = addedSkills.map(function (s, i) {
+      return '<span class="skill-pill" data-level="' + s.nivel + '">' + s.nombre + " · " + s.nivel +
+        ' <button type="button" data-remove-skill="' + i + '" style="background:none;border:none;cursor:pointer;color:inherit;padding:0;margin-left:4px;">' +
+        '<svg class="icon icon-sm"><use href="/img/icons.svg#icon-x"></use></svg></button></span>';
+    }).join("");
+    el.querySelectorAll("[data-remove-skill]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        addedSkills.splice(Number(btn.dataset.removeSkill), 1);
+        refreshSkillOptions();
+        renderAddedSkills();
+      });
+    });
+  }
+
+  document.getElementById("add-skill-btn").addEventListener("click", function () {
+    var nombre = skillSelect.value;
+    if (!nombre) return;
+    var nivel = document.getElementById("skill-level-select").value;
+    addedSkills.push({ nombre: nombre, nivel: nivel });
+    document.getElementById("skills-error").style.display = "none";
+    refreshSkillOptions();
+    renderAddedSkills();
+  });
+
+  /* ---- Navegación entre pasos ---- */
+  function goStep(n) {
+    if (n === 2) {
+      var nombresOk = document.getElementById("reg-nombres").value.trim().length > 0;
+      var apellidosOk = document.getElementById("reg-apellidos").value.trim().length > 0;
+      var domainOk = checkDomain();
+      var pw = evalPassword();
+      var policyOk = document.getElementById("reg-policy").checked;
+      if (!nombresOk || !apellidosOk || !domainOk || !pw.lenOk || !pw.upNumOk || !pw.specialOk || !pw.matchOk || !policyOk) {
+        SBAI.toast.show("Completa los datos corporativos, una contraseña que cumpla los 4 requisitos y acepta la política para continuar.", { type: "error" });
+        return;
+      }
+    }
+    if (n === 3) {
+      if (!addedSkills.length) {
+        document.getElementById("skills-error").style.display = "flex";
+        SBAI.toast.show("Agrega al menos una habilidad para continuar.", { type: "error" });
+        return;
+      }
+      renderSummary();
+    }
+    document.querySelectorAll(".wizard-panel").forEach(function (p) { p.classList.toggle("active", p.dataset.panel === String(n)); });
+    document.querySelectorAll(".wizard-step").forEach(function (s) {
+      var step = Number(s.dataset.stepIndicator);
+      s.classList.toggle("active", step === n);
+      s.classList.toggle("done", step < n);
+    });
+    document.getElementById("step-label").textContent = "PASO " + n + " DE 3";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function renderSummary() {
+    var nombre = document.getElementById("reg-nombres").value + " " + document.getElementById("reg-apellidos").value;
+    var html = '<div class="info-row"><span class="info-row-label">Nombre</span><span class="info-row-value">' + nombre + '</span></div>' +
+      '<div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value">' + emailInput.value + '</span></div>' +
+      '<div class="info-row"><span class="info-row-label">Cargo</span><span class="info-row-value">' + (document.getElementById("reg-cargo").value || "—") + '</span></div>' +
+      '<div class="info-row"><span class="info-row-label">Habilidades</span><span class="info-row-value">' + addedSkills.map(function (s) { return s.nombre + " (" + s.nivel + ")"; }).join(", ") + '</span></div>';
+    document.getElementById("summary-body").innerHTML = html;
+  }
+
+  document.querySelectorAll("[data-go-step]").forEach(function (btn) {
+    btn.addEventListener("click", function () { goStep(Number(btn.dataset.goStep)); });
+  });
+
+  // Justo antes de que el navegador envíe el <form>, se serializan las
+  // habilidades declaradas (en memoria) al input oculto que sí viaja al
+  // servidor.
+  document.getElementById("registro-form").addEventListener("submit", function (e) {
+    if (!addedSkills.length) {
+      e.preventDefault();
+      goStep(2);
+      SBAI.toast.show("Agrega al menos una habilidad para continuar.", { type: "error" });
+      return;
+    }
+    document.getElementById("habilidades-json").value = JSON.stringify(addedSkills);
+  });
+
+  // Si el servidor devolvió un error de habilidades (formulario reenviado
+  // tras una validacion fallida), saltar directo al paso 2 para que se vea.
+  if (ERROR_HABILIDADES) goStep(2);
+});
+</script>
+</body>
+</html>

@@ -2,6 +2,7 @@ package com.skillbridge.ai.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.skillbridge.ai.dto.EventoCalendario;
 import com.skillbridge.ai.dto.MiProyectoFila;
 import com.skillbridge.ai.dto.MiembroEquipoFila;
 import com.skillbridge.ai.dto.PerfilOpcion;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -104,6 +106,25 @@ public class ProyectoService {
         return perfilRepository.listarActivosConUsuario().stream()
                 .map(p -> new PerfilOpcion(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Eventos para el Calendario (colaborador y PM): las fechas reales de los
+     * proyectos donde el perfil tiene una asignacion activa - inicio y entrega
+     * estimada de cada proyecto. Fecha en ISO (yyyy-MM-dd) para el JS del calendario.
+     */
+    public List<EventoCalendario> eventosCalendarioDe(Long perfilId) {
+        List<EventoCalendario> eventos = new ArrayList<>();
+        for (Asignacion a : asignacionRepository.listarPorPerfilYEstado(perfilId, "activa")) {
+            Proyecto p = a.getProyecto();
+            if (p.getFechaInicio() != null) {
+                eventos.add(new EventoCalendario(p.getFechaInicio().toString(), p.getNombre(), "inicio"));
+            }
+            if (p.getFechaFinEstimada() != null) {
+                eventos.add(new EventoCalendario(p.getFechaFinEstimada().toString(), p.getNombre(), "entrega"));
+            }
+        }
+        return eventos;
     }
 
     // ─────────────────── "Mis proyectos" (Colaborador) ───────────────────

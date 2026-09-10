@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi perfil · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <div class="detail-grid">
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+
+          <section class="card card-pad">
+            <div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">
+              <span class="avatar avatar-lg" style="background:var(--navy-700);" th:text="${resumen.iniciales}">MR</span>
+              <div style="flex:1; min-width:200px;">
+                <h2 style="font-size:var(--fs-lg);" th:text="${resumen.nombreCompleto}">Nombre</h2>
+                <p class="text-tertiary" style="margin-top:2px;" th:text="${resumen.cargo}">Cargo</p>
+                <div style="display:flex; gap:var(--space-2); margin-top:var(--space-3);">
+                  <span class="badge badge-green" th:text="'DISPONIBLE ' + ${resumen.disponibilidadPorcentaje} + '%'">DISPONIBLE 0%</span>
+                  <span class="badge badge-blue" th:text="${resumen.rolLabel}">Rol</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header">
+              <div class="card-header-text"><h2>Habilidades y nivel de dominio</h2><p>Escala global: Básico · Intermedio · Avanzado · Experto</p></div>
+              <button type="button" class="btn btn-primary btn-sm" id="add-skill-btn">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar habilidad</button>
+            </div>
+            <div class="card-body">
+              <div th:if="${habilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no declaraste ninguna habilidad.</div>
+              <div style="display:flex; flex-wrap:wrap; gap:var(--space-3);">
+                <span class="skill-pill" th:each="h : ${habilidades}" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
+                      th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header"><div class="card-header-text"><h2>Historial de proyectos</h2></div></div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead><tr><th>Proyecto</th><th>Rol</th><th>Periodo</th><th>Dedicación</th><th>Estado</th></tr></thead>
+                <tbody>
+                  <tr th:if="${historial.isEmpty()}"><td colspan="5" class="text-tertiary" style="text-align:center; padding:var(--space-6);">Todavía no tienes asignaciones registradas.</td></tr>
+                  <tr th:each="h : ${historial}">
+                    <td class="cell-primary" th:text="${h.nombre}">Proyecto</td>
+                    <td th:text="${h.rolLabel}">Rol</td>
+                    <td th:text="${h.periodoLabel}">Periodo</td>
+                    <td class="mono" th:text="${h.cargaPorcentaje} + '%'">0%</td>
+                    <td><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Carga de trabajo</h3>
+            <div class="progress-inline" style="margin-bottom:var(--space-2);">
+              <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${cargaActiva > 100} ? 'amber' : ''" th:style="'width:' + ${cargaActiva > 100 ? 100 : cargaActiva} + '%;'"></div></div>
+              <span class="progress-value" th:text="${cargaActiva} + '%'">0%</span>
+            </div>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);" th:text="${cargaActiva > 100} ? 'sobre el límite' : 'dentro del límite (100%)'">dentro del límite</p>
+            <div th:if="${proyectosActivos.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin proyectos activos.</div>
+            <div class="info-row" th:each="p : ${proyectosActivos}">
+              <span class="info-row-label" th:text="${p.nombre}">Proyecto</span>
+              <span class="info-row-value" th:text="${p.cargaPorcentaje} + '%'">0%</span>
+            </div>
+            <div class="info-row" th:if="${!proyectosActivos.isEmpty() and cargaActiva < 100}">
+              <span class="info-row-label">Capacidad libre</span>
+              <span class="info-row-value" style="color:var(--green-fg);" th:text="${100 - cargaActiva} + '%'">0%</span>
+            </div>
+          </section>
+
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Datos de colaborador</h3>
+            <div class="info-row"><span class="info-row-label">Cargo</span><span class="info-row-value" th:text="${resumen.cargo}">—</span></div>
+            <div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value" th:text="${resumen.correo}">—</span></div>
+            <div class="info-row"><span class="info-row-label">Disponibilidad</span><span class="info-row-value" th:text="${resumen.disponibilidadPorcentaje} + '%'">0%</span></div>
+            <div class="info-row"><span class="info-row-label">Experiencia</span><span class="info-row-value" th:text="${resumen.experienciaAnios} + ' años'">0 años</span></div>
+            <div class="info-row"><span class="info-row-label">Alta en la plataforma</span><span class="info-row-value" th:text="${resumen.cuentaDesdeLabel}">—</span></div>
+            <p class="field-hint" style="margin-top:var(--space-4);">Para editar cargo, biografía o contraseña ve a <a href="mi-cuenta.html">Mi cuenta</a>.</p>
+          </section>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+var CATALOGO_HABILIDADES = /*[[${catalogoHabilidades}]]*/ [];
+document.addEventListener("DOMContentLoaded", function () {
+  var submitForm = window.SBAI.submitForm;
+
+  document.getElementById("add-skill-btn").addEventListener("click", function () {
+    var options = CATALOGO_HABILIDADES.map(function (h) { return '<option value="' + h.id + '">' + h.nombre + '</option>'; }).join("");
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia.</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Habilidad</label><select class="select" id="new-skill-id">' + options + '</select></div>' +
+      '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#confirm-add-skill").addEventListener("click", function () {
+      var habilidadId = backdrop.querySelector("#new-skill-id").value;
+      if (!habilidadId) { SBAI.toast.show("Selecciona una habilidad del catálogo.", { type: "error" }); return; }
+      submitForm("/colaborador/perfil/habilidades", { habilidadId: habilidadId, nivel: backdrop.querySelector("#new-skill-level").value });
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inicio Â· SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5); flex-wrap:wrap; gap:var(--space-3);">
+          <div>
+            <h2 style="font-size:var(--fs-md);">Mapa de carga por colaborador</h2>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de dedicaciÃ³n asignada por semana Â· S34â€“S39</p>
+          </div>
+          <div class="heatmap-legend">
+            <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:#EAF1FC;"></span>&lt; 60%</span>
+            <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--green-bg);"></span>60â€“89%</span>
+            <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--amber-bg);"></span>90â€“100%</span>
+            <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--red-bg);"></span>&gt; 100%</span>
+          </div>
+        </div>
+        <div class="heatmap-scroll">
+          <table class="heatmap-table">
+            <thead><tr><th>Colaborador</th><th id="week-heads"></th></tr></thead>
+            <tbody id="heatmap-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="detail-grid" style="margin-top:var(--space-6);">
+        <section class="card">
+          <div class="card-header"><div class="card-header-text"><h2>Sobre-asignaciÃ³n</h2><p>Colaboradores por encima del 100% de carga</p></div></div>
+          <div class="card-body" id="overallocation-list" style="display:flex; flex-direction:column; gap:var(--space-4);"></div>
+        </section>
+
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Habilidades mÃ¡s demandadas</h3>
+          <div id="skills-demand"></div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/shell.js"></script>`n<script src="/js/topbar-actions.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "resource-manager", active: "inicio.html", title: "Inicio", subtitle: "OcupaciÃ³n del equipo Â· " + MOCK.meta.stats.colaboradores + " colaboradores" });
+  if (!cfg) return;
+
+  var b = MOCK.occupancyBuckets;
+  document.getElementById("kpi-grid").innerHTML = [
+    { label: "OCUPACIÃ“N PROMEDIO", value: MOCK.rmReport.ocupacionPromedio + "%", meta: "meta " + MOCK.rmReport.meta + "%", cls: "warn", accent: "blue", icon: "activity" },
+    { label: "SOBRE-ASIGNADOS", value: b.sobreAsignados, meta: "requieren acciÃ³n", cls: "down", accent: "red", icon: "alert-triangle" },
+    { label: "CAPACIDAD LIBRE", value: b.horasLibres + " h", meta: "prÃ³ximas 6 semanas", accent: "green", icon: "clock" },
+    { label: "SOLICITUDES PENDIENTES", value: MOCK.rmReport.solicitudesPendientes, meta: MOCK.rmReport.vencenHoy + " vencen hoy", cls: "warn", accent: "amber", icon: "file-text" }
+  ].map(function (k) { return '<div class="kpi-tile accent-' + k.accent + '"><div class="kpi-tile-icon ' + k.accent + '"><svg class="icon"><use href="/img/icons.svg#icon-' + k.icon + '"></use></svg></div><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
+
+  document.getElementById("week-heads").outerHTML = MOCK.occupancyWeeks.map(function (w) { return "<th>" + w + "</th>"; }).join("") + "<th>Prom.</th>";
+
+  function levelClass(v) {
+    if (v > 100) return "level-over";
+    if (v >= 90) return "level-high";
+    if (v >= 60) return "level-optimal";
+    return "level-low";
+  }
+
+  document.getElementById("heatmap-body").innerHTML = MOCK.occupancyHeatmap.map(function (row) {
+    var cells = row.valores.map(function (v) { return '<td><span class="heatmap-cell ' + levelClass(v) + '" title="' + row.nombre + ' Â· ' + v + '%">' + v + "</span></td>"; }).join("");
+    return "<tr><td><div class=\"heatmap-person-cell\"><span class=\"avatar avatar-sm\">" + row.iniciales + "</span><span><div style=\"font-size:var(--fs-xs); font-weight:500;\">" + row.nombre + "</div><div class=\"text-tertiary\" style=\"font-size:10px;\">" + row.cargo + "</div></span></div></td>" +
+      cells + '<td><span class="mono" style="font-weight:600; font-size:var(--fs-xs);">' + row.promedio + "%</span></td></tr>";
+  }).join("");
+
+  document.getElementById("overallocation-list").innerHTML = MOCK.overallocationCases.map(function (c, i) {
+    return '<div class="callout ' + (c.pct > 110 ? "danger" : "warn") + '" style="margin:0;">' +
+      '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
+      '<span class="callout-body"><span class="callout-title">' + c.nombre + " (" + c.pct + "%) Â· " + c.cargo + '</span>' + c.detalle +
+      '<div class="callout-actions"><button type="button" class="btn btn-secondary btn-sm" data-rebalance="' + i + '">Rebalancear</button>' +
+      '<button type="button" class="btn btn-primary btn-sm" data-approve="' + i + '">Aprobar excepciÃ³n</button></div></span></div>';
+  }).join("");
+
+  document.querySelectorAll("[data-rebalance]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var c = MOCK.overallocationCases[btn.dataset.rebalance];
+      SBAI.toast.show("Se enviÃ³ una propuesta de rebalanceo de carga a los PM de los proyectos de <strong>" + c.nombre + "</strong>.", { type: "success" });
+    });
+  });
+  document.querySelectorAll("[data-approve]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var c = MOCK.overallocationCases[btn.dataset.approve];
+      SBAI.modal.confirm({
+        title: "Â¿Aprobar excepciÃ³n de carga?",
+        desc: c.nombre + " continuarÃ¡ al " + c.pct + "% hasta que su carga se normalice.",
+        confirmLabel: "Aprobar excepciÃ³n",
+        onConfirm: function () { SBAI.toast.show("ExcepciÃ³n de carga aprobada para <strong>" + c.nombre + "</strong>.", { type: "success" }); }
+      });
+    });
+  });
+
+  var maxDemand = Math.max.apply(null, MOCK.skillsDemand.map(function (s) { return s.vacantes; }));
+  document.getElementById("skills-demand").innerHTML = MOCK.skillsDemand.map(function (s) {
+    return '<div style="margin-bottom:var(--space-3);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;"><span style="font-weight:500;">' + s.nombre + '</span><span class="text-tertiary mono">' + s.vacantes + ' vacantes</span></div>' +
+      '<div class="progress-bar"><div class="progress-bar-fill" style="width:' + Math.round((s.vacantes / maxDemand) * 100) + '%;"></div></div></div>';
+  }).join("");
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foros · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <div style="display:grid; grid-template-columns:240px 1fr; gap:var(--space-6); align-items:start;">
+        <div style="display:flex; flex-direction:column; gap:var(--space-5);">
+          <section class="card card-pad">
+            <p class="label-mono" style="margin-bottom:var(--space-3);">Tus proyectos</p>
+            <p class="field-hint" style="margin-bottom:var(--space-3);">Cada hilo pertenece a un proyecto: aquí se agrupan por los proyectos donde tienes (o tuviste) una asignación.</p>
+            <div id="category-list" style="display:flex; flex-direction:column; gap:2px;">
+              <button type="button" class="dropdown-item active" data-proyecto="todos" style="justify-content:space-between; background:var(--navy-100); font-weight:600;">
+                <span>Todos los hilos</span><span class="text-tertiary" th:text="${hilos.size()}">0</span>
+              </button>
+              <button type="button" class="dropdown-item" th:each="p : ${proyectos}" th:attr="data-proyecto=${p.id()}" style="justify-content:space-between;">
+                <span th:text="${p.nombre()}">Proyecto</span><span class="text-tertiary" th:text="${p.numHilos()}">0</span>
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <section class="card">
+          <div class="table-toolbar">
+            <div class="segmented" id="sort-tabs">
+              <button type="button" class="segmented-btn active" data-sort="recientes">Recientes</button>
+              <button type="button" class="segmented-btn" data-sort="respondidos">Más respondidos</button>
+              <button type="button" class="segmented-btn" data-sort="sinresponder">Sin responder</button>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="new-thread-btn" th:if="${!proyectos.isEmpty()}">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo hilo</button>
+          </div>
+
+          <div th:if="${hilos.isEmpty()}" class="state-panel">
+            <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg></span>
+            <span class="state-panel-title">Todavía no hay hilos</span>
+            <span class="state-panel-desc" th:text="${proyectos.isEmpty()} ? 'No tienes proyectos asignados donde publicar.' : 'Sé el primero en abrir uno en alguno de tus proyectos.'">—</span>
+          </div>
+
+          <div th:unless="${hilos.isEmpty()}">
+            <p class="text-tertiary" style="font-size:var(--fs-xs); padding:var(--space-4) var(--space-6) 0;"
+               th:text="${hilos.size()} + ' hilos · ' + ${totalRespuestas} + ' respuestas'">0 hilos</p>
+            <div id="thread-list">
+              <a class="thread-row" th:each="t : ${hilos}" th:href="'foro-hilo.html?id=' + ${t.id}"
+                 th:attr="data-proyecto-id=${t.proyectoId}, data-num-respuestas=${t.numRespuestas}"
+                 style="text-decoration:none; color:inherit;">
+                <span class="avatar avatar-sm" th:text="${t.autorIniciales}">AA</span>
+                <div class="thread-row-body">
+                  <div class="thread-row-title">
+                    <span class="badge badge-green" th:if="${t.tieneAceptada}" style="margin-right:6px;">RESUELTO</span>
+                    <span th:text="${t.titulo}">Título</span>
+                  </div>
+                  <div class="thread-row-meta" th:text="${t.proyectoNombre} + ' · ' + ${t.autorNombre} + ' · ' + ${t.fechaLabel} + ' · ' + ${t.numVistas} + ' vistas'">meta</div>
+                </div>
+                <div class="thread-row-count"><div class="thread-row-count-num" th:text="${t.numRespuestas}">0</div><div class="thread-row-count-label">Respuestas</div></div>
+              </a>
+            </div>
+            <div class="state-panel" id="dynamic-empty" hidden>
+              <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg></span>
+              <span class="state-panel-title">Sin hilos con este filtro</span>
+              <span class="state-panel-desc">Prueba con otro proyecto o con "Recientes".</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+var PROYECTOS_CON_HILOS = /*[[${proyectos}]]*/ [];
+
+document.addEventListener("DOMContentLoaded", function () {
+  var submitForm = window.SBAI.submitForm;
+  var wrap = document.getElementById("thread-list");
+  var originalOrder = wrap ? Array.prototype.slice.call(wrap.querySelectorAll(".thread-row")) : [];
+  var activeProyecto = "todos";
+  var activeSort = "recientes";
+
+  function aplicar() {
+    if (!wrap) return;
+    var visibles = originalOrder.filter(function (row) {
+      if (activeProyecto !== "todos" && row.dataset.proyectoId !== activeProyecto) return false;
+      if (activeSort === "sinresponder" && row.dataset.numRespuestas !== "0") return false;
+      return true;
+    });
+    if (activeSort === "respondidos") {
+      visibles = visibles.slice().sort(function (a, b) {
+        return parseInt(b.dataset.numRespuestas, 10) - parseInt(a.dataset.numRespuestas, 10);
+      });
+    }
+    originalOrder.forEach(function (row) { row.hidden = true; });
+    visibles.forEach(function (row) { row.hidden = false; wrap.appendChild(row); });
+    var empty = document.getElementById("dynamic-empty");
+    if (empty) empty.hidden = visibles.length !== 0;
+  }
+
+  document.querySelectorAll("[data-proyecto]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("[data-proyecto]").forEach(function (b) {
+        b.classList.remove("active");
+        b.style.background = ""; b.style.fontWeight = "";
+      });
+      btn.classList.add("active");
+      btn.style.background = "var(--navy-100)"; btn.style.fontWeight = "600";
+      activeProyecto = btn.dataset.proyecto;
+      aplicar();
+    });
+  });
+
+  document.querySelectorAll("#sort-tabs [data-sort]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("#sort-tabs [data-sort]").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      activeSort = btn.dataset.sort;
+      aplicar();
+    });
+  });
+
+  var newThreadBtn = document.getElementById("new-thread-btn");
+  if (newThreadBtn) {
+    newThreadBtn.addEventListener("click", function () {
+      var options = PROYECTOS_CON_HILOS.map(function (p) { return '<option value="' + p.id + '">' + p.nombre + '</option>'; }).join("");
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+        '<div class="modal-header"><div><h2>Nuevo hilo</h2><p>Comparte una pregunta o hallazgo con tu equipo de proyecto.</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div class="field"><label class="field-label">Proyecto</label><select class="select" id="new-thread-proj">' + options + '</select></div>' +
+        '<div class="field"><label class="field-label">Título</label><input class="input" id="new-thread-title" placeholder="¿Cómo resolviste...?"></div>' +
+        '<div class="field"><label class="field-label">Mensaje</label><textarea class="input" id="new-thread-body" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="Describe el contexto..."></textarea></div></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="publish-thread-btn">Publicar hilo</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#publish-thread-btn").addEventListener("click", function () {
+        var titulo = backdrop.querySelector("#new-thread-title").value.trim();
+        var contenido = backdrop.querySelector("#new-thread-body").value.trim();
+        if (!titulo) { SBAI.toast.show("Escribe un título para tu hilo.", { type: "error" }); return; }
+        if (!contenido) { SBAI.toast.show("Escribe un mensaje para tu hilo.", { type: "error" }); return; }
+        submitForm("/colaborador/foros/nuevo-hilo", {
+          proyectoId: backdrop.querySelector("#new-thread-proj").value, titulo: titulo, contenido: contenido
+        });
+      });
+    });
+  }
+});
+</script>
+</body>
+</html>

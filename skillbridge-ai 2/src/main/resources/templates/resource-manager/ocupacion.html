@@ -65,6 +65,7 @@
 <script src="/js/command-palette.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/shell.js"></script>
+<script src="/js/topbar-actions.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   var cfg = SBAI.shell.init({ role: "resource-manager", active: "ocupacion.html", title: "Ocupación del equipo", subtitle: "Detalle por colaborador y evolución mensual" });
@@ -72,11 +73,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var b = MOCK.occupancyBuckets;
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "SUBUTILIZADOS", value: b.subutilizados, meta: "< 60% de carga" },
-    { label: "ÓPTIMO", value: b.optimo, meta: "60–89% de carga", cls: "up" },
-    { label: "AL LÍMITE", value: b.alLimite, meta: "90–100% de carga", cls: "warn" },
-    { label: "SOBRE-ASIGNADOS", value: b.sobreAsignados, meta: "> 100% de carga", cls: "down" }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
+    { label: "SUBUTILIZADOS", value: b.subutilizados, meta: "< 60% de carga", color: "blue", icon: "user-minus" },
+    { label: "ÓPTIMO", value: b.optimo, meta: "60–89% de carga", cls: "up", color: "green", icon: "check-circle" },
+    { label: "AL LÍMITE", value: b.alLimite, meta: "90–100% de carga", cls: "warn", color: "amber", icon: "alert-triangle" },
+    { label: "SOBRE-ASIGNADOS", value: b.sobreAsignados, meta: "> 100% de carga", cls: "down", color: "red", icon: "x-circle" }
+  ].map(function (k) { 
+    return '<div class="kpi-tile accent-' + k.color + '">' +
+      '<div class="kpi-tile-icon ' + k.color + '"><svg class="icon"><use href="/img/icons.svg#icon-' + k.icon + '"></use></svg></div>' +
+      '<span class="kpi-tile-label">' + k.label + '</span>' +
+      '<span class="kpi-tile-value">' + k.value + '</span>' +
+      '<span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; 
+  }).join("");
 
   var maxEvo = 100;
   document.getElementById("evo-chart").innerHTML = MOCK.occupancyMonthly.map(function (m) {

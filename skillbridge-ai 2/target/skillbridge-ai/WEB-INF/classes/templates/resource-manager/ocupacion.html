@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OcupaciÃ³n del equipo Â· SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <h2 style="font-size:var(--fs-md); margin-bottom:2px;">EvoluciÃ³n de la ocupaciÃ³n promedio</h2>
+        <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);">Ãšltimos 6 meses Â· meta 85%</p>
+        <div class="bar-chart" id="evo-chart"></div>
+      </section>
+
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
+          <div>
+            <strong>OcupaciÃ³n individual</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Promedio de las Ãºltimas 6 semanas por colaborador</p>
+          </div>
+          <div class="table-filters">
+            <select class="select" data-filter-scope="ocup" data-filter-key="celula">
+              <option value="todos">CÃ©lula: todas</option><option>Andes</option><option>Aurora</option><option>Retail</option><option>Interno</option>
+            </select>
+            <select class="select" data-filter-scope="ocup" data-filter-key="estado">
+              <option value="todos">Estado: todos</option><option value="level-low">Subutilizado</option><option value="level-optimal">Ã“ptimo</option><option value="level-high">Al lÃ­mite</option><option value="level-over">Sobre-asignado</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Colaborador</th><th>CÃ©lula</th><th>Cargo</th><th>OcupaciÃ³n promedio</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="ocup-body"></tbody>
+          </table>
+        </div>
+        <div class="state-panel" data-filter-empty="ocup" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-layers"></use></svg></span>
+          <span class="state-panel-title">Sin colaboradores con estos filtros</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/shell.js"></script>`n<script src="/js/topbar-actions.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "resource-manager", active: "ocupacion.html", title: "OcupaciÃ³n del equipo", subtitle: "Detalle por colaborador y evoluciÃ³n mensual" });
+  if (!cfg) return;
+
+  var b = MOCK.occupancyBuckets;
+  document.getElementById("kpi-grid").innerHTML = [
+    { label: "SUBUTILIZADOS", value: b.subutilizados, meta: "< 60% de carga", color: "blue", icon: "user-minus" },
+    { label: "Ã“PTIMO", value: b.optimo, meta: "60â€“89% de carga", cls: "up", color: "green", icon: "check-circle" },
+    { label: "AL LÃMITE", value: b.alLimite, meta: "90â€“100% de carga", cls: "warn", color: "amber", icon: "alert-triangle" },
+    { label: "SOBRE-ASIGNADOS", value: b.sobreAsignados, meta: "> 100% de carga", cls: "down", color: "red", icon: "x-circle" }
+  ].map(function (k) { 
+    return '<div class="kpi-tile accent-' + k.color + '">' +
+      '<div class="kpi-tile-icon ' + k.color + '"><svg class="icon"><use href="/img/icons.svg#icon-' + k.icon + '"></use></svg></div>' +
+      '<span class="kpi-tile-label">' + k.label + '</span>' +
+      '<span class="kpi-tile-value">' + k.value + '</span>' +
+      '<span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; 
+  }).join("");
+
+  var maxEvo = 100;
+  document.getElementById("evo-chart").innerHTML = MOCK.occupancyMonthly.map(function (m) {
+    return '<div class="bar-chart-col"><span class="bar-chart-value">' + m.pct + '%</span>' +
+      '<div class="bar-chart-track"><div class="bar-chart-fill' + (m.pct >= 85 ? " accent" : "") + '" style="height:' + Math.round((m.pct / maxEvo) * 100) + '%;"></div></div>' +
+      '<span class="bar-chart-label">' + m.mes + '</span></div>';
+  }).join("");
+
+  function levelInfo(v) {
+    if (v > 100) return { cls: "level-over", badge: "badge-red", label: "Sobre-asignado" };
+    if (v >= 90) return { cls: "level-high", badge: "badge-amber", label: "Al lÃ­mite" };
+    if (v >= 60) return { cls: "level-optimal", badge: "badge-green", label: "Ã“ptimo" };
+    return { cls: "level-low", badge: "badge-neutral", label: "Subutilizado" };
+  }
+
+  document.getElementById("ocup-body").innerHTML = MOCK.occupancyHeatmap.map(function (row) {
+    var c = MOCK.findCollaborator(row.nombre);
+    var li = levelInfo(row.promedio);
+    return '<tr data-filter-row="ocup" data-f-celula="' + (c ? c.celula : "") + '" data-f-estado="' + li.cls + '">' +
+      '<td class="cell-person"><span class="avatar avatar-sm">' + row.iniciales + '</span><span class="cell-person-name">' + row.nombre + '</span></td>' +
+      "<td>" + (c ? c.celula : "â€”") + "</td><td>" + row.cargo + "</td>" +
+      '<td><div class="progress-inline" style="min-width:110px;"><div class="progress-bar"><div class="progress-bar-fill ' + (row.promedio > 100 ? "red" : row.promedio >= 90 ? "amber" : "") + '" style="width:' + Math.min(row.promedio, 100) + '%;"></div></div><span class="progress-value">' + row.promedio + '%</span></div></td>' +
+      '<td><span class="badge ' + li.badge + '">' + li.label + '</span></td>' +
+      '<td class="cell-actions"><button type="button" data-weekly="' + row.nombre + '">Ver semanas</button>' + (row.promedio > 100 ? '<button type="button" data-rebalance-row="' + row.nombre + '">Rebalancear</button>' : "") + '</td></tr>';
+  }).join("");
+
+  document.querySelectorAll("[data-weekly]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var row = MOCK.occupancyHeatmap.filter(function (r) { return r.nombre === btn.dataset.weekly; })[0];
+      var cells = row.valores.map(function (v, i) { return '<div style="text-align:center;"><div class="label-mono" style="margin-bottom:4px;">' + MOCK.occupancyWeeks[i] + '</div><span class="heatmap-cell ' + levelInfo(v).cls + '">' + v + "</span></div>"; }).join("");
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>' + row.nombre + '</h2><p>' + row.cargo + ' Â· promedio ' + row.promedio + '%</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div style="display:flex; gap:var(--space-3); justify-content:space-between;">' + cells + '</div></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
+      SBAI.modal.open(html);
+    });
+  });
+  document.querySelectorAll("[data-rebalance-row]").forEach(function (btn) {
+    btn.addEventListener("click", function () { SBAI.toast.show("Propuesta de rebalanceo enviada para <strong>" + btn.dataset.rebalanceRow + "</strong>.", { type: "success" }); });
+  });
+
+  window.SBAI.tableFilter.init(document);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Núcleo Retail · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div class="main-content">
+    <header class="topbar" id="sbai-topbar"></header>
+    <main class="page-content" id="page-content">
+
+      <a href="proyectos.html" class="breadcrumb"><svg class="icon icon-sm" style="vertical-align:-3px;"><use href="/img/icons.svg#icon-arrow-left"></use></svg> Proyectos <span class="sep">›</span> <span class="current">PRJ-NR-2026</span></a>
+
+      <section class="card card-pad" style="margin-top:var(--space-4);">
+        <div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">
+          <span class="avatar avatar-lg" style="border-radius:var(--radius-lg); background:var(--navy-700);">NR</span>
+          <div style="flex:1; min-width:220px;">
+            <div style="display:flex; align-items:center; gap:var(--space-3);"><h1 style="font-size:var(--fs-lg);">Núcleo Retail</h1><span class="badge badge-neutral">PLANEADO</span></div>
+            <p class="text-tertiary" style="margin-top:4px;">Grupo Sol · 01 sep 2026 → 28 feb 2027 · PM Javier Molina</p>
+          </div>
+          <div style="display:flex; gap:var(--space-8); text-align:right;">
+            <div><div class="kpi-tile-value" style="font-size:var(--fs-lg);">12%</div><div class="label-mono">Avance</div></div>
+            <div><div class="kpi-tile-value" style="font-size:var(--fs-lg);">5 / 6</div><div class="label-mono">Equipo cubierto</div></div>
+            <div><div class="kpi-tile-value" style="font-size:var(--fs-lg); color:var(--amber-fg);">1</div><div class="label-mono">Vacante abierta</div></div>
+          </div>
+          <div class="btn-group">
+            <button type="button" class="btn btn-secondary" id="edit-project-btn">Editar</button>
+            <a href="ai-talent-matching.html" class="btn btn-primary"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-search-check"></use></svg>Buscar talento con IA</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="detail-grid" style="margin-top:var(--space-6);">
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-3);">Descripción</h3>
+            <p class="text-secondary" style="line-height:1.65;" id="proj-desc"></p>
+            <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-top:var(--space-4);" id="proj-stack"></div>
+          </section>
+
+          <section class="card">
+            <div class="card-header"><div class="card-header-text"><h2>Habilidades requeridas</h2><p>Nivel mínimo exigido</p></div></div>
+            <div class="card-body-flush" id="skills-required"></div>
+          </section>
+
+          <section class="card card-pad">
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-5);">Cronograma</h3>
+            <p class="label-mono" style="margin-bottom:var(--space-4);">SEP 2026 — FEB 2027</p>
+            <div class="timeline" id="cronograma"></div>
+          </section>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card">
+            <div class="card-header"><div class="card-header-text"><h2>Equipo asignado</h2></div>
+              <button type="button" class="btn btn-primary btn-sm" id="add-team-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Asignar</button></div>
+            <div class="card-body-flush" id="equipo-asignado"></div>
+          </section>
+
+          <section class="callout ai">
+            <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></span>
+            <span class="callout-body"><span class="callout-title">Resumen IA del proyecto</span><span id="resumen-ia"></span></span>
+          </section>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cfg = SBAI.shell.init({ role: "project-manager", active: "proyectos.html", title: "Núcleo Retail", subtitle: "Proyectos › PRJ-NR-2026" });
+  if (!cfg) return;
+
+  var p = MOCK.findProject("Núcleo Retail");
+  document.getElementById("proj-desc").textContent = p.descripcion;
+  document.getElementById("proj-stack").innerHTML = p.stack.map(function (t) { return '<span class="badge badge-neutral">' + t + "</span>"; }).join("");
+  document.getElementById("resumen-ia").innerHTML = " " + p.resumenIA;
+
+  var estadoSkill = { "cubierto": "badge-green", "parcial": "badge-amber", "1 vacante": "badge-red" };
+  document.getElementById("skills-required").innerHTML = p.habilidadesRequeridas.map(function (h) {
+    return '<div style="display:flex; align-items:center; justify-content:space-between; padding:var(--space-4) var(--space-6); border-bottom:1px solid var(--border-subtle);">' +
+      '<span style="font-size:var(--fs-sm); font-weight:500;">' + h.nombre + '</span>' +
+      '<span class="label-mono">NIVEL MÍNIMO: ' + h.nivel.toUpperCase() + '</span>' +
+      '<span class="badge ' + (estadoSkill[h.estado] || "badge-neutral") + '">' + h.estado + "</span></div>";
+  }).join("");
+
+  document.getElementById("cronograma").innerHTML = p.cronograma.map(function (c, i) {
+    return '<div class="timeline-item"><span class="timeline-dot" style="' + (i === 0 ? "background:var(--blue-accent);" : "") + '"></span>' +
+      '<div class="timeline-body"><div class="timeline-label">' + c.fase + '</div><div class="timeline-sub">' + c.rango + "</div></div></div>";
+  }).join("");
+
+  function renderTeam() {
+    document.getElementById("equipo-asignado").innerHTML = p.equipoAsignado.map(function (m) {
+      var initials = m.nombre ? m.nombre.split(" ").map(function (w) { return w[0]; }).join("").slice(0, 2) : "—";
+      return '<div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-4) var(--space-6); border-bottom:1px solid var(--border-subtle);">' +
+        '<span class="avatar avatar-sm" style="' + (m.nombre ? "" : "background:var(--surface); color:var(--text-tertiary); border:1.5px dashed var(--border-strong);") + '">' + initials + '</span>' +
+        '<div style="flex:1; min-width:0;"><div style="font-size:var(--fs-sm); font-weight:500;">' + (m.nombre || m.rol) + '</div>' +
+        '<div class="text-tertiary" style="font-size:var(--fs-xs);">' + (m.nombre ? m.rol : "") + " · desde " + m.desde + "</div></div>" +
+        '<span class="mono" style="font-size:var(--fs-xs); font-weight:600;">' + m.dedicacion + "%</span></div>";
+    }).join("");
+  }
+  renderTeam();
+
+  document.getElementById("edit-project-btn").addEventListener("click", function () { SBAI.toast.show("Abre el formulario de edición del proyecto (misma vista que “Editar” en el listado)."); });
+
+  document.getElementById("add-team-btn").addEventListener("click", function () {
+    var options = MOCK.collaborators.map(function (c) { return '<option value="' + c.nombre + '">' + c.nombre + " — " + c.cargo + "</option>"; }).join("");
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Asignar colaborador</h2><p>Núcleo Retail</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Colaborador</label><select class="select" id="assign-collab">' + options + '</select></div>' +
+      '<div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" id="assign-pct" value="20" min="5" max="100" step="5"></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-assign">Asignar</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#confirm-assign").addEventListener("click", function () {
+      var nombre = backdrop.querySelector("#assign-collab").value;
+      var pct = backdrop.querySelector("#assign-pct").value;
+      var c = MOCK.findCollaborator(nombre);
+      var total = c.ocupacionProm + Number(pct);
+      p.equipoAsignado.unshift({ nombre: nombre, rol: c.cargo, desde: "hoy", dedicacion: Number(pct) });
+      renderTeam();
+      SBAI.modal.close(backdrop);
+      if (total > 100) {
+        SBAI.toast.show("<strong>" + nombre + "</strong> quedaría al " + total + "% de carga. Se registró como asignación pendiente de excepción del Resource Manager.", { type: "error" });
+      } else {
+        SBAI.toast.show("<strong>" + nombre + "</strong> asignado a Núcleo Retail al " + pct + "%.", { type: "success" });
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

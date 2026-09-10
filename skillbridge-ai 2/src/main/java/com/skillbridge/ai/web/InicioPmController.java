@@ -52,19 +52,24 @@ public class InicioPmController {
 
         long totalMiembros = proyectos.stream().mapToLong(p -> p.getEquipo().size()).sum();
         long activos = proyectos.stream().filter(p -> "activo".equals(p.getEstadoCrudo())).count();
+        int avancePromedio = proyectos.isEmpty() ? 0
+                : (int) Math.round(proyectos.stream().mapToInt(ProyectoDetalle::getAvance).average().orElse(0));
+        long enRiesgo = proyectos.stream().filter(p -> "en_riesgo".equals(p.getEstadoCrudo())).count();
 
         List<HiloFila> hilos = foroService.listarHilosDeMisProyectos(perfilId);
 
-        shellModelBuilder.aplicar(model, sesion, "inicio.html", "Hola, " + primerNombre(sesion.getNombreCompleto()),
-                "NexaCorp - SkillBridge AI");
+        String subtitle = activos + " proyectos activos" + (enRiesgo > 0 ? " · " + enRiesgo + " alertas de riesgo" : "");
+        shellModelBuilder.aplicar(model, sesion, "inicio.html", "Panel de Project Manager", subtitle);
 
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("totalMiembros", totalMiembros);
         model.addAttribute("proyectosActivos", activos);
+        model.addAttribute("avancePromedio", avancePromedio);
         model.addAttribute("totalHilos", hilos.size());
         model.addAttribute("hilosRecientes", hilos.size() > 4 ? hilos.subList(0, 4) : hilos);
         return "project-manager/inicio";
     }
+
 
     private String primerNombre(String nombreCompleto) {
         if (nombreCompleto == null || nombreCompleto.isBlank()) return "";

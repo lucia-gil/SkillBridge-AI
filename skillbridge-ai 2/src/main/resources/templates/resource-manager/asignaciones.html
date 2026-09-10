@@ -43,6 +43,7 @@
 <script src="/js/command-palette.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/shell.js"></script>
+<script src="/js/topbar-actions.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   var cfg = SBAI.shell.init({ role: "resource-manager", active: "asignaciones.html", title: "Asignaciones", subtitle: "Vista global de validación de carga" });
@@ -60,11 +61,13 @@ document.addEventListener("DOMContentLoaded", function () {
     var counts = { total: MOCK.assignments.length };
     COLUMNS.forEach(function (c) { counts[c.key] = MOCK.assignments.filter(function (a) { return a.validacion === c.key; }).length; });
     document.getElementById("kpi-grid").innerHTML = [
-      { label: "TOTAL ASIGNACIONES", value: counts.total },
-      { label: "BLOQUEADAS", value: counts["Bloqueada"], cls: "down" },
-      { label: "EN REVISIÓN", value: counts["En revisión"], cls: "warn" },
-      { label: "SIN CUBRIR", value: counts["Sin cubrir"], cls: "warn" }
-    ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>'; }).join("");
+      { label: "TOTAL ASIGNACIONES", value: counts.total, accent: "purple", icon: "icon-layers" },
+      { label: "BLOQUEADAS", value: counts["Bloqueada"], cls: "down", accent: "rose", icon: "icon-shield-alert" },
+      { label: "EN REVISIÓN", value: counts["En revisión"], cls: "warn", accent: "amber", icon: "icon-clock" },
+      { label: "SIN CUBRIR", value: counts["Sin cubrir"], cls: "warn", accent: "blue", icon: "icon-user-x" }
+    ].map(function (k) {
+        return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>';
+      }).join("");
   }
 
   var validCls = { "Validada": "badge-green", "Al límite": "badge-amber", "En revisión": "badge-blue", "Bloqueada": "badge-red", "Sin cubrir": "badge-neutral" };

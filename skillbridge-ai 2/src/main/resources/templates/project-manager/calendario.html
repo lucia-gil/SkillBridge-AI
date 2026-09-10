@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<style>
+  .ev-dot { display:inline-block; width:9px; height:9px; border-radius:50%; }
+  .agenda-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:var(--space-5); }
+  .ev-datebox { text-align:center; min-width:54px; }
+  .ev-datebox .d { font-size:24px; font-weight:700; line-height:1; }
+  .ev-datebox .m { font-size:11px; font-weight:600; color:var(--text-tertiary); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <section class="card card-pad" style="margin-bottom:var(--space-5);">
+        <div class="table-toolbar" style="border:none; padding:0;">
+          <div class="segmented" id="tipo-tabs">
+            <button type="button" class="segmented-btn active" data-tipo="todos">Todos</button>
+            <button type="button" class="segmented-btn" data-tipo="reunion">Reuniones</button>
+            <button type="button" class="segmented-btn" data-tipo="entregable">Entregables</button>
+            <button type="button" class="segmented-btn" data-tipo="hito">Hitos</button>
+          </div>
+          <div class="table-filters">
+            <select class="select" id="proyecto-filter" style="max-width:220px;">
+              <option value="todos">Todos mis proyectos</option>
+              <option th:each="p : ${proyectos}" th:value="${p.nombre()}" th:text="${p.nombre()}">Proyecto</option>
+            </select>
+            <button type="button" class="btn btn-primary btn-sm" id="new-event-btn" th:if="${!proyectos.isEmpty()}">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo evento</button>
+          </div>
+        </div>
+      </section>
+
+      <div th:if="${eventos.isEmpty()}" class="card">
+        <div class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-calendar"></use></svg></span>
+          <span class="state-panel-title">Todavia no hay eventos</span>
+          <span class="state-panel-desc" th:text="${proyectos.isEmpty()} ? 'No tienes proyectos donde crear eventos.' : 'Crea el primero con \'Nuevo evento\'.'">—</span>
+        </div>
+      </div>
+
+      <div th:unless="${eventos.isEmpty()}" class="agenda-grid" id="agenda-grid">
+        <div class="card card-pad" th:each="e : ${eventos}" data-evento
+             th:attr="data-tipo=${e.tipoCodigo}, data-proyecto=${e.proyectoNombre}"
+             style="display:flex; gap:var(--space-4); align-items:flex-start;">
+          <div class="ev-datebox">
+            <div class="d" th:text="${e.diaNum}">5</div>
+            <div class="m" th:text="${e.mesAbrev}">AGO</div>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+              <span class="ev-dot" th:style="'background:' + ${e.tipoColor}"></span>
+              <span class="text-tertiary" style="font-size:11px; text-transform:uppercase; letter-spacing:.03em;" th:text="${e.tipoNombre}">Reunion</span>
+              <span class="badge" style="margin-left:auto;"
+                    th:classappend="${e.estado == 'cumplido' ? 'badge-green' : (e.estado == 'atrasado' ? 'badge-red' : (e.estado == 'cancelado' ? 'badge-neutral' : 'badge-blue'))}"
+                    th:text="${e.estado}">estado</span>
+            </div>
+            <div style="font-weight:600; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span th:text="${e.titulo}">Titulo</span>
+              <span class="badge badge-neutral" th:if="${e.audienciaCodigo == 'solo_pm'}" style="font-size:10px;">Solo PM</span>
+            </div>
+            <div class="text-tertiary" style="font-size:var(--fs-xs); margin-top:3px;" th:text="${e.proyectoNombre} + ' · ' + ${e.ubicacionLabel}">proyecto</div>
+            <div class="text-tertiary" style="font-size:11px; margin-top:2px;" th:text="${e.fechaLabel} + ' · ' + ${e.horaLabel}">fecha</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="agenda-empty" hidden>
+        <div class="state-panel">
+          <span class="state-panel-title">Sin eventos con este filtro</span>
+          <span class="state-panel-desc">Prueba con otro tipo o proyecto.</span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+var NUEVO_URL = /*[[${nuevoUrl}]]*/ "/project-manager/calendario/nuevo";
+var PROYECTOS = /*[[${proyectos}]]*/ [];
+
+document.addEventListener("DOMContentLoaded", function () {
+  var submitForm = window.SBAI.submitForm;
+  var cards = Array.prototype.slice.call(document.querySelectorAll("[data-evento]"));
+  var tipoActivo = "todos";
+  var proyectoActivo = "todos";
+
+  function aplicar() {
+    var visibles = 0;
+    cards.forEach(function (c) {
+      var okTipo = tipoActivo === "todos" || c.getAttribute("data-tipo") === tipoActivo;
+      var okProy = proyectoActivo === "todos" || c.getAttribute("data-proyecto") === proyectoActivo;
+      var show = okTipo && okProy;
+      c.hidden = !show;
+      if (show) visibles++;
+    });
+    var empty = document.getElementById("agenda-empty");
+    if (empty) empty.hidden = (visibles !== 0) || cards.length === 0;
+  }
+
+  document.querySelectorAll("#tipo-tabs [data-tipo]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("#tipo-tabs [data-tipo]").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      tipoActivo = btn.dataset.tipo;
+      aplicar();
+    });
+  });
+  var proyFilter = document.getElementById("proyecto-filter");
+  if (proyFilter) proyFilter.addEventListener("change", function () { proyectoActivo = this.value; aplicar(); });
+
+  var newBtn = document.getElementById("new-event-btn");
+  if (newBtn) {
+    newBtn.addEventListener("click", function () {
+      var opts = PROYECTOS.map(function (p) { return '<option value="' + p.id + '">' + p.nombre + '</option>'; }).join("");
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+        '<div class="modal-header"><div><h2>Nuevo evento</h2><p>Se agrega al calendario del equipo del proyecto.</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body">' +
+        '<div class="field-row"><div class="field"><label class="field-label">Proyecto</label><select class="select" id="ev-proj">' + opts + '</select></div>' +
+        '<div class="field"><label class="field-label">Tipo</label><select class="select" id="ev-tipo"><option value="reunion">Reunion</option><option value="entregable">Entregable</option><option value="hito">Hito</option></select></div></div>' +
+        '<div class="field"><label class="field-label">Titulo</label><input class="input" id="ev-titulo" placeholder="Daily de sprint, Entrega v1..."></div>' +
+        '<div class="field-row"><div class="field"><label class="field-label">Fecha y hora</label><input class="input" type="datetime-local" id="ev-fecha"></div>' +
+        '<div class="field"><label class="field-label">Audiencia</label><select class="select" id="ev-aud"><option value="todos">Todo el equipo</option><option value="solo_pm">Solo Project Manager</option><option value="solo_colaboradores">Solo colaboradores</option></select></div></div>' +
+        '<div class="field-row"><div class="field"><label class="field-label">Ubicacion (opcional)</label><input class="input" id="ev-ubic" placeholder="Sala 3 / Oficina"></div>' +
+        '<div class="field"><label class="field-label">Enlace virtual (opcional)</label><input class="input" id="ev-enlace" placeholder="https://meet..."></div></div>' +
+        '<div class="field"><label class="field-label">Descripcion (opcional)</label><textarea class="input" id="ev-desc" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
+        '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ev-confirm">Crear evento</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#ev-confirm").addEventListener("click", function () {
+        var titulo = backdrop.querySelector("#ev-titulo").value.trim();
+        var fecha = backdrop.querySelector("#ev-fecha").value;
+        if (!titulo) { SBAI.toast.show("Escribe un titulo.", { type: "error" }); return; }
+        if (!fecha) { SBAI.toast.show("Selecciona la fecha y hora.", { type: "error" }); return; }
+        submitForm(NUEVO_URL, {
+          proyectoId: backdrop.querySelector("#ev-proj").value,
+          tipo: backdrop.querySelector("#ev-tipo").value,
+          titulo: titulo,
+          fechaInicio: fecha,
+          audiencia: backdrop.querySelector("#ev-aud").value,
+          ubicacion: backdrop.querySelector("#ev-ubic").value,
+          enlace: backdrop.querySelector("#ev-enlace").value,
+          descripcion: backdrop.querySelector("#ev-desc").value
+        });
+      });
+    });
+  }
+});
+</script>
+</body>
+</html>
