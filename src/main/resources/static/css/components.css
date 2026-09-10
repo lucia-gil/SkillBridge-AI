@@ -400,6 +400,10 @@
 .data-table tbody tr[data-f-riesgo="Bajo"]:hover { box-shadow: inset 3px 0 0 0 var(--green-fg); }
 .data-table tbody tr[data-f-riesgo="Medio"]:hover { box-shadow: inset 3px 0 0 0 var(--amber-fg); }
 .data-table tbody tr[data-f-riesgo="Alto"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
+.data-table tbody tr[data-f-estado="level-low"]:hover { box-shadow: inset 3px 0 0 0 var(--border-strong); }
+.data-table tbody tr[data-f-estado="level-optimal"]:hover { box-shadow: inset 3px 0 0 0 var(--green-fg); }
+.data-table tbody tr[data-f-estado="level-high"]:hover { box-shadow: inset 3px 0 0 0 var(--amber-fg); }
+.data-table tbody tr[data-f-estado="level-over"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table thead.sticky-head th { position: sticky; top: 0; background: var(--surface); z-index: 1; box-shadow: 0 1px 0 0 var(--border-subtle); }
 @keyframes table-row-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -455,6 +459,17 @@
 .bar-chart-col:hover .bar-chart-value { color: var(--text-primary); font-weight: var(--fw-semibold); }
 .bar-chart-value { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); transition: color var(--dur-fast) var(--ease-standard); }
 .bar-chart-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); color: var(--text-tertiary); text-transform: uppercase; }
+.bar-chart-meta-line { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--text-tertiary); z-index: 2; }
+.bar-chart-meta-label {
+  position: absolute; right: 0; top: -20px;
+  font-family: var(--font-mono); font-size: 9px; font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-label); text-transform: uppercase;
+  color: var(--text-secondary); background: var(--surface); padding: 1px 6px;
+  border-radius: var(--radius-full); border: 1px solid var(--border-default);
+}
+.bar-chart-delta { font-family: var(--font-mono); font-size: 9px; font-weight: var(--fw-medium); margin-top: 2px; }
+.bar-chart-delta.up { color: var(--green-fg); }
+.bar-chart-delta.down { color: var(--red-fg); }
 
 /* Estados vacíos / carga / error de listas y tablas */
 .state-panel {
