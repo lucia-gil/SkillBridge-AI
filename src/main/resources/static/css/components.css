@@ -397,6 +397,9 @@
 .data-table tbody tr[data-f-estado="En revisión"]:hover { box-shadow: inset 3px 0 0 0 var(--blue-fg); }
 .data-table tbody tr[data-f-estado="Bloqueada"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
 .data-table tbody tr[data-f-estado="Sin cubrir"]:hover { box-shadow: inset 3px 0 0 0 var(--border-strong); }
+.data-table tbody tr[data-f-riesgo="Bajo"]:hover { box-shadow: inset 3px 0 0 0 var(--green-fg); }
+.data-table tbody tr[data-f-riesgo="Medio"]:hover { box-shadow: inset 3px 0 0 0 var(--amber-fg); }
+.data-table tbody tr[data-f-riesgo="Alto"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table thead.sticky-head th { position: sticky; top: 0; background: var(--surface); z-index: 1; box-shadow: 0 1px 0 0 var(--border-subtle); }
 @keyframes table-row-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -416,6 +419,23 @@
 .table-filters .select { width: auto; min-width: 150px; height: 38px; font-size: var(--fs-xs); }
 .table-footer { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4) var(--space-6); gap: var(--space-4); flex-wrap: wrap; }
 
+/* Contenedor de scroll vertical para tablas con header/toolbar fijos.
+   Fuerza un scrollbar delgado con máxima especificidad (en vez de
+   depender solo del selector universal de base.css) porque en algunos
+   navegadores el scrollbar por defecto (ancho) se colaba en este
+   contexto anidado, dejando un espacio visible donde la línea de cada
+   fila no llegaba a tocar la barra. */
+.table-scroll-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.table-scroll-wrap::-webkit-scrollbar { width: 8px; }
+.table-scroll-wrap::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-full); }
+.table-scroll-wrap::-webkit-scrollbar-track { background: transparent; }
+
 .progress-bar { width: 100%; height: 6px; background: var(--border-subtle); border-radius: var(--radius-full); overflow: hidden; }
 .progress-bar-fill { height: 100%; border-radius: var(--radius-full); background: var(--navy-700); transition: width var(--dur-slow) var(--ease-standard); }
 .progress-bar-fill.green { background: var(--green-fg); }
@@ -427,11 +447,13 @@
 
 /* Gráfico de barras verticales simple (reportes) */
 .bar-chart { display: flex; align-items: flex-end; gap: var(--space-4); height: 140px; padding: 0 var(--space-2); }
-.bar-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: var(--space-2); height: 100%; }
+.bar-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: var(--space-2); height: 100%; cursor: pointer; }
 .bar-chart-track { width: 100%; max-width: 34px; flex: 1; display: flex; align-items: flex-end; }
-.bar-chart-fill { width: 100%; border-radius: 4px 4px 0 0; background: var(--navy-700); transition: height var(--dur-slow) var(--ease-standard); min-height: 3px; }
+.bar-chart-fill { width: 100%; border-radius: 4px 4px 0 0; background: var(--navy-700); transition: height var(--dur-slow) var(--ease-standard), background var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); min-height: 3px; transform-origin: bottom; }
 .bar-chart-fill.accent { background: var(--blue-accent); }
-.bar-chart-value { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); }
+.bar-chart-col:hover .bar-chart-fill { background: var(--blue-accent-strong); transform: scaleX(1.15); }
+.bar-chart-col:hover .bar-chart-value { color: var(--text-primary); font-weight: var(--fw-semibold); }
+.bar-chart-value { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); transition: color var(--dur-fast) var(--ease-standard); }
 .bar-chart-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); color: var(--text-tertiary); text-transform: uppercase; }
 
 /* Estados vacíos / carga / error de listas y tablas */
@@ -677,7 +699,10 @@
 .chat-history-time { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); }
 
 .chat-window { display: flex; flex-direction: column; height: 100%; min-height: 560px; }
-.chat-messages { flex: 1; overflow-y: auto; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); }
+.chat-messages { flex: 1; overflow-y: auto; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.chat-messages::-webkit-scrollbar { width: 8px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-full); }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
 .chat-date-sep { text-align: center; font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); color: var(--text-tertiary); text-transform: uppercase; margin: var(--space-2) 0; }
 .chat-msg { display: flex; flex-direction: column; gap: 4px; max-width: 78%; }
 .chat-msg.user { align-self: flex-end; align-items: flex-end; }
