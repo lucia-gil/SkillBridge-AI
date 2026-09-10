@@ -392,6 +392,11 @@
 .data-table tbody tr[data-f-estado="En riesgo"]:hover { box-shadow: inset 3px 0 0 0 var(--amber-fg); }
 .data-table tbody tr[data-f-estado="Bloqueado"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
 .data-table tbody tr[data-f-estado="Cerrado"]:hover, .data-table tbody tr[data-f-estado="Planeado"]:hover { box-shadow: inset 3px 0 0 0 var(--border-strong); }
+.data-table tbody tr[data-f-estado="Validada"]:hover { box-shadow: inset 3px 0 0 0 var(--green-fg); }
+.data-table tbody tr[data-f-estado="Al límite"]:hover { box-shadow: inset 3px 0 0 0 var(--amber-fg); }
+.data-table tbody tr[data-f-estado="En revisión"]:hover { box-shadow: inset 3px 0 0 0 var(--blue-fg); }
+.data-table tbody tr[data-f-estado="Bloqueada"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
+.data-table tbody tr[data-f-estado="Sin cubrir"]:hover { box-shadow: inset 3px 0 0 0 var(--border-strong); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table thead.sticky-head th { position: sticky; top: 0; background: var(--surface); z-index: 1; box-shadow: 0 1px 0 0 var(--border-subtle); }
 @keyframes table-row-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
