@@ -173,7 +173,31 @@
     { codigo: "PRJ-SV-2026", nombre: "Data Lake Seguros Vital", iniciales: "SV", cliente: "Seguros Vital", pm: "Paula Vega",
       inicio: "01 ago 2026", fin: "30 abr 2027", equipo: 6, avance: 22, estado: "Bloqueado",
       descripcion: "Data lake corporativo para consolidar pólizas, siniestros y cobranzas de Seguros Vital en una capa analítica única.",
-      stack: ["Apache Kafka", "PostgreSQL", "Python", "Terraform"] }
+      stack: ["Apache Kafka", "PostgreSQL", "Python", "Terraform"] },
+    { codigo: "PRJ-FX-2026", nombre: "Motor de Fraude FinTrust", iniciales: "FX", cliente: "FinTrust Pagos", pm: "Javier Molina",
+      inicio: "12 abr 2026", fin: "20 dic 2026", equipo: 6, avance: 55, estado: "Activo",
+      descripcion: "Motor de detección de fraude en tiempo real para FinTrust Pagos, con reglas configurables y modelos de scoring sobre el histórico de transacciones.",
+      stack: ["Java 21", "Spring Boot 3.3", "Kafka", "PostgreSQL", "Python"] },
+    { codigo: "PRJ-ED-2026", nombre: "Portal Educativo Andes+", iniciales: "ED", cliente: "Fundación Andes+", pm: "Paula Vega",
+      inicio: "01 oct 2026", fin: "01 jun 2027", equipo: 4, avance: 5, estado: "Planeado",
+      descripcion: "Portal de becas y seguimiento académico para la Fundación Andes+, con panel para tutores y reportes de deserción temprana.",
+      stack: ["React 18", "Java / Spring Boot", "PostgreSQL", "Figma"] },
+    { codigo: "PRJ-HL-2026", nombre: "App Salud Vitalis", iniciales: "HL", cliente: "Vitalis Salud", pm: "Javier Molina",
+      inicio: "18 may 2026", fin: "18 nov 2026", equipo: 5, avance: 29, estado: "En riesgo",
+      descripcion: "App de telemedicina para Vitalis Salud: agenda de citas, historia clínica básica y videoconsulta. Retraso por integración con el proveedor de videollamadas.",
+      stack: ["React Native", "Java / Spring Boot", "PostgreSQL", "WebRTC"] },
+    { codigo: "PRJ-LG-2026", nombre: "Optimizador Rutas LogiSur", iniciales: "LG", cliente: "LogiSur", pm: "Paula Vega",
+      inicio: "03 feb 2026", fin: "03 oct 2026", equipo: 5, avance: 72, estado: "Activo",
+      descripcion: "Optimizador de rutas de última milla para LogiSur, con recálculo dinámico según tráfico y ventanas de entrega.",
+      stack: ["Java 21", "Spring Boot", "PostgreSQL", "Python", "Kubernetes"] },
+    { codigo: "PRJ-RT-2026", nombre: "CRM Retail Andino", iniciales: "RT", cliente: "Retail Andino", pm: "Javier Molina",
+      inicio: "10 mar 2026", fin: "10 sep 2026", equipo: 5, avance: 40, estado: "Bloqueado",
+      descripcion: "CRM omnicanal para Retail Andino, bloqueado a la espera de la definición del modelo de fidelización por parte del cliente.",
+      stack: ["React 18", "Java / Spring Boot", "PostgreSQL"] },
+    { codigo: "PRJ-IOT-2026", nombre: "Plataforma IoT Sensores Sol", iniciales: "IO", cliente: "Grupo Sol", pm: "Paula Vega",
+      inicio: "15 nov 2026", fin: "15 jul 2027", equipo: 6, avance: 0, estado: "Planeado",
+      descripcion: "Plataforma de ingesta y monitoreo de sensores IoT en tiendas de Grupo Sol, para inventario en tiempo real y alertas de cadena de frío.",
+      stack: ["Kafka", "Kubernetes", "Python", "Terraform", "PostgreSQL"] }
   ];
 
   function findProject(nombre) {

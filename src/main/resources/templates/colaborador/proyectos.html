@@ -21,7 +21,34 @@
         <button type="button" class="tab-btn" data-tab="historial">Historial completo</button>
       </div>
 
-      <div id="tab-actuales" class="grid-cards" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:var(--space-5);"></div>
+      <div id="proyectos-toolbar" class="table-filters" style="margin:var(--space-5) 0;">
+        <div class="input-wrap" style="flex:1; min-width:240px; max-width:360px;">
+          <svg class="icon"><use href="../../static/img/icons.svg#icon-search"></use></svg>
+          <input type="text" class="input has-left-icon" id="proyectos-search" placeholder="Buscar proyecto por nombre…">
+        </div>
+        <select class="select" id="proyectos-estado-filter" style="max-width:200px;">
+          <option value="todos">Todos los estados</option>
+          <option value="Activo">Activo</option>
+          <option value="En riesgo">En riesgo</option>
+          <option value="Planeado">Planeado</option>
+          <option value="Bloqueado">Bloqueado</option>
+          <option value="Cerrado">Cerrado</option>
+        </select>
+      </div>
+
+      <div id="tab-actuales">
+        <div id="proyectos-grid" class="grid-cards" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:var(--space-5);"></div>
+
+        <div class="state-panel" id="proyectos-empty" hidden>
+          <span class="state-panel-icon"><svg class="icon icon-lg"><use href="../../static/img/icons.svg#icon-search"></use></svg></span>
+          <span class="state-panel-desc">No se encontraron proyectos con ese nombre o estado.</span>
+        </div>
+
+        <div id="proyectos-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:var(--space-6);">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="proyectos-pagination-count"></span>
+          <div class="pagination" id="proyectos-pagination-controls"></div>
+        </div>
+      </div>
 
       <section class="card" id="tab-historial" hidden>
         <div class="table-scroll">
@@ -46,17 +73,35 @@
 <script src="../../static/js/shell.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "colaborador", active: "proyectos.html", title: "Mis proyectos", subtitle: "3 proyectos actuales · 5 históricos" });
+  var cfg = SBAI.shell.init({ role: "colaborador", active: "proyectos.html", title: "Mis proyectos", subtitle: "12 proyectos actuales · 5 históricos" });
   if (!cfg) return;
 
-  var actuales = [
-    { p: MOCK.findProject("Portal Andes"), rol: "Frontend Sr.", dedicacion: 45 },
-    { p: MOCK.findProject("App Móvil Aurora"), rol: "Frontend", dedicacion: 35 },
-    { p: MOCK.findProject("Núcleo Retail"), rol: "Consultora UI", dedicacion: 0 }
-  ];
+  var PAGE_SIZE = 6;
+  var currentPage = 1;
+
+  // Asignaciones actuales de Mariana (demo): todos los proyectos del catálogo
+  // global que no están Cerrados, con un rol y dedicación inventados para
+  // cada uno. Solo para tener suficiente data y poder probar la paginación.
+  var actuales = MOCK.projects.filter(function (p) { return p.estado !== "Cerrado"; }).map(function (p, i) {
+    var roles = ["Frontend Sr.", "Frontend", "Consultora UI", "Backend", "QA", "DevOps"];
+    var dedic = [45, 35, 20, 30, 15, 25, 10, 40, 20, 15, 30, 20];
+    return { p: p, rol: roles[i % roles.length], dedicacion: dedic[i % dedic.length] };
+  });
+
   var estadoBadge = { "Activo": "badge-green", "En riesgo": "badge-amber", "Planeado": "badge-neutral", "Bloqueado": "badge-red", "Cerrado": "badge-neutral" };
 
-  document.getElementById("tab-actuales").innerHTML = actuales.map(function (row) {
+  function getFiltered() {
+    var q = document.getElementById("proyectos-search").value.trim().toLowerCase();
+    var estado = document.getElementById("proyectos-estado-filter").value;
+    return actuales.filter(function (row) {
+      var p = row.p;
+      var matchesQ = !q || (p.nombre + " " + p.cliente).toLowerCase().indexOf(q) !== -1;
+      var matchesEstado = estado === "todos" || p.estado === estado;
+      return matchesQ && matchesEstado;
+    });
+  }
+
+  function cardHtml(row) {
     var p = row.p;
     return '<div class="card card-pad">' +
       '<div style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">' +
@@ -69,20 +114,72 @@ document.addEventListener("DOMContentLoaded", function () {
       '<span class="label-mono">' + row.rol + " · " + row.dedicacion + '% dedicación</span>' +
       '<button type="button" class="btn btn-tertiary btn-sm" data-open-detail="' + p.nombre + '">Ver detalle →</button></div>' +
       "</div>";
-  }).join("");
+  }
 
-  document.getElementById("tab-actuales").querySelectorAll("[data-open-detail]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var p = MOCK.findProject(btn.dataset.openDetail);
-      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-        '<div class="modal-header"><div><h2>' + p.nombre + '</h2><p>' + p.cliente + ' · ' + p.inicio + ' → ' + p.fin + '</p></div>' +
-        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body"><p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-5);">' + p.descripcion + '</p>' +
-        '<div style="display:flex; flex-wrap:wrap; gap:var(--space-2);">' + p.stack.map(function (t) { return '<span class="badge badge-neutral">' + t + '</span>'; }).join("") + '</div></div>' +
-        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
-      SBAI.modal.open(html);
+  function wireDetailButtons() {
+    document.querySelectorAll("[data-open-detail]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var p = MOCK.findProject(btn.dataset.openDetail);
+        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+          '<div class="modal-header"><div><h2>' + p.nombre + '</h2><p>' + p.cliente + ' · ' + p.inicio + ' → ' + p.fin + '</p></div>' +
+          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+          '<div class="modal-body"><p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-5);">' + p.descripcion + '</p>' +
+          '<div style="display:flex; flex-wrap:wrap; gap:var(--space-2);">' + p.stack.map(function (t) { return '<span class="badge badge-neutral">' + t + '</span>'; }).join("") + '</div></div>' +
+          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
+        SBAI.modal.open(html);
+      });
     });
-  });
+  }
+
+  function renderPagination(totalItems, totalPages) {
+    var countEl = document.getElementById("proyectos-pagination-count");
+    var controlsEl = document.getElementById("proyectos-pagination-controls");
+    var wrapEl = document.getElementById("proyectos-pagination");
+
+    if (totalItems === 0) { wrapEl.hidden = true; return; }
+    wrapEl.hidden = false;
+
+    var start = (currentPage - 1) * PAGE_SIZE + 1;
+    var end = Math.min(currentPage * PAGE_SIZE, totalItems);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + totalItems + " proyectos";
+
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+
+    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var i = 1; i <= totalPages; i++) {
+      html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
+    }
+    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+
+    var prevBtn = document.getElementById("pg-prev");
+    var nextBtn = document.getElementById("pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
+    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) {
+      btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); });
+    });
+  }
+
+  function render() {
+    var filtered = getFiltered();
+    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    document.getElementById("proyectos-grid").innerHTML = pageItems.map(cardHtml).join("");
+    document.getElementById("proyectos-empty").hidden = filtered.length !== 0;
+    document.getElementById("proyectos-grid").hidden = filtered.length === 0;
+
+    wireDetailButtons();
+    renderPagination(filtered.length, totalPages);
+  }
+
+  document.getElementById("proyectos-search").addEventListener("input", function () { currentPage = 1; render(); });
+  document.getElementById("proyectos-estado-filter").addEventListener("change", function () { currentPage = 1; render(); });
+
+  render();
 
   document.getElementById("historial-body").innerHTML = MOCK.marianaHistorial.map(function (h) {
     var badgeCls = { "En curso": "badge-blue", "En riesgo": "badge-amber", "Cerrado": "badge-neutral" }[h.estado] || "badge-neutral";
@@ -94,8 +191,10 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", function () {
       document.querySelectorAll("[data-tab]").forEach(function (b) { b.classList.remove("active"); });
       btn.classList.add("active");
-      document.getElementById("tab-actuales").hidden = btn.dataset.tab !== "actuales";
-      document.getElementById("tab-historial").hidden = btn.dataset.tab !== "historial";
+      var isActuales = btn.dataset.tab === "actuales";
+      document.getElementById("tab-actuales").hidden = !isActuales;
+      document.getElementById("proyectos-toolbar").hidden = !isActuales;
+      document.getElementById("historial-body").closest("section").hidden = isActuales;
     });
   });
 });

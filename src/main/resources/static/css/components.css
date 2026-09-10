@@ -856,9 +856,11 @@
 
 /* Pagination */
 .pagination { display: flex; gap: var(--space-2); align-items: center; }
-.page-btn { width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border-default); background: var(--surface); font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-secondary); cursor: pointer; }
+.page-btn { width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border-default); background: var(--surface); font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-secondary); cursor: pointer; transition: all var(--dur-fast) var(--ease-standard); }
 .page-btn:hover { border-color: var(--border-strong); }
 .page-btn.active { background: var(--navy-700); border-color: var(--navy-700); color: white; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-btn:disabled:hover { border-color: var(--border-default); }
 
 /* Match score ring (AI Talent Matching) */
 .match-ring { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
