@@ -16,35 +16,44 @@
     <header class="topbar" id="sbai-topbar"></header>
     <main class="page-content" id="page-content">
 
-      <div class="detail-grid" style="grid-template-columns: 1fr 2.4fr;">
-        <section class="card card-pad">
-          <p class="label-mono" style="margin-bottom:var(--space-3);">Categorías</p>
+      <div class="detail-grid" style="grid-template-columns: 1fr 2.4fr; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2));">
+        <section class="card card-pad" style="height:100%; overflow-y:auto;">
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-3);">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
+            <p class="label-mono">Categorías</p>
+          </div>
           <div id="category-list"></div>
         </section>
 
-        <section class="card">
-          <div class="table-toolbar">
+        <section class="card" style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
+          <div class="table-toolbar" style="flex-shrink:0;">
             <div>
               <strong id="skills-count"></strong>
               <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="skills-subtitle"></p>
             </div>
             <div class="table-filters">
-              <input type="text" class="input" data-filter-scope="skills" data-filter-key="q" placeholder="Buscar habilidad…" id="skills-search" style="width:190px; height:38px; font-size:var(--fs-xs);">
-              <select class="select" data-filter-scope="skills" data-filter-key="demanda">
+              <input type="text" class="input" id="skills-search" placeholder="Buscar habilidad…" style="width:190px; height:38px; font-size:var(--fs-xs);">
+              <select class="select" id="demanda-filter">
                 <option value="todos">Demanda: todas</option><option>Alta</option><option>Media</option><option>Baja</option>
               </select>
               <button type="button" class="btn btn-primary btn-sm" id="add-skill-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Agregar habilidad</button>
             </div>
           </div>
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead><tr><th>Habilidad</th><th>Categoría</th><th>Personas</th><th>Proyectos</th><th>Nivel medio</th><th>Demanda</th></tr></thead>
-              <tbody id="skills-body"></tbody>
-            </table>
+          <div class="table-scroll-wrap">
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead class="sticky-head"><tr><th>Habilidad</th><th>Categoría</th><th>Personas</th><th>Proyectos</th><th>Nivel medio</th><th>Demanda</th></tr></thead>
+                <tbody id="skills-body"></tbody>
+              </table>
+            </div>
+            <div class="state-panel" id="skills-empty" hidden>
+              <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
+              <span class="state-panel-title">Sin habilidades con estos filtros</span>
+            </div>
           </div>
-          <div class="state-panel" data-filter-empty="skills" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
-            <span class="state-panel-title">Sin habilidades con estos filtros</span>
+          <div class="table-footer" style="flex-shrink:0;">
+            <span class="text-tertiary" style="font-size:var(--fs-xs);" id="skills-pagination-count"></span>
+            <div class="pagination" id="skills-pagination-controls"></div>
           </div>
         </section>
       </div>
@@ -66,24 +75,77 @@ document.addEventListener("DOMContentLoaded", function () {
   var cfg = SBAI.shell.init({ role: "administrador", active: "habilidades.html", title: "Catálogo de habilidades", subtitle: MOCK.meta.stats.habilidadesMapeadas + " habilidades mapeadas · " + MOCK.skillCategories.length + " categorías" });
   if (!cfg) return;
 
-  document.getElementById("category-list").innerHTML = MOCK.skillCategories.map(function (c) {
-    return '<div class="info-row"><span class="info-row-label">' + c.nombre + '</span><span class="info-row-value mono">' + c.cantidad + '</span></div>';
-  }).join("");
+  var activeCategoria = "todas";
+  var PAGE_SIZE = 8;
+  var currentPage = 1;
 
-  document.getElementById("skills-count").textContent = MOCK.skillsCatalog.length + " habilidades en este catálogo";
-  document.getElementById("skills-subtitle").textContent = MOCK.meta.stats.habilidadesMapeadas + " habilidades mapeadas en la plataforma";
+  function renderCategories() {
+    var all = [{ nombre: "Todas", cantidad: MOCK.skillsCatalog.length, slug: "todas" }].concat(
+      MOCK.skillCategories.map(function (c) { return { nombre: c.nombre, cantidad: c.cantidad, slug: c.nombre }; })
+    );
+    document.getElementById("category-list").innerHTML = all.map(function (c) {
+      return '<button type="button" class="forum-cat-btn' + (c.slug === activeCategoria ? " active" : "") + '" data-cat="' + c.slug + '"><span>' + c.nombre + '</span><span class="forum-cat-count">' + c.cantidad + "</span></button>";
+    }).join("");
+    document.querySelectorAll("[data-cat]").forEach(function (btn) {
+      btn.addEventListener("click", function () { activeCategoria = btn.dataset.cat; currentPage = 1; renderCategories(); render(); });
+    });
+  }
 
   var demBadge = { "Alta": "badge-red", "Media": "badge-amber", "Baja": "badge-neutral" };
 
-  function renderRows() {
-    document.getElementById("skills-body").innerHTML = MOCK.skillsCatalog.map(function (s) {
-      return '<tr data-filter-row="skills" data-f-demanda="' + s.demanda + '" data-f-search="' + s.nombre.toLowerCase() + '">' +
-        '<td class="cell-primary">' + s.nombre + '</td><td>' + s.categoria + '</td>' +
-        '<td class="mono">' + s.personas + '</td><td class="mono">' + s.proyectos + '</td><td>' + s.nivelMedio + '</td>' +
-        '<td><span class="badge ' + (demBadge[s.demanda] || "badge-neutral") + '">' + s.demanda + '</span></td></tr>';
-    }).join("");
+  function getFiltered() {
+    var q = document.getElementById("skills-search").value.trim().toLowerCase();
+    var demanda = document.getElementById("demanda-filter").value;
+    return MOCK.skillsCatalog.filter(function (s) {
+      if (activeCategoria !== "todas" && s.categoria !== activeCategoria) return false;
+      if (q && s.nombre.toLowerCase().indexOf(q) === -1) return false;
+      if (demanda !== "todos" && s.demanda !== demanda) return false;
+      return true;
+    });
   }
-  renderRows();
+
+  function rowHtml(s, i) {
+    return '<tr data-f-demanda="' + s.demanda + '" style="animation-delay:' + (i * 30) + 'ms;">' +
+      '<td class="cell-primary">' + s.nombre + '</td><td>' + s.categoria + '</td>' +
+      '<td class="mono">' + s.personas + '</td><td class="mono">' + s.proyectos + '</td><td>' + s.nivelMedio + '</td>' +
+      '<td><span class="badge ' + (demBadge[s.demanda] || "badge-neutral") + '">' + s.demanda + '</span></td></tr>';
+  }
+
+  function renderPagination(total, totalPages) {
+    var countEl = document.getElementById("skills-pagination-count");
+    var controlsEl = document.getElementById("skills-pagination-controls");
+    if (total === 0) { countEl.textContent = ""; controlsEl.innerHTML = ""; return; }
+    var start = (currentPage - 1) * PAGE_SIZE + 1;
+    var end = Math.min(currentPage * PAGE_SIZE, total);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " habilidades";
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
+    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
+    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
+  }
+
+  function render() {
+    var filtered = getFiltered();
+    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    document.getElementById("skills-count").textContent = filtered.length + " habilidad" + (filtered.length === 1 ? "" : "es") + " en este catálogo";
+    document.getElementById("skills-subtitle").textContent = MOCK.meta.stats.habilidadesMapeadas + " habilidades mapeadas en la plataforma";
+    document.getElementById("skills-body").innerHTML = pageItems.map(rowHtml).join("");
+    document.getElementById("skills-empty").hidden = filtered.length !== 0;
+    document.querySelector(".table-scroll table").hidden = filtered.length === 0;
+
+    renderPagination(filtered.length, totalPages);
+  }
+
+  document.getElementById("skills-search").addEventListener("input", function () { currentPage = 1; render(); });
+  document.getElementById("demanda-filter").addEventListener("change", function () { currentPage = 1; render(); });
 
   document.getElementById("add-skill-btn").addEventListener("click", function () {
     var catOptions = MOCK.skillCategories.map(function (c) { return "<option>" + c.nombre + "</option>"; }).join("");
@@ -99,19 +161,21 @@ document.addEventListener("DOMContentLoaded", function () {
       var categoria = backdrop.querySelector("#new-skill-cat").value;
       MOCK.skillsCatalog.unshift({ nombre: nombre, categoria: categoria, personas: 0, proyectos: 0, nivelMedio: "—", demanda: "Baja" });
       SBAI.modal.close(backdrop);
-      renderRows();
-      window.SBAI.tableFilter.applyScope("skills");
+      currentPage = 1;
+      renderCategories();
+      render();
       SBAI.toast.show("<strong>" + nombre + "</strong> se agregó al catálogo de " + categoria + ".", { type: "success" });
     });
   });
 
-  window.SBAI.tableFilter.init(document);
+  renderCategories();
+  render();
 
   var params = new URLSearchParams(window.location.search);
   var buscar = params.get("buscar");
   if (buscar) {
     document.getElementById("skills-search").value = buscar;
-    window.SBAI.tableFilter.setFilter("skills", "q", buscar);
+    render();
     SBAI.toast.show("Filtrado por <strong>" + buscar + "</strong> desde la búsqueda global.");
   }
 });
