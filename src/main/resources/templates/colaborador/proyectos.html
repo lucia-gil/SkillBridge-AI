@@ -50,12 +50,27 @@
         </div>
       </div>
 
-      <section class="card" id="tab-historial" hidden>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead><tr><th>Proyecto</th><th>Cliente</th><th>Rol</th><th>Periodo</th><th>Estado</th></tr></thead>
-            <tbody id="historial-body"></tbody>
-          </table>
+      <section class="card" id="tab-historial" hidden style="display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2) - 100px); overflow:hidden;">
+        <div class="table-toolbar" style="flex-shrink:0;">
+          <div class="card-header-icon-row">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+            <div>
+              <strong id="historial-count"></strong>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Todos tus proyectos, actuales e históricos</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-scroll-wrap">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead class="sticky-head"><tr><th>Proyecto</th><th>Cliente</th><th>Rol</th><th>Periodo</th><th>Estado</th></tr></thead>
+              <tbody id="historial-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="table-footer" style="flex-shrink:0;">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="historial-pagination-count"></span>
+          <div class="pagination" id="historial-pagination-controls"></div>
         </div>
       </section>
 
@@ -181,11 +196,42 @@ document.addEventListener("DOMContentLoaded", function () {
 
   render();
 
-  document.getElementById("historial-body").innerHTML = MOCK.marianaHistorial.map(function (h) {
-    var badgeCls = { "En curso": "badge-blue", "En riesgo": "badge-amber", "Cerrado": "badge-neutral" }[h.estado] || "badge-neutral";
-    return "<tr><td class=\"cell-primary\">" + h.proyecto + "</td><td>" + h.cliente + "</td><td>" + h.rol + "</td><td>" + h.periodo + "</td>" +
-      '<td><span class="badge ' + badgeCls + '">' + h.estado + "</span></td></tr>";
-  }).join("");
+  var HIST_PAGE_SIZE = 6;
+  var historialPage = 1;
+  var badgeCls = { "En curso": "badge-blue", "En riesgo": "badge-amber", "Cerrado": "badge-neutral" };
+
+  function renderHistorialPagination(total, totalPages) {
+    var countEl = document.getElementById("historial-pagination-count");
+    var controlsEl = document.getElementById("historial-pagination-controls");
+    var start = total ? (historialPage - 1) * HIST_PAGE_SIZE + 1 : 0;
+    var end = Math.min(historialPage * HIST_PAGE_SIZE, total);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " proyectos";
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+    var html = '<button type="button" class="page-btn" id="hist-pg-prev" ' + (historialPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === historialPage ? " active" : "") + '" data-hist-page="' + i + '">' + i + "</button>";
+    html += '<button type="button" class="page-btn" id="hist-pg-next" ' + (historialPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+    var prevBtn = document.getElementById("hist-pg-prev"), nextBtn = document.getElementById("hist-pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (historialPage > 1) { historialPage--; renderHistorial(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (historialPage < totalPages) { historialPage++; renderHistorial(); } });
+    controlsEl.querySelectorAll("[data-hist-page]").forEach(function (btn) { btn.addEventListener("click", function () { historialPage = parseInt(btn.dataset.histPage, 10); renderHistorial(); }); });
+  }
+
+  function renderHistorial() {
+    var list = MOCK.marianaHistorial;
+    var totalPages = Math.max(1, Math.ceil(list.length / HIST_PAGE_SIZE));
+    if (historialPage > totalPages) historialPage = totalPages;
+    var pageItems = list.slice((historialPage - 1) * HIST_PAGE_SIZE, historialPage * HIST_PAGE_SIZE);
+
+    document.getElementById("historial-count").textContent = list.length + " proyecto" + (list.length === 1 ? "" : "s") + " en tu historial";
+    document.getElementById("historial-body").innerHTML = pageItems.map(function (h, i) {
+      return '<tr data-f-estado="' + h.estado + '" style="animation-delay:' + (i * 30) + 'ms;"><td class="cell-primary">' + h.proyecto + "</td><td>" + h.cliente + "</td><td>" + h.rol + "</td><td>" + h.periodo + "</td>" +
+        '<td><span class="badge ' + (badgeCls[h.estado] || "badge-neutral") + '">' + h.estado + "</span></td></tr>";
+    }).join("");
+
+    renderHistorialPagination(list.length, totalPages);
+  }
+  renderHistorial();
 
   document.querySelectorAll("[data-tab]").forEach(function (btn) {
     btn.addEventListener("click", function () {

@@ -28,7 +28,7 @@
             </div>
             <button type="button" class="btn btn-secondary btn-sm" id="mark-all-btn">Marcar todas como leídas</button>
           </div>
-          <div style="flex:1; overflow-y:auto;">
+          <div class="table-scroll-wrap">
             <div id="notif-groups"></div>
             <div class="state-panel" data-filter-empty="notif" hidden>
               <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-bell"></use></svg></span>
@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var html = "";
     ["hoy", "ayer", "semana"].forEach(function (g) {
       if (!groups[g]) return;
-      html += '<p class="label-mono" style="padding:var(--space-4) var(--space-6) var(--space-2); position:sticky; top:0; background:var(--surface); z-index:1;">' + GROUP_LABEL[g] + "</p>";
+      html += '<div class="notif-date-header"><svg class="icon icon-sm notif-date-header-icon"><use href="../../static/img/icons.svg#icon-calendar"></use></svg><span class="notif-date-header-text">' + GROUP_LABEL[g] + "</span></div>";
       groups[g].forEach(function (n) {
         var read = SBAI.state.isRead(role, n.id);
         html += '<div class="notif-item' + (read ? "" : " unread") + '" data-filter-row="notif" data-f-tab="' + n.categoria + '" data-notif-id="' + n.id + '">' +

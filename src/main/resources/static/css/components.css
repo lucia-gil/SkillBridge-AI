@@ -390,6 +390,7 @@
 .data-table tbody tr:hover { background: var(--surface-sunken); box-shadow: inset 3px 0 0 0 var(--blue-accent); }
 .data-table tbody tr[data-f-estado="Activo"]:hover { box-shadow: inset 3px 0 0 0 var(--green-fg); }
 .data-table tbody tr[data-f-estado="En riesgo"]:hover { box-shadow: inset 3px 0 0 0 var(--amber-fg); }
+.data-table tbody tr[data-f-estado="En curso"]:hover { box-shadow: inset 3px 0 0 0 var(--blue-fg); }
 .data-table tbody tr[data-f-estado="Bloqueado"]:hover { box-shadow: inset 3px 0 0 0 var(--red-fg); }
 .data-table tbody tr[data-f-estado="Cerrado"]:hover, .data-table tbody tr[data-f-estado="Planeado"]:hover { box-shadow: inset 3px 0 0 0 var(--border-strong); }
 .data-table tbody tr[data-f-estado="Validada"]:hover { box-shadow: inset 3px 0 0 0 var(--green-fg); }
