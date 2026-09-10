@@ -19,24 +19,39 @@
       <div class="kpi-grid" id="kpi-grid"></div>
 
       <section class="card">
-        <div class="card-header"><div class="card-header-text"><h2>Avance de mis proyectos</h2><p>Cierre al 18 ago 2026 · la línea vertical marca el avance planificado</p></div></div>
+        <div class="card-header">
+          <div class="card-header-icon-row">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-bar-chart"></use></svg></span>
+            <div class="card-header-text"><h2>Avance de mis proyectos</h2><p>Cierre al 18 ago 2026 · la línea vertical marca el avance planificado</p></div>
+          </div>
+        </div>
         <div class="card-body-flush" id="avance-proyectos"></div>
       </section>
 
       <section class="card">
-        <div class="card-header"><div class="card-header-text"><h2>Equipo por proyecto</h2></div></div>
+        <div class="card-header">
+          <div class="card-header-icon-row">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+            <div class="card-header-text"><h2>Equipo por proyecto</h2></div>
+          </div>
+        </div>
         <div class="card-body" id="equipo-proyectos" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:var(--space-5);"></div>
       </section>
 
       <div class="detail-grid">
         <section class="card">
-          <div class="card-header"><div class="card-header-text"><h2>Alertas de riesgo</h2><p>3 abiertas</p></div></div>
+          <div class="card-header">
+            <div class="card-header-icon-row">
+              <span class="card-header-icon amber"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
+              <div class="card-header-text"><h2>Alertas de riesgo</h2><p>3 abiertas</p></div>
+            </div>
+          </div>
           <div class="card-body-flush" id="alertas-riesgo"></div>
         </section>
 
         <div style="display:flex; flex-direction:column; gap:var(--space-6);">
           <section class="callout ai">
-            <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-sparkles"></use></svg></span>
+          <span class="callout-icon"><img src="../../static/img/logo-ai-icon.png" alt=""></span>
             <span class="callout-body"><span class="callout-title">Sugerencia de IA</span>
               Núcleo Retail necesita un perfil Kubernetes Avanzado. Hay 3 candidatos con match ≥ 84% y disponibilidad esta semana.
               <div class="callout-actions"><a href="ai-talent-matching.html" class="btn btn-primary btn-sm">Ver AI Talent Matching</a></div>
@@ -44,7 +59,10 @@
           </section>
 
           <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Próximos hitos</h3>
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+              <span class="card-header-icon green"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-target"></use></svg></span>
+              <h3 style="font-size:var(--fs-md);">Próximos hitos</h3>
+            </div>
             <div class="timeline" id="hitos"></div>
           </section>
         </div>
@@ -68,12 +86,12 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!cfg) return;
 
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "PROYECTOS ACTIVOS", value: "4", meta: "+1 este mes", cls: "up" },
-    { label: "AVANCE PROMEDIO", value: "57%", meta: "-4% vs plan", cls: "down" },
-    { label: "PERSONAS ASIGNADAS", value: "23", meta: "3 nuevas" },
-    { label: "VACANTES DE PERFIL", value: "3", meta: "2 con match IA" }
+    { label: "PROYECTOS ACTIVOS", value: "4", meta: "+1 este mes", cls: "up", icon: "icon-folder", accent: "green" },
+    { label: "AVANCE PROMEDIO", value: "57%", meta: "-4% vs plan", cls: "down", icon: "icon-trending-down", accent: "red" },
+    { label: "PERSONAS ASIGNADAS", value: "23", meta: "3 nuevas", icon: "icon-users", accent: "blue" },
+    { label: "VACANTES DE PERFIL", value: "3", meta: "2 con match IA", icon: "icon-search-check", accent: "violet" }
   ].map(function (k) {
-    return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta' + (k.cls ? " " + k.cls : "") + '">' + k.meta + "</span></div>";
+    return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta' + (k.cls ? " " + k.cls : "") + '">' + k.meta + "</span></div>";
   }).join("");
 
   var estadoBadge = { "Activo": "badge-green", "En riesgo": "badge-amber", "Planeado": "badge-neutral", "Bloqueado": "badge-red", "Cerrado": "badge-neutral" };

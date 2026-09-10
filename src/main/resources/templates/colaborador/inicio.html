@@ -23,19 +23,31 @@
 
           <section class="card">
             <div class="card-header">
-              <div class="card-header-text"><h2>Mis proyectos actuales</h2><p>Avance y dedicación de tus asignaciones activas</p></div>
+              <div class="card-header-icon-row">
+                <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+                <div class="card-header-text"><h2>Mis proyectos actuales</h2><p>Avance y dedicación de tus asignaciones activas</p></div>
+              </div>
               <a href="proyectos.html" class="btn btn-tertiary btn-sm">Ver historial →</a>
             </div>
             <div class="card-body-flush" id="proyectos-actuales"></div>
           </section>
 
           <section class="card">
-            <div class="card-header"><div class="card-header-text"><h2>Mis asignaciones de la semana</h2><p>Semana 34 · 18–22 ago 2026</p></div></div>
+            <div class="card-header">
+              <div class="card-header-icon-row">
+                <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-target"></use></svg></span>
+                <div class="card-header-text"><h2>Mis asignaciones de la semana</h2><p>Semana 34 · 18–22 ago 2026</p></div>
+              </div>
+            </div>
             <div class="card-body-flush" id="asignaciones-semana"></div>
           </section>
 
           <section class="card">
-            <div class="card-header"><div class="card-header-text"><h2>Actividad en foros</h2></div>
+            <div class="card-header">
+              <div class="card-header-icon-row">
+                <span class="card-header-icon green"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-message"></use></svg></span>
+                <div class="card-header-text"><h2>Actividad en foros</h2></div>
+              </div>
               <a href="foros.html" class="btn btn-tertiary btn-sm">Ir a foros →</a></div>
             <div class="card-body-flush" id="actividad-foros"></div>
           </section>
@@ -54,7 +66,10 @@
 
           <section class="card">
             <div class="card-header">
-              <div class="card-header-text"><h2>Notificaciones recientes</h2></div>
+              <div class="card-header-icon-row">
+                <span class="card-header-icon amber"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-bell"></use></svg></span>
+                <div class="card-header-text"><h2>Notificaciones recientes</h2></div>
+              </div>
               <span class="badge badge-blue" id="notif-recientes-badge">4 nuevas</span>
             </div>
             <div class="card-body-flush" id="notif-recientes"></div>
@@ -82,12 +97,12 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!cfg) return;
 
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "PROYECTOS ACTIVOS", value: "2", meta: "estable" },
-    { label: "CARGA ASIGNADA", value: "80%", meta: "límite 100%" },
-    { label: "ASIGNACIONES ABIERTAS", value: "5", meta: "2 esta semana", cls: "up" },
-    { label: "HABILIDADES VALIDADAS", value: "9 / 11", meta: "2 por validar" }
+    { label: "PROYECTOS ACTIVOS", value: "2", meta: "estable", icon: "icon-folder", accent: "blue" },
+    { label: "CARGA ASIGNADA", value: "80%", meta: "límite 100%", icon: "icon-zap", accent: "amber" },
+    { label: "ASIGNACIONES ABIERTAS", value: "5", meta: "2 esta semana", cls: "up", icon: "icon-target", accent: "green" },
+    { label: "HABILIDADES VALIDADAS", value: "9 / 11", meta: "2 por validar", icon: "icon-book", accent: "violet" }
   ].map(function (k) {
-    return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span>' +
+    return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span>' +
       '<span class="kpi-tile-meta' + (k.cls ? " " + k.cls : "") + '">' + k.meta + "</span></div>";
   }).join("");
 

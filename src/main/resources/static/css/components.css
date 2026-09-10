@@ -231,6 +231,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  transition: transform var(--dur-base) var(--ease-standard), box-shadow var(--dur-base) var(--ease-standard), border-color var(--dur-base) var(--ease-standard);
 }
 .kpi-tile-label { font-family: var(--font-mono); font-size: var(--fs-2xs); font-weight: var(--fw-medium); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-tertiary); }
 .kpi-tile-value { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); color: var(--text-primary); line-height: 1.1; letter-spacing: -0.01em; }
@@ -238,6 +239,32 @@
 .kpi-tile-meta.up { color: var(--green-fg); }
 .kpi-tile-meta.down { color: var(--red-fg); }
 .kpi-tile-meta.warn { color: var(--amber-fg); }
+
+/* Acentos de color + ícono para KPI tiles (borde superior + chip circular) */
+.kpi-tile { position: relative; overflow: hidden; }
+.kpi-tile::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--border-subtle); }
+.kpi-tile.accent-blue::before { background: var(--blue-fg); }
+.kpi-tile.accent-green::before { background: var(--green-fg); }
+.kpi-tile.accent-amber::before { background: var(--amber-fg); }
+.kpi-tile.accent-violet::before { background: var(--violet-fg); }
+.kpi-tile.accent-red::before { background: var(--red-fg); }
+.kpi-tile-icon { width: 34px; height: 34px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: 2px; transition: transform var(--dur-base) var(--ease-standard); }
+.kpi-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); border-color: var(--border-strong); }
+.kpi-tile:hover .kpi-tile-icon { transform: scale(1.1) rotate(-4deg); }
+.kpi-tile-icon.blue { background: var(--blue-bg); color: var(--blue-fg); }
+.kpi-tile-icon.green { background: var(--green-bg); color: var(--green-fg); }
+.kpi-tile-icon.amber { background: var(--amber-bg); color: var(--amber-fg); }
+.kpi-tile-icon.violet { background: var(--violet-bg); color: var(--violet-fg); }
+.kpi-tile-icon.red { background: var(--red-bg); color: var(--red-fg); }
+
+/* Chip de ícono en encabezados de card */
+.card-header-icon-row { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; }
+.card-header-icon { width: 32px; height: 32px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.card-header-icon.blue { background: var(--blue-bg); color: var(--blue-fg); }
+.card-header-icon.green { background: var(--green-bg); color: var(--green-fg); }
+.card-header-icon.violet { background: var(--violet-bg); color: var(--violet-fg); }
+.card-header-icon.amber { background: var(--amber-bg); color: var(--amber-fg); }
+.card-header-icon.red { background: var(--red-bg); color: var(--red-fg); }
 
 /* =========================================================
    Badges / Chips / Pills de estado
@@ -777,6 +804,7 @@
 /* Callout / alert banner */
 .callout { display: flex; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); border: 1px solid; align-items: flex-start; }
 .callout-icon { flex-shrink: 0; margin-top: 1px; }
+.callout-icon img { width: 20px; height: 20px; object-fit: contain; display: block; }
 .callout-body { flex: 1; font-size: var(--fs-sm); line-height: var(--lh-normal); }
 .callout-title { font-weight: var(--fw-semibold); margin-bottom: 2px; }
 .callout-actions { display: flex; gap: var(--space-3); margin-top: var(--space-3); }
