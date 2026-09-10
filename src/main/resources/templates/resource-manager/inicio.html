@@ -20,9 +20,12 @@
 
       <section class="card card-pad" style="margin-top:var(--space-6);">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5); flex-wrap:wrap; gap:var(--space-3);">
-          <div>
-            <h2 style="font-size:var(--fs-md);">Mapa de carga por colaborador</h2>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de dedicación asignada por semana · S34–S39</p>
+          <div class="card-header-icon-row">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
+            <div>
+              <h2 style="font-size:var(--fs-md);">Mapa de carga por colaborador</h2>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de dedicación asignada por semana · S34–S39</p>
+            </div>
           </div>
           <div class="heatmap-legend">
             <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:#EAF1FC;"></span>&lt; 60%</span>
@@ -41,12 +44,20 @@
 
       <div class="detail-grid" style="margin-top:var(--space-6);">
         <section class="card">
-          <div class="card-header"><div class="card-header-text"><h2>Sobre-asignación</h2><p>Colaboradores por encima del 100% de carga</p></div></div>
+          <div class="card-header">
+            <div class="card-header-icon-row">
+              <span class="card-header-icon red"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
+              <div class="card-header-text"><h2>Sobre-asignación</h2><p>Colaboradores por encima del 100% de carga</p></div>
+            </div>
+          </div>
           <div class="card-body" id="overallocation-list" style="display:flex; flex-direction:column; gap:var(--space-4);"></div>
         </section>
 
         <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Habilidades más demandadas</h3>
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
+            <h3 style="font-size:var(--fs-md);">Habilidades más demandadas</h3>
+          </div>
           <div id="skills-demand"></div>
         </section>
       </div>
@@ -70,11 +81,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var b = MOCK.occupancyBuckets;
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "OCUPACIÓN PROMEDIO", value: MOCK.rmReport.ocupacionPromedio + "%", meta: "meta " + MOCK.rmReport.meta + "%", cls: "warn" },
-    { label: "SOBRE-ASIGNADOS", value: b.sobreAsignados, meta: "requieren acción", cls: "down" },
-    { label: "CAPACIDAD LIBRE", value: b.horasLibres + " h", meta: "próximas 6 semanas" },
-    { label: "SOLICITUDES PENDIENTES", value: MOCK.rmReport.solicitudesPendientes, meta: MOCK.rmReport.vencenHoy + " vencen hoy", cls: "warn" }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
+    { label: "OCUPACIÓN PROMEDIO", value: MOCK.rmReport.ocupacionPromedio + "%", meta: "meta " + MOCK.rmReport.meta + "%", cls: "warn", icon: "icon-layers", accent: "amber" },
+    { label: "SOBRE-ASIGNADOS", value: b.sobreAsignados, meta: "requieren acción", cls: "down", icon: "icon-user-x", accent: "red" },
+    { label: "CAPACIDAD LIBRE", value: b.horasLibres + " h", meta: "próximas 6 semanas", icon: "icon-zap", accent: "blue" },
+    { label: "SOLICITUDES PENDIENTES", value: MOCK.rmReport.solicitudesPendientes, meta: MOCK.rmReport.vencenHoy + " vencen hoy", cls: "warn", icon: "icon-bell", accent: "amber" }
+  ].map(function (k) { return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
 
   document.getElementById("week-heads").outerHTML = MOCK.occupancyWeeks.map(function (w) { return "<th>" + w + "</th>"; }).join("") + "<th>Prom.</th>";
 

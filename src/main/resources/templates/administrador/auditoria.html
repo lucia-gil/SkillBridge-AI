@@ -18,36 +18,48 @@
 
       <div class="kpi-grid" id="kpi-grid"></div>
 
-      <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 2.4fr 1fr;">
-        <section class="card">
-          <div class="table-toolbar">
-            <div>
-              <strong id="log-count"></strong>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Registro de acciones sobre roles, asignaciones e IA</p>
+      <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 2.4fr 1fr; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2) - 130px);">
+        <section class="card" style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
+          <div class="table-toolbar" style="flex-shrink:0;">
+            <div class="card-header-icon-row">
+              <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-shield"></use></svg></span>
+              <div>
+                <strong id="log-count"></strong>
+                <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Registro de acciones sobre roles, asignaciones e IA</p>
+              </div>
             </div>
             <div class="table-filters">
-              <select class="select" data-filter-scope="audit" data-filter-key="tipo">
+              <select class="select" id="tipo-filter">
                 <option value="todos">Tipo: todos</option><option value="roles">Roles y usuarios</option><option value="asignaciones">Asignaciones</option><option value="ia">Sistema / IA</option>
               </select>
-              <select class="select" data-filter-scope="audit" data-filter-key="severidad">
+              <select class="select" id="severidad-filter">
                 <option value="todos">Severidad: todas</option><option>Alta</option><option>Media</option><option>Info</option>
               </select>
             </div>
           </div>
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th><th>Origen</th><th>Severidad</th></tr></thead>
-              <tbody id="audit-body"></tbody>
-            </table>
+          <div class="table-scroll-wrap">
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead class="sticky-head"><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th><th>Origen</th><th>Severidad</th></tr></thead>
+                <tbody id="audit-body"></tbody>
+              </table>
+            </div>
+            <div class="state-panel" id="audit-empty" hidden>
+              <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-shield"></use></svg></span>
+              <span class="state-panel-title">Sin eventos con estos filtros</span>
+            </div>
           </div>
-          <div class="state-panel" data-filter-empty="audit" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-shield"></use></svg></span>
-            <span class="state-panel-title">Sin eventos con estos filtros</span>
+          <div class="table-footer" style="flex-shrink:0;">
+            <span class="text-tertiary" style="font-size:var(--fs-xs);" id="audit-pagination-count"></span>
+            <div class="pagination" id="audit-pagination-controls"></div>
           </div>
         </section>
 
-        <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Usuarios con más eventos</h3>
+        <section class="card card-pad" style="height:100%; overflow-y:auto;">
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+            <h3 style="font-size:var(--fs-md);">Usuarios con más eventos</h3>
+          </div>
           <div id="top-users"></div>
         </section>
       </div>
@@ -71,30 +83,93 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var b = MOCK.auditSeverityBreakdown;
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "EVENTOS DE SEVERIDAD ALTA", value: b.alta, cls: "down" },
-    { label: "EVENTOS DE SEVERIDAD MEDIA", value: b.media, cls: "warn" },
-    { label: "EVENTOS INFORMATIVOS (24H)", value: b.info },
-    { label: "TOTAL REGISTRADO HOY", value: b.alta + b.media + b.info }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>'; }).join("");
+    { label: "EVENTOS DE SEVERIDAD ALTA", value: b.alta, cls: "down", icon: "icon-alert-triangle", accent: "red" },
+    { label: "EVENTOS DE SEVERIDAD MEDIA", value: b.media, cls: "warn", icon: "icon-alert-circle", accent: "amber" },
+    { label: "EVENTOS INFORMATIVOS (24H)", value: b.info, icon: "icon-info", accent: "blue" },
+    { label: "TOTAL REGISTRADO HOY", value: b.alta + b.media + b.info, icon: "icon-shield", accent: "violet" }
+  ].map(function (k) {
+    return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>';
+  }).join("");
 
-  document.getElementById("log-count").textContent = MOCK.auditLog.length + " eventos recientes";
+  // Fecha legible: intenta parsearla como fecha real (dos líneas: fecha +
+  // hora). Si el dato no es parseable como fecha, la muestra igual pero
+  // con más peso visual que el mono chiquito de antes.
+  var MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  function fechaHtml(raw) {
+    var d = new Date(raw);
+    if (!isNaN(d.getTime()) && /\d{4}/.test(String(raw))) {
+      var fechaPart = d.getDate() + " " + MESES[d.getMonth()] + " " + d.getFullYear();
+      var horaPart = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      return '<div style="font-weight:600; color:var(--text-primary); font-size:var(--fs-xs);">' + fechaPart + '</div>' +
+        '<div class="mono text-tertiary" style="font-size:11px; margin-top:2px;">' + horaPart + '</div>';
+    }
+    return '<span style="font-weight:600; color:var(--text-primary); font-size:var(--fs-xs);">' + raw + '</span>';
+  }
 
   var sevBadge = { "Alta": "badge-red", "Media": "badge-amber", "Info": "badge-neutral" };
-  document.getElementById("audit-body").innerHTML = MOCK.auditLog.map(function (a) {
-    return '<tr data-filter-row="audit" data-f-tipo="' + a.tipo + '" data-f-severidad="' + a.severidad + '">' +
-      '<td class="mono text-tertiary" style="font-size:var(--fs-xs);">' + a.fecha + '</td>' +
+  var PAGE_SIZE = 10;
+  var currentPage = 1;
+
+  function getFiltered() {
+    var tipo = document.getElementById("tipo-filter").value;
+    var severidad = document.getElementById("severidad-filter").value;
+    return MOCK.auditLog.filter(function (a) {
+      if (tipo !== "todos" && a.tipo !== tipo) return false;
+      if (severidad !== "todos" && a.severidad !== severidad) return false;
+      return true;
+    });
+  }
+
+  function rowHtml(a, i) {
+    return '<tr data-f-severidad="' + a.severidad + '" style="animation-delay:' + (i * 25) + 'ms;">' +
+      '<td>' + fechaHtml(a.fecha) + '</td>' +
       "<td>" + a.usuario + "</td><td class=\"cell-primary\">" + a.accion + "</td><td>" + a.detalle + "</td>" +
       '<td class="mono text-tertiary" style="font-size:var(--fs-xs);">' + a.origen + '</td>' +
       '<td><span class="badge ' + (sevBadge[a.severidad] || "badge-neutral") + '">' + a.severidad + '</span></td></tr>';
-  }).join("");
+  }
+
+  function renderPagination(total, totalPages) {
+    var countEl = document.getElementById("audit-pagination-count");
+    var controlsEl = document.getElementById("audit-pagination-controls");
+    if (total === 0) { countEl.textContent = ""; controlsEl.innerHTML = ""; return; }
+    var start = (currentPage - 1) * PAGE_SIZE + 1;
+    var end = Math.min(currentPage * PAGE_SIZE, total);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " eventos";
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
+    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
+    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
+  }
+
+  function render() {
+    var filtered = getFiltered();
+    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    document.getElementById("log-count").textContent = filtered.length + " evento" + (filtered.length === 1 ? "" : "s") + " recientes";
+    document.getElementById("audit-body").innerHTML = pageItems.map(rowHtml).join("");
+    document.getElementById("audit-empty").hidden = filtered.length !== 0;
+    document.querySelector(".table-scroll table").hidden = filtered.length === 0;
+
+    renderPagination(filtered.length, totalPages);
+  }
+
+  document.getElementById("tipo-filter").addEventListener("change", function () { currentPage = 1; render(); });
+  document.getElementById("severidad-filter").addEventListener("change", function () { currentPage = 1; render(); });
+
+  render();
 
   document.getElementById("top-users").innerHTML = MOCK.auditTopUsers.map(function (u) {
     return '<div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">' +
       '<span class="avatar avatar-sm">' + u.iniciales + '</span><span style="flex:1; font-size:var(--fs-sm); font-weight:500;">' + u.nombre + '</span>' +
       '<span class="mono text-tertiary" style="font-size:var(--fs-xs);">' + u.eventos + ' eventos</span></div>';
   }).join("");
-
-  window.SBAI.tableFilter.init(document);
 });
 </script>
 </body>

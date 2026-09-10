@@ -18,32 +18,41 @@
 
       <div class="kpi-grid" id="kpi-grid"></div>
 
-      <section class="card" style="margin-top:var(--space-6);">
-        <div class="table-toolbar">
-          <div>
-            <strong id="users-count"></strong>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Cuentas con acceso a SkillBridge AI</p>
+      <section class="card" style="margin-top:var(--space-6); display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2) - 130px); overflow:hidden;">
+        <div class="table-toolbar" style="flex-shrink:0;">
+          <div class="card-header-icon-row">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+            <div>
+              <strong id="users-count"></strong>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Cuentas con acceso a SkillBridge AI</p>
+            </div>
           </div>
           <div class="table-filters">
-            <input type="text" class="input" data-filter-scope="users" data-filter-key="q" placeholder="Buscar por nombre o correo…" style="width:210px; height:38px; font-size:var(--fs-xs);">
-            <select class="select" data-filter-scope="users" data-filter-key="rol">
+            <input type="text" class="input" id="users-search" placeholder="Buscar por nombre o correo…" style="width:210px; height:38px; font-size:var(--fs-xs);">
+            <select class="select" id="rol-filter">
               <option value="todos">Rol: todos</option><option>Colaborador</option><option>Project Manager</option><option>Resource Manager</option><option>Administrador</option>
             </select>
-            <select class="select" data-filter-scope="users" data-filter-key="estado">
+            <select class="select" id="estado-filter">
               <option value="todos">Estado: todos</option><option>Activo</option><option>Bloqueado</option>
             </select>
             <button type="button" class="btn btn-primary btn-sm" id="invite-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
           </div>
         </div>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead><tr><th>Usuario</th><th>Rol</th><th>Área</th><th>Último acceso</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody id="users-body"></tbody>
-          </table>
+        <div class="table-scroll-wrap">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead class="sticky-head"><tr><th>Usuario</th><th>Rol</th><th>Área</th><th>Último acceso</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="users-body"></tbody>
+            </table>
+          </div>
+          <div class="state-panel" id="users-empty" hidden>
+            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+            <span class="state-panel-title">Sin usuarios con estos filtros</span>
+          </div>
         </div>
-        <div class="state-panel" data-filter-empty="users" hidden>
-          <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
-          <span class="state-panel-title">Sin usuarios con estos filtros</span>
+        <div class="table-footer" style="flex-shrink:0;">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="users-pagination-count"></span>
+          <div class="pagination" id="users-pagination-controls"></div>
         </div>
       </section>
 
@@ -67,27 +76,42 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderKpi() {
     var sinRol = MOCK.usersKpi.sinRol, suspendidos = MOCK.usersTable.filter(function (u) { return u.estado === "Bloqueado"; }).length;
     document.getElementById("kpi-grid").innerHTML = [
-      { label: "TOTAL USUARIOS", value: MOCK.usersKpi.total },
-      { label: "SIN ROL ASIGNADO", value: sinRol, cls: "warn" },
-      { label: "SUSPENDIDOS", value: suspendidos, cls: "down" },
-      { label: "ADMINISTRADORES", value: MOCK.usersTable.filter(function (u) { return u.rol === "Administrador"; }).length }
-    ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>'; }).join("");
+      { label: "TOTAL USUARIOS", value: MOCK.usersKpi.total, icon: "icon-users", accent: "blue" },
+      { label: "SIN ROL ASIGNADO", value: sinRol, cls: "warn", icon: "icon-user-x", accent: "amber" },
+      { label: "SUSPENDIDOS", value: suspendidos, cls: "down", icon: "icon-alert-triangle", accent: "red" },
+      { label: "ADMINISTRADORES", value: MOCK.usersTable.filter(function (u) { return u.rol === "Administrador"; }).length, icon: "icon-shield", accent: "violet" }
+    ].map(function (k) {
+      return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>';
+    }).join("");
   }
 
   var rolBadge = { "Administrador": "badge-blue", "Project Manager": "badge-neutral", "Resource Manager": "badge-neutral", "Colaborador": "badge-neutral" };
+  var PAGE_SIZE = 8;
+  var currentPage = 1;
 
-  function renderRows() {
-    document.getElementById("users-count").textContent = MOCK.usersTable.length + " usuarios";
-    document.getElementById("users-body").innerHTML = MOCK.usersTable.map(function (u) {
-      return '<tr data-filter-row="users" data-f-rol="' + u.rol + '" data-f-estado="' + u.estado + '" data-f-search="' + u.nombre.toLowerCase() + " " + u.correo.toLowerCase() + '">' +
-        '<td class="cell-person"><span class="avatar avatar-sm">' + u.iniciales + '</span><span class="cell-person-text"><span class="cell-person-name">' + u.nombre + '</span><span class="cell-person-sub">' + u.correo + '</span></span></td>' +
-        '<td><span class="badge ' + (rolBadge[u.rol] || "badge-neutral") + '">' + u.rol + '</span></td><td>' + u.area + '</td>' +
-        '<td class="text-tertiary" style="font-size:var(--fs-xs);">' + u.ultimoAcceso + '</td>' +
-        '<td><span class="badge ' + (u.estado === "Activo" ? "badge-green" : "badge-red") + '">' + u.estado + '</span></td>' +
-        '<td class="cell-actions"><button type="button" data-edit-role="' + u.nombre + '">Editar rol</button>' +
-        (u.estado === "Activo" ? '<button type="button" class="danger" data-suspend-user="' + u.nombre + '">Suspender</button>' : '<button type="button" data-reactivate-user="' + u.nombre + '">Reactivar</button>') + '</td></tr>';
-    }).join("");
+  function getFiltered() {
+    var q = document.getElementById("users-search").value.trim().toLowerCase();
+    var rol = document.getElementById("rol-filter").value;
+    var estado = document.getElementById("estado-filter").value;
+    return MOCK.usersTable.filter(function (u) {
+      if (q && (u.nombre + " " + u.correo).toLowerCase().indexOf(q) === -1) return false;
+      if (rol !== "todos" && u.rol !== rol) return false;
+      if (estado !== "todos" && u.estado !== estado) return false;
+      return true;
+    });
+  }
 
+  function rowHtml(u, i) {
+    return '<tr data-f-estado="' + u.estado + '" style="animation-delay:' + (i * 30) + 'ms;">' +
+      '<td class="cell-person"><span class="avatar avatar-sm">' + u.iniciales + '</span><span class="cell-person-text"><span class="cell-person-name">' + u.nombre + '</span><span class="cell-person-sub">' + u.correo + '</span></span></td>' +
+      '<td><span class="badge ' + (rolBadge[u.rol] || "badge-neutral") + '">' + u.rol + '</span></td><td>' + u.area + '</td>' +
+      '<td class="text-tertiary" style="font-size:var(--fs-xs);">' + u.ultimoAcceso + '</td>' +
+      '<td><span class="badge ' + (u.estado === "Activo" ? "badge-green" : "badge-red") + '">' + u.estado + '</span></td>' +
+      '<td class="cell-actions"><button type="button" data-edit-role="' + u.nombre + '">Editar rol</button>' +
+      (u.estado === "Activo" ? '<button type="button" class="danger" data-suspend-user="' + u.nombre + '">Suspender</button>' : '<button type="button" data-reactivate-user="' + u.nombre + '">Reactivar</button>') + '</td></tr>';
+  }
+
+  function wireRowActions() {
     document.querySelectorAll("[data-edit-role]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var u = MOCK.usersTable.filter(function (x) { return x.nombre === btn.dataset.editRole; })[0];
@@ -102,8 +126,7 @@ document.addEventListener("DOMContentLoaded", function () {
           var nuevo = backdrop.querySelector("#edit-role-select").value;
           u.rol = nuevo;
           SBAI.modal.close(backdrop);
-          renderRows();
-          window.SBAI.tableFilter.applyScope("users");
+          render();
           SBAI.toast.show("<strong>" + u.nombre + "</strong> ahora tiene el rol " + nuevo + ".", { type: "success" });
         });
       });
@@ -116,8 +139,7 @@ document.addEventListener("DOMContentLoaded", function () {
           onConfirm: function () {
             MOCK.usersTable.filter(function (u) { return u.nombre === nombre; })[0].estado = "Bloqueado";
             SBAI.toast.show("<strong>" + nombre + "</strong> fue suspendido.", { type: "success" });
-            renderRows(); renderKpi();
-            window.SBAI.tableFilter.applyScope("users");
+            renderKpi(); render();
           }
         });
       });
@@ -127,11 +149,47 @@ document.addEventListener("DOMContentLoaded", function () {
         var nombre = btn.dataset.reactivateUser;
         MOCK.usersTable.filter(function (u) { return u.nombre === nombre; })[0].estado = "Activo";
         SBAI.toast.show("<strong>" + nombre + "</strong> fue reactivado.", { type: "success" });
-        renderRows(); renderKpi();
-        window.SBAI.tableFilter.applyScope("users");
+        renderKpi(); render();
       });
     });
   }
+
+  function renderPagination(total, totalPages) {
+    var countEl = document.getElementById("users-pagination-count");
+    var controlsEl = document.getElementById("users-pagination-controls");
+    if (total === 0) { countEl.textContent = ""; controlsEl.innerHTML = ""; return; }
+    var start = (currentPage - 1) * PAGE_SIZE + 1;
+    var end = Math.min(currentPage * PAGE_SIZE, total);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " usuarios";
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
+    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
+    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
+  }
+
+  function render() {
+    var filtered = getFiltered();
+    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    document.getElementById("users-count").textContent = filtered.length + " usuario" + (filtered.length === 1 ? "" : "s");
+    document.getElementById("users-body").innerHTML = pageItems.map(rowHtml).join("");
+    document.getElementById("users-empty").hidden = filtered.length !== 0;
+    document.querySelector(".table-scroll table").hidden = filtered.length === 0;
+
+    wireRowActions();
+    renderPagination(filtered.length, totalPages);
+  }
+
+  document.getElementById("users-search").addEventListener("input", function () { currentPage = 1; render(); });
+  document.getElementById("rol-filter").addEventListener("change", function () { currentPage = 1; render(); });
+  document.getElementById("estado-filter").addEventListener("change", function () { currentPage = 1; render(); });
 
   document.getElementById("invite-btn").addEventListener("click", function () {
     var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Se enviará una invitación al correo corporativo</p></div>' +
@@ -152,8 +210,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   renderKpi();
-  renderRows();
-  window.SBAI.tableFilter.init(document);
+  render();
 });
 </script>
 </body>

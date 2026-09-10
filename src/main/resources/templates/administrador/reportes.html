@@ -21,9 +21,12 @@
       <div class="detail-grid" style="margin-top:var(--space-6);">
         <section class="card card-pad">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
-            <div>
-              <h2 style="font-size:var(--fs-md);">Vacantes por habilidad</h2>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Brechas abiertas en toda la organización</p>
+            <div class="card-header-icon-row">
+              <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
+              <div>
+                <h2 style="font-size:var(--fs-md);">Vacantes por habilidad</h2>
+                <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Brechas abiertas en toda la organización</p>
+              </div>
             </div>
             <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-download"></use></svg>Exportar</button>
           </div>
@@ -31,14 +34,33 @@
         </section>
 
         <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Proyectos por estado</h3>
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+            <h3 style="font-size:var(--fs-md);">Proyectos por estado</h3>
+          </div>
           <div id="project-status"></div>
         </section>
       </div>
 
-      <section class="card card-pad" style="margin-top:var(--space-6);">
-        <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Ocupación por colaborador</h3>
-        <div id="team-occupancy"></div>
+      <section class="card" style="margin-top:var(--space-6); display:flex; flex-direction:column; max-height:520px; overflow:hidden;">
+        <div class="card-header" style="flex-shrink:0;">
+          <div class="card-header-icon-row">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
+            <div class="card-header-text"><h2>Ocupación por colaborador</h2><p>Promedio de las últimas 6 semanas</p></div>
+          </div>
+        </div>
+        <div class="table-scroll-wrap">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead class="sticky-head"><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación promedio</th><th>Estado</th></tr></thead>
+              <tbody id="team-occupancy-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="table-footer" style="flex-shrink:0;">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="team-pagination-count"></span>
+          <div class="pagination" id="team-pagination-controls"></div>
+        </div>
       </section>
 
     </main>
@@ -60,17 +82,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var r = MOCK.adminReport;
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "COLABORADORES ACTIVOS", value: r.colaboradoresActivos, meta: "+" + r.colaboradoresDelta + " este mes", cls: "up" },
-    { label: "PROYECTOS EN CURSO", value: r.proyectosEnCurso, meta: r.proyectosCierranSep + " cierran en septiembre" },
-    { label: "HABILIDADES EN CATÁLOGO", value: r.habilidadesCatalogo, meta: r.habilidadesSinAsignar + " sin proyecto asociado", cls: "warn" },
-    { label: "CONSULTAS AL ASISTENTE IA", value: r.consultasIA.toLocaleString("es-CO"), meta: "+" + r.consultasDelta + "% vs. semana anterior", cls: "up" }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
+    { label: "COLABORADORES ACTIVOS", value: r.colaboradoresActivos, meta: "+" + r.colaboradoresDelta + " este mes", cls: "up", icon: "icon-users", accent: "green" },
+    { label: "PROYECTOS EN CURSO", value: r.proyectosEnCurso, meta: r.proyectosCierranSep + " cierran en septiembre", icon: "icon-folder", accent: "blue" },
+    { label: "HABILIDADES EN CATÁLOGO", value: r.habilidadesCatalogo, meta: r.habilidadesSinAsignar + " sin proyecto asociado", cls: "warn", icon: "icon-book", accent: "amber" },
+    { label: "CONSULTAS AL ASISTENTE IA", value: r.consultasIA.toLocaleString("es-CO"), meta: "+" + r.consultasDelta + "% vs. semana anterior", cls: "up", icon: "icon-sparkles", accent: "green" }
+  ].map(function (k) {
+    return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>';
+  }).join("");
 
   var maxDemand = Math.max.apply(null, r.vacantesPorHabilidad.map(function (s) { return s.vacantes; }));
   document.getElementById("skills-demand").innerHTML = r.vacantesPorHabilidad.map(function (s) {
     return '<div style="margin-bottom:var(--space-3);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;"><span style="font-weight:500;">' + s.nombre + '</span><span class="text-tertiary mono">' + s.vacantes + ' vacantes</span></div>' +
-      '<div class="progress-bar"><div class="progress-bar-fill" style="width:' + Math.round((s.vacantes / maxDemand) * 100) + '%;"></div></div></div>';
+      '<div class="progress-bar"><div class="progress-bar-fill" data-target="' + Math.round((s.vacantes / maxDemand) * 100) + '" style="width:0%;"></div></div></div>';
   }).join("");
+  document.querySelectorAll("#skills-demand .progress-bar-fill[data-target]").forEach(function (bar, i) {
+    setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 100 + i * 50);
+  });
 
   var estados = {};
   MOCK.projects.forEach(function (p) { estados[p.estado] = (estados[p.estado] || 0) + 1; });
@@ -80,17 +107,43 @@ document.addEventListener("DOMContentLoaded", function () {
   }).join("");
 
   function estadoInfo(v) {
-    if (v > 100) return { badge: "badge-red", label: "Sobre-asignado" };
-    if (v >= 90) return { badge: "badge-amber", label: "Al límite" };
-    if (v >= 60) return { badge: "badge-green", label: "Óptimo" };
-    return { badge: "badge-neutral", label: "Subutilizado" };
+    if (v > 100) return { cls: "level-over", badge: "badge-red", label: "Sobre-asignado" };
+    if (v >= 90) return { cls: "level-high", badge: "badge-amber", label: "Al límite" };
+    if (v >= 60) return { cls: "level-optimal", badge: "badge-green", label: "Óptimo" };
+    return { cls: "level-low", badge: "badge-neutral", label: "Subutilizado" };
   }
-  document.getElementById("team-occupancy").innerHTML = '<div class="table-scroll"><table class="data-table"><thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación promedio</th><th>Estado</th></tr></thead><tbody>' +
-    MOCK.rmReport.ocupacionPorColaborador.map(function (o) {
+
+  var PAGE_SIZE = 8;
+  var currentPage = 1;
+
+  function renderTeam() {
+    var list = MOCK.rmReport.ocupacionPorColaborador;
+    var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var pageItems = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    document.getElementById("team-occupancy-body").innerHTML = pageItems.map(function (o, i) {
       var ei = estadoInfo(o.promedio);
-      return '<tr><td class="cell-person"><span class="avatar avatar-sm">' + o.iniciales + '</span><span class="cell-person-name">' + o.nombre + '</span></td>' +
+      return '<tr data-f-estado="' + ei.cls + '" style="animation-delay:' + (i * 30) + 'ms;"><td class="cell-person"><span class="avatar avatar-sm">' + o.iniciales + '</span><span class="cell-person-name">' + o.nombre + '</span></td>' +
         "<td>" + o.cargo + '</td><td class="mono">' + o.promedio + '%</td><td><span class="badge ' + ei.badge + '">' + ei.label + "</span></td></tr>";
-    }).join("") + '</tbody></table></div>';
+    }).join("");
+
+    var countEl = document.getElementById("team-pagination-count");
+    var controlsEl = document.getElementById("team-pagination-controls");
+    var start = list.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+    var end = Math.min(currentPage * PAGE_SIZE, list.length);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + list.length + " colaboradores";
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var pnum = 1; pnum <= totalPages; pnum++) html += '<button type="button" class="page-btn' + (pnum === currentPage ? " active" : "") + '" data-page="' + pnum + '">' + pnum + "</button>";
+    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; renderTeam(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; renderTeam(); } });
+    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); renderTeam(); }); });
+  }
+  renderTeam();
 
   document.getElementById("export-btn").addEventListener("click", function () {
     SBAI.toast.show("Generando exportable de reportes globales en PDF…");

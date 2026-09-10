@@ -16,17 +16,20 @@
     <header class="topbar" id="sbai-topbar"></header>
     <main class="page-content page-content-wide" id="page-content">
 
-      <div class="chat-layout">
-        <div style="display:flex; flex-direction:column; gap:var(--space-4);">
+      <div class="chat-layout" style="height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2));">
+        <div style="display:flex; flex-direction:column; gap:var(--space-4); height:100%; overflow-y:auto;">
           <button type="button" class="btn btn-secondary btn-block" id="new-convo-btn">
             <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Nueva conversación</button>
-          <div>
-            <p class="label-mono" style="margin-bottom:var(--space-2); padding:0 var(--space-2);">Historial</p>
+          <section class="card card-pad">
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-3);">
+              <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-message"></use></svg></span>
+              <p class="label-mono">Historial</p>
+            </div>
             <div id="chat-history"></div>
-          </div>
+          </section>
         </div>
 
-        <section class="card chat-window">
+        <section class="card chat-window" style="height:100%;">
           <div class="chat-messages" id="chat-messages"></div>
           <div class="chat-suggestions" id="chat-suggestions"></div>
           <div class="chat-composer">
@@ -36,12 +39,26 @@
           <p class="chat-disclaimer">Como Administrador, el asistente consulta usuarios, proyectos, habilidades y el registro de auditoría completo.</p>
         </section>
 
-        <div style="display:flex; flex-direction:column; gap:var(--space-4);">
-          <p class="label-mono">Contexto cargado</p>
-          <div class="ai-context-card"><div class="ai-context-card-title">184 usuarios</div><div class="ai-context-card-sub">Roles y estado de cuenta</div></div>
-          <div class="ai-context-card"><div class="ai-context-card-title">27 proyectos</div><div class="ai-context-card-sub">312 habilidades mapeadas</div></div>
-          <div class="ai-context-card"><div class="ai-context-card-title">Auditoría completa</div><div class="ai-context-card-sub">Últimas 24 horas de eventos</div></div>
-        </div>
+        <section class="card card-pad" style="height:100%; overflow-y:auto;">
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
+            <p class="label-mono">Contexto cargado</p>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:var(--space-3);">
+            <div class="ai-context-card">
+              <span class="ai-context-card-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+              <span class="ai-context-card-text"><span class="ai-context-card-title">184 usuarios</span><span class="ai-context-card-sub">Roles y estado de cuenta</span></span>
+            </div>
+            <div class="ai-context-card">
+              <span class="ai-context-card-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+              <span class="ai-context-card-text"><span class="ai-context-card-title">27 proyectos</span><span class="ai-context-card-sub">312 habilidades mapeadas</span></span>
+            </div>
+            <div class="ai-context-card">
+              <span class="ai-context-card-icon red"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-shield"></use></svg></span>
+              <span class="ai-context-card-text"><span class="ai-context-card-title">Auditoría completa</span><span class="ai-context-card-sub">Últimas 24 horas de eventos</span></span>
+            </div>
+          </div>
+        </section>
       </div>
 
     </main>
@@ -79,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("new-convo-btn").addEventListener("click", function () {
     messagesEl.innerHTML = '<div class="chat-date-sep">' + MOCK.meta.todayLabel.toUpperCase() + '</div>' +
-      '<div class="chat-msg assistant"><div class="chat-bubble">Hola de nuevo, Ana. ¿Sobre qué quieres que te ayude: usuarios, la salud de la plataforma o auditoría?</div><div class="chat-meta">ASISTENTE SKILLBRIDGE</div></div>';
+      '<div class="chat-msg assistant"><div class="chat-msg-row"><img class="chat-ai-avatar" src="../../static/img/logo-ai-icon.png" alt=""><div class="chat-bubble">Hola de nuevo, Ana. ¿Sobre qué quieres que te ayude: usuarios, la salud de la plataforma o auditoría?</div></div><div class="chat-meta">ASISTENTE SKILLBRIDGE</div></div>';
     SBAI.toast.show("Nueva conversación iniciada.");
   });
 });

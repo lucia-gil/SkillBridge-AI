@@ -19,30 +19,57 @@
       <div class="kpi-grid" id="kpi-grid"></div>
 
       <div class="detail-grid" style="margin-top:var(--space-6);">
-        <section class="card card-pad">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
-            <div>
-              <h2 style="font-size:var(--fs-md);">Avance por sprint</h2>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de historias cerradas sobre el plan · sprints S9–S14</p>
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card card-pad">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
+              <div class="card-header-icon-row">
+                <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-bar-chart"></use></svg></span>
+                <div>
+                  <h2 style="font-size:var(--fs-md);">Avance por sprint</h2>
+                  <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de historias cerradas sobre el plan · sprints S9–S14 · pasa el mouse o toca una barra</p>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-download"></use></svg>Exportar</button>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-download"></use></svg>Exportar</button>
-          </div>
-          <div class="bar-chart" id="sprint-chart"></div>
-        </section>
+            <div class="bar-chart" id="sprint-chart"></div>
+          </section>
+
+          <section class="card card-pad">
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+              <span class="card-header-icon red"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
+              <h3 style="font-size:var(--fs-md);">Riesgos activos</h3>
+            </div>
+            <div id="risk-list"></div>
+          </section>
+        </div>
 
         <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Ocupación del equipo</h3>
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+            <h3 style="font-size:var(--fs-md);">Ocupación del equipo</h3>
+          </div>
           <div id="team-occupancy"></div>
         </section>
       </div>
 
-      <section class="card" style="margin-top:var(--space-6);">
-        <div class="card-header"><div class="card-header-text"><h2>Detalle por proyecto</h2><p>Historias, horas invertidas y desviación de plazo</p></div></div>
+      <section class="card" style="margin-top:var(--space-6); display:flex; flex-direction:column; max-height:520px; overflow:hidden;">
+        <div class="card-header" style="flex-shrink:0;">
+          <div class="card-header-icon-row">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+            <div class="card-header-text"><h2>Detalle por proyecto</h2><p>Historias, horas invertidas, desviación de plazo y actividad de foro</p></div>
+          </div>
+        </div>
+        <div style="flex:1; min-width:0; overflow-y:auto;">
         <div class="table-scroll">
           <table class="data-table">
-            <thead><tr><th>Proyecto</th><th>Historias (cerradas / totales)</th><th>Horas invertidas</th><th>Desviación de plazo</th><th>Riesgo</th></tr></thead>
+            <thead class="sticky-head"><tr><th>Proyecto</th><th>Historias (cerradas / totales)</th><th>Horas invertidas</th><th>Desviación de plazo</th><th>Hilos de foro</th><th>Riesgo</th></tr></thead>
             <tbody id="detail-body"></tbody>
           </table>
+        </div>
+        </div>
+        <div class="table-footer" style="flex-shrink:0;">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="detail-pagination-count"></span>
+          <div class="pagination" id="detail-pagination-controls"></div>
         </div>
       </section>
 
@@ -64,37 +91,107 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!cfg) return;
 
   var r = MOCK.pmReport;
+  var pmProjects = ["Portal Andes", "App Móvil Aurora", "Núcleo Retail", "Motor Cobranzas v2"];
+
+  // --- Dato real de eventos_proyecto: cumplimiento de entregables ---
+  var entregables = MOCK.projectEvents.filter(function (e) { return e.tipo === "entregable" && pmProjects.indexOf(e.proyecto) !== -1; });
+  var entCumplidos = entregables.filter(function (e) { return e.estado === "cumplido"; }).length;
+  var entAtrasados = entregables.filter(function (e) { return e.estado === "atrasado"; }).length;
 
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "AVANCE PONDERADO", value: r.avancePonderado + "%", delta: r.avanceDelta, unit: "pts" },
-    { label: "HISTORIAS CERRADAS", value: r.historiasCerradas, delta: r.historiasDelta, unit: "" },
-    { label: "DESVIACIÓN DE PLAZO", value: r.desviacionPlazo, meta: r.desviacionNota, cls: "warn" },
-    { label: "HORAS ASIGNADAS", value: r.horasAsignadas.toLocaleString("es-CO"), meta: "de " + r.horasDisponibles.toLocaleString("es-CO") + " h disponibles" }
+    { label: "AVANCE PONDERADO", value: r.avancePonderado + "%", delta: r.avanceDelta, unit: "pts", icon: "icon-bar-chart" },
+    { label: "HISTORIAS CERRADAS", value: r.historiasCerradas, delta: r.historiasDelta, unit: "", icon: "icon-check-circle" },
+    { label: "DESVIACIÓN DE PLAZO", value: r.desviacionPlazo, meta: r.desviacionNota, cls: "warn", icon: "icon-calendar" },
+    { label: "HORAS ASIGNADAS", value: r.horasAsignadas.toLocaleString("es-CO"), meta: "de " + r.horasDisponibles.toLocaleString("es-CO") + " h disponibles", icon: "icon-zap" },
+    { label: "ENTREGABLES CUMPLIDOS", value: entCumplidos + "/" + entregables.length, meta: entAtrasados + " atrasado" + (entAtrasados === 1 ? "" : "s"), cls: entAtrasados > 0 ? "warn" : "up", icon: "icon-folder" }
   ].map(function (k) {
     var meta = k.meta || (typeof k.delta === "number" ? (k.delta >= 0 ? "+" : "") + k.delta + (k.unit ? " " + k.unit : "") + " vs. mes anterior" : "");
     var cls = k.cls || (typeof k.delta === "number" ? (k.delta >= 0 ? "up" : "down") : "");
-    return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + cls + '">' + meta + '</span></div>';
+    var accent = cls === "up" ? "green" : cls === "down" ? "red" : cls === "warn" ? "amber" : "blue";
+    return '<div class="kpi-tile accent-' + accent + '"><span class="kpi-tile-icon ' + accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + cls + '">' + meta + '</span></div>';
   }).join("");
 
   var maxSprint = Math.max.apply(null, r.sprints.map(function (s) { return s.pct; }));
   document.getElementById("sprint-chart").innerHTML = r.sprints.map(function (s, i) {
-    var h = Math.round((s.pct / maxSprint) * 100);
-    return '<div class="bar-chart-col"><span class="bar-chart-value">' + s.pct + '%</span>' +
-      '<div class="bar-chart-track"><div class="bar-chart-fill' + (i === r.sprints.length - 1 ? " accent" : "") + '" style="height:' + h + '%;"></div></div>' +
+    return '<div class="bar-chart-col" data-sprint="' + s.s + '" data-pct="' + s.pct + '"><span class="bar-chart-value">' + s.pct + '%</span>' +
+      '<div class="bar-chart-track"><div class="bar-chart-fill' + (i === r.sprints.length - 1 ? " accent" : "") + '" data-target-h="' + Math.round((s.pct / maxSprint) * 100) + '" style="height:0%;"></div></div>' +
       '<span class="bar-chart-label">' + s.s + '</span></div>';
   }).join("");
+
+  // Anima las barras de 0 a su altura real, escalonado
+  document.querySelectorAll(".bar-chart-fill[data-target-h]").forEach(function (bar, i) {
+    setTimeout(function () { bar.style.height = bar.dataset.targetH + "%"; }, 100 + i * 70);
+  });
+
+  // Click en una barra: detalle rápido del sprint en un toast
+  document.querySelectorAll(".bar-chart-col").forEach(function (col) {
+    col.addEventListener("click", function () {
+      var s = col.dataset.sprint, pct = col.dataset.pct;
+      SBAI.toast.show("<strong>" + s + "</strong>: " + pct + "% de historias cerradas sobre el plan.", { icon: "icon-bar-chart" });
+    });
+  });
 
   document.getElementById("team-occupancy").innerHTML = r.ocupacionEquipo.map(function (o) {
     var cls = o.pct > 100 ? "red" : o.pct >= 90 ? "amber" : "";
     return '<div style="margin-bottom:var(--space-4);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:6px;"><span style="font-weight:500;">' + o.nombre + '</span><span class="mono" style="font-weight:600;">' + o.pct + '%</span></div>' +
-      '<div class="progress-bar"><div class="progress-bar-fill ' + cls + '" style="width:' + Math.min(o.pct, 100) + '%;"></div></div></div>';
+      '<div class="progress-bar"><div class="progress-bar-fill ' + cls + '" data-target="' + Math.min(o.pct, 100) + '" style="width:0%;"></div></div></div>';
   }).join("");
+  document.querySelectorAll("#team-occupancy .progress-bar-fill[data-target]").forEach(function (bar, i) {
+    setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 150 + i * 60);
+  });
+
+  // Riesgos activos: proyectos con riesgo Medio/Alto, calculado sobre el
+  // mismo detalleProyectos de la tabla de abajo (no es un dato nuevo,
+  // es un resumen del que ya tenías).
+  var riesgosActivos = r.detalleProyectos.filter(function (p) { return p.riesgo !== "Bajo"; });
+  document.getElementById("risk-list").innerHTML = riesgosActivos.length
+    ? riesgosActivos.map(function (p) {
+        var variant = p.riesgo === "Alto" ? "danger" : "warn";
+        var partes = p.historias.split("/");
+        var cerradas = partes[0].trim(), totales = partes[1].trim();
+        var motivo = "Historias: " + cerradas + " de " + totales + " cerradas. Desviación de plazo: " + p.desviacion.trim() + ".";
+        return '<div class="callout ' + variant + '" style="margin-bottom:var(--space-3);">' +
+          '<span class="callout-icon"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
+          '<span class="callout-body"><span class="callout-title">' + p.proyecto + ' · riesgo ' + p.riesgo.toLowerCase() + '</span>' + motivo + '</span></div>';
+      }).join("")
+    : '<p class="text-tertiary" style="font-size:var(--fs-xs);">Ningún proyecto en riesgo Medio o Alto esta semana.</p>';
+
+  // --- Dato real de foro_publicaciones: hilos por proyecto ---
+  var hilosPorProyecto = {};
+  (MOCK.threadActivityByProject || []).forEach(function (a) { hilosPorProyecto[a.proyecto] = a.hilos; });
 
   var riesgoBadge = { "Bajo": "badge-green", "Medio": "badge-amber", "Alto": "badge-red" };
-  document.getElementById("detail-body").innerHTML = r.detalleProyectos.map(function (p) {
-    return "<tr><td class=\"cell-primary\">" + p.proyecto + "</td><td class=\"mono\">" + p.historias + "</td><td class=\"mono\">" + p.horas + "</td>" +
-      "<td class=\"mono\">" + p.desviacion + '</td><td><span class="badge ' + (riesgoBadge[p.riesgo] || "badge-neutral") + '">' + p.riesgo + "</span></td></tr>";
-  }).join("");
+  var PAGE_SIZE = 10;
+  var currentPage = 1;
+
+  function renderDetailPage() {
+    var list = r.detalleProyectos;
+    var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var pageItems = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    document.getElementById("detail-body").innerHTML = pageItems.map(function (p, i) {
+      var hilos = hilosPorProyecto[p.proyecto];
+      return '<tr data-f-riesgo="' + p.riesgo + '" style="animation-delay:' + (i * 30) + 'ms;"><td class="cell-primary">' + p.proyecto + "</td><td class=\"mono\">" + p.historias + "</td><td class=\"mono\">" + p.horas + "</td>" +
+        "<td class=\"mono\">" + p.desviacion + '</td><td class="mono">' + (hilos !== undefined ? hilos + " hilos" : "—") + '</td><td><span class="badge ' + (riesgoBadge[p.riesgo] || "badge-neutral") + '">' + p.riesgo + "</span></td></tr>";
+    }).join("");
+
+    var countEl = document.getElementById("detail-pagination-count");
+    var controlsEl = document.getElementById("detail-pagination-controls");
+    var start = list.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+    var end = Math.min(currentPage * PAGE_SIZE, list.length);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + list.length + " proyectos";
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var pnum = 1; pnum <= totalPages; pnum++) html += '<button type="button" class="page-btn' + (pnum === currentPage ? " active" : "") + '" data-page="' + pnum + '">' + pnum + "</button>";
+    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; renderDetailPage(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; renderDetailPage(); } });
+    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); renderDetailPage(); }); });
+  }
+  renderDetailPage();
 
   document.getElementById("export-btn").addEventListener("click", function () {
     SBAI.toast.show("Generando exportable de reportes en PDF…");

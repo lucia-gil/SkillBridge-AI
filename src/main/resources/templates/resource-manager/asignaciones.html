@@ -20,9 +20,12 @@
 
       <section class="card card-pad" style="margin-top:var(--space-6);">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5); flex-wrap:wrap; gap:var(--space-3);">
-          <div>
-            <h2 style="font-size:var(--fs-md);">Tablero de validación</h2>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Arrastra una tarjeta entre columnas para cambiar su estado de validación</p>
+          <div class="card-header-icon-row">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
+            <div>
+              <h2 style="font-size:var(--fs-md);">Tablero de validación</h2>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Arrastra una tarjeta entre columnas para cambiar su estado de validación</p>
+            </div>
           </div>
           <button type="button" class="btn btn-secondary btn-sm" id="new-request-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Registrar asignación</button>
         </div>
@@ -47,22 +50,26 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!cfg) return;
 
   var COLUMNS = [
-    { key: "Sin cubrir", label: "Sin cubrir", desc: "Vacantes pendientes de asignar" },
-    { key: "Bloqueada", label: "Bloqueada", desc: "Excede el límite de carga" },
-    { key: "En revisión", label: "En revisión", desc: "Pendiente de validar" },
-    { key: "Al límite", label: "Al límite", desc: "90–100% de carga" },
-    { key: "Validada", label: "Validada", desc: "Dentro de los límites" }
+    { key: "Sin cubrir", label: "Sin cubrir", desc: "Vacantes pendientes de asignar", accent: "neutral" },
+    { key: "Bloqueada", label: "Bloqueada", desc: "Excede el límite de carga", accent: "red" },
+    { key: "En revisión", label: "En revisión", desc: "Pendiente de validar", accent: "blue" },
+    { key: "Al límite", label: "Al límite", desc: "90–100% de carga", accent: "amber" },
+    { key: "Validada", label: "Validada", desc: "Dentro de los límites", accent: "green" }
   ];
+  var VISIBLE_PER_COLUMN = 4;
+  var expanded = {}; // columna -> true si ya mostró todo
 
   function renderKpi() {
     var counts = { total: MOCK.assignments.length };
     COLUMNS.forEach(function (c) { counts[c.key] = MOCK.assignments.filter(function (a) { return a.validacion === c.key; }).length; });
     document.getElementById("kpi-grid").innerHTML = [
-      { label: "TOTAL ASIGNACIONES", value: counts.total },
-      { label: "BLOQUEADAS", value: counts["Bloqueada"], cls: "down" },
-      { label: "EN REVISIÓN", value: counts["En revisión"], cls: "warn" },
-      { label: "SIN CUBRIR", value: counts["Sin cubrir"], cls: "warn" }
-    ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>'; }).join("");
+      { label: "TOTAL ASIGNACIONES", value: counts.total, icon: "icon-target", accent: "blue" },
+      { label: "BLOQUEADAS", value: counts["Bloqueada"], cls: "down", icon: "icon-alert-triangle", accent: "red" },
+      { label: "EN REVISIÓN", value: counts["En revisión"], cls: "warn", icon: "icon-search", accent: "amber" },
+      { label: "SIN CUBRIR", value: counts["Sin cubrir"], cls: "warn", icon: "icon-user-x", accent: "amber" }
+    ].map(function (k) {
+      return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>';
+    }).join("");
   }
 
   var validCls = { "Validada": "badge-green", "Al límite": "badge-amber", "En revisión": "badge-blue", "Bloqueada": "badge-red", "Sin cubrir": "badge-neutral" };
@@ -70,20 +77,36 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderBoard() {
     document.getElementById("kanban-board").innerHTML = COLUMNS.map(function (col) {
       var items = MOCK.assignments.map(function (a, idx) { return { a: a, idx: idx }; }).filter(function (o) { return o.a.validacion === col.key; });
-      var cards = items.map(function (o) {
+      var showAll = !!expanded[col.key];
+      var visibleItems = showAll ? items : items.slice(0, VISIBLE_PER_COLUMN);
+      var restante = items.length - visibleItems.length;
+
+      var cards = visibleItems.map(function (o, i) {
         var a = o.a;
         var nombre = a.colaborador || a.vacanteNombre;
-        return '<div class="kanban-card" draggable="true" data-idx="' + o.idx + '">' +
+        return '<div class="kanban-card accent-' + col.accent + '" draggable="true" data-idx="' + o.idx + '" style="animation-delay:' + (i * 30) + 'ms;">' +
           '<div class="kanban-card-top"><span class="avatar avatar-sm" style="width:24px; height:24px; font-size:10px;">' + a.iniciales + '</span><span class="kanban-card-name">' + nombre + '</span></div>' +
           '<div class="kanban-card-meta"><span>' + a.proyecto + '</span><span class="mono">' + a.dedicacion + '%</span></div>' +
           '</div>';
       }).join("") || '<div class="text-tertiary" style="font-size:var(--fs-xs); text-align:center; padding:var(--space-4) 0;">Sin tarjetas</div>';
 
-      return '<div class="kanban-column" data-column="' + col.key + '">' +
+      var loadMoreHtml = restante > 0
+        ? '<button type="button" class="kanban-load-more" data-expand-col="' + col.key + '">Cargar ' + restante + ' más ↓</button>'
+        : (showAll && items.length > VISIBLE_PER_COLUMN ? '<button type="button" class="kanban-load-more" data-collapse-col="' + col.key + '">Mostrar menos ↑</button>' : "");
+
+      return '<div class="kanban-column accent-' + col.accent + '" data-column="' + col.key + '">' +
         '<div class="kanban-column-header"><span class="kanban-column-title">' + col.label + ' <span class="text-tertiary mono" style="font-size:11px;">(' + items.length + ')</span></span><span class="kanban-column-sub">' + col.desc + '</span></div>' +
         '<div class="kanban-column-drop" style="display:flex; flex-direction:column; gap:var(--space-3); min-height:40px;">' + cards + '</div>' +
+        loadMoreHtml +
         '</div>';
     }).join("");
+
+    document.querySelectorAll("[data-expand-col]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) { e.stopPropagation(); expanded[btn.dataset.expandCol] = true; renderBoard(); });
+    });
+    document.querySelectorAll("[data-collapse-col]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) { e.stopPropagation(); expanded[btn.dataset.collapseCol] = false; renderBoard(); });
+    });
 
     wireDragDrop();
     wireCardClicks();

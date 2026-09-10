@@ -25,33 +25,41 @@
         </span>
       </div>
 
-      <section class="card">
-        <div class="table-toolbar">
+      <section class="card" style="display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2)); overflow:hidden;">
+        <div class="table-toolbar" style="flex-shrink:0;">
           <div>
             <strong>Asignaciones de mis proyectos</strong>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">8 asignaciones · 1 bloqueada · 1 en revisión</p>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="asig-subtitle"></p>
           </div>
           <div class="table-filters">
-            <select class="select" data-filter-scope="asig-pm" data-filter-key="proyecto"><option value="todos">Proyecto: todos</option></select>
-            <select class="select" data-filter-scope="asig-pm" data-filter-key="estado">
+            <select class="select" id="proyecto-filter"><option value="todos">Proyecto: todos</option></select>
+            <select class="select" id="estado-filter">
               <option value="todos">Estado: todos</option><option>Validada</option><option>Al límite</option><option>En revisión</option><option>Bloqueada</option><option>Sin cubrir</option>
             </select>
-            <select class="select" data-filter-scope="asig-pm" data-filter-key="periodo">
+            <select class="select" id="periodo-filter">
               <option value="todos">Periodo: todos</option><option value="q3-2026">Q3 2026</option><option value="q4-2026">Q4 2026</option>
             </select>
             <button type="button" class="btn btn-primary btn-sm" id="request-assignment-btn">
               <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Solicitar asignación</button>
           </div>
         </div>
+
+        <div style="flex:1; min-width:0; overflow-y:auto;">
         <div class="table-scroll">
           <table class="data-table">
-            <thead><tr><th>Colaborador</th><th>Proyecto</th><th>Dedicación</th><th>Periodo</th><th>Carga total</th><th>Validación</th><th>Acciones</th></tr></thead>
+            <thead class="sticky-head"><tr><th>Colaborador</th><th>Proyecto</th><th>Dedicación</th><th>Periodo</th><th>Carga total</th><th>Validación</th><th>Acciones</th></tr></thead>
             <tbody id="asig-body"></tbody>
           </table>
+          <div class="state-panel" id="asig-empty" hidden>
+            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-target"></use></svg></span>
+            <span class="state-panel-title">Sin asignaciones con estos filtros</span>
+          </div>
         </div>
-        <div class="state-panel" data-filter-empty="asig-pm" hidden>
-          <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-target"></use></svg></span>
-          <span class="state-panel-title">Sin asignaciones con estos filtros</span>
+        </div>
+
+        <div class="table-footer" style="flex-shrink:0;">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="asig-pagination-count"></span>
+          <div class="pagination" id="asig-pagination-controls"></div>
         </div>
       </section>
 
@@ -74,49 +82,110 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var kpi = MOCK.assignmentsKpi;
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "TOTAL ASIGNACIONES", value: kpi.total }, { label: "VALIDADAS", value: kpi.validadas },
-    { label: "EN REVISIÓN", value: kpi.enRevision, cls: "warn" }, { label: "BLOQUEADAS POR CARGA", value: kpi.bloqueadas, cls: "down" },
-    { label: "VACANTES SIN CUBRIR", value: kpi.vacantes, cls: "warn" }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>'; }).join("");
+    { label: "TOTAL ASIGNACIONES", value: kpi.total, icon: "icon-target", accent: "blue" },
+    { label: "VALIDADAS", value: kpi.validadas, icon: "icon-check-circle", accent: "green" },
+    { label: "EN REVISIÓN", value: kpi.enRevision, cls: "warn", icon: "icon-search", accent: "amber" },
+    { label: "BLOQUEADAS POR CARGA", value: kpi.bloqueadas, cls: "down", icon: "icon-alert-triangle", accent: "red" },
+    { label: "VACANTES SIN CUBRIR", value: kpi.vacantes, cls: "warn", icon: "icon-user-x", accent: "amber" }
+  ].map(function (k) {
+    return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>';
+  }).join("");
 
   var pmProjects = ["Portal Andes", "App Móvil Aurora", "Núcleo Retail", "Motor Cobranzas v2"];
   var pmAssignments = MOCK.assignments.filter(function (a) { return pmProjects.indexOf(a.proyecto) !== -1; });
-  var projSelect = document.querySelector('[data-filter-key="proyecto"]');
+
+  var projSelect = document.getElementById("proyecto-filter");
   pmProjects.forEach(function (p) { projSelect.insertAdjacentHTML("beforeend", "<option>" + p + "</option>"); });
 
   var validCls = { "Validada": "badge-green", "Al límite": "badge-amber", "En revisión": "badge-blue", "Bloqueada": "badge-red", "Sin cubrir": "badge-neutral" };
-  document.getElementById("asig-body").innerHTML = pmAssignments.map(function (a) {
+
+  var PAGE_SIZE = 6;
+  var currentPage = 1;
+
+  function getFiltered() {
+    var proyecto = document.getElementById("proyecto-filter").value;
+    var estado = document.getElementById("estado-filter").value;
+    return pmAssignments.filter(function (a) {
+      if (proyecto !== "todos" && a.proyecto !== proyecto) return false;
+      if (estado !== "todos" && a.validacion !== estado) return false;
+      return true;
+    });
+  }
+
+  function rowHtml(a, i) {
     var nombre = a.colaborador || a.vacanteNombre;
-    return '<tr data-filter-row="asig-pm" data-f-proyecto="' + a.proyecto + '" data-f-estado="' + a.validacion + '" data-f-periodo="q3-2026">' +
+    return '<tr data-f-estado="' + a.validacion + '" style="animation-delay:' + (i * 30) + 'ms;">' +
       '<td class="cell-person"><span class="avatar avatar-sm">' + a.iniciales + '</span><span class="cell-person-name">' + nombre + '</span></td>' +
       "<td>" + a.proyecto + "</td><td class=\"mono\">" + a.dedicacion + "%</td><td>" + a.periodo + "</td>" +
       "<td class=\"mono\">" + (a.cargaTotal !== null ? a.cargaTotal + "%" : "—") + "</td>" +
       '<td><span class="badge ' + (validCls[a.validacion] || "badge-neutral") + '">' + a.validacion + "</span></td>" +
       '<td class="cell-actions"><button type="button" data-edit-assign="' + nombre + '">Editar</button><button type="button" class="danger" data-release-assign="' + nombre + '">Liberar</button></td></tr>';
-  }).join("");
+  }
 
-  document.querySelectorAll("[data-edit-assign]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar asignación</h2><p>' + btn.dataset.editAssign + '</p></div>' +
-        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body"><div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" value="45" min="5" max="100" step="5"></div></div>' +
-        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" data-modal-close>Guardar</button></div></div>';
-      var backdrop = SBAI.modal.open(html);
-      backdrop.querySelector(".btn-primary").addEventListener("click", function () { SBAI.toast.show("Asignación de <strong>" + btn.dataset.editAssign + "</strong> actualizada.", { type: "success" }); });
-    });
-  });
-  document.querySelectorAll("[data-release-assign]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      SBAI.modal.confirm({
-        title: "¿Liberar a " + btn.dataset.releaseAssign + "?", desc: "Se eliminará esta asignación del proyecto.",
-        confirmLabel: "Liberar", variant: "destructive",
-        onConfirm: function () {
-          var row = btn.closest("tr"); row.style.opacity = "0.4";
-          SBAI.toast.show("<strong>" + btn.dataset.releaseAssign + "</strong> fue liberado del proyecto.", { type: "success" });
-        }
+  function renderPagination(total, totalPages) {
+    var countEl = document.getElementById("asig-pagination-count");
+    var controlsEl = document.getElementById("asig-pagination-controls");
+    if (total === 0) { countEl.textContent = ""; controlsEl.innerHTML = ""; return; }
+    var start = (currentPage - 1) * PAGE_SIZE + 1;
+    var end = Math.min(currentPage * PAGE_SIZE, total);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total;
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
+    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
+    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
+  }
+
+  function render() {
+    var filtered = getFiltered();
+    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    document.getElementById("asig-body").innerHTML = pageItems.map(rowHtml).join("");
+    document.getElementById("asig-empty").hidden = filtered.length !== 0;
+    document.querySelector(".table-scroll table").hidden = filtered.length === 0;
+
+    var bloqueadas = pmAssignments.filter(function (a) { return a.validacion === "Bloqueada"; }).length;
+    var enRevision = pmAssignments.filter(function (a) { return a.validacion === "En revisión"; }).length;
+    document.getElementById("asig-subtitle").textContent = pmAssignments.length + " asignaciones · " + bloqueadas + " bloqueada" + (bloqueadas === 1 ? "" : "s") + " · " + enRevision + " en revisión";
+
+    wireRowActions();
+    renderPagination(filtered.length, totalPages);
+  }
+
+  function wireRowActions() {
+    document.querySelectorAll("[data-edit-assign]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar asignación</h2><p>' + btn.dataset.editAssign + '</p></div>' +
+          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+          '<div class="modal-body"><div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" value="45" min="5" max="100" step="5"></div></div>' +
+          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" data-modal-close>Guardar</button></div></div>';
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelector(".btn-primary").addEventListener("click", function () { SBAI.toast.show("Asignación de <strong>" + btn.dataset.editAssign + "</strong> actualizada.", { type: "success" }); });
       });
     });
-  });
+    document.querySelectorAll("[data-release-assign]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        SBAI.modal.confirm({
+          title: "¿Liberar a " + btn.dataset.releaseAssign + "?", desc: "Se eliminará esta asignación del proyecto.",
+          confirmLabel: "Liberar", variant: "destructive",
+          onConfirm: function () {
+            var row = btn.closest("tr"); row.style.opacity = "0.4";
+            SBAI.toast.show("<strong>" + btn.dataset.releaseAssign + "</strong> fue liberado del proyecto.", { type: "success" });
+          }
+        });
+      });
+    });
+  }
+
+  document.getElementById("proyecto-filter").addEventListener("change", function () { currentPage = 1; render(); });
+  document.getElementById("estado-filter").addEventListener("change", function () { currentPage = 1; render(); });
+  document.getElementById("periodo-filter").addEventListener("change", function () { currentPage = 1; render(); });
 
   document.getElementById("request-exception-btn").addEventListener("click", function () {
     SBAI.toast.show("Excepción de carga solicitada a Paula Vega (Resource Manager).", { type: "success" });
@@ -135,7 +204,7 @@ document.addEventListener("DOMContentLoaded", function () {
     backdrop.querySelector(".btn-primary").addEventListener("click", function () { SBAI.toast.show("Solicitud enviada al Resource Manager para validación de carga.", { type: "success" }); });
   });
 
-  window.SBAI.tableFilter.init(document);
+  render();
 });
 </script>
 </body>

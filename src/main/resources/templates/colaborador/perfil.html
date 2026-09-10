@@ -19,13 +19,17 @@
       <div class="detail-grid">
         <div style="display:flex; flex-direction:column; gap:var(--space-6);">
 
-          <section class="card">
+          <section class="card profile-card">
+            <div class="profile-header-banner"></div>
             <div class="card-body" id="perfil-header"></div>
           </section>
 
           <section class="card">
             <div class="card-header">
-              <div class="card-header-text"><h2>Habilidades y nivel de dominio</h2><p>Escala global: Básico · Intermedio · Avanzado · Experto</p></div>
+              <div class="card-header-icon-row">
+                <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
+                <div class="card-header-text"><h2>Habilidades y nivel de dominio</h2><p>Escala global: Básico · Intermedio · Avanzado · Experto</p></div>
+              </div>
               <button type="button" class="btn btn-primary btn-sm" id="add-skill-open">
                 <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Agregar habilidad</button>
             </div>
@@ -35,7 +39,12 @@
           </section>
 
           <section class="card">
-            <div class="card-header"><div class="card-header-text"><h2>Historial de proyectos</h2></div></div>
+            <div class="card-header">
+              <div class="card-header-icon-row">
+                <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+                <div class="card-header-text"><h2>Historial de proyectos</h2></div>
+              </div>
+            </div>
             <div class="table-scroll">
               <table class="data-table">
                 <thead><tr><th>Proyecto</th><th>Cliente</th><th>Rol</th><th>Periodo</th><th>Estado</th></tr></thead>
@@ -47,8 +56,11 @@
 
         <div style="display:flex; flex-direction:column; gap:var(--space-6);">
           <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Carga de trabajo</h3>
-            <div class="progress-inline" style="margin-bottom:var(--space-2);"><div class="progress-bar"><div class="progress-bar-fill amber" style="width:80%;"></div></div><span class="progress-value">80%</span></div>
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+              <span class="card-header-icon amber"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-zap"></use></svg></span>
+              <h3 style="font-size:var(--fs-md);">Carga de trabajo</h3>
+            </div>
+            <div class="progress-inline" style="margin-bottom:var(--space-2);"><div class="progress-bar"><div class="progress-bar-fill amber" style="width:0%;" id="carga-bar" data-target="80"></div></div><span class="progress-value">80%</span></div>
             <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);">dentro del límite (100%)</p>
             <div class="info-row"><span class="info-row-label">Portal Andes</span><span class="info-row-value">45%</span></div>
             <div class="info-row"><span class="info-row-label">App Móvil Aurora</span><span class="info-row-value">35%</span></div>
@@ -56,7 +68,10 @@
           </section>
 
           <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Datos de colaborador</h3>
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+              <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-user"></use></svg></span>
+              <h3 style="font-size:var(--fs-md);">Datos de colaborador</h3>
+            </div>
             <div id="perfil-info-rows"></div>
           </section>
         </div>
@@ -81,9 +96,9 @@ document.addEventListener("DOMContentLoaded", function () {
   var u = MOCK.roleUsers.colaborador;
 
   document.getElementById("perfil-header").innerHTML =
-    '<div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">' +
-    '<span class="avatar avatar-lg" style="background:var(--navy-700);">' + u.iniciales + '</span>' +
-    '<div style="flex:1; min-width:200px;"><h2 style="font-size:var(--fs-lg);">' + u.nombre + '</h2>' +
+    '<span class="avatar avatar-lg profile-avatar-ring" style="background:var(--navy-700);">' + u.iniciales + '</span>' +
+    '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:var(--space-5); flex-wrap:wrap; margin-left:92px;">' +
+    '<div style="min-width:200px;"><h2 style="font-size:var(--fs-lg);">' + u.nombre + '</h2>' +
     '<p class="text-tertiary" style="margin-top:2px;">' + u.cargo + " · " + u.celula + '</p>' +
     '<div style="display:flex; gap:var(--space-2); margin-top:var(--space-3);"><span class="badge badge-green">DISPONIBLE ' + u.disponibilidad + '%</span><span class="badge badge-blue">' + u.rolLabel + '</span></div></div>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="change-photo-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-camera"></use></svg>Cambiar foto</button>' +
@@ -92,14 +107,20 @@ document.addEventListener("DOMContentLoaded", function () {
     SBAI.toast.show("Selecciona una imagen desde tu equipo (deshabilitado en esta demo).");
   });
 
+  // Anima la barra de carga de trabajo de 0 al valor real al cargar la página
+  var cargaBar = document.getElementById("carga-bar");
+  requestAnimationFrame(function () {
+    setTimeout(function () { cargaBar.style.width = cargaBar.dataset.target + "%"; }, 80);
+  });
+
   document.getElementById("perfil-info-rows").innerHTML = [
     ["ID colaborador", u.id], ["Área", u.area], ["Ubicación", u.ubicacion],
     ["Ingreso", "12 feb 2022"], ["Manager", u.manager], ["Correo", u.correo]
   ].map(function (r) { return '<div class="info-row"><span class="info-row-label">' + r[0] + '</span><span class="info-row-value">' + r[1] + "</span></div>"; }).join("");
 
   function renderSkills() {
-    document.getElementById("skills-list").innerHTML = MOCK.marianaSkills.map(function (s) {
-      return '<span class="skill-pill" data-level="' + s.nivel + '">' + s.nombre + " · " + s.nivel + ' <span style="opacity:.65;">(' + s.anios + ')</span></span>';
+    document.getElementById("skills-list").innerHTML = MOCK.marianaSkills.map(function (s, i) {
+      return '<span class="skill-pill" data-level="' + s.nivel + '" style="animation-delay:' + (i * 45) + 'ms;">' + s.nombre + " · " + s.nivel + ' <span style="opacity:.65;">(' + s.anios + ')</span></span>';
     }).join("");
   }
   renderSkills();

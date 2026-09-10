@@ -16,10 +16,13 @@
     <header class="topbar" id="sbai-topbar"></header>
     <main class="page-content" id="page-content">
 
-      <section class="card card-pad" id="account-header"></section>
+      <section class="card profile-card">
+        <div class="profile-header-banner"></div>
+        <div class="card-body" id="account-header"></div>
+      </section>
 
       <div class="callout info" id="scope-callout" style="margin-top:var(--space-6);">
-        <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-shield-check"></use></svg></span>
+        <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-shield"></use></svg></span>
         <span class="callout-body"><span class="callout-title">Alcance de tu rol</span><span id="scope-text"></span>
         <br><span style="font-size:var(--fs-xs); opacity:.85;">El rol solo lo modifica un Administrador; el cambio queda en auditoría.</span></span>
       </div>
@@ -27,8 +30,10 @@
       <div class="detail-grid" style="margin-top:var(--space-6);">
         <div style="display:flex; flex-direction:column; gap:var(--space-6);">
           <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-5);">Datos personales</h3>
-            <p class="field-hint" style="margin-bottom:var(--space-5);">El nombre visible se actualiza en toda la plataforma.</p>
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-5);">
+              <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-user"></use></svg></span>
+              <div><h3 style="font-size:var(--fs-md);">Datos personales</h3><p class="field-hint">El nombre visible se actualiza en toda la plataforma.</p></div>
+            </div>
             <div class="field-row">
               <div class="field"><label class="field-label">Nombre visible</label><input class="input" id="acc-nombre"></div>
               <div class="field"><label class="field-label">Cargo</label><input class="input" id="acc-cargo"></div>
@@ -51,8 +56,10 @@
           </section>
 
           <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md);">Cambiar contraseña</h3>
-            <p class="field-hint" style="margin-bottom:var(--space-5);">Último cambio: 30 abr 2026</p>
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-5);">
+              <span class="card-header-icon red"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-lock"></use></svg></span>
+              <div><h3 style="font-size:var(--fs-md);">Cambiar contraseña</h3><p class="field-hint">Último cambio: 30 abr 2026</p></div>
+            </div>
             <div class="field"><label class="field-label">Contraseña actual</label><input class="input" type="password" id="pass-actual" placeholder="••••••••••"></div>
             <div class="field-row">
               <div class="field"><label class="field-label">Nueva contraseña</label><input class="input" type="password" id="pass-nueva" placeholder="••••••••••••"></div>
@@ -68,13 +75,19 @@
 
         <div style="display:flex; flex-direction:column; gap:var(--space-6);">
           <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Sesiones activas</h3>
-            <div class="info-row"><span class="info-row-label"><svg class="icon icon-sm" style="vertical-align:-3px; margin-right:6px;"><use href="../../static/img/icons.svg#icon-monitor"></use></svg>Chrome · Windows 11</span><span class="info-row-value" style="color:var(--green-fg); font-size:var(--fs-xs);">SESIÓN ACTUAL</span></div>
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+              <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-monitor"></use></svg></span>
+              <h3 style="font-size:var(--fs-md);">Sesiones activas</h3>
+            </div>
+            <div class="info-row"><span class="info-row-label"><svg class="icon icon-sm" style="vertical-align:-3px; margin-right:6px;"><use href="../../static/img/icons.svg#icon-monitor"></use></svg>Chrome · Windows 11</span><span class="badge badge-green">SESIÓN ACTUAL</span></div>
             <button type="button" class="btn btn-destructive btn-sm btn-block" style="margin-top:var(--space-4);" id="close-sessions-btn">Cerrar las demás sesiones</button>
           </section>
 
           <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-2);">Seguridad</h3>
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-2);">
+              <span class="card-header-icon red"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-shield"></use></svg></span>
+              <h3 style="font-size:var(--fs-md);">Seguridad</h3>
+            </div>
             <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Doble factor de autenticación</span></div><label class="toggle"><input type="checkbox" checked data-sec="2fa"><span class="toggle-track"></span></label></div>
             <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Avisarme de inicios de sesión nuevos</span></div><label class="toggle"><input type="checkbox" checked data-sec="avisar"><span class="toggle-track"></span></label></div>
             <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Permitir que el asistente IA use mi historial</span></div><label class="toggle"><input type="checkbox" checked data-sec="ia-historial"><span class="toggle-track"></span></label></div>
@@ -99,13 +112,12 @@ document.addEventListener("DOMContentLoaded", function () {
   var role = "resource-manager";
   var cfg = SBAI.shell.init({ role: role, active: "", title: "Mi cuenta", subtitle: "Datos personales y seguridad" });
   if (!cfg) return;
-  // "Mi cuenta" no vive en el sidebar (se accede desde el menú de usuario), así que ningún item queda marcado activo.
 
   var u = MOCK.roleUsers.rm;
   document.getElementById("account-header").innerHTML =
-    '<div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">' +
-    '<span class="avatar avatar-lg" style="background:var(--navy-700);">' + u.iniciales + '</span>' +
-    '<div style="flex:1; min-width:200px;"><h2 style="font-size:var(--fs-lg);">' + u.nombre + '</h2><p class="text-tertiary">' + u.cargo + '</p>' +
+    '<span class="avatar avatar-lg profile-avatar-ring" style="background:var(--navy-700);">' + u.iniciales + '</span>' +
+    '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:var(--space-5); flex-wrap:wrap; margin-left:92px;">' +
+    '<div style="min-width:200px;"><h2 style="font-size:var(--fs-lg);">' + u.nombre + '</h2><p class="text-tertiary">' + u.cargo + '</p>' +
     '<span class="badge badge-blue" style="margin-top:var(--space-2);">' + u.rolLabel + '</span></div>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="change-photo-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-camera"></use></svg>Cambiar foto de perfil</button>' +
     "</div>";

@@ -19,30 +19,57 @@
       <div class="kpi-grid" id="kpi-grid"></div>
 
       <div class="detail-grid" style="margin-top:var(--space-6);">
-        <section class="card card-pad">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
-            <div>
-              <h2 style="font-size:var(--fs-md);">Evolución de ocupación</h2>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="evo-subtitle"></p>
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card card-pad">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
+              <div class="card-header-icon-row">
+                <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-bar-chart"></use></svg></span>
+                <div>
+                  <h2 style="font-size:var(--fs-md);">Evolución de ocupación</h2>
+                  <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="evo-subtitle"></p>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-download"></use></svg>Exportar</button>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-download"></use></svg>Exportar</button>
-          </div>
-          <div class="bar-chart" id="evo-chart"></div>
-        </section>
+            <div class="bar-chart" id="evo-chart" style="position:relative;"></div>
+          </section>
+
+          <section class="card card-pad">
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+              <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
+              <h3 style="font-size:var(--fs-md);">Reuniones de esta semana</h3>
+            </div>
+            <div id="meetings-list"></div>
+          </section>
+        </div>
 
         <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Habilidades más demandadas</h3>
+          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
+            <h3 style="font-size:var(--fs-md);">Habilidades más demandadas</h3>
+          </div>
           <div id="skills-demand"></div>
         </section>
       </div>
 
-      <section class="card" style="margin-top:var(--space-6);">
-        <div class="card-header"><div class="card-header-text"><h2>Ocupación por colaborador</h2><p>Promedio de las últimas 6 semanas</p></div></div>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación promedio</th><th>Estado</th></tr></thead>
-            <tbody id="detail-body"></tbody>
-          </table>
+      <section class="card" style="margin-top:var(--space-6); display:flex; flex-direction:column; max-height:520px; overflow:hidden;">
+        <div class="card-header" style="flex-shrink:0;">
+          <div class="card-header-icon-row">
+            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
+            <div class="card-header-text"><h2>Ocupación por colaborador</h2><p>Promedio de las últimas 6 semanas</p></div>
+          </div>
+        </div>
+        <div class="table-scroll-wrap">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead class="sticky-head"><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación promedio</th><th>Estado</th></tr></thead>
+              <tbody id="detail-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="table-footer" style="flex-shrink:0;">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="detail-pagination-count"></span>
+          <div class="pagination" id="detail-pagination-controls"></div>
         </div>
       </section>
 
@@ -64,39 +91,137 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!cfg) return;
 
   var r = MOCK.rmReport;
-  document.getElementById("evo-subtitle").textContent = "Últimos 6 meses · meta " + r.meta + "%";
+  document.getElementById("evo-subtitle").textContent = "Últimos 6 meses · meta " + r.meta + "% · pasa el mouse o toca una barra";
+
+  // --- Dato real de eventos_proyecto: reuniones programadas esta semana ---
+  // Semana de referencia: lun 17 ago - dom 23 ago 2026 (contiene el "hoy"
+  // de la demo, martes 18 ago). Cuenta todas las reuniones de la
+  // plataforma, no solo las de un PM puntual, porque el Resource Manager
+  // ve carga a nivel de toda la empresa.
+  var weekStart = new Date(2026, 7, 17);
+  var weekEnd = new Date(2026, 7, 24);
+  var reunionesSemana = MOCK.projectEvents.filter(function (e) {
+    if (e.tipo !== "reunion") return false;
+    var d = new Date(e.fechaInicio);
+    return d >= weekStart && d < weekEnd;
+  }).length;
 
   document.getElementById("kpi-grid").innerHTML = [
-    { label: "OCUPACIÓN PROMEDIO", value: r.ocupacionPromedio + "%", meta: "meta " + r.meta + "%", cls: "warn" },
-    { label: "SOBRE-ASIGNADOS", value: r.sobreAsignados, meta: "requieren acción", cls: "down" },
-    { label: "CAPACIDAD LIBRE", value: r.capacidadLibre + " h", meta: "próximas 6 semanas" },
-    { label: "SOLICITUDES PENDIENTES", value: r.solicitudesPendientes, meta: r.vencenHoy + " vencen hoy", cls: "warn" }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
-
-  document.getElementById("evo-chart").innerHTML = r.evolucion.map(function (m) {
-    return '<div class="bar-chart-col"><span class="bar-chart-value">' + m.pct + '%</span>' +
-      '<div class="bar-chart-track"><div class="bar-chart-fill' + (m.pct >= r.meta ? " accent" : "") + '" style="height:' + m.pct + '%;"></div></div>' +
-      '<span class="bar-chart-label">' + m.mes + '</span></div>';
+    { label: "OCUPACIÓN PROMEDIO", value: r.ocupacionPromedio + "%", meta: "meta " + r.meta + "%", cls: "warn", icon: "icon-layers", accent: "amber" },
+    { label: "SOBRE-ASIGNADOS", value: r.sobreAsignados, meta: "requieren acción", cls: "down", icon: "icon-user-x", accent: "red" },
+    { label: "CAPACIDAD LIBRE", value: r.capacidadLibre + " h", meta: "próximas 6 semanas", icon: "icon-zap", accent: "blue" },
+    { label: "SOLICITUDES PENDIENTES", value: r.solicitudesPendientes, meta: r.vencenHoy + " vencen hoy", cls: "warn", icon: "icon-bell", accent: "amber" },
+    { label: "REUNIONES ESTA SEMANA", value: reunionesSemana, meta: "capacidad no disponible para trabajo", icon: "icon-users", accent: "violet" }
+  ].map(function (k) {
+    return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>';
   }).join("");
+
+  var META = r.meta;
+  var maxEvo = 100;
+  function evoBarColor(pct) {
+    if (pct >= META) return "var(--green-fg)";
+    if (pct >= META - 15) return "var(--amber-fg)";
+    return "var(--red-fg)";
+  }
+  document.getElementById("evo-chart").innerHTML = r.evolucion.map(function (m, i) {
+    var prev = i > 0 ? r.evolucion[i - 1].pct : null;
+    var delta = prev !== null ? m.pct - prev : null;
+    var deltaHtml = delta !== null
+      ? '<div class="bar-chart-delta ' + (delta >= 0 ? "up" : "down") + '">' + (delta >= 0 ? "▲" : "▼") + " " + Math.abs(delta) + "pts</div>"
+      : '<div class="bar-chart-delta" style="visibility:hidden;">▲ 0pts</div>';
+    return '<div class="bar-chart-col" data-mes="' + m.mes + '" data-pct="' + m.pct + '"><span class="bar-chart-value">' + m.pct + '%</span>' +
+      '<div class="bar-chart-track"><div class="bar-chart-fill" data-target-h="' + Math.round((m.pct / maxEvo) * 100) + '" style="height:0%; background:' + evoBarColor(m.pct) + ';"></div></div>' +
+      '<span class="bar-chart-label">' + m.mes + '</span>' + deltaHtml + "</div>";
+  }).join("");
+
+  var chartEl = document.getElementById("evo-chart");
+  var trackEl = chartEl.querySelector(".bar-chart-track");
+  var chartRect = chartEl.getBoundingClientRect();
+  var trackRect = trackEl.getBoundingClientRect();
+  var metaTopPx = (trackRect.top - chartRect.top) + trackRect.height * (1 - META / 100);
+  var metaLine = document.createElement("div");
+  metaLine.className = "bar-chart-meta-line";
+  metaLine.style.top = metaTopPx + "px";
+  metaLine.innerHTML = '<span class="bar-chart-meta-label">Meta ' + META + '%</span>';
+  chartEl.appendChild(metaLine);
+
+  document.querySelectorAll(".bar-chart-fill[data-target-h]").forEach(function (bar, i) {
+    setTimeout(function () { bar.style.height = bar.dataset.targetH + "%"; }, 100 + i * 70);
+  });
+  document.querySelectorAll(".bar-chart-col").forEach(function (col) {
+    col.addEventListener("click", function () {
+      var mes = col.dataset.mes, pct = col.dataset.pct;
+      var faltan = META - pct;
+      SBAI.toast.show("<strong>" + mes + "</strong>: " + pct + "% de ocupación promedio" + (faltan > 0 ? " · " + faltan + " pts bajo la meta (" + META + "%)" : " · sobre la meta"), { icon: "icon-bar-chart" });
+    });
+  });
+
+  // Detalle de las reuniones que ya contamos en el KPI: mismo filtro,
+  // ahora mostrado fila por fila para dar contexto al número.
+  var DIAS = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+  var reunionesDetalle = MOCK.projectEvents.filter(function (e) {
+    if (e.tipo !== "reunion") return false;
+    var d = new Date(e.fechaInicio);
+    return d >= weekStart && d < weekEnd;
+  }).sort(function (a, b) { return new Date(a.fechaInicio) - new Date(b.fechaInicio); });
+
+  document.getElementById("meetings-list").innerHTML = reunionesDetalle.length
+    ? reunionesDetalle.map(function (e) {
+        var d = new Date(e.fechaInicio);
+        var h = d.getHours(), m = d.getMinutes();
+        var hora = (h % 12 || 12) + (m ? ":" + String(m).padStart(2, "0") : "") + (h >= 12 ? " PM" : " AM");
+        return '<div class="info-row"><span class="info-row-label">' + e.titulo + '<br><span class="text-tertiary" style="font-size:11px;">' + e.proyecto + '</span></span>' +
+          '<span class="info-row-value" style="text-align:right;">' + DIAS[d.getDay()] + ' ' + d.getDate() + '<br><span class="text-tertiary" style="font-size:11px;">' + hora + '</span></span></div>';
+      }).join("")
+    : '<p class="text-tertiary" style="font-size:var(--fs-xs);">Sin reuniones programadas esta semana.</p>';
 
   var maxDemand = Math.max.apply(null, MOCK.skillsDemand.map(function (s) { return s.vacantes; }));
   document.getElementById("skills-demand").innerHTML = MOCK.skillsDemand.map(function (s) {
     return '<div style="margin-bottom:var(--space-3);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;"><span style="font-weight:500;">' + s.nombre + '</span><span class="text-tertiary mono">' + s.vacantes + ' vacantes</span></div>' +
-      '<div class="progress-bar"><div class="progress-bar-fill" style="width:' + Math.round((s.vacantes / maxDemand) * 100) + '%;"></div></div></div>';
+      '<div class="progress-bar"><div class="progress-bar-fill" data-target="' + Math.round((s.vacantes / maxDemand) * 100) + '" style="width:0%;"></div></div></div>';
   }).join("");
+  document.querySelectorAll("#skills-demand .progress-bar-fill[data-target]").forEach(function (bar, i) {
+    setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 100 + i * 50);
+  });
 
   function estadoInfo(v) {
-    if (v > 100) return { badge: "badge-red", label: "Sobre-asignado" };
-    if (v >= 90) return { badge: "badge-amber", label: "Al límite" };
-    if (v >= 60) return { badge: "badge-green", label: "Óptimo" };
-    return { badge: "badge-neutral", label: "Subutilizado" };
+    if (v > 100) return { cls: "level-over", badge: "badge-red", label: "Sobre-asignado" };
+    if (v >= 90) return { cls: "level-high", badge: "badge-amber", label: "Al límite" };
+    if (v >= 60) return { cls: "level-optimal", badge: "badge-green", label: "Óptimo" };
+    return { cls: "level-low", badge: "badge-neutral", label: "Subutilizado" };
   }
 
-  document.getElementById("detail-body").innerHTML = r.ocupacionPorColaborador.map(function (o) {
-    var ei = estadoInfo(o.promedio);
-    return '<tr><td class="cell-person"><span class="avatar avatar-sm">' + o.iniciales + '</span><span class="cell-person-name">' + o.nombre + '</span></td>' +
-      "<td>" + o.cargo + '</td><td class="mono">' + o.promedio + '%</td><td><span class="badge ' + ei.badge + '">' + ei.label + "</span></td></tr>";
-  }).join("");
+  var PAGE_SIZE = 8;
+  var currentPage = 1;
+
+  function renderDetailPage() {
+    var list = r.ocupacionPorColaborador;
+    var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var pageItems = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    document.getElementById("detail-body").innerHTML = pageItems.map(function (o, i) {
+      var ei = estadoInfo(o.promedio);
+      return '<tr data-f-estado="' + ei.cls + '" style="animation-delay:' + (i * 30) + 'ms;"><td class="cell-person"><span class="avatar avatar-sm">' + o.iniciales + '</span><span class="cell-person-name">' + o.nombre + '</span></td>' +
+        "<td>" + o.cargo + '</td><td class="mono">' + o.promedio + '%</td><td><span class="badge ' + ei.badge + '">' + ei.label + "</span></td></tr>";
+    }).join("");
+
+    var countEl = document.getElementById("detail-pagination-count");
+    var controlsEl = document.getElementById("detail-pagination-controls");
+    var start = list.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+    var end = Math.min(currentPage * PAGE_SIZE, list.length);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + list.length + " colaboradores";
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var pnum = 1; pnum <= totalPages; pnum++) html += '<button type="button" class="page-btn' + (pnum === currentPage ? " active" : "") + '" data-page="' + pnum + '">' + pnum + "</button>";
+    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; renderDetailPage(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; renderDetailPage(); } });
+    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); renderDetailPage(); }); });
+  }
+  renderDetailPage();
 
   document.getElementById("export-btn").addEventListener("click", function () {
     SBAI.toast.show("Generando exportable de reportes en PDF…");
