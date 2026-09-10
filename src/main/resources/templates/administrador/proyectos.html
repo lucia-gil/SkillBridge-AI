@@ -16,30 +16,39 @@
     <header class="topbar" id="sbai-topbar"></header>
     <main class="page-content" id="page-content">
 
-      <section class="card">
-        <div class="table-toolbar">
-          <div>
-            <strong id="proj-count"></strong>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="proj-subtitle"></p>
+      <section class="card" style="display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2)); overflow:hidden;">
+        <div class="table-toolbar" style="flex-shrink:0;">
+          <div class="card-header-icon-row">
+            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+            <div>
+              <strong id="proj-count"></strong>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="proj-subtitle"></p>
+            </div>
           </div>
           <div class="table-filters">
-            <select class="select" data-filter-scope="proyectos-admin" data-filter-key="estado">
+            <select class="select" id="estado-filter">
               <option value="todos">Estado: todos</option><option>Activo</option><option>En riesgo</option><option>Planeado</option><option>Bloqueado</option><option>Cerrado</option>
             </select>
-            <select class="select" data-filter-scope="proyectos-admin" data-filter-key="cliente">
+            <select class="select" id="cliente-filter">
               <option value="todos">Cliente: todos</option>
             </select>
           </div>
         </div>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead><tr><th>Proyecto</th><th>Cliente</th><th>PM</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody id="proj-body"></tbody>
-          </table>
+        <div class="table-scroll-wrap">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead class="sticky-head"><tr><th>Proyecto</th><th>Cliente</th><th>PM</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="proj-body"></tbody>
+            </table>
+          </div>
+          <div class="state-panel" id="proj-empty" hidden>
+            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
+            <span class="state-panel-title">Sin proyectos con estos filtros</span>
+          </div>
         </div>
-        <div class="state-panel" data-filter-empty="proyectos-admin" hidden>
-          <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
-          <span class="state-panel-title">Sin proyectos con estos filtros</span>
+        <div class="table-footer" style="flex-shrink:0;">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="proj-pagination-count"></span>
+          <div class="pagination" id="proj-pagination-controls"></div>
         </div>
       </section>
 
@@ -60,40 +69,93 @@ document.addEventListener("DOMContentLoaded", function () {
   var cfg = SBAI.shell.init({ role: "administrador", active: "proyectos.html", title: "Proyectos", subtitle: "Vista global de los " + MOCK.projects.length + " proyectos con datos completos" });
   if (!cfg) return;
 
-  document.getElementById("proj-count").textContent = MOCK.projects.length + " proyectos en esta vista";
-  document.getElementById("proj-subtitle").textContent = MOCK.meta.stats.proyectosActivos + " proyectos activos en la organización";
-
   var estadoBadge = { "Activo": "badge-green", "En riesgo": "badge-amber", "Planeado": "badge-neutral", "Bloqueado": "badge-red", "Cerrado": "badge-neutral" };
-  var clienteSelect = document.querySelector('[data-filter-key="cliente"]');
+  var clienteSelect = document.getElementById("cliente-filter");
   Array.from(new Set(MOCK.projects.map(function (p) { return p.cliente; }))).forEach(function (c) { clienteSelect.insertAdjacentHTML("beforeend", "<option>" + c + "</option>"); });
 
-  document.getElementById("proj-body").innerHTML = MOCK.projects.map(function (p) {
-    return '<tr data-filter-row="proyectos-admin" data-f-estado="' + p.estado + '" data-f-cliente="' + p.cliente + '">' +
+  var PAGE_SIZE = 8;
+  var currentPage = 1;
+
+  function getFiltered() {
+    var estado = document.getElementById("estado-filter").value;
+    var cliente = document.getElementById("cliente-filter").value;
+    return MOCK.projects.filter(function (p) {
+      if (estado !== "todos" && p.estado !== estado) return false;
+      if (cliente !== "todos" && p.cliente !== cliente) return false;
+      return true;
+    });
+  }
+
+  function rowHtml(p, i) {
+    return '<tr data-f-estado="' + p.estado + '" style="animation-delay:' + (i * 30) + 'ms;">' +
       '<td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);">' + p.iniciales + '</span>' +
       '<span class="cell-person-text"><span class="cell-person-name">' + p.nombre + '</span><span class="cell-person-sub">' + p.codigo + '</span></span></td>' +
       "<td>" + p.cliente + "</td><td>" + p.pm + "</td>" +
       "<td>" + p.inicio + " → " + p.fin + "</td><td>" + p.equipo + "</td>" +
-      '<td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" style="width:' + p.avance + '%;"></div></div><span class="progress-value">' + p.avance + '%</span></div></td>' +
+      '<td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" data-target="' + p.avance + '" style="width:0%;"></div></div><span class="progress-value">' + p.avance + '%</span></div></td>' +
       '<td><span class="badge ' + (estadoBadge[p.estado] || "badge-neutral") + '">' + p.estado + '</span></td>' +
       '<td class="cell-actions"><button type="button" data-view-project="' + p.nombre + '">Ver detalle</button></td></tr>';
-  }).join("");
+  }
 
-  document.querySelectorAll("[data-view-project]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var p = MOCK.findProject(btn.dataset.viewProject);
-      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>' + p.nombre + '</h2><p>' + p.codigo + ' · ' + p.cliente + '</p></div>' +
-        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body"><p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);">' + p.descripcion + '</p>' +
-        '<div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">' + p.stack.map(function (t) { return '<span class="badge badge-neutral">' + t + "</span>"; }).join("") + '</div>' +
-        '<div class="info-row"><span class="info-row-label">Project Manager</span><span class="info-row-value">' + p.pm + '</span></div>' +
-        '<div class="info-row"><span class="info-row-label">Equipo</span><span class="info-row-value">' + p.equipo + ' personas</span></div>' +
-        '<div class="info-row"><span class="info-row-label">Avance</span><span class="info-row-value mono">' + p.avance + '%</span></div></div>' +
-        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
-      SBAI.modal.open(html);
+  function wireRowActions() {
+    document.querySelectorAll("[data-view-project]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var p = MOCK.findProject(btn.dataset.viewProject);
+        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>' + p.nombre + '</h2><p>' + p.codigo + ' · ' + p.cliente + '</p></div>' +
+          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+          '<div class="modal-body"><p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);">' + p.descripcion + '</p>' +
+          '<div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">' + p.stack.map(function (t) { return '<span class="badge badge-neutral">' + t + "</span>"; }).join("") + '</div>' +
+          '<div class="info-row"><span class="info-row-label">Project Manager</span><span class="info-row-value">' + p.pm + '</span></div>' +
+          '<div class="info-row"><span class="info-row-label">Equipo</span><span class="info-row-value">' + p.equipo + ' personas</span></div>' +
+          '<div class="info-row"><span class="info-row-label">Avance</span><span class="info-row-value mono">' + p.avance + '%</span></div></div>' +
+          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
+        SBAI.modal.open(html);
+      });
     });
-  });
+  }
 
-  window.SBAI.tableFilter.init(document);
+  function renderPagination(total, totalPages) {
+    var countEl = document.getElementById("proj-pagination-count");
+    var controlsEl = document.getElementById("proj-pagination-controls");
+    if (total === 0) { countEl.textContent = ""; controlsEl.innerHTML = ""; return; }
+    var start = (currentPage - 1) * PAGE_SIZE + 1;
+    var end = Math.min(currentPage * PAGE_SIZE, total);
+    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " proyectos";
+    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
+    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
+    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
+    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
+    controlsEl.innerHTML = html;
+    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
+    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
+  }
+
+  function render() {
+    var filtered = getFiltered();
+    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    document.getElementById("proj-count").textContent = filtered.length + " proyecto" + (filtered.length === 1 ? "" : "s") + " en esta vista";
+    document.getElementById("proj-subtitle").textContent = MOCK.meta.stats.proyectosActivos + " proyectos activos en la organización";
+    document.getElementById("proj-body").innerHTML = pageItems.map(rowHtml).join("");
+    document.getElementById("proj-empty").hidden = filtered.length !== 0;
+    document.querySelector(".table-scroll table").hidden = filtered.length === 0;
+
+    document.querySelectorAll(".progress-bar-fill[data-target]").forEach(function (bar, i) {
+      setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 80 + i * 40);
+    });
+
+    wireRowActions();
+    renderPagination(filtered.length, totalPages);
+  }
+
+  document.getElementById("estado-filter").addEventListener("change", function () { currentPage = 1; render(); });
+  document.getElementById("cliente-filter").addEventListener("change", function () { currentPage = 1; render(); });
+
+  render();
 });
 </script>
 </body>
