@@ -16,7 +16,10 @@
   var stack = [];
 
   function icon(name, cls) {
-    return '<svg class="icon ' + (cls || "") + '"><use href="' + window.SBAI.state.STATIC + "img/icons.svg#" + name + '"></use></svg>';
+    // Mismo fix que en toast.js: ruta absoluta fija en vez de
+    // window.SBAI.state.STATIC, que no existe en las paginas reales
+    // (ese script solo se cargaba en el mock viejo).
+    return '<svg class="icon ' + (cls || "") + '"><use href="' + "/img/icons.svg#" + name + '"></use></svg>';
   }
 
   function open(innerHtml, opts) {
@@ -69,15 +72,15 @@
     var variant = opts.variant || "primary"; // primary | destructive
     var btnClass = variant === "destructive" ? "btn-destructive-solid" : "btn-primary";
     var html =
-      '<div class="modal" role="dialog" aria-modal="true">' +
-      '<div class="modal-header"><div><h2>' + opts.title + "</h2>" +
-      (opts.desc ? "<p>" + opts.desc + "</p>" : "") +
-      '</div><button type="button" class="modal-close" data-modal-close aria-label="Cerrar">' + icon("icon-x") + "</button></div>" +
-      '<div class="modal-body">' + (opts.bodyHtml || "") + "</div>" +
-      '<div class="modal-footer">' +
-      '<button type="button" class="btn btn-secondary" data-modal-close>' + (opts.cancelLabel || "Cancelar") + "</button>" +
-      '<button type="button" class="btn ' + btnClass + '" data-confirm-action>' + (opts.confirmLabel || "Confirmar") + "</button>" +
-      "</div></div>";
+        '<div class="modal" role="dialog" aria-modal="true">' +
+        '<div class="modal-header"><div><h2>' + opts.title + "</h2>" +
+        (opts.desc ? "<p>" + opts.desc + "</p>" : "") +
+        '</div><button type="button" class="modal-close" data-modal-close aria-label="Cerrar">' + icon("icon-x") + "</button></div>" +
+        '<div class="modal-body">' + (opts.bodyHtml || "") + "</div>" +
+        '<div class="modal-footer">' +
+        '<button type="button" class="btn btn-secondary" data-modal-close>' + (opts.cancelLabel || "Cancelar") + "</button>" +
+        '<button type="button" class="btn ' + btnClass + '" data-confirm-action>' + (opts.confirmLabel || "Confirmar") + "</button>" +
+        "</div></div>";
     var backdrop = open(html);
     backdrop.querySelector("[data-confirm-action]").addEventListener("click", function () {
       close(backdrop);
@@ -101,19 +104,19 @@
   function openRolePicker() {
     var cards = ROLES.map(function (r) {
       return '<button type="button" class="role-card" data-role-slug="' + r.slug + '">' +
-        '<span class="role-card-icon">' + icon(r.icon, "icon-lg") + "</span>" +
-        '<span class="role-card-title">' + r.title + "</span>" +
-        '<span class="role-card-desc">' + r.desc + "</span>" +
-        "</button>";
+          '<span class="role-card-icon">' + icon(r.icon, "icon-lg") + "</span>" +
+          '<span class="role-card-title">' + r.title + "</span>" +
+          '<span class="role-card-desc">' + r.desc + "</span>" +
+          "</button>";
     }).join("");
 
     var html =
-      '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-      '<div class="modal-header"><div><h2>¿Con qué rol quieres entrar?</h2>' +
-      "<p>Esta demo aún no verifica credenciales — elige el rol para continuar con su usuario de referencia.</p></div>" +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar">' + icon("icon-x") + "</button></div>" +
-      '<div class="modal-body"><div class="role-grid">' + cards + "</div></div>" +
-      "</div>";
+        '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+        '<div class="modal-header"><div><h2>¿Con qué rol quieres entrar?</h2>' +
+        "<p>Esta demo aún no verifica credenciales — elige el rol para continuar con su usuario de referencia.</p></div>" +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar">' + icon("icon-x") + "</button></div>" +
+        '<div class="modal-body"><div class="role-grid">' + cards + "</div></div>" +
+        "</div>";
 
     var backdrop = open(html, { persistent: false });
     backdrop.querySelectorAll("[data-role-slug]").forEach(function (btn) {
@@ -121,7 +124,7 @@
         var slug = btn.dataset.roleSlug;
         btn.disabled = true;
         btn.innerHTML = '<span class="role-card-icon">' + icon("icon-check-circle", "icon-lg") + "</span>" +
-          '<span class="role-card-title">Entrando…</span>';
+            '<span class="role-card-title">Entrando…</span>';
         window.SBAI.state.setRole(slug);
         setTimeout(function () {
           window.location.href = window.SBAI.state.ROLE_HOME[slug];

@@ -101,10 +101,22 @@
   document.addEventListener("DOMContentLoaded", function () {
     var submitForm = window.SBAI.submitForm;
 
-    // Botón "Finalizar" de cada fila de la tabla
+    // Botón "Finalizar" de cada fila de la tabla — pide confirmación antes de
+    // ejecutar, para que un clic accidental no finalice una asignación sin
+    // querer (sigue siendo soft-delete, pero un clic de menos molesta igual).
     document.querySelectorAll("[data-finalizar-asignacion]").forEach(function (b) {
       b.addEventListener("click", function () {
-        submitForm("/resource-manager/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar", {});
+        var fila = b.closest("tr");
+        var nombre = fila ? fila.querySelector(".cell-person-name").textContent : "este colaborador";
+        SBAI.modal.confirm({
+          title: "¿Finalizar la asignación de " + nombre + "?",
+          desc: "Dejará de aparecer como parte activa del equipo de este proyecto. Esto no borra su historial.",
+          confirmLabel: "Finalizar",
+          variant: "destructive",
+          onConfirm: function () {
+            submitForm("/resource-manager/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar", {});
+          }
+        });
       });
     });
 
