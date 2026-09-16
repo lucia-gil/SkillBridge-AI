@@ -52,9 +52,9 @@ public class ProyectoService {
     private final ObjectMapper objectMapper;
 
     public ProyectoService(ProyectoRepository proyectoRepository, AsignacionRepository asignacionRepository,
-                            PerfilRepository perfilRepository, AuditoriaService auditoriaService,
-                            NotificacionService notificacionService, ConfiguracionService configuracionService,
-                            ObjectMapper objectMapper) {
+                           PerfilRepository perfilRepository, AuditoriaService auditoriaService,
+                           NotificacionService notificacionService, ConfiguracionService configuracionService,
+                           ObjectMapper objectMapper) {
         this.proyectoRepository = proyectoRepository;
         this.asignacionRepository = asignacionRepository;
         this.perfilRepository = perfilRepository;
@@ -132,8 +132,8 @@ public class ProyectoService {
 
     @Transactional
     public Proyecto crear(String nombre, String descripcion, List<String> tecnologias, LocalDate fechaInicio,
-                           LocalDate fechaFinEstimada, int colaboradoresRequeridos, Long pmPerfilId,
-                           Long actorUsuarioId) {
+                          LocalDate fechaFinEstimada, int colaboradoresRequeridos, Long pmPerfilId,
+                          Long actorUsuarioId) {
         if (nombre == null || nombre.isBlank()) {
             throw new OperacionInvalidaException("Ingresa un nombre para el proyecto.");
         }
@@ -192,7 +192,7 @@ public class ProyectoService {
 
     @Transactional
     public void asignarColaborador(Long proyectoId, Long perfilId, String rolEnProyecto, int cargaPorcentaje,
-                                    LocalDate fechaInicio, Long actorUsuarioId) {
+                                   LocalDate fechaInicio, Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         Perfil perfil = perfilRepository.findById(perfilId)
@@ -246,6 +246,21 @@ public class ProyectoService {
     public void finalizarAsignacion(Long asignacionId, Long actorUsuarioId) {
         Asignacion a = asignacionRepository.findById(asignacionId)
                 .orElseThrow(() -> new OperacionInvalidaException("La asignación ya no existe."));
+
+        // Regla de negocio confirmada con el equipo: un proyecto NUNCA debe
+        // quedar sin ningun Project Manager activo. Si esta asignacion es
+        // de rol project_manager y es la UNICA activa de ese rol en el
+        // proyecto, se bloquea - hay que asignar un PM nuevo primero (o
+        // reasignar el rol) antes de poder finalizar esta.
+        if (Roles.PROJECT_MANAGER.equals(a.getRolEnProyecto()) && "activa".equals(a.getEstado())) {
+            long pmActivos = asignacionRepository.countByProyectoIdAndRolEnProyectoAndEstado(
+                    a.getProyectoId(), Roles.PROJECT_MANAGER, "activa");
+            if (pmActivos <= 1) {
+                throw new OperacionInvalidaException(
+                        "No puedes finalizar esta asignación: es el único Project Manager activo del proyecto. Asigna un nuevo PM antes de continuar.");
+            }
+        }
+
         a.setEstado("finalizada");
         a.setFechaFin(LocalDate.now());
         asignacionRepository.save(a);

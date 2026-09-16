@@ -29,6 +29,12 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 
     long countByProyectoIdAndEstado(Long proyectoId, String estado);
 
+    // Cuenta cuantos PM activos tiene un proyecto - se usa para bloquear que
+    // se finalice la asignacion del UNICO PM (un proyecto nunca debe quedar
+    // sin nadie a cargo). Spring Data genera la consulta sola a partir del
+    // nombre del metodo, no hace falta escribir JPQL para algo tan simple.
+    long countByProyectoIdAndRolEnProyectoAndEstado(Long proyectoId, String rolEnProyecto, String estado);
+
     long countByPerfilIdAndEstado(Long perfilId, String estado);
 
     long countByEstado(String estado);
