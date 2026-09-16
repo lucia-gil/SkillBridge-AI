@@ -71,12 +71,12 @@ public class SitioController {
         return vista(request);
     }
 
-    // Resource Manager: "asignaciones.html" y "ocupacion.html" ya tienen
-    // controlador real (RmAsignacionesController, RmOcupacionController),
-    // por eso se retiraron de esta lista.
+    // Resource Manager: "asignaciones.html", "ocupacion.html" y
+    // "colaboradores.html" ya tienen controlador real
+    // (RmAsignacionesController, RmOcupacionController,
+    // RmColaboradoresController), por eso se retiraron de esta lista.
     @GetMapping({
             "/resource-manager/inicio.html",
-            "/resource-manager/colaboradores.html",
             "/resource-manager/ai-talent-matching.html",
             "/resource-manager/reportes.html",
             "/resource-manager/mi-cuenta.html",

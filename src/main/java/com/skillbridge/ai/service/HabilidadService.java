@@ -42,10 +42,10 @@ public class HabilidadService {
     private final AuditoriaService auditoriaService;
 
     public HabilidadService(HabilidadRepository habilidadRepository,
-                             CategoriaHabilidadRepository categoriaHabilidadRepository,
-                             PerfilHabilidadRepository perfilHabilidadRepository,
-                             ProyectoHabilidadRequeridaRepository proyectoHabilidadRequeridaRepository,
-                             AuditoriaService auditoriaService) {
+                            CategoriaHabilidadRepository categoriaHabilidadRepository,
+                            PerfilHabilidadRepository perfilHabilidadRepository,
+                            ProyectoHabilidadRequeridaRepository proyectoHabilidadRequeridaRepository,
+                            AuditoriaService auditoriaService) {
         this.habilidadRepository = habilidadRepository;
         this.categoriaHabilidadRepository = categoriaHabilidadRepository;
         this.perfilHabilidadRepository = perfilHabilidadRepository;
@@ -171,6 +171,44 @@ public class HabilidadService {
         perfilHabilidadRepository.save(ph);
         auditoriaService.registrar(actorUsuarioId, yaExistia ? "PERFIL_HABILIDAD_ACTUALIZADA" : "PERFIL_HABILIDAD_AGREGADA",
                 "perfil_habilidad", perfilId, null, null, h.getNombre() + " · " + nivelTexto);
+    }
+
+    /**
+     * Igual que misHabilidades(), pero incluye si cada habilidad ya fue
+     * validada - lo usa resource-manager/colaboradores.html para saber a
+     * cuáles ponerles el botón "Validar" y a cuáles no.
+     */
+    public List<HabilidadPerfilFila> habilidadesConValidacion(Long perfilId) {
+        Map<Long, Habilidad> catalogo = habilidadRepository.findAllConCategoriaOrderByNombre().stream()
+                .collect(Collectors.toMap(Habilidad::getId, h -> h));
+        return perfilHabilidadRepository.findById_PerfilId(perfilId).stream()
+                .map(ph -> {
+                    Habilidad h = catalogo.get(ph.getId().getHabilidadId());
+                    if (h == null) return null;
+                    String desde = ph.getFechaDeclaracion() != null ? ph.getFechaDeclaracion().format(FORMATO_FECHA) : "—";
+                    boolean validada = ph.getValidadoPorId() != null;
+                    return new HabilidadPerfilFila(h.getId(), h.getNombre(), h.getCategoria().getNombre(), ph.getNivel(), desde, validada);
+                })
+                .filter(java.util.Objects::nonNull)
+                .sorted((a, b) -> a.getNombre().compareToIgnoreCase(b.getNombre()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * RF02: "nivel autodeclarado, editable/aprobable por el Resource
+     * Manager". Marcar validado_por_id es lo único que hace falta - el
+     * nivel en sí lo declara y ajusta el propio colaborador, el RM solo
+     * confirma que le parece correcto.
+     */
+    @Transactional
+    public void validarHabilidadDeColaborador(Long perfilId, Long habilidadId, Long actorPerfilId) {
+        PerfilHabilidadId id = new PerfilHabilidadId(perfilId, habilidadId);
+        PerfilHabilidad ph = perfilHabilidadRepository.findById(id)
+                .orElseThrow(() -> new OperacionInvalidaException("Esa habilidad ya no está declarada en el perfil."));
+        ph.setValidadoPorId(actorPerfilId);
+        perfilHabilidadRepository.save(ph);
+        auditoriaService.registrar(actorPerfilId, "HABILIDAD_VALIDADA", "perfil_habilidad", perfilId, null, null,
+                "Habilidad validada para el perfil " + perfilId + ".");
     }
 
     private int nivelDesdeTexto(String nivelTexto) {

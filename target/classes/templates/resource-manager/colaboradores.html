@@ -1,49 +1,79 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Colaboradores · SkillBridge AI</title>
-<link rel="stylesheet" href="/css/tokens.css">
-<link rel="stylesheet" href="/css/base.css">
-<link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colaboradores · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
-
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
       <section class="card">
         <div class="table-toolbar">
           <div>
-            <strong id="collab-count"></strong>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="collab-subtitle"></p>
+            <strong th:text="${colaboradores.size()} + ' colaboradores en esta vista'">0 colaboradores</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Directorio completo del equipo</p>
           </div>
           <div class="table-filters">
-            <input type="text" class="input" data-filter-scope="colab" data-filter-key="q" placeholder="Buscar por nombre…" id="collab-search" style="width:200px; height:38px; font-size:var(--fs-xs);">
-            <select class="select" data-filter-scope="colab" data-filter-key="celula">
-              <option value="todos">Célula: todas</option><option>Andes</option><option>Aurora</option><option>Retail</option><option>Interno</option>
+            <select class="select" id="filtro-habilidad" onchange="aplicarFiltros()">
+              <option value="">Habilidad: todas</option>
+              <option th:each="h : ${catalogoHabilidades}"
+                      th:value="${h.id}"
+                      th:text="${h.nombre} + ' (' + ${h.categoria.nombre} + ')'"
+                      th:selected="${habilidadIdSeleccionada != null and habilidadIdSeleccionada == h.id}">
+              </option>
             </select>
-            <select class="select" data-filter-scope="colab" data-filter-key="estado">
-              <option value="todos">Estado: todos</option><option>Activo</option><option>Bloqueado</option>
+            <select class="select" id="filtro-estado" onchange="aplicarFiltros()">
+              <option value="">Estado: todos</option>
+              <option value="activo" th:selected="${estadoSeleccionado == 'activo'}">Activo</option>
+              <option value="inactivo" th:selected="${estadoSeleccionado == 'inactivo'}">Inactivo</option>
             </select>
           </div>
         </div>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Célula</th><th>Ocupación</th><th>Estado</th><th>Último acceso</th><th>Acciones</th></tr></thead>
-            <tbody id="collab-body"></tbody>
-          </table>
-        </div>
-        <div class="state-panel" data-filter-empty="colab" hidden>
+
+        <div th:if="${colaboradores.isEmpty()}" class="state-panel">
           <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
           <span class="state-panel-title">Sin colaboradores con estos filtros</span>
-          <span class="state-panel-desc">Ajusta la búsqueda, la célula o el estado.</span>
+          <span class="state-panel-desc">Ajusta la habilidad o el estado seleccionado.</span>
+        </div>
+
+        <div class="table-scroll" th:unless="${colaboradores.isEmpty()}">
+          <table class="data-table">
+            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Habilidades principales</th><th>Ocupación</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+            <tr th:each="c : ${colaboradores}">
+              <td class="cell-person">
+                <span class="avatar avatar-sm" th:text="${c.iniciales}">MR</span>
+                <span class="cell-person-text"><span class="cell-person-name" th:text="${c.nombre}">Nombre</span><span class="cell-person-sub" th:text="${c.correo}">correo</span></span>
+              </td>
+              <td th:text="${c.cargo}">Cargo</td>
+              <td>
+                <span th:each="h : ${c.habilidadesTop}" class="badge badge-neutral" style="margin-right:4px;" th:text="${h.nombre}">Skill</span>
+                <span th:if="${c.habilidadesTop.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin habilidades declaradas</span>
+              </td>
+              <td>
+                <div class="progress-inline" style="min-width:100px;">
+                  <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${c.ocupacion > 100} ? 'red' : (${c.ocupacion >= 90} ? 'amber' : '')" th:style="'width:' + ${c.ocupacion > 100 ? 100 : c.ocupacion} + '%;'"></div></div>
+                  <span class="progress-value" th:text="${c.ocupacion} + '%'">0%</span>
+                </div>
+              </td>
+              <td><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span></td>
+              <td class="cell-actions">
+                <button type="button" th:attr="data-ver-perfil=${c.perfilId}">Ver perfil</button>
+                <button type="button" th:if="${c.estado == 'activo'}" class="danger" th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}">Suspender</button>
+                <button type="button" th:unless="${c.estado == 'activo'}" th:attr="data-reactivar=${c.perfilId}, data-nombre=${c.nombre}">Reactivar</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -51,91 +81,85 @@
   </div>
 </div>
 
-<script src="/js/mock-data.js"></script>
-<script src="/js/state.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
-<script src="/js/table-filter.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/modal.js"></script>
-<script src="/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "resource-manager", active: "colaboradores.html", title: "Colaboradores", subtitle: "Catálogo operativo de " + MOCK.collaborators.length + " colaboradores evaluados" });
-  if (!cfg) return;
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 
-  document.getElementById("collab-count").textContent = MOCK.collaborators.length + " colaboradores en esta vista";
-  document.getElementById("collab-subtitle").textContent = "Catálogo operativo · " + MOCK.meta.stats.colaboradores + " colaboradores en la plataforma";
+  // Todo el detalle de habilidades de cada colaborador viaja aca, ya
+  // calculado por el Controller (nombre, categoria, nivel, si esta
+  // validada) - el modal "Ver perfil" se arma con esto, sin pedirle nada
+  // mas al servidor.
+  var COLABORADORES = /*[[${colaboradores}]]*/ [];
 
-  function estadoBadge(e) { return e === "Bloqueado" ? "badge-red" : "badge-green"; }
-  function occClass(v) { return v > 100 ? "red" : v >= 90 ? "amber" : ""; }
+  function aplicarFiltros() {
+    var habilidadId = document.getElementById("filtro-habilidad").value;
+    var estado = document.getElementById("filtro-estado").value;
+    var params = new URLSearchParams();
+    if (habilidadId) params.set("habilidadId", habilidadId);
+    if (estado) params.set("estado", estado);
+    window.location.href = "/resource-manager/colaboradores.html" + (params.toString() ? "?" + params.toString() : "");
+  }
 
-  function renderRows() {
-    document.getElementById("collab-body").innerHTML = MOCK.collaborators.map(function (c) {
-      return '<tr data-filter-row="colab" data-f-celula="' + c.celula + '" data-f-estado="' + c.estado + '" data-f-search="' + c.nombre.toLowerCase() + " " + c.cargo.toLowerCase() + '">' +
-        '<td class="cell-person"><span class="avatar avatar-sm">' + c.iniciales + '</span><span class="cell-person-text"><span class="cell-person-name">' + c.nombre + '</span><span class="cell-person-sub">' + c.correo + '</span></span></td>' +
-        "<td>" + c.cargo + "</td><td>" + c.celula + "</td>" +
-        '<td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill ' + occClass(c.ocupacionProm) + '" style="width:' + Math.min(c.ocupacionProm, 100) + '%;"></div></div><span class="progress-value">' + c.ocupacionProm + '%</span></div></td>' +
-        '<td><span class="badge ' + estadoBadge(c.estado) + '">' + c.estado + '</span></td>' +
-        "<td class=\"text-tertiary\" style=\"font-size:var(--fs-xs);\">" + c.ultimoAcceso + "</td>" +
-        '<td class="cell-actions"><button type="button" data-view-collab="' + c.nombre + '">Ver perfil</button>' +
-        (c.estado === "Activo" ? '<button type="button" class="danger" data-suspend-collab="' + c.nombre + '">Suspender</button>' : '<button type="button" data-reactivate-collab="' + c.nombre + '">Reactivar</button>') +
-        "</td></tr>";
-    }).join("");
+  document.addEventListener("DOMContentLoaded", function () {
+    var submitForm = window.SBAI.submitForm;
 
-    document.querySelectorAll("[data-view-collab]").forEach(function (btn) {
+    document.querySelectorAll("[data-ver-perfil]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var c = MOCK.findCollaborator(btn.dataset.viewCollab);
-        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>' + c.nombre + '</h2><p>' + c.cargo + ' · Célula ' + c.celula + '</p></div>' +
-          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-          '<div class="modal-body"><div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value">' + c.correo + '</span></div>' +
-          '<div class="info-row"><span class="info-row-label">Ocupación promedio</span><span class="info-row-value mono">' + c.ocupacionProm + '%</span></div>' +
-          '<div class="info-row"><span class="info-row-label">Último acceso</span><span class="info-row-value">' + c.ultimoAcceso + '</span></div>' +
-          '<p class="label-mono" style="margin:var(--space-4) 0 var(--space-2);">Habilidades principales</p>' +
-          '<div style="display:flex; flex-wrap:wrap; gap:var(--space-2);">' + c.skillsTop.map(function (s) { return '<span class="badge badge-neutral">' + s + "</span>"; }).join("") + '</div></div>' +
-          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button><a href="ai-talent-matching.html" class="btn btn-primary">Buscar vacante con IA</a></div></div>';
-        SBAI.modal.open(html);
+        var perfilId = Number(btn.dataset.verPerfil);
+        var c = COLABORADORES.filter(function (x) { return x.perfilId === perfilId; })[0];
+        if (!c) return;
+
+        var filasHabilidad = c.habilidades.map(function (h) {
+          return '<div class="info-row">' +
+                  '<span class="info-row-label">' + h.nombre + ' <span class="text-tertiary">(' + h.categoriaNombre + ' · ' + h.nivelLabel + ')</span></span>' +
+                  (h.validada
+                          ? '<span class="badge badge-green">Validada</span>'
+                          : '<button type="button" class="btn btn-secondary btn-sm" data-validar="' + h.habilidadId + '">Validar</button>') +
+                  '</div>';
+        }).join("") || '<p class="text-tertiary" style="font-size:var(--fs-xs);">Sin habilidades declaradas todavía.</p>';
+
+        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+                '<div class="modal-header"><div><h2>' + c.nombre + '</h2><p>' + c.cargo + ' · ' + c.correo + '</p></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body">' +
+                '<div class="info-row"><span class="info-row-label">Ocupación actual</span><span class="info-row-value mono">' + c.ocupacion + '%</span></div>' +
+                '<p class="label-mono" style="margin:var(--space-4) 0 var(--space-2);">Habilidades declaradas</p>' +
+                filasHabilidad +
+                '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
+
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelectorAll("[data-validar]").forEach(function (vbtn) {
+          vbtn.addEventListener("click", function () {
+            submitForm("/resource-manager/colaboradores/" + perfilId + "/habilidades/" + vbtn.dataset.validar + "/validar", {});
+          });
+        });
       });
     });
 
-    document.querySelectorAll("[data-suspend-collab]").forEach(function (btn) {
+    document.querySelectorAll("[data-suspender]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var nombre = btn.dataset.suspendCollab;
         SBAI.modal.confirm({
-          title: "¿Suspender a " + nombre + "?", desc: "Perderá acceso a la plataforma hasta que se reactive su cuenta.",
-          confirmLabel: "Suspender", variant: "destructive",
+          title: "¿Suspender a " + btn.dataset.nombre + "?",
+          desc: "Perderá acceso a la plataforma hasta que se reactive su cuenta. No afecta sus asignaciones históricas.",
+          confirmLabel: "Suspender",
+          variant: "destructive",
           onConfirm: function () {
-            MOCK.findCollaborator(nombre).estado = "Bloqueado";
-            SBAI.toast.show("<strong>" + nombre + "</strong> fue suspendido.", { type: "success" });
-            renderRows();
-            window.SBAI.tableFilter.applyScope("colab");
+            submitForm("/resource-manager/colaboradores/" + btn.dataset.suspender + "/estado", { nuevoEstado: "inactivo" });
           }
         });
       });
     });
 
-    document.querySelectorAll("[data-reactivate-collab]").forEach(function (btn) {
+    document.querySelectorAll("[data-reactivar]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var nombre = btn.dataset.reactivateCollab;
-        MOCK.findCollaborator(nombre).estado = "Activo";
-        SBAI.toast.show("<strong>" + nombre + "</strong> fue reactivado.", { type: "success" });
-        renderRows();
-        window.SBAI.tableFilter.applyScope("colab");
+        submitForm("/resource-manager/colaboradores/" + btn.dataset.reactivar + "/estado", { nuevoEstado: "activo" });
       });
     });
-  }
-
-  renderRows();
-  window.SBAI.tableFilter.init(document);
-
-  var params = new URLSearchParams(window.location.search);
-  var buscar = params.get("buscar");
-  if (buscar) {
-    document.getElementById("collab-search").value = buscar;
-    window.SBAI.tableFilter.setFilter("colab", "q", buscar);
-    SBAI.toast.show("Filtrado por <strong>" + buscar + "</strong> desde la búsqueda global.");
-  }
-});
+  });
 </script>
 </body>
 </html>
