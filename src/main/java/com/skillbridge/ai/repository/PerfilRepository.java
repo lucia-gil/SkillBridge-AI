@@ -17,6 +17,14 @@ public interface PerfilRepository extends JpaRepository<Perfil, Long> {
     @Query("select p from Perfil p join fetch p.usuario u where p.estado = 'activo' order by u.nombreCompleto asc")
     List<Perfil> listarActivosConUsuario();
 
+    // Igual que arriba, pero SIN filtrar por estado - usado en
+    // resource-manager/colaboradores.html, que necesita ver también a los
+    // perfiles inactivos (para poder reactivarlos). Sin el join fetch, cada
+    // p.getUsuario() dispara un LazyInitializationException apenas se sale
+    // de la transacción (spring.jpa.open-in-view=false).
+    @Query("select p from Perfil p join fetch p.usuario u order by u.nombreCompleto asc")
+    List<Perfil> listarTodosConUsuario();
+
     // Un perfil con su Usuario ya cargado - usado por "Mi cuenta" (necesita
     // nombre_completo/correo de usuarios, y open-in-view=false impide tocar
     // el proxy lazy fuera de la transacción del service).

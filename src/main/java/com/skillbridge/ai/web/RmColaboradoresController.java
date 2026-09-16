@@ -77,7 +77,10 @@ public class RmColaboradoresController {
 
         // Traemos TODOS los perfiles (no solo activos): el RM también
         // necesita ver a los inactivos para poder reactivarlos.
-        List<Perfil> perfiles = perfilRepository.findAll();
+        // listarTodosConUsuario() carga el Usuario en la misma consulta
+        // (JOIN FETCH) - con findAll() a secas, p.getUsuario() explota con
+        // LazyInitializationException fuera de la transacción.
+        List<Perfil> perfiles = perfilRepository.listarTodosConUsuario();
 
         List<ColaboradorFila> filas = perfiles.stream()
                 .map(p -> {
