@@ -200,6 +200,19 @@ public class ProyectoService {
         if (!Roles.PROJECT_MANAGER.equals(rolEnProyecto) && !Roles.COLABORADOR.equals(rolEnProyecto)) {
             throw new OperacionInvalidaException("Rol de proyecto no reconocido.");
         }
+        // Regla confirmada con el equipo: solo puede haber UN Project Manager
+        // activo por proyecto. Si ya hay uno y se intenta asignar otro, se
+        // bloquea antes de tocar la BD - evita el caso de dos PM activos a
+        // la vez, que ademas rompería buscarResponsableActivo() (esa
+        // consulta espera como maximo un resultado).
+        if (Roles.PROJECT_MANAGER.equals(rolEnProyecto)) {
+            long pmActivos = asignacionRepository.countByProyectoIdAndRolEnProyectoAndEstado(
+                    proyectoId, Roles.PROJECT_MANAGER, "activa");
+            if (pmActivos > 0) {
+                throw new OperacionInvalidaException(
+                        "Este proyecto ya tiene un Project Manager activo. Finaliza esa asignación antes de asignar uno nuevo.");
+            }
+        }
         // Límites configurables (RF08, configuracion_global) en vez de topes
         // fijos: así "Configuración" deja de ser un panel decorativo y
         // efectivamente restringe estas dos operaciones.
@@ -250,14 +263,15 @@ public class ProyectoService {
         // Regla de negocio confirmada con el equipo: un proyecto NUNCA debe
         // quedar sin ningun Project Manager activo. Si esta asignacion es
         // de rol project_manager y es la UNICA activa de ese rol en el
-        // proyecto, se bloquea - hay que asignar un PM nuevo primero (o
-        // reasignar el rol) antes de poder finalizar esta.
+        // proyecto, se bloquea aqui - para CAMBIAR de PM se usa
+        // reasignarProjectManager(...) en vez de este metodo, que hace el
+        // reemplazo completo en una sola transaccion (ver mas abajo).
         if (Roles.PROJECT_MANAGER.equals(a.getRolEnProyecto()) && "activa".equals(a.getEstado())) {
             long pmActivos = asignacionRepository.countByProyectoIdAndRolEnProyectoAndEstado(
                     a.getProyectoId(), Roles.PROJECT_MANAGER, "activa");
             if (pmActivos <= 1) {
                 throw new OperacionInvalidaException(
-                        "No puedes finalizar esta asignación: es el único Project Manager activo del proyecto. Asigna un nuevo PM antes de continuar.");
+                        "No puedes finalizar esta asignación: es el único Project Manager activo del proyecto. Usa \"Cambiar Project Manager\" para reemplazarlo.");
             }
         }
 
@@ -268,6 +282,72 @@ public class ProyectoService {
                 "Asignación finalizada.");
         notificacionService.crear(a.getPerfilId(), "asignacion", "Asignación finalizada",
                 "Tu asignación al proyecto fue marcada como finalizada.", "proyectos.html");
+    }
+
+    /**
+     * Reemplaza al Project Manager activo de un proyecto por otra persona,
+     * en una sola transaccion: al PM actual (si existe) se lo BAJA a
+     * colaborador (no se finaliza su asignacion) y se crea/actualiza la del
+     * nuevo PM. Bajar en vez de finalizar es intencional: reemplazar al PM
+     * no significa que esa persona deba salir del proyecto - si el equipo
+     * decide que sí debe salir, eso se hace aparte con el boton
+     * "Finalizar" de su fila, como cualquier otra asignacion.
+     *
+     * Esto tambien evita el problema de "candado sin llave" mencionado en
+     * finalizarAsignacion(): como aqui nunca se finaliza al PM saliente
+     * (solo cambia de rol), nunca se pasa por el estado "0 PM activos" que
+     * esa validacion bloquea.
+     *
+     * Caso especial: si la persona elegida como nuevo PM YA tiene una
+     * asignacion activa en este proyecto (ej. ya era colaborador), no se
+     * puede insertar una fila nueva - la restriccion uq_asig_clave_activa
+     * bloquea que la misma persona tenga 2 filas activas en el mismo
+     * proyecto, sin importar el rol. En ese caso se actualiza esa MISMA
+     * fila (se "asciende" a colaborador existente), en vez de crear una
+     * fila nueva.
+     */
+    @Transactional
+    public void reasignarProjectManager(Long proyectoId, Long nuevoPmPerfilId, Long actorUsuarioId) {
+        Perfil nuevoPm = perfilRepository.findById(nuevoPmPerfilId)
+                .orElseThrow(() -> new OperacionInvalidaException("Selecciona un Project Manager válido."));
+
+        Optional<Asignacion> pmActual = asignacionRepository.buscarResponsableActivo(proyectoId, Roles.PROJECT_MANAGER);
+        if (pmActual.isPresent() && pmActual.get().getPerfilId().equals(nuevoPmPerfilId)) {
+            throw new OperacionInvalidaException(nuevoPm.getUsuario().getNombreCompleto() + " ya es el Project Manager de este proyecto.");
+        }
+        // Se BAJA de rol al PM saliente (sigue activo en el proyecto, solo
+        // que ahora como colaborador) - no se toca su fecha_fin ni su
+        // carga_porcentaje, sigue siendo la misma asignacion de siempre.
+        pmActual.ifPresent(a -> {
+            a.setRolEnProyecto(Roles.COLABORADOR);
+            asignacionRepository.save(a);
+        });
+
+        // ¿La persona elegida ya está en el equipo (activa, con cualquier
+        // rol) en este mismo proyecto? Si sí, se actualiza su fila en vez
+        // de crear una nueva - evita chocar con uq_asig_clave_activa.
+        Optional<Asignacion> asignacionExistente =
+                asignacionRepository.findByProyectoIdAndPerfilIdAndEstado(proyectoId, nuevoPmPerfilId, "activa");
+
+        if (asignacionExistente.isPresent()) {
+            Asignacion a = asignacionExistente.get();
+            a.setRolEnProyecto(Roles.PROJECT_MANAGER);
+            asignacionRepository.save(a);
+        } else {
+            Asignacion nueva = new Asignacion();
+            nueva.setProyectoId(proyectoId);
+            nueva.setPerfilId(nuevoPmPerfilId);
+            nueva.setRolEnProyecto(Roles.PROJECT_MANAGER);
+            nueva.setCargaPorcentaje(20);
+            nueva.setEstado("activa");
+            nueva.setFechaInicio(LocalDate.now());
+            asignacionRepository.save(nueva);
+        }
+
+        auditoriaService.registrar(actorUsuarioId, "PM_REASIGNADO", "proyecto", proyectoId, null, null,
+                "Nuevo Project Manager: " + nuevoPm.getUsuario().getNombreCompleto() + ".");
+        notificacionService.crear(nuevoPmPerfilId, "asignacion", "Nuevo proyecto asignado",
+                "Se te asignó como Project Manager del proyecto.", "proyectos.html");
     }
 
     // ───────────────────────── Helpers ─────────────────────────

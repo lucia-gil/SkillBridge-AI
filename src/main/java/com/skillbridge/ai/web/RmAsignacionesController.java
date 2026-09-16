@@ -160,4 +160,24 @@ public class RmAsignacionesController {
         }
         return "redirect:/resource-manager/asignaciones.html";
     }
+
+    /**
+     * "Cambiar Project Manager" - reemplaza al PM activo por otra persona
+     * en un solo paso (ver ProyectoService.reasignarProjectManager para el
+     * porque no se hace con finalizar + asignar por separado).
+     */
+    @PostMapping("/proyectos/{id}/cambiar-pm")
+    public String cambiarPm(@PathVariable Long id,
+                            @RequestParam Long nuevoPmPerfilId,
+                            HttpSession session,
+                            RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            proyectoService.reasignarProjectManager(id, nuevoPmPerfilId, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Project Manager actualizado.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/resource-manager/asignaciones.html";
+    }
 }

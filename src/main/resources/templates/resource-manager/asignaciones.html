@@ -37,6 +37,7 @@
               <span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}" style="margin-left:var(--space-2);">Estado</span>
               <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">
                 <span th:text="${p.equipo.size()}">0</span> asignaciones activas · PM: <span th:text="${p.pmNombre}">Sin asignar</span>
+                <button type="button" class="link-btn" th:attr="data-cambiar-pm=${p.id}, data-proyecto-nombre=${p.nombre}" style="margin-left:6px;">(cambiar)</button>
               </p>
             </div>
             <button type="button" class="btn btn-primary btn-sm" th:attr="data-asignar-proyecto=${p.id}, data-proyecto-nombre=${p.nombre}">
@@ -116,6 +117,30 @@
           onConfirm: function () {
             submitForm("/resource-manager/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar", {});
           }
+        });
+      });
+    });
+
+    // Botón "(cambiar)" junto al nombre del PM de cada proyecto
+    document.querySelectorAll("[data-cambiar-pm]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var proyectoId = btn.dataset.cambiarPm;
+        var proyectoNombre = btn.dataset.proyectoNombre || "";
+        var options = PERFILES.map(function (p) {
+          return '<option value="' + p.perfilId + '">' + p.nombre + ' · ' + p.correo + '</option>';
+        }).join("");
+
+        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+                '<div class="modal-header"><div><h2>Cambiar Project Manager</h2><p>' + proyectoNombre + '</p></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body">' +
+                '<div class="field"><label class="field-label">Nuevo Project Manager</label><select class="select" id="pm-perfil">' + options + '</select></div>' +
+                '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="pm-confirm">Confirmar cambio</button></div></div>';
+
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelector("#pm-confirm").addEventListener("click", function () {
+          var nuevoPm = backdrop.querySelector("#pm-perfil").value;
+          submitForm("/resource-manager/proyectos/" + proyectoId + "/cambiar-pm", { nuevoPmPerfilId: nuevoPm });
         });
       });
     });
