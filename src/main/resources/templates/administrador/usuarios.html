@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usuarios y roles · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid">
+        <div class="kpi-tile"><span class="kpi-tile-label">TOTAL USUARIOS</span><span class="kpi-tile-value" th:text="${kpis.total}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">SIN ROL ASIGNADO</span><span class="kpi-tile-value" th:text="${kpis.sinRol}">0</span><span class="kpi-tile-meta warn"></span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">SUSPENDIDOS</span><span class="kpi-tile-value" th:text="${kpis.suspendidos}">0</span><span class="kpi-tile-meta down"></span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">ADMINISTRADORES</span><span class="kpi-tile-value" th:text="${kpis.administradores}">0</span></div>
+      </div>
+
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${usuarios.size()} + ' usuarios'">0 usuarios</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Cuentas con acceso a SkillBridge AI</p>
+          </div>
+          <div class="table-filters">
+            <input type="text" class="input" data-filter-scope="users" data-filter-key="q" placeholder="Buscar por nombre o correo…" style="width:210px; height:38px; font-size:var(--fs-xs);">
+            <select class="select" data-filter-scope="users" data-filter-key="rol">
+              <option value="todos">Rol: todos</option><option>Administrador</option><option>Resource Manager</option><option>Sin rol fijo</option>
+            </select>
+            <select class="select" data-filter-scope="users" data-filter-key="estado">
+              <option value="todos">Estado: todos</option><option>Activo</option><option>Bloqueado</option>
+            </select>
+            <button type="button" class="btn btn-primary btn-sm" id="invite-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Cargo</th><th>Cuenta desde</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="users-body">
+              <tr th:each="u : ${usuarios}" th:data-id="${u.id}"
+                  data-filter-row="users" th:attr="data-f-rol=${u.rolLabel}, data-f-estado=${u.estadoLabel}, data-f-search=${#strings.toLowerCase(u.nombreCompleto + ' ' + u.correo)}">
+                <td class="cell-person">
+                  <span class="avatar avatar-sm" th:text="${u.iniciales}">MR</span>
+                  <span class="cell-person-text"><span class="cell-person-name" th:text="${u.nombreCompleto}">Nombre</span><span class="cell-person-sub" th:text="${u.correo}">correo</span></span>
+                </td>
+                <td><span class="badge" th:classappend="${u.rolBadgeClass}" th:text="${u.rolLabel}">Rol</span></td>
+                <td th:text="${u.cargo}">—</td>
+                <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${u.cuentaDesde}">—</td>
+                <td><span class="badge" th:classappend="${u.estadoBadgeClass}" th:text="${u.estadoLabel}">Estado</span></td>
+                <td class="cell-actions">
+                  <button type="button" data-edit-role
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}, data-rol-crudo=${u.rolOrganizacionalCrudo}">Editar rol</button>
+                  <button type="button" class="danger" th:if="${u.estado == 'activo'}" data-suspend
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}">Suspender</button>
+                  <button type="button" data-reactivate th:if="${u.estado != 'activo'}"
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}">Reactivar</button>
+                  <button type="button" class="danger" data-delete
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}">Eliminar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="state-panel" data-filter-empty="users" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+          <span class="state-panel-title">Sin usuarios con estos filtros</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script th:inline="javascript">
+document.addEventListener("DOMContentLoaded", function () {
+  window.SBAI.dropdown.init(document);
+  window.SBAI.tableFilter.init(document);
+
+  document.body.addEventListener("click", function (e) {
+    if (e.target.closest('[data-action="logout"]')) { window.location.href = "/auth/logout"; }
+  });
+
+  var exito = /*[[${exito}]]*/ null;
+  var error = /*[[${error}]]*/ null;
+  if (exito) SBAI.toast.show(exito, { type: "success" });
+  if (error) SBAI.toast.show(error, { type: "error" });
+
+  function submitForm(action, fields) {
+    var form = document.createElement("form");
+    form.method = "POST";
+    form.action = action;
+    Object.keys(fields).forEach(function (k) {
+      var input = document.createElement("input");
+      input.type = "hidden"; input.name = k; input.value = fields[k];
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  document.getElementById("invite-btn").addEventListener("click", function () {
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Autoriza el correo para que la persona pueda registrarse.</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" id="invite-email" placeholder="nombre.apellido@nexacorp.com"></div>' +
+      '<p class="field-hint">El rol se asigna desde esta misma pantalla después de que la persona complete su registro.</p></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="invite-confirm">Enviar invitación</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#invite-confirm").addEventListener("click", function () {
+      var correo = backdrop.querySelector("#invite-email").value.trim();
+      if (!correo) { SBAI.toast.show("Ingresa un correo.", { type: "error" }); return; }
+      submitForm("/administrador/usuarios/invitar", { correo: correo });
+    });
+  });
+
+  document.querySelectorAll("[data-edit-role]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, nombre = btn.dataset.nombre, correo = btn.dataset.correo, rolCrudo = btn.dataset.rolCrudo;
+      var opciones = [
+        { value: "NINGUNO", label: "Sin rol fijo (Colaborador / Project Manager según proyecto)" },
+        { value: "resource_manager", label: "Resource Manager" },
+        { value: "administrador", label: "Administrador" }
+      ];
+      var opts = opciones.map(function (o) {
+        var sel = (rolCrudo === o.value) || (rolCrudo === "null" && o.value === "NINGUNO") || (!rolCrudo && o.value === "NINGUNO");
+        return "<option value=\"" + o.value + "\"" + (sel ? " selected" : "") + ">" + o.label + "</option>";
+      }).join("");
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar rol</h2><p>' + nombre + ' · ' + correo + '</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div class="field"><label class="field-label">Rol</label><select class="select" id="edit-role-select">' + opts + '</select></div>' +
+        '<p class="field-hint">El cambio queda registrado en Auditoría con tu usuario y la hora exacta.</p></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="save-role-btn">Guardar rol</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#save-role-btn").addEventListener("click", function () {
+        submitForm("/administrador/usuarios/" + id + "/rol", { rol: backdrop.querySelector("#edit-role-select").value });
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-suspend]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, nombre = btn.dataset.nombre;
+      SBAI.modal.confirm({
+        title: "¿Suspender a " + nombre + "?", desc: "Perderá acceso a la plataforma de inmediato.",
+        confirmLabel: "Suspender", variant: "destructive",
+        onConfirm: function () { submitForm("/administrador/usuarios/" + id + "/estado", { activar: "false" }); }
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-reactivate]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id;
+      submitForm("/administrador/usuarios/" + id + "/estado", { activar: "true" });
+    });
+  });
+
+  document.querySelectorAll("[data-delete]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, nombre = btn.dataset.nombre;
+      SBAI.modal.confirm({
+        title: "¿Eliminar a " + nombre + "?",
+        desc: "Esta acción es permanente. Si tiene asignaciones u otros registros asociados, no se podrá eliminar (usa Suspender en ese caso).",
+        confirmLabel: "Eliminar", variant: "destructive",
+        onConfirm: function () { submitForm("/administrador/usuarios/" + id + "/eliminar", {}); }
+      });
+    });
+  });
+});
+</script>
+</body>
+</html>

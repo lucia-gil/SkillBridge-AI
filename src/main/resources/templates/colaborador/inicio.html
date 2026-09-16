@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inicio · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid">
+        <div class="kpi-tile"><span class="kpi-tile-label">PROYECTOS ACTIVOS</span><span class="kpi-tile-value" th:text="${proyectosActivos.size()}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">CARGA ACTIVA</span><span class="kpi-tile-value" th:text="${cargaActiva} + '%'">0%</span><span class="kpi-tile-meta" th:classappend="${cargaActiva > 100} ? 'down' : ''" th:text="${cargaActiva > 100} ? 'sobre el límite' : 'dentro del límite'"></span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">HABILIDADES DECLARADAS</span><span class="kpi-tile-value" th:text="${habilidadesDeclaradas}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">HABILIDADES VALIDADAS</span><span class="kpi-tile-value" th:text="${habilidadesValidadas} + ' / ' + ${habilidadesDeclaradas}">0 / 0</span></div>
+      </div>
+
+      <div class="detail-grid">
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+
+          <section class="card">
+            <div class="card-header">
+              <div class="card-header-text"><h2>Mis proyectos actuales</h2><p>Avance y dedicación de tus asignaciones activas</p></div>
+              <a href="proyectos.html" class="btn btn-tertiary btn-sm">Ver historial →</a>
+            </div>
+            <div class="card-body-flush">
+              <div th:if="${proyectosActivos.isEmpty()}" style="padding:var(--space-6); text-align:center;" class="text-tertiary">No tienes proyectos activos por ahora.</div>
+              <div th:each="row : ${proyectosActivos}" style="display:flex; align-items:center; gap:var(--space-4); padding:var(--space-5) var(--space-6); border-bottom:1px solid var(--border-subtle);">
+                <span class="avatar" style="border-radius:var(--radius-md); background:var(--navy-700);" th:text="${#strings.substring(row.nombre, 0, 1)}">P</span>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-weight:600;" th:text="${row.nombre}">Proyecto</div>
+                  <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${row.rolLabel}">Rol</div>
+                </div>
+                <div style="width:160px;"><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${row.avance} + '%;'"></div></div><span class="progress-value" th:text="${row.avance} + '%'">0%</span></div></div>
+                <span class="badge" th:classappend="${row.estadoBadgeClass}" th:text="${row.estadoLabel}">Estado</span>
+                <span class="label-mono" style="width:110px; text-align:right;" th:text="${row.cargaPorcentaje} + '% dedicación'">0%</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header"><div class="card-header-text"><h2>Actividad en foros</h2></div>
+              <a href="foros.html" class="btn btn-tertiary btn-sm">Ir a foros →</a></div>
+            <div class="card-body-flush">
+              <div th:if="${hilosRecientes.isEmpty()}" style="padding:var(--space-6); text-align:center;" class="text-tertiary">Todavía no hay hilos en tus proyectos.</div>
+              <a th:each="t : ${hilosRecientes}" th:href="'foro-hilo.html?id=' + ${t.id}" style="display:block; padding:var(--space-4) var(--space-6); border-bottom:1px solid var(--border-subtle); color:inherit;">
+                <div style="font-size:var(--fs-sm); font-weight:500;" th:text="${t.titulo}">Título</div>
+                <div class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" th:text="${t.proyectoNombre} + ' · ' + ${t.numRespuestas} + ' respuestas · ' + ${t.fechaLabel}">meta</div>
+              </a>
+            </div>
+          </section>
+
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card">
+            <div class="card-header">
+              <div class="card-header-text"><h2>Notificaciones recientes</h2></div>
+              <span class="badge badge-blue" th:if="${unreadCount > 0}" th:text="${unreadCount} + ' nuevas'">0 nuevas</span>
+            </div>
+            <div class="card-body-flush">
+              <div th:if="${notifications.isEmpty()}" style="padding:var(--space-6); text-align:center;" class="text-tertiary">Sin notificaciones todavía.</div>
+              <div th:each="n : ${notifications}" style="padding:var(--space-4) var(--space-6); border-bottom:1px solid var(--border-subtle); font-size:var(--fs-xs);">
+                <span style="color:var(--text-primary);" th:text="${n.titulo}">Título</span>
+                <div class="text-tertiary" style="margin-top:4px;" th:text="${n.fechaLabel}">fecha</div>
+              </div>
+            </div>
+            <div class="card-footer" style="justify-content:center;"><a href="notificaciones.html">Ver todas →</a></div>
+          </section>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+</script>
+</body>
+</html>

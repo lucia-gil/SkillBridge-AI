@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reportes globales · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid">
+        <div class="kpi-tile"><span class="kpi-tile-label">COLABORADORES ACTIVOS</span><span class="kpi-tile-value" th:text="${kpis.colaboradoresActivos}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">PROYECTOS EN CURSO</span><span class="kpi-tile-value" th:text="${kpis.proyectosEnCurso}">0</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">HABILIDADES EN CATÁLOGO</span><span class="kpi-tile-value" th:text="${kpis.habilidadesCatalogo}">0</span><span class="kpi-tile-meta warn" th:text="${kpis.habilidadesSinAsignar} + ' sin proyecto asociado'"></span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">ASIGNACIONES ACTIVAS</span><span class="kpi-tile-value" th:text="${kpis.asignacionesActivas}">0</span></div>
+      </div>
+
+      <div class="detail-grid" style="margin-top:var(--space-6);">
+        <section class="card card-pad">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
+            <div>
+              <h2 style="font-size:var(--fs-md);">Habilidades más declaradas</h2>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Cuántos colaboradores declaran cada habilidad en su perfil</p>
+            </div>
+          </div>
+          <div th:if="${topHabilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
+          <div th:each="s : ${topHabilidades}" style="margin-bottom:var(--space-3);">
+            <div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;">
+              <span style="font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
+              <span class="text-tertiary mono" th:text="${s.vacantes()} + ' persona(s)'">0 personas</span>
+            </div>
+            <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
+          </div>
+        </section>
+
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Proyectos por estado</h3>
+          <div th:if="${proyectosPorEstado.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no hay proyectos creados.</div>
+          <div th:each="e : ${proyectosPorEstado}" class="info-row">
+            <span class="info-row-label"><span class="badge" th:classappend="${e.badgeClass}" th:text="${e.label}">Estado</span></span>
+            <span class="info-row-value mono" th:text="${e.conteo} + (${e.conteo == 1} ? ' proyecto' : ' proyectos')">0 proyectos</span>
+          </div>
+        </section>
+      </div>
+
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Ocupación por colaborador</h3>
+        <div th:if="${ocupacion.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no hay asignaciones activas.</div>
+        <div class="table-scroll" th:unless="${ocupacion.isEmpty()}">
+          <table class="data-table">
+            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación (suma de dedicaciones activas)</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr th:each="o : ${ocupacion}">
+                <td class="cell-person"><span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span><span class="cell-person-name" th:text="${o.nombre}">Nombre</span></td>
+                <td th:text="${o.cargo}">Cargo</td>
+                <td class="mono" th:text="${o.promedio} + '%'">0%</td>
+                <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+</body>
+</html>
