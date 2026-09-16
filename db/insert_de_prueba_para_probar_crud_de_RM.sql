@@ -40,3 +40,21 @@ VALUES (LAST_INSERT_ID(), 'Frontend Developer', 100, 'activo');
 INSERT INTO correos_autorizados (correo, autorizado_por_id, origen_carga, utilizado, fecha_uso)
 VALUES ('diego.salazar@nexacorp.com', 1, 'individual', TRUE, NOW());
 
+-- 1. Proyecto nuevo, con Luis Peña como PM (así tienes 2 proyectos con PMs distintos)
+INSERT INTO proyectos (nombre, descripcion, tecnologias, estado, colaboradores_requeridos, fecha_inicio)
+VALUES ('App Móvil Aurora', 'App móvil de logística para Aurora Telecom',
+        JSON_ARRAY('Kotlin', 'Firebase', 'REST API'),
+        'activo', 4, CURDATE());
+
+SET @aurora_id = LAST_INSERT_ID();
+SET @luis_perfil_id = (SELECT id FROM perfiles WHERE usuario_id = (SELECT id FROM usuarios WHERE correo = 'luis.pena@nexacorp.com'));
+
+INSERT INTO asignaciones (proyecto_id, perfil_id, rol_en_proyecto, carga_porcentaje, estado, fecha_inicio)
+VALUES (@aurora_id, @luis_perfil_id, 'project_manager', 20, 'activa', CURDATE());
+
+-- 2. Diego (ya tiene 20% en Portal Andes) entra también a este proyecto
+-- con 45% más → su carga total sube a 65% → debería categorizarse "Óptimo"
+SET @diego_perfil_id = (SELECT id FROM perfiles WHERE usuario_id = (SELECT id FROM usuarios WHERE correo = 'diego.salazar@nexacorp.com'));
+
+INSERT INTO asignaciones (proyecto_id, perfil_id, rol_en_proyecto, carga_porcentaje, estado, fecha_inicio)
+VALUES (@aurora_id, @diego_perfil_id, 'colaborador', 45, 'activa', CURDATE());
