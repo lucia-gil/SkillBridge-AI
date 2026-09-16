@@ -7,18 +7,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * Sirve lo que del frontend de SkillBridge AI sigue siendo la demo con
- * datos simulados (mock-data.js): Resource Manager completo (fuera de
- * alcance de esta entrega) y las paginas de Project Manager que aun no se
- * hicieron reales, mas el Asistente IA de Administrador y Colaborador
- * (excluido explicitamente).
+ * datos simulados (mock-data.js): las paginas de Project Manager y Resource
+ * Manager que aun no se hicieron reales, mas el Asistente IA de
+ * Administrador y Colaborador (excluido explicitamente).
  *
  * Administrador y Colaborador ya no pasan por aqui para el resto de sus
  * paginas: cada una tiene su propio @Controller con datos y persistencia
  * reales. DESDE ESTA ENTREGA, el Project Manager tambien tiene reales sus
- * CRUD de Proyectos, Asignaciones y Foros (ProyectosPmController,
- * AsignacionesPmController, ForosPmController, ForoHiloPmController), por
- * eso esas rutas se retiraron de la lista de abajo: mapearlas tambien aqui
- * produciria un error de "Ambiguous mapping" al arrancar Spring.
+ * CRUD de Proyectos, Asignaciones, Foros, Calendario, Reportes y AI Talent
+ * Matching (ProyectosPmController, AsignacionesPmController,
+ * ForosPmController, ForoHiloPmController, CalendarioController,
+ * ReportesPmController, TalentMatchingController), y el Resource Manager
+ * ya tiene reales su Ocupacion, Asignaciones, Colaboradores y su resolucion
+ * de AI Talent Matching (RmOcupacionController, RmAsignacionesController,
+ * RmColaboradoresController, TalentMatchingController), por eso esas rutas
+ * se retiraron de la lista de abajo: mapearlas tambien aqui produciria un
+ * error de "Ambiguous mapping" al arrancar Spring.
  *
  * Las paginas que si sirve este controlador siguen usando su shell JS
  * original (static/js/shell.js), que decide que sidebar/topbar mostrar
@@ -57,12 +61,11 @@ public class SitioController {
     }
 
     // Project Manager: solo quedan como mock las paginas aun no migradas.
-    // proyectos/asignaciones/foros/foro-hilo YA tienen controlador real.
+    // proyectos/asignaciones/foros/foro-hilo/calendario/reportes/
+    // ai-talent-matching YA tienen controlador real.
     @GetMapping({
             "/project-manager/proyecto-detalle.html",
-            "/project-manager/ai-talent-matching.html",
             "/project-manager/asistente-ia.html",
-            "/project-manager/reportes.html",
             "/project-manager/mi-cuenta.html",
             "/project-manager/notificaciones.html"
     })
@@ -71,13 +74,12 @@ public class SitioController {
         return vista(request);
     }
 
-    // Resource Manager: "asignaciones.html", "ocupacion.html" y
-    // "colaboradores.html" ya tienen controlador real
-    // (RmAsignacionesController, RmOcupacionController,
-    // RmColaboradoresController), por eso se retiraron de esta lista.
+    // Resource Manager: ocupacion/asignaciones/colaboradores/ai-talent-matching
+    // YA tienen controlador real (RmOcupacionController,
+    // RmAsignacionesController, RmColaboradoresController,
+    // TalentMatchingController).
     @GetMapping({
             "/resource-manager/inicio.html",
-            "/resource-manager/ai-talent-matching.html",
             "/resource-manager/reportes.html",
             "/resource-manager/mi-cuenta.html",
             "/resource-manager/notificaciones.html",

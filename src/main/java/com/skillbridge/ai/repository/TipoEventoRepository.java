@@ -1,0 +1,10 @@
+package com.skillbridge.ai.repository;
+
+import com.skillbridge.ai.model.TipoEvento;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface TipoEventoRepository extends JpaRepository<TipoEvento, Long> {
+    Optional<TipoEvento> findByCodigo(String codigo);
+}

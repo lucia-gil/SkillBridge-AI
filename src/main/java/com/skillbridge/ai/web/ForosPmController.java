@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -67,5 +68,18 @@ public class ForosPmController {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/project-manager/foros.html";
         }
+    }
+
+    @PostMapping("/foros/{id}/fijar")
+    public String fijar(@PathVariable Long id, @RequestParam boolean valor,
+                        HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            foroService.establecerFijado(id, valor);
+            redirectAttributes.addFlashAttribute("exito", valor ? "Hilo fijado." : "Hilo desfijado.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/project-manager/foros.html";
     }
 }

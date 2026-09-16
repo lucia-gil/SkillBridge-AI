@@ -13,9 +13,10 @@ public class HiloFila {
     private final long numRespuestas;
     private final int numVistas;
     private final boolean tieneAceptada;
+    private final boolean esFijado;
 
     public HiloFila(Long id, String titulo, Long proyectoId, String proyectoNombre, String autorNombre,
-                     String fechaLabel, long numRespuestas, int numVistas, boolean tieneAceptada) {
+                     String fechaLabel, long numRespuestas, int numVistas, boolean tieneAceptada, boolean esFijado) {
         this.id = id;
         this.titulo = titulo;
         this.proyectoId = proyectoId;
@@ -26,6 +27,7 @@ public class HiloFila {
         this.numRespuestas = numRespuestas;
         this.numVistas = numVistas;
         this.tieneAceptada = tieneAceptada;
+        this.esFijado = esFijado;
     }
 
     public Long getId() {
@@ -66,5 +68,9 @@ public class HiloFila {
 
     public boolean isTieneAceptada() {
         return tieneAceptada;
+    }
+
+    public boolean isEsFijado() {
+        return esFijado;
     }
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,100 +8,82 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
+<style>
+  .report-hero{background:linear-gradient(135deg,var(--navy-900),var(--navy-700));border-radius:var(--radius-lg);padding:var(--space-6);color:white;display:flex;justify-content:space-between;gap:var(--space-5);align-items:center;box-shadow:var(--shadow-2)}
+  .report-hero h1{font-size:var(--fs-xl);margin-bottom:6px}.report-hero p{font-size:var(--fs-sm);color:rgba(255,255,255,.72);max-width:620px}
+  .report-actions{display:flex;gap:var(--space-3);flex-wrap:wrap}.report-actions .btn{background:white;border-color:rgba(255,255,255,.25)}
+  .report-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:var(--space-3);align-items:end}.report-filters .field{margin:0}.report-filters .field-label{font-size:var(--fs-xs)}
+  .status-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-3)}.status-item{padding:var(--space-4);border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-sunken)}
+  .status-count{display:block;font-size:var(--fs-xl);font-weight:700;color:var(--navy-700)}.status-label{font-size:var(--fs-xs);color:var(--text-tertiary)}
+  .report-table .progress-inline{min-width:145px}.report-note{display:flex;gap:var(--space-2);align-items:flex-start;color:var(--text-tertiary);font-size:var(--fs-xs);line-height:1.5}
+  @media(max-width:1050px){.report-filters{grid-template-columns:1fr 1fr}.report-filters .btn{width:100%}}
+  @media(max-width:700px){.report-hero{align-items:flex-start;flex-direction:column}.report-filters{grid-template-columns:1fr}.report-actions{width:100%}.report-actions .btn{flex:1}}
+</style>
 </head>
 <body>
-<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
-
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
-    <main class="page-content" id="page-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content page-content-wide">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
-
-      <div class="detail-grid" style="margin-top:var(--space-6);">
-        <section class="card card-pad">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
-            <div>
-              <h2 style="font-size:var(--fs-md);">Avance por sprint</h2>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de historias cerradas sobre el plan · sprints S9–S14</p>
-            </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar</button>
-          </div>
-          <div class="bar-chart" id="sprint-chart"></div>
-        </section>
-
-        <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Ocupación del equipo</h3>
-          <div id="team-occupancy"></div>
-        </section>
-      </div>
-
-      <section class="card" style="margin-top:var(--space-6);">
-        <div class="card-header"><div class="card-header-text"><h2>Detalle por proyecto</h2><p>Historias, horas invertidas y desviación de plazo</p></div></div>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead><tr><th>Proyecto</th><th>Historias (cerradas / totales)</th><th>Horas invertidas</th><th>Desviación de plazo</th><th>Riesgo</th></tr></thead>
-            <tbody id="detail-body"></tbody>
-          </table>
+      <section class="report-hero">
+        <div>
+          <h1>Informe ejecutivo de proyectos</h1>
+          <p>La vista y los archivos exportados utilizan exactamente los mismos filtros, indicadores, estados y registros.</p>
+        </div>
+        <div class="report-actions">
+          <a class="btn btn-secondary" th:href="'reportes.xlsx' + ${queryExport}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar Excel</a>
+          <a class="btn btn-secondary" th:href="'reportes.pdf' + ${queryExport}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar PDF</a>
         </div>
       </section>
 
+      <section class="card card-pad">
+        <form class="report-filters" method="get" action="reportes.html">
+          <label class="field"><span class="field-label">Proyecto</span><select class="select" name="proyectoId"><option value="">Todos los proyectos</option><option th:each="p : ${proyectosDisponibles}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${p.id == proyectoId}">Proyecto</option></select></label>
+          <label class="field"><span class="field-label">Estado</span><select class="select" name="estado"><option value="">Todos</option><option value="planificacion" th:selected="${estado == 'planificacion'}">Planificación</option><option value="activo" th:selected="${estado == 'activo'}">Activo</option><option value="en_pausa" th:selected="${estado == 'en_pausa'}">En pausa</option><option value="completado" th:selected="${estado == 'completado'}">Completado</option><option value="cancelado" th:selected="${estado == 'cancelado'}">Cancelado</option></select></label>
+          <label class="field"><span class="field-label">Inicio desde</span><input class="input" type="date" name="desde" th:value="${desde}"></label>
+          <label class="field"><span class="field-label">Inicio hasta</span><input class="input" type="date" name="hasta" th:value="${hasta}"></label>
+          <button class="btn btn-primary" type="submit"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg>Aplicar</button>
+        </form>
+      </section>
+
+      <div class="kpi-grid">
+        <div class="kpi-tile accent-blue"><div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></div><span class="kpi-tile-label">Proyectos</span><span class="kpi-tile-value" th:text="${datos.totalProyectos}">0</span><span class="kpi-tile-meta">resultado filtrado</span></div>
+        <div class="kpi-tile accent-green"><div class="kpi-tile-icon green"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></div><span class="kpi-tile-label">Avance promedio</span><span class="kpi-tile-value" th:text="${datos.avancePromedio} + '%'">0%</span><span class="kpi-tile-meta">estimado por calendario</span></div>
+        <div class="kpi-tile accent-violet"><div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div><span class="kpi-tile-label">Asignaciones activas</span><span class="kpi-tile-value" th:text="${datos.asignacionesActivas}">0</span><span class="kpi-tile-meta">en los proyectos visibles</span></div>
+        <div class="kpi-tile accent-red"><div class="kpi-tile-icon red"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></div><span class="kpi-tile-label">Atrasados</span><span class="kpi-tile-value" th:text="${datos.atrasados}">0</span><span class="kpi-tile-meta" th:classappend="${datos.atrasados > 0} ? ' warn' : ''">fecha estimada vencida</span></div>
+      </div>
+
+      <section class="card card-pad">
+        <div class="page-section-header" style="margin-bottom:var(--space-4)"><div><h2 class="page-section-title">Resumen por estado</h2><p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:3px">La misma distribución se incluye en PDF y Excel.</p></div><span class="label-mono" th:text="'Generado ' + ${datos.generado}">Generado</span></div>
+        <div class="status-summary">
+          <div class="status-item" th:each="e : ${datos.porEstado}"><span class="status-count" th:text="${e.value}">0</span><span class="status-label" th:text="${e.key}">Estado</span></div>
+          <div class="status-item" th:if="${datos.porEstado.isEmpty()}"><span class="status-count">0</span><span class="status-label">Sin resultados</span></div>
+        </div>
+      </section>
+
+      <section class="card report-table">
+        <div class="card-header"><div class="card-header-icon-row"><div class="card-header-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-bar-chart"></use></svg></div><div class="card-header-text"><h2>Detalle exportable</h2><p th:text="${datos.filtrosLabel}">Filtros</p></div></div><span class="badge badge-blue" th:text="${datos.totalProyectos} + ' registros'">0 registros</span></div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Proyecto</th><th>Estado</th><th>Inicio</th><th>Entrega estimada</th><th>Avance estimado</th><th>Equipo activo</th><th>Carga asignada</th><th>Situación</th></tr></thead>
+            <tbody>
+              <tr th:each="f : ${datos.filas}">
+                <td class="cell-primary" th:text="${f.proyecto}">Proyecto</td><td><span class="badge" th:classappend="${f.estadoBadgeClass}" th:text="${f.estado}">Estado</span></td>
+                <td class="mono" th:text="${f.fechaInicioLabel}">—</td><td class="mono" th:text="${f.fechaFinLabel}">—</td>
+                <td><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:classappend="${f.avance >= 70 ? 'green' : (f.avance < 40 ? 'amber' : '')}" th:style="'width:' + ${f.avance} + '%' "></div></div><span class="progress-value" th:text="${f.avance} + '%'">0%</span></div></td>
+                <td class="mono" th:text="${f.equipoActivo}">0</td><td class="mono" th:text="${f.cargaAsignada} + '%'">0%</td><td><span class="badge" th:classappend="${f.situacionBadgeClass}" th:text="${f.situacion}">Situación</span></td>
+              </tr>
+              <tr th:if="${datos.filas.isEmpty()}"><td colspan="8" style="text-align:center;padding:var(--space-10);color:var(--text-tertiary)">No hay proyectos que coincidan con los filtros seleccionados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer"><div class="report-note"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-info"></use></svg><span>El avance es una estimación basada en las fechas de inicio y entrega, porque el modelo actual no registra tareas completadas.</span></div><a href="reportes.html" class="btn btn-tertiary btn-sm">Limpiar filtros</a></div>
+      </section>
     </main>
   </div>
 </div>
-
-<script src="/js/mock-data.js"></script>
-<script src="/js/state.js"></script>
-<script src="/js/toast.js"></script>
-<script src="/js/dropdown.js"></script>
-<script src="/js/table-filter.js"></script>
-<script src="/js/command-palette.js"></script>
-<script src="/js/modal.js"></script>
-<script src="/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "project-manager", active: "reportes.html", title: "Reportes", subtitle: "Desempeño de mis 4 proyectos · Q3 2026" });
-  if (!cfg) return;
-
-  var r = MOCK.pmReport;
-
-  document.getElementById("kpi-grid").innerHTML = [
-    { label: "AVANCE PONDERADO", value: r.avancePonderado + "%", delta: r.avanceDelta, unit: "pts" },
-    { label: "HISTORIAS CERRADAS", value: r.historiasCerradas, delta: r.historiasDelta, unit: "" },
-    { label: "DESVIACIÓN DE PLAZO", value: r.desviacionPlazo, meta: r.desviacionNota, cls: "warn" },
-    { label: "HORAS ASIGNADAS", value: r.horasAsignadas.toLocaleString("es-CO"), meta: "de " + r.horasDisponibles.toLocaleString("es-CO") + " h disponibles" }
-  ].map(function (k) {
-    var meta = k.meta || (typeof k.delta === "number" ? (k.delta >= 0 ? "+" : "") + k.delta + (k.unit ? " " + k.unit : "") + " vs. mes anterior" : "");
-    var cls = k.cls || (typeof k.delta === "number" ? (k.delta >= 0 ? "up" : "down") : "");
-    return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + cls + '">' + meta + '</span></div>';
-  }).join("");
-
-  var maxSprint = Math.max.apply(null, r.sprints.map(function (s) { return s.pct; }));
-  document.getElementById("sprint-chart").innerHTML = r.sprints.map(function (s, i) {
-    var h = Math.round((s.pct / maxSprint) * 100);
-    return '<div class="bar-chart-col"><span class="bar-chart-value">' + s.pct + '%</span>' +
-      '<div class="bar-chart-track"><div class="bar-chart-fill' + (i === r.sprints.length - 1 ? " accent" : "") + '" style="height:' + h + '%;"></div></div>' +
-      '<span class="bar-chart-label">' + s.s + '</span></div>';
-  }).join("");
-
-  document.getElementById("team-occupancy").innerHTML = r.ocupacionEquipo.map(function (o) {
-    var cls = o.pct > 100 ? "red" : o.pct >= 90 ? "amber" : "";
-    return '<div style="margin-bottom:var(--space-4);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:6px;"><span style="font-weight:500;">' + o.nombre + '</span><span class="mono" style="font-weight:600;">' + o.pct + '%</span></div>' +
-      '<div class="progress-bar"><div class="progress-bar-fill ' + cls + '" style="width:' + Math.min(o.pct, 100) + '%;"></div></div></div>';
-  }).join("");
-
-  var riesgoBadge = { "Bajo": "badge-green", "Medio": "badge-amber", "Alto": "badge-red" };
-  document.getElementById("detail-body").innerHTML = r.detalleProyectos.map(function (p) {
-    return "<tr><td class=\"cell-primary\">" + p.proyecto + "</td><td class=\"mono\">" + p.historias + "</td><td class=\"mono\">" + p.horas + "</td>" +
-      "<td class=\"mono\">" + p.desviacion + '</td><td><span class="badge ' + (riesgoBadge[p.riesgo] || "badge-neutral") + '">' + p.riesgo + "</span></td></tr>";
-  }).join("");
-
-  document.getElementById("export-btn").addEventListener("click", function () {
-    SBAI.toast.show("Generando exportable de reportes en PDF…");
-  });
-});
-</script>
+<script src="/js/toast.js"></script><script src="/js/dropdown.js"></script><script src="/js/command-palette.js"></script><script src="/js/topbar-actions.js"></script>
 </body>
 </html>

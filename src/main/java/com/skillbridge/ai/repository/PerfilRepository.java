@@ -17,6 +17,9 @@ public interface PerfilRepository extends JpaRepository<Perfil, Long> {
     @Query("select p from Perfil p join fetch p.usuario u where p.estado = 'activo' order by u.nombreCompleto asc")
     List<Perfil> listarActivosConUsuario();
 
+    @Query("select p from Perfil p join fetch p.usuario u where p.estado = 'activo' and u.rolOrganizacional = :rol order by u.nombreCompleto")
+    List<Perfil> listarActivosPorRolOrganizacional(@Param("rol") String rol);
+
     // Igual que arriba, pero SIN filtrar por estado - usado en
     // resource-manager/colaboradores.html, que necesita ver también a los
     // perfiles inactivos (para poder reactivarlos). Sin el join fetch, cada

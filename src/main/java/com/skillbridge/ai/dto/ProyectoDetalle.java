@@ -88,4 +88,24 @@ public class ProyectoDetalle {
     public List<MiembroEquipoFila> getEquipo() {
         return equipo;
     }
+
+    /** El PM forma parte del equipo, pero no consume una vacante de colaborador. */
+    public long getColaboradoresAsignados() {
+        return equipo.stream()
+                .filter(m -> "colaborador".equals(m.getRolEnProyectoCrudo()))
+                .count();
+    }
+
+    public long getVacantes() {
+        return Math.max(0, colaboradoresRequeridos - getColaboradoresAsignados());
+    }
+
+    public boolean isCupoCompleto() {
+        return getColaboradoresAsignados() >= colaboradoresRequeridos;
+    }
+
+    public int getCoberturaPorcentaje() {
+        if (colaboradoresRequeridos <= 0) return 100;
+        return (int) Math.min(100, Math.round(getColaboradoresAsignados() * 100.0 / colaboradoresRequeridos));
+    }
 }

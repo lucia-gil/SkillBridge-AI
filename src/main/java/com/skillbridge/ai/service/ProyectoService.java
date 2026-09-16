@@ -2,6 +2,7 @@ package com.skillbridge.ai.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.skillbridge.ai.dto.EventoCalendario;
 import com.skillbridge.ai.dto.MiProyectoFila;
 import com.skillbridge.ai.dto.MiembroEquipoFila;
 import com.skillbridge.ai.dto.PerfilOpcion;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -52,9 +54,9 @@ public class ProyectoService {
     private final ObjectMapper objectMapper;
 
     public ProyectoService(ProyectoRepository proyectoRepository, AsignacionRepository asignacionRepository,
-                           PerfilRepository perfilRepository, AuditoriaService auditoriaService,
-                           NotificacionService notificacionService, ConfiguracionService configuracionService,
-                           ObjectMapper objectMapper) {
+                            PerfilRepository perfilRepository, AuditoriaService auditoriaService,
+                            NotificacionService notificacionService, ConfiguracionService configuracionService,
+                            ObjectMapper objectMapper) {
         this.proyectoRepository = proyectoRepository;
         this.asignacionRepository = asignacionRepository;
         this.perfilRepository = perfilRepository;
@@ -95,7 +97,8 @@ public class ProyectoService {
     }
 
     private String nombrePmActivo(Long proyectoId) {
-        return asignacionRepository.buscarResponsableActivo(proyectoId, Roles.PROJECT_MANAGER)
+        return asignacionRepository.buscarResponsablesActivos(proyectoId, Roles.PROJECT_MANAGER).stream()
+                .findFirst()
                 .map(a -> a.getPerfil().getUsuario().getNombreCompleto())
                 .orElse(null);
     }
@@ -104,6 +107,44 @@ public class ProyectoService {
         return perfilRepository.listarActivosConUsuario().stream()
                 .map(p -> new PerfilOpcion(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Personas que todavía pueden recibir una asignación. Reutiliza los
+     * mismos límites de carga y proyectos simultáneos que asignarColaborador,
+     * y excluye al PM porque colaboradores_requeridos no lo cuenta como una
+     * vacante adicional del equipo.
+     */
+    public int contarColaboradoresDisponibles(Long pmPerfilId) {
+        var configuracion = configuracionService.obtenerMapa();
+        int limiteCarga = parseEntero(configuracionService.valor(configuracion, "limite_carga_colaborador", "100"), 100);
+        int maximoProyectos = parseEntero(configuracionService.valor(configuracion, "maximo_proyectos_simultaneos", "3"), 3);
+
+        return (int) perfilRepository.listarActivosConUsuario().stream()
+                .filter(p -> !p.getId().equals(pmPerfilId))
+                .filter(p -> p.getDisponibilidadPorcentaje() != null && p.getDisponibilidadPorcentaje() > 0)
+                .filter(p -> asignacionRepository.listarPorPerfilYEstado(p.getId(), "activa").size() < maximoProyectos)
+                .filter(p -> sumarCargaActivaSegura(p.getId()) < limiteCarga)
+                .count();
+    }
+
+    /**
+     * Eventos para el Calendario (colaborador y PM): las fechas reales de los
+     * proyectos donde el perfil tiene una asignacion activa - inicio y entrega
+     * estimada de cada proyecto. Fecha en ISO (yyyy-MM-dd) para el JS del calendario.
+     */
+    public List<EventoCalendario> eventosCalendarioDe(Long perfilId) {
+        List<EventoCalendario> eventos = new ArrayList<>();
+        for (Asignacion a : asignacionRepository.listarPorPerfilYEstado(perfilId, "activa")) {
+            Proyecto p = a.getProyecto();
+            if (p.getFechaInicio() != null) {
+                eventos.add(new EventoCalendario(p.getFechaInicio().toString(), p.getNombre(), "inicio"));
+            }
+            if (p.getFechaFinEstimada() != null) {
+                eventos.add(new EventoCalendario(p.getFechaFinEstimada().toString(), p.getNombre(), "entrega"));
+            }
+        }
+        return eventos;
     }
 
     // ─────────────────── "Mis proyectos" (Colaborador) ───────────────────
@@ -132,8 +173,8 @@ public class ProyectoService {
 
     @Transactional
     public Proyecto crear(String nombre, String descripcion, List<String> tecnologias, LocalDate fechaInicio,
-                          LocalDate fechaFinEstimada, int colaboradoresRequeridos, Long pmPerfilId,
-                          Long actorUsuarioId) {
+                           LocalDate fechaFinEstimada, int colaboradoresRequeridos, Long pmPerfilId,
+                           Long actorUsuarioId) {
         if (nombre == null || nombre.isBlank()) {
             throw new OperacionInvalidaException("Ingresa un nombre para el proyecto.");
         }
@@ -145,13 +186,21 @@ public class ProyectoService {
         }
         Perfil pm = perfilRepository.findById(pmPerfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona un Project Manager válido."));
+        int disponibles = contarColaboradoresDisponibles(pmPerfilId);
+        if (colaboradoresRequeridos < 0) {
+            throw new OperacionInvalidaException("La cantidad de colaboradores requeridos no puede ser negativa.");
+        }
+        if (colaboradoresRequeridos > disponibles) {
+            throw new OperacionInvalidaException("No hay colaboradores suficientes. Solo hay " + disponibles
+                    + " colaborador(es) disponible(s) en este momento.");
+        }
 
         Proyecto p = new Proyecto();
         p.setNombre(nombre.trim());
         p.setDescripcion(descripcion);
         p.setTecnologias(serializarTecnologias(tecnologias));
         p.setEstado("planificacion");
-        p.setColaboradoresRequeridos(Math.max(0, colaboradoresRequeridos));
+        p.setColaboradoresRequeridos(colaboradoresRequeridos);
         p.setFechaInicio(fechaInicio);
         p.setFechaFinEstimada(fechaFinEstimada);
         p = proyectoRepository.save(p);
@@ -191,8 +240,27 @@ public class ProyectoService {
     }
 
     @Transactional
+    public void editarProyecto(Long proyectoId, String nombre, String nuevoEstado, Long actorUsuarioId) {
+        Proyecto p = proyectoRepository.findById(proyectoId)
+                .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new OperacionInvalidaException("El nombre del proyecto no puede estar vacío.");
+        }
+        List<String> validos = List.of("planificacion", "activo", "en_pausa", "completado", "cancelado");
+        if (!validos.contains(nuevoEstado)) {
+            throw new OperacionInvalidaException("Estado de proyecto no reconocido.");
+        }
+        String estadoAnterior = p.getEstado();
+        p.setNombre(nombre.trim());
+        p.setEstado(nuevoEstado);
+        proyectoRepository.save(p);
+        auditoriaService.registrar(actorUsuarioId, "PROYECTO_EDITADO", "proyecto", proyectoId,
+                AuditoriaService.json("estado", estadoAnterior), AuditoriaService.json("estado", nuevoEstado), p.getNombre());
+    }
+
+    @Transactional
     public void asignarColaborador(Long proyectoId, Long perfilId, String rolEnProyecto, int cargaPorcentaje,
-                                   LocalDate fechaInicio, Long actorUsuarioId) {
+                                    LocalDate fechaInicio, Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         Perfil perfil = perfilRepository.findById(perfilId)
@@ -202,15 +270,23 @@ public class ProyectoService {
         }
         // Regla confirmada con el equipo: solo puede haber UN Project Manager
         // activo por proyecto. Si ya hay uno y se intenta asignar otro, se
-        // bloquea antes de tocar la BD - evita el caso de dos PM activos a
-        // la vez, que ademas rompería buscarResponsableActivo() (esa
-        // consulta espera como maximo un resultado).
+        // bloquea antes de tocar la BD - para CAMBIAR de PM se usa
+        // reasignarProjectManager(...), que hace el reemplazo completo en
+        // una sola transaccion (ver mas abajo).
         if (Roles.PROJECT_MANAGER.equals(rolEnProyecto)) {
             long pmActivos = asignacionRepository.countByProyectoIdAndRolEnProyectoAndEstado(
                     proyectoId, Roles.PROJECT_MANAGER, "activa");
             if (pmActivos > 0) {
                 throw new OperacionInvalidaException(
-                        "Este proyecto ya tiene un Project Manager activo. Finaliza esa asignación antes de asignar uno nuevo.");
+                        "Este proyecto ya tiene un Project Manager activo. Usa \"Cambiar Project Manager\" para reemplazarlo.");
+            }
+        }
+        if (Roles.COLABORADOR.equals(rolEnProyecto)) {
+            long colaboradoresActivos = asignacionRepository.countByProyectoIdAndEstadoAndRolEnProyecto(
+                    proyectoId, "activa", Roles.COLABORADOR);
+            if (colaboradoresActivos >= p.getColaboradoresRequeridos()) {
+                throw new OperacionInvalidaException("El proyecto ya tiene cubiertas sus "
+                        + p.getColaboradoresRequeridos() + " vacante(s) de colaborador.");
             }
         }
         // Límites configurables (RF08, configuracion_global) en vez de topes

@@ -2,6 +2,7 @@ package com.skillbridge.ai.model;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Table;
 
 /**
@@ -17,6 +18,9 @@ public class ProyectoHabilidadRequerida {
     @EmbeddedId
     private ProyectoHabilidadRequeridaId id;
 
+    @Column(name = "nivel_requerido", nullable = false)
+    private Integer nivelRequerido;
+
     public ProyectoHabilidadRequeridaId getId() {
         return id;
     }
@@ -24,4 +28,8 @@ public class ProyectoHabilidadRequerida {
     public void setId(ProyectoHabilidadRequeridaId id) {
         this.id = id;
     }
+
+    public Integer getNivelRequerido() { return nivelRequerido; }
+
+    public void setNivelRequerido(Integer nivelRequerido) { this.nivelRequerido = nivelRequerido; }
 }

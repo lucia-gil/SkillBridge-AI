@@ -50,6 +50,9 @@ public class ForoPublicacion {
     @Column(name = "num_vistas", nullable = false)
     private Integer numVistas = 0;
 
+    @Column(name = "es_fijado", nullable = false)
+    private Boolean esFijado = false;
+
     @Column(name = "fecha_publicacion", insertable = false, updatable = false)
     private LocalDateTime fechaPublicacion;
 
@@ -131,6 +134,14 @@ public class ForoPublicacion {
 
     public void setNumVistas(Integer numVistas) {
         this.numVistas = numVistas;
+    }
+
+    public Boolean getEsFijado() {
+        return esFijado;
+    }
+
+    public void setEsFijado(Boolean esFijado) {
+        this.esFijado = esFijado;
     }
 
     public LocalDateTime getFechaPublicacion() {
