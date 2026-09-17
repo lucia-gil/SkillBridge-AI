@@ -23,8 +23,8 @@
         <div class="kpi-tile"><span class="kpi-tile-label">TOTAL (ÚLTIMOS 200)</span><span class="kpi-tile-value" th:text="${eventos.size()}">0</span></div>
       </div>
 
-      <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 2.4fr 1fr;">
-        <section class="card">
+      <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 2.4fr 1fr; align-items: stretch;">
+        <section class="card" style="height:100%;">
           <div class="table-toolbar">
             <div>
               <strong th:text="${eventos.size()} + ' eventos recientes'">0 eventos</strong>
@@ -60,9 +60,13 @@
             <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-shield"></use></svg></span>
             <span class="state-panel-title">Sin eventos con estos filtros</span>
           </div>
+          <div class="table-footer">
+            <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="audit-visible-count">0</span> de <span id="audit-filtered-count">0</span> eventos</span>
+            <div class="pagination"><button class="page-btn" id="audit-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="audit-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="audit-next" type="button" aria-label="Página siguiente">›</button></div>
+          </div>
         </section>
 
-        <section class="card card-pad">
+        <section class="card card-pad" style="height:100%;">
           <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Usuarios con más eventos</h3>
           <div th:if="${topUsuarios.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Sin eventos registrados todavía.</div>
           <div th:each="u : ${topUsuarios}" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
@@ -85,6 +89,61 @@
 <script th:inline="javascript">
 document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.tableFilter.init(document);
+
+  // Paginación de la tabla, encima del filtrado de table-filter.js: no se
+  // tocan los filtros de Tipo/Severidad, solo se agrega que de los
+  // resultados que coinciden se muestren de a 6 (mismo patron que
+  // administrador/usuarios.html, habilidades.html y proyectos.html).
+  (function () {
+    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="audit"]'));
+    if (!rows.length) return;
+
+    var tipoSelect = document.querySelector('[data-filter-scope="audit"][data-filter-key="tipo"]');
+    var severidadSelect = document.querySelector('[data-filter-scope="audit"][data-filter-key="severidad"]');
+    var emptyPanel = document.querySelector('[data-filter-empty="audit"]');
+    var visibleCount = document.getElementById("audit-visible-count");
+    var filteredCount = document.getElementById("audit-filtered-count");
+    var pageLabel = document.getElementById("audit-page-label");
+    var previous = document.getElementById("audit-prev");
+    var next = document.getElementById("audit-next");
+    var pageSize = 6;
+    var page = 1;
+
+    function matches(row) {
+      var tipo = tipoSelect ? tipoSelect.value : "todos";
+      if (tipo && tipo !== "todos" && row.dataset.fTipo !== tipo) return false;
+      var severidad = severidadSelect ? severidadSelect.value : "todos";
+      if (severidad && severidad !== "todos" && row.dataset.fSeveridad !== severidad) return false;
+      return true;
+    }
+
+    function render() {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
+      visibleCount.textContent = visible.length;
+      filteredCount.textContent = matched.length;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
+
+    [tipoSelect, severidadSelect].forEach(function (ctrl) {
+      if (!ctrl) return;
+      ctrl.addEventListener("change", function () { page = 1; render(); });
+    });
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (page < pages) { page++; render(); }
+    });
+    render();
+  })();
 });
 </script>
 </body>

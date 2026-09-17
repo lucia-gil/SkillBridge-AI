@@ -72,6 +72,10 @@
           <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
           <span class="state-panel-title">Sin usuarios con estos filtros</span>
         </div>
+        <div class="table-footer">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="users-visible-count">0</span> de <span id="users-filtered-count">0</span> usuarios</span>
+          <div class="pagination"><button class="page-btn" id="users-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="users-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="users-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
       </section>
 
     </main>
@@ -179,6 +183,72 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
   });
+
+  // Paginación de la tabla, encima del filtrado de table-filter.js: no se
+  // toca la busqueda/rol/estado (siguen filtrando igual), solo se agrega
+  // que de los resultados que coinciden se muestren de a 6. Se recalcula
+  // el match aqui mismo (misma logica que table-filter.js: q busca en
+  // data-f-search, rol/estado comparan exacto salvo "todos") para poder
+  // paginar el conjunto filtrado sin pelear por la propiedad "hidden" de
+  // las filas con el motor generico.
+  (function () {
+    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="users"]'));
+    if (!rows.length) return;
+
+    var searchInput = document.querySelector('[data-filter-scope="users"][data-filter-key="q"]');
+    var rolSelect = document.querySelector('[data-filter-scope="users"][data-filter-key="rol"]');
+    var estadoSelect = document.querySelector('[data-filter-scope="users"][data-filter-key="estado"]');
+    var emptyPanel = document.querySelector('[data-filter-empty="users"]');
+    var visibleCount = document.getElementById("users-visible-count");
+    var filteredCount = document.getElementById("users-filtered-count");
+    var pageLabel = document.getElementById("users-page-label");
+    var previous = document.getElementById("users-prev");
+    var next = document.getElementById("users-next");
+    var pageSize = 6;
+    var page = 1;
+
+    function normalize(value) {
+      return (value || "").toString().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+    }
+
+    function matches(row) {
+      var q = searchInput ? normalize(searchInput.value) : "";
+      if (q && normalize(row.dataset.fSearch).indexOf(q) === -1) return false;
+      var rol = rolSelect ? rolSelect.value : "todos";
+      if (rol && rol !== "todos" && row.dataset.fRol !== rol) return false;
+      var estado = estadoSelect ? estadoSelect.value : "todos";
+      if (estado && estado !== "todos" && row.dataset.fEstado !== estado) return false;
+      return true;
+    }
+
+    function render() {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
+      visibleCount.textContent = visible.length;
+      filteredCount.textContent = matched.length;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
+
+    [searchInput, rolSelect, estadoSelect].forEach(function (ctrl) {
+      if (!ctrl) return;
+      var evt = ctrl.tagName === "SELECT" ? "change" : "input";
+      ctrl.addEventListener(evt, function () { page = 1; render(); });
+    });
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (page < pages) { page++; render(); }
+    });
+    render();
+  })();
 });
 </script>
 </body>

@@ -42,44 +42,31 @@
             <div class="card-body">
               <div th:if="${habilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no declaraste ninguna habilidad.</div>
 
-              <div th:each="h : ${habilidades}" style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
-                <div style="flex:1; min-width:0;">
-                  <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
-                        th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
-                  <span th:if="${h.validada}" class="badge badge-green" style="margin-left:6px;">Validada por RM</span>
+              <div id="skills-list">
+                <div th:each="h : ${habilidades}" data-habilidad-row style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+                  <div style="flex:1; min-width:0;">
+                    <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
+                          th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
+                    <span th:if="${h.validada}" class="badge badge-green" style="margin-left:6px;">Validada por RM</span>
 
-                  <!-- Certificado ya cargado: se muestra el link -->
-                  <div th:if="${h.tieneCertificado}" th:each="cert : ${h.certificados}" style="margin-top:6px; font-size:var(--fs-xs);">
-                    <svg class="icon icon-sm" style="vertical-align:-2px;"><use href="/img/icons.svg#icon-file-text"></use></svg>
-                    <a th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                    <!-- Certificado ya cargado: se muestra el link -->
+                    <div th:if="${h.tieneCertificado}" th:each="cert : ${h.certificados}" style="margin-top:6px; font-size:var(--fs-xs);">
+                      <svg class="icon icon-sm" style="vertical-align:-2px;"><use href="/img/icons.svg#icon-file-text"></use></svg>
+                      <a th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                    </div>
+                    <div th:unless="${h.tieneCertificado}" class="text-tertiary" style="margin-top:6px; font-size:var(--fs-xs);">Sin constancia adjunta</div>
                   </div>
-                  <div th:unless="${h.tieneCertificado}" class="text-tertiary" style="margin-top:6px; font-size:var(--fs-xs);">Sin constancia adjunta</div>
+
+                  <button type="button" class="btn btn-secondary btn-sm"
+                          th:attr="data-editar-cert=${h.habilidadId}, data-cert-nombre=${h.certificados.isEmpty() ? '' : h.certificados[0].nombreArchivo}, data-cert-url=${h.certificados.isEmpty() ? '' : h.certificados[0].urlArchivo}">
+                    <span th:text="${h.tieneCertificado} ? 'Editar constancia' : 'Agregar constancia'">Editar constancia</span>
+                  </button>
                 </div>
-
-                <button type="button" class="btn btn-secondary btn-sm"
-                        th:attr="data-editar-cert=${h.habilidadId}, data-cert-nombre=${h.certificados.isEmpty() ? '' : h.certificados[0].nombreArchivo}, data-cert-url=${h.certificados.isEmpty() ? '' : h.certificados[0].urlArchivo}">
-                  <span th:text="${h.tieneCertificado} ? 'Editar constancia' : 'Agregar constancia'">Editar constancia</span>
-                </button>
               </div>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="card-header"><div class="card-header-text"><h2>Historial de proyectos</h2></div></div>
-            <div class="table-scroll">
-              <table class="data-table">
-                <thead><tr><th>Proyecto</th><th>Rol</th><th>Periodo</th><th>Dedicación</th><th>Estado</th></tr></thead>
-                <tbody>
-                <tr th:if="${historial.isEmpty()}"><td colspan="5" class="text-tertiary" style="text-align:center; padding:var(--space-6);">Todavía no tienes asignaciones registradas.</td></tr>
-                <tr th:each="h : ${historial}">
-                  <td class="cell-primary" th:text="${h.nombre}">Proyecto</td>
-                  <td th:text="${h.rolLabel}">Rol</td>
-                  <td th:text="${h.periodoLabel}">Periodo</td>
-                  <td class="mono" th:text="${h.cargaPorcentaje} + '%'">0%</td>
-                  <td><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></td>
-                </tr>
-                </tbody>
-              </table>
+              <div class="table-footer" th:unless="${habilidades.isEmpty()}">
+                <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="skills-visible-count">0</span> de <span id="skills-total-count">0</span> habilidades</span>
+                <div class="pagination"><button class="page-btn" id="skills-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="skills-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="skills-next" type="button" aria-label="Página siguiente">›</button></div>
+              </div>
             </div>
           </section>
         </div>
@@ -111,6 +98,25 @@
             <div class="info-row"><span class="info-row-label">Experiencia</span><span class="info-row-value" th:text="${resumen.experienciaAnios} + ' años'">0 años</span></div>
             <div class="info-row"><span class="info-row-label">Alta en la plataforma</span><span class="info-row-value" th:text="${resumen.cuentaDesdeLabel}">—</span></div>
             <p class="field-hint" style="margin-top:var(--space-4);">Para editar cargo, biografía o contraseña ve a <a href="mi-cuenta.html">Mi cuenta</a>.</p>
+          </section>
+
+          <section class="card">
+            <div class="card-header"><div class="card-header-text"><h2>Historial de proyectos</h2></div></div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead><tr><th>Proyecto</th><th>Rol</th><th>Periodo</th><th>Dedicación</th><th>Estado</th></tr></thead>
+                <tbody>
+                <tr th:if="${historial.isEmpty()}"><td colspan="5" class="text-tertiary" style="text-align:center; padding:var(--space-6);">Todavía no tienes asignaciones registradas.</td></tr>
+                <tr th:each="h : ${historial}">
+                  <td class="cell-primary" th:text="${h.nombre}">Proyecto</td>
+                  <td th:text="${h.rolLabel}">Rol</td>
+                  <td th:text="${h.periodoLabel}">Periodo</td>
+                  <td class="mono" th:text="${h.cargaPorcentaje} + '%'">0%</td>
+                  <td><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
         </div>
       </div>
@@ -175,6 +181,39 @@
         });
       });
     });
+
+    // Paginación en el cliente: mismo patron que las demas tablas
+    // (colaboradores/ocupacion del RM) - se muestran de a 6.
+    var skillRows = Array.from(document.querySelectorAll("[data-habilidad-row]"));
+    if (skillRows.length) {
+      var pageSize = 6;
+      var page = 1;
+      var visibleCount = document.getElementById("skills-visible-count");
+      var totalCount = document.getElementById("skills-total-count");
+      var pageLabel = document.getElementById("skills-page-label");
+      var previous = document.getElementById("skills-prev");
+      var next = document.getElementById("skills-next");
+
+      function render() {
+        var pages = Math.max(1, Math.ceil(skillRows.length / pageSize));
+        page = Math.min(page, pages);
+        var visible = skillRows.slice((page - 1) * pageSize, page * pageSize);
+        skillRows.forEach(function (row) { row.hidden = true; });
+        visible.forEach(function (row) { row.hidden = false; });
+        visibleCount.textContent = visible.length;
+        totalCount.textContent = skillRows.length;
+        pageLabel.textContent = "Página " + page + " de " + pages;
+        previous.disabled = page === 1;
+        next.disabled = page === pages;
+      }
+
+      previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+      next.addEventListener("click", function () {
+        var pages = Math.max(1, Math.ceil(skillRows.length / pageSize));
+        if (page < pages) { page++; render(); }
+      });
+      render();
+    }
   });
 </script>
 </body>

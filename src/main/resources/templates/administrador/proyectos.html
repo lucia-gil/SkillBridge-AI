@@ -54,6 +54,10 @@
           <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
           <span class="state-panel-title">Sin proyectos con estos filtros</span>
         </div>
+        <div class="table-footer">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="proyectos-visible-count">0</span> de <span id="proyectos-filtered-count">0</span> proyectos</span>
+          <div class="pagination"><button class="page-btn" id="proyectos-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="proyectos-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="proyectos-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
       </section>
 
       <!-- Detalle precalculado por proyecto (ver Javadoc de AdminProyectosController) -->
@@ -202,6 +206,54 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
   });
+
+  // Paginación de la tabla, encima del filtrado de table-filter.js: no se
+  // toca el filtro de Estado, solo se agrega que de los resultados que
+  // coinciden se muestren de a 6 (mismo patron que administrador/usuarios.html
+  // y administrador/habilidades.html).
+  (function () {
+    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="proyectos-admin"]'));
+    if (!rows.length) return;
+
+    var estadoSelect = document.querySelector('[data-filter-scope="proyectos-admin"][data-filter-key="estado"]');
+    var emptyPanel = document.querySelector('[data-filter-empty="proyectos-admin"]');
+    var visibleCount = document.getElementById("proyectos-visible-count");
+    var filteredCount = document.getElementById("proyectos-filtered-count");
+    var pageLabel = document.getElementById("proyectos-page-label");
+    var previous = document.getElementById("proyectos-prev");
+    var next = document.getElementById("proyectos-next");
+    var pageSize = 6;
+    var page = 1;
+
+    function matches(row) {
+      var estado = estadoSelect ? estadoSelect.value : "todos";
+      return !estado || estado === "todos" || row.dataset.fEstado === estado;
+    }
+
+    function render() {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
+      visibleCount.textContent = visible.length;
+      filteredCount.textContent = matched.length;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
+
+    if (estadoSelect) estadoSelect.addEventListener("change", function () { page = 1; render(); });
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (page < pages) { page++; render(); }
+    });
+    render();
+  })();
 });
 </script>
 </body>
