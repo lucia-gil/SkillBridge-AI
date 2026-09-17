@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <!--
     fragments/sidebar.html — Sidebar principal de SkillBridge AI.
@@ -8,102 +7,72 @@
 
 <aside class="sidebar" th:fragment="sidebar">
 
-  <!-- LOGO -->
-  <div class="sidebar-brand">
-    <img
-            src="/img/logo_blanco.png"
-            alt="SkillBridge AI"
-            class="sidebar-logo"
-    >
-  </div>
+    <!-- LOGO -->
+    <div class="sidebar-brand">
+        <img
+                src="/img/logo_blanco.png"
+                alt="SkillBridge AI"
+                class="sidebar-logo"
+        >
+    </div>
 
-  <!-- ROL -->
-  <div class="sidebar-role-badge" th:text="${roleLabel}">
-    ROL
-  </div>
+    <!-- ROL -->
+    <div class="sidebar-role-badge" th:text="${roleLabel}">
+        ROL
+    </div>
 
-  <!-- NAVEGACIÓN -->
-  <nav class="sidebar-nav" aria-label="Navegación principal">
+    <!-- NAVEGACIÓN -->
+    <nav class="sidebar-nav" aria-label="Navegación principal">
 
-    <a
-            class="sidebar-nav-item"
+
+        <a class="sidebar-nav-item"
             th:classappend="${item.href == activeHref} ? 'active'"
             th:href="${item.href}"
-            th:each="item : ${navItems}"
-    >
-      <svg class="icon">
-        <use th:attr="href='/img/icons.svg#' + ${item.icon}"></use>
-      </svg>
+            th:each="item : ${navItems}">
 
-      <span
-              class="sidebar-nav-item-label"
-              th:text="${item.label}"
-      >
-                Label
+            <svg class="icon">
+                <use th:href="@{'/img/icons.svg#' + ${item.icon}}"></use>
+            </svg>
+
+            <span
+                    class="sidebar-nav-item-label"
+                    th:text="${item.label}">
+                    Label
             </span>
 
-      <span
-              class="counter-badge"
-              th:if="${item.badge != null and item.badge > 0}"
-              th:text="${item.badge}"
-      >
+             <span
+                class="counter-badge"
+                th:if="${item.badge != null and item.badge > 0}"
+                th:text="${item.badge}">
                 0
             </span>
-    </a>
+        </a>
 
-  </nav>
+    </nav>
 
-  <!-- USUARIO -->
-  <div class="sidebar-footer">
+    <!-- USUARIO -->
+    <div class="sidebar-footer">
 
-    <button
-            type="button"
-            class="sidebar-user"
-            data-dropdown-trigger="user-menu-sidebar"
-    >
+        <button
+                type="button"
+                class="sidebar-user"
+                data-dropdown-trigger="user-menu-sidebar"
+        >
 
-      <!-- Avatar -->
-      <span
-              class="avatar avatar-sm sidebar-user-avatar"
-              th:text="${user.iniciales}"
-      >
-                MR
-            </span>
+            <!-- Menú -->
+            <svg class="icon sidebar-user-menu-icon" style="margin-left:auto;">
+                <use href="/img/icons.svg#icon-more-h"></use>
+            </svg>
 
-      <!-- Información del usuario -->
-      <span class="sidebar-user-text">
+        </button>
 
-                <span
-                        class="sidebar-user-name"
-                        th:text="${user.nombre}"
-                >
-                    Nombre
-                </span>
+        <div
+                th:replace="~{fragments/modals :: user-menu('user-menu-sidebar', 'align-left')}"
+        ></div>
 
-                <span
-                        class="sidebar-user-email"
-                        th:text="${user.correo}"
-                >
-                    correo@nexacorp.com
-                </span>
-
-            </span>
-
-      <!-- Menú -->
-      <svg class="icon sidebar-user-menu-icon">
-        <use href="/img/icons.svg#icon-more-h"></use>
-      </svg>
-
-    </button>
-
-    <div
-            th:replace="~{fragments/modals :: user-menu('user-menu-sidebar', 'align-left')}"
-    ></div>
-
-  </div>
+    </div>
 
 </aside>
 
 </body>
 </html>
-```
