@@ -48,8 +48,8 @@
         <div class="table-scroll" th:unless="${colaboradores.isEmpty()}">
           <table class="data-table">
             <thead><tr><th>Colaborador</th><th>Cargo</th><th>Habilidades principales</th><th>Ocupación</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody>
-            <tr th:each="c : ${colaboradores}">
+            <tbody id="colaboradores-body">
+            <tr th:each="c : ${colaboradores}" data-colaborador-row>
               <td class="cell-person">
                 <span class="avatar avatar-sm" th:text="${c.iniciales}">MR</span>
                 <span class="cell-person-text"><span class="cell-person-name" th:text="${c.nombre}">Nombre</span><span class="cell-person-sub" th:text="${c.correo}">correo</span></span>
@@ -74,6 +74,10 @@
             </tr>
             </tbody>
           </table>
+        </div>
+        <div class="table-footer" th:unless="${colaboradores.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="colaboradores-visible-count">0</span> de <span id="colaboradores-total-count">0</span> colaboradores</span>
+          <div class="pagination"><button class="page-btn" id="colaboradores-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="colaboradores-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="colaboradores-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
       </section>
 
@@ -120,6 +124,41 @@
         submitForm("/resource-manager/colaboradores/" + btn.dataset.reactivar + "/estado", { nuevoEstado: "activo" });
       });
     });
+
+    // Paginación en el cliente: los filtros de Habilidad/Estado ya recargan
+    // la página contra el servidor (aplicarFiltros()), asi que aqui solo
+    // hace falta paginar la lista que el servidor ya devolvio filtrada -
+    // no hace falta filtrar de nuevo en JS.
+    var rows = Array.from(document.querySelectorAll("[data-colaborador-row]"));
+    if (rows.length) {
+      var pageSize = 6;
+      var page = 1;
+      var visibleCount = document.getElementById("colaboradores-visible-count");
+      var totalCount = document.getElementById("colaboradores-total-count");
+      var pageLabel = document.getElementById("colaboradores-page-label");
+      var previous = document.getElementById("colaboradores-prev");
+      var next = document.getElementById("colaboradores-next");
+
+      function render() {
+        var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+        page = Math.min(page, pages);
+        var visible = rows.slice((page - 1) * pageSize, page * pageSize);
+        rows.forEach(function (row) { row.hidden = true; });
+        visible.forEach(function (row) { row.hidden = false; });
+        visibleCount.textContent = visible.length;
+        totalCount.textContent = rows.length;
+        pageLabel.textContent = "Página " + page + " de " + pages;
+        previous.disabled = page === 1;
+        next.disabled = page === pages;
+      }
+
+      previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+      next.addEventListener("click", function () {
+        var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+        if (page < pages) { page++; render(); }
+      });
+      render();
+    }
   });
 </script>
 </body>

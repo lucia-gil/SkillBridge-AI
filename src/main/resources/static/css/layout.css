@@ -160,7 +160,73 @@
 .topbar-ai-btn:hover { background: #DDE5F2; }
 .topbar-ai-btn .icon { color: var(--blue-accent-strong); }
 
-.topbar-user-btn { display: flex; align-items: center; gap: var(--space-2); background: none; border: none; cursor: pointer; padding: 4px; border-radius: var(--radius-md); }
+/* =========================================================
+   Usuario del topbar
+   ========================================================= */
+
+.topbar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  transition:
+          background-color var(--dur-fast) var(--ease-standard);
+}
+
+.topbar-user-btn:hover {
+  background: var(--surface-sunken);
+}
+
+.topbar-user-avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.topbar-user-photo {
+  display: block;
+
+  width: 32px;
+  height: 32px;
+
+  border-radius: 50%;
+
+  object-fit: cover;
+  object-position: center;
+
+  background: var(--navy-100);
+}
+
+.topbar-user-name {
+  max-width: 150px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+}
+
+.topbar-user-btn > .icon {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
 .topbar-user-btn:hover { background: var(--surface-sunken); }
 
 /* ---- Main content ---- */
@@ -277,3 +343,36 @@
 .auth-back-link:hover { color: var(--navy-700); }
 
 .registry-modal-note { display:flex; gap: var(--space-2); align-items:center; justify-content:center; font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: var(--space-4); }
+
+
+/* =========================================================
+   Fotografía de perfil - Mi cuenta
+   ========================================================= */
+
+.account-photo-large {
+  width: 64px;
+  height: 64px;
+
+  flex: 0 0 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+  border-radius: 50%;
+
+  background: var(--navy-700);
+}
+
+.account-photo-large img {
+  width: 64px;
+  height: 64px;
+
+  display: block;
+
+  border-radius: 50%;
+
+  object-fit: cover;
+  object-position: center;
+}

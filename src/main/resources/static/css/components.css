@@ -997,3 +997,110 @@
   object-fit: contain;
   object-position: left center;
 }
+
+/* =========================================================
+   TOPBAR - USUARIO
+   ========================================================= */
+
+.topbar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+
+  min-height: 42px;
+  padding: 0.25rem 0.45rem;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: transparent;
+  color: var(--text-primary);
+
+  cursor: pointer;
+
+  transition:
+          background-color 0.2s ease,
+          box-shadow 0.2s ease;
+}
+
+.topbar-user-btn:hover {
+  background: var(--surface-hover);
+}
+
+
+/* =========================================================
+   CONTENEDOR DE FOTO
+   ========================================================= */
+
+.topbar-user-avatar {
+  width: 36px;
+  height: 36px;
+
+  flex: 0 0 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   FOTO DE PERFIL
+   ========================================================= */
+
+.topbar-user-photo {
+  display: block;
+
+  width: 36px;
+  height: 36px;
+
+  border-radius: 50%;
+
+  object-fit: cover;
+  object-position: center;
+
+  background: var(--surface-muted);
+}
+
+
+/* =========================================================
+   NOMBRE
+   ========================================================= */
+
+.topbar-user-name {
+  display: block;
+
+  max-width: 150px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 0.875rem;
+  line-height: 1.25;
+  font-weight: 600;
+
+  color: var(--text-primary);
+}
+
+
+/* =========================================================
+   FLECHA
+   ========================================================= */
+
+.topbar-user-btn > .icon {
+  flex: 0 0 auto;
+
+  color: var(--text-secondary);
+
+  transition: transform 0.2s ease;
+}
+
+
+/* =========================================================
+   ESTADO ACTIVO
+   ========================================================= */
+
+.topbar-user-btn[aria-expanded="true"] {
+  background: var(--surface-hover);
+}

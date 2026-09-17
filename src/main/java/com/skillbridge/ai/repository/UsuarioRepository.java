@@ -19,4 +19,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     long countByRolOrganizacional(String rolOrganizacional);
 
     long countByEstado(String estado);
+
+    /**
+     * Permite saber si un usuario tiene foto sin cargar el contenido del BLOB.
+     */
+    boolean existsByIdAndFotoPerfilIsNotNull(Long id);
 }

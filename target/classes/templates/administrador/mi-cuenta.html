@@ -1,97 +1,600 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi cuenta · SkillBridge AI</title>
-<link rel="stylesheet" href="/css/tokens.css">
-<link rel="stylesheet" href="/css/base.css">
-<link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/layout.css">
+
+  <meta charset="UTF-8">
+
+  <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+  <title>
+    Mi cuenta · SkillBridge AI
+  </title>
+
+  <link
+          rel="stylesheet"
+          href="/css/tokens.css">
+
+  <link
+          rel="stylesheet"
+          href="/css/base.css">
+
+  <link
+          rel="stylesheet"
+          href="/css/components.css">
+
+  <link
+          rel="stylesheet"
+          href="/css/layout.css">
+
 </head>
+
+
 <body>
+
 <div class="app-shell">
-  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+  <div
+          th:replace="~{fragments/sidebar :: sidebar}">
+  </div>
+
+
   <div class="main-content">
-    <div th:replace="~{fragments/topbar :: topbar}"></div>
-    <main class="page-content" id="page-content">
+
+    <div
+            th:replace="~{fragments/topbar :: topbar}">
+    </div>
+
+
+    <main
+            class="page-content"
+            id="page-content">
+
+
+      <!-- PERFIL -->
 
       <section class="card card-pad">
-        <div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">
-          <span class="avatar avatar-lg" style="background:var(--navy-700);" th:text="${resumen.iniciales}">MR</span>
-          <div style="flex:1; min-width:200px;">
-            <h2 style="font-size:var(--fs-lg);" th:text="${resumen.nombreCompleto}">Nombre</h2>
-            <p class="text-tertiary" th:text="${resumen.cargo}">Cargo</p>
-            <span class="badge badge-blue" style="margin-top:var(--space-2);" th:text="${resumen.rolLabel}">Rol</span>
+
+        <div
+                style="
+              display:flex;
+              align-items:center;
+              gap:var(--space-5);
+              flex-wrap:wrap;
+            ">
+
+
+          <!-- FOTO ACTUAL / INICIALES -->
+
+          <span
+                  class="account-photo-large">
+
+            <img
+                    th:if="${user.tieneFoto}"
+                    th:src="@{/perfil/foto}"
+                    th:alt="${resumen.nombreCompleto}">
+
+            <span
+                    th:unless="${user.tieneFoto}"
+                    class="avatar avatar-lg"
+                    style="background:var(--navy-700);"
+                    th:text="${resumen.iniciales}">
+              LG
+            </span>
+
+          </span>
+
+
+          <div
+                  style="
+                flex:1;
+                min-width:200px;
+              ">
+
+            <h2
+                    style="font-size:var(--fs-lg);"
+                    th:text="${resumen.nombreCompleto}">
+              Nombre
+            </h2>
+
+            <p
+                    class="text-tertiary"
+                    th:text="${resumen.cargo}">
+              Cargo
+            </p>
+
+            <span
+                    class="badge badge-blue"
+                    style="margin-top:var(--space-2);"
+                    th:text="${resumen.rolLabel}">
+              Rol
+            </span>
+
           </div>
+
         </div>
+
+
+        <!-- FOTO -->
+
+        <div
+                style="
+              margin-top:var(--space-6);
+              padding-top:var(--space-5);
+              border-top:1px solid var(--border-subtle);
+            ">
+
+          <h3
+                  style="
+                font-size:var(--fs-md);
+                margin-bottom:var(--space-2);
+              ">
+
+            Fotografía de perfil
+
+          </h3>
+
+
+          <p
+                  class="field-hint"
+                  style="
+                margin-bottom:var(--space-4);
+              ">
+
+            Usa una imagen JPG, JPEG o PNG de hasta 5 MB.
+
+          </p>
+
+
+          <form
+                  method="post"
+                  enctype="multipart/form-data"
+                  th:action="@{/cuenta/foto}">
+
+            <input
+                    type="hidden"
+                    name="volver"
+                    th:value="${volver}">
+
+
+            <div
+                    style="
+                  display:flex;
+                  align-items:center;
+                  gap:var(--space-3);
+                  flex-wrap:wrap;
+                ">
+
+              <input
+                      id="foto"
+                      type="file"
+                      name="foto"
+                      accept="image/jpeg,image/png"
+                      class="input"
+                      style="max-width:360px;"
+                      required>
+
+
+              <button
+                      type="submit"
+                      class="btn btn-primary">
+
+                Guardar fotografía
+
+              </button>
+
+            </div>
+
+          </form>
+
+
+          <form
+                  th:if="${user.tieneFoto}"
+                  method="post"
+                  th:action="@{/cuenta/foto/eliminar}"
+                  style="margin-top:var(--space-3);">
+
+            <input
+                    type="hidden"
+                    name="volver"
+                    th:value="${volver}">
+
+
+            <button
+                    type="submit"
+                    class="btn btn-secondary">
+
+              Eliminar fotografía
+
+            </button>
+
+          </form>
+
+        </div>
+
       </section>
 
-      <div class="callout info" style="margin-top:var(--space-6);">
-        <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-shield-check"></use></svg></span>
-        <span class="callout-body"><span class="callout-title">Alcance de tu rol</span> Como Administrador tienes acceso completo a Usuarios, Habilidades, Proyectos, Reportes, Auditoría y Configuración.
-        <br><span style="font-size:var(--fs-xs); opacity:.85;">Todos los cambios que realices quedan registrados en Auditoría.</span></span>
+
+      <!-- ALCANCE -->
+
+      <div
+              class="callout info"
+              style="margin-top:var(--space-6);">
+
+        <span class="callout-icon">
+
+          <svg class="icon">
+
+            <use
+                    href="/img/icons.svg#icon-shield-check">
+            </use>
+
+          </svg>
+
+        </span>
+
+
+        <span class="callout-body">
+
+          <span class="callout-title">
+            Alcance de tu rol
+          </span>
+
+          Como Administrador tienes acceso completo a Usuarios,
+          Habilidades, Proyectos, Reportes, Auditoría y Configuración.
+
+          <br>
+
+          <span
+                  style="
+                font-size:var(--fs-xs);
+                opacity:.85;
+              ">
+
+            Todos los cambios que realices quedan registrados
+            en Auditoría.
+
+          </span>
+
+        </span>
+
       </div>
 
-      <div class="detail-grid" style="margin-top:var(--space-6);">
-        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
-          <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-5);">Datos personales</h3>
-            <p class="field-hint" style="margin-bottom:var(--space-5);">El nombre visible y el correo los administra tu cuenta de usuario y no se editan aquí.</p>
-            <form method="post" th:action="@{/cuenta/datos}">
-              <input type="hidden" name="volver" th:value="${volver}">
-              <div class="field-row">
-                <div class="field"><label class="field-label">Nombre visible</label><input class="input" th:value="${resumen.nombreCompleto}" disabled></div>
-                <div class="field"><label class="field-label">Cargo</label><input class="input" name="cargo" th:value="${resumen.cargo}"></div>
-              </div>
-              <div class="field-row">
-                <div class="field"><label class="field-label">Correo corporativo</label><input class="input" th:value="${resumen.correo}" disabled>
-                  <span class="field-hint">No editable</span></div>
-                <div class="field"><label class="field-label">Años de experiencia</label><input class="input" type="number" min="0" max="60" name="experienciaAnios" th:value="${resumen.experienciaAnios}"></div>
-              </div>
-              <div class="field"><label class="field-label">Biografía</label><textarea class="input" name="biografia" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);" th:text="${resumen.biografia}"></textarea></div>
-              <div class="btn-group" style="justify-content:flex-end;">
-                <button type="submit" class="btn btn-primary">Guardar cambios</button>
-              </div>
-            </form>
-          </section>
+
+      <!-- DATOS -->
+
+      <div
+              class="detail-grid"
+              style="margin-top:var(--space-6);">
+
+
+        <div
+                style="
+              display:flex;
+              flex-direction:column;
+              gap:var(--space-6);
+            ">
+
 
           <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md);">Cambiar contraseña</h3>
-            <form method="post" th:action="@{/cuenta/contrasena}" id="pass-form">
-              <input type="hidden" name="volver" th:value="${volver}">
-              <div class="field" style="margin-top:var(--space-5);"><label class="field-label">Contraseña actual</label><input class="input" type="password" name="actual" placeholder="••••••••••"></div>
+
+            <h3
+                    style="
+                  font-size:var(--fs-md);
+                  margin-bottom:var(--space-5);
+                ">
+
+              Datos personales
+
+            </h3>
+
+
+            <p
+                    class="field-hint"
+                    style="margin-bottom:var(--space-5);">
+
+              El nombre visible y el correo los administra tu
+              cuenta de usuario y no se editan aquí.
+
+            </p>
+
+
+            <form
+                    method="post"
+                    th:action="@{/cuenta/datos}">
+
+              <input
+                      type="hidden"
+                      name="volver"
+                      th:value="${volver}">
+
+
               <div class="field-row">
-                <div class="field"><label class="field-label">Nueva contraseña</label><input class="input" type="password" name="nueva" placeholder="••••••••••••"></div>
-                <div class="field"><label class="field-label">Repetir nueva</label><input class="input" type="password" name="nueva2" placeholder="••••••••••••"></div>
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Nombre visible
+                  </label>
+
+                  <input
+                          class="input"
+                          th:value="${resumen.nombreCompleto}"
+                          disabled>
+
+                </div>
+
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Cargo
+                  </label>
+
+                  <input
+                          class="input"
+                          name="cargo"
+                          th:value="${resumen.cargo}">
+
+                </div>
+
               </div>
-              <p class="field-hint" style="margin-bottom:var(--space-4);">Mínimo 12 caracteres, con mayúscula, número y símbolo especial.</p>
+
+
+              <div class="field-row">
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Correo corporativo
+                  </label>
+
+                  <input
+                          class="input"
+                          th:value="${resumen.correo}"
+                          disabled>
+
+                  <span class="field-hint">
+                    No editable
+                  </span>
+
+                </div>
+
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Años de experiencia
+                  </label>
+
+                  <input
+                          class="input"
+                          type="number"
+                          min="0"
+                          max="60"
+                          name="experienciaAnios"
+                          th:value="${resumen.experienciaAnios}">
+
+                </div>
+
+              </div>
+
+
+              <div class="field">
+
+                <label class="field-label">
+                  Biografía
+                </label>
+
+                <textarea
+                        class="input"
+                        name="biografia"
+                        rows="3"
+                        style="
+                      height:auto;
+                      padding:var(--space-3) var(--space-4);
+                    "
+                        th:text="${resumen.biografia}">
+                </textarea>
+
+              </div>
+
+
+              <div
+                      class="btn-group"
+                      style="justify-content:flex-end;">
+
+                <button
+                        type="submit"
+                        class="btn btn-primary">
+
+                  Guardar cambios
+
+                </button>
+
+              </div>
+
+            </form>
+
+          </section>
+
+
+          <!-- CONTRASEÑA -->
+
+          <section class="card card-pad">
+
+            <h3 style="font-size:var(--fs-md);">
+              Cambiar contraseña
+            </h3>
+
+
+            <form
+                    method="post"
+                    th:action="@{/cuenta/contrasena}"
+                    id="pass-form">
+
+              <input
+                      type="hidden"
+                      name="volver"
+                      th:value="${volver}">
+
+
+              <div
+                      class="field"
+                      style="margin-top:var(--space-5);">
+
+                <label class="field-label">
+                  Contraseña actual
+                </label>
+
+                <input
+                        class="input"
+                        type="password"
+                        name="actual"
+                        placeholder="••••••••••">
+
+              </div>
+
+
+              <div class="field-row">
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Nueva contraseña
+                  </label>
+
+                  <input
+                          class="input"
+                          type="password"
+                          name="nueva"
+                          placeholder="••••••••••••">
+
+                </div>
+
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Repetir nueva
+                  </label>
+
+                  <input
+                          class="input"
+                          type="password"
+                          name="nueva2"
+                          placeholder="••••••••••••">
+
+                </div>
+
+              </div>
+
+
+              <p
+                      class="field-hint"
+                      style="margin-bottom:var(--space-4);">
+
+                Mínimo 12 caracteres, con mayúscula,
+                número y símbolo especial.
+
+              </p>
+
+
               <div class="btn-group">
-                <button type="submit" class="btn btn-primary">Actualizar contraseña</button>
+
+                <button
+                        type="submit"
+                        class="btn btn-primary">
+
+                  Actualizar contraseña
+
+                </button>
+
               </div>
+
             </form>
+
           </section>
+
         </div>
 
-        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+
+        <!-- SESIÓN -->
+
+        <div
+                style="
+              display:flex;
+              flex-direction:column;
+              gap:var(--space-6);
+            ">
+
           <section class="card card-pad">
-            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Sesión</h3>
-            <div class="info-row"><span class="info-row-label">Cuenta creada</span><span class="info-row-value" th:text="${resumen.cuentaDesdeLabel}">—</span></div>
-            <button type="button" class="btn btn-destructive btn-sm btn-block" style="margin-top:var(--space-4);" data-action="logout">Cerrar sesión</button>
+
+            <h3
+                    style="
+                  font-size:var(--fs-md);
+                  margin-bottom:var(--space-4);
+                ">
+
+              Sesión
+
+            </h3>
+
+
+            <div class="info-row">
+
+              <span class="info-row-label">
+                Cuenta creada
+              </span>
+
+              <span
+                      class="info-row-value"
+                      th:text="${resumen.cuentaDesdeLabel}">
+                —
+              </span>
+
+            </div>
+
+
+            <button
+                    type="button"
+                    class="btn btn-destructive btn-sm btn-block"
+                    style="margin-top:var(--space-4);"
+                    data-action="logout">
+
+              Cerrar sesión
+
+            </button>
+
           </section>
+
         </div>
+
       </div>
 
     </main>
+
   </div>
+
 </div>
+
 
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/command-palette.js"></script>
 <script src="/js/topbar-actions.js"></script>
+
+
 <script th:inline="javascript">
-window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+
+  window.SBAI_FLASH = {
+    exito: /*[[${exito}]]*/ null,
+    error: /*[[${error}]]*/ null
+  };
+
 </script>
+
 </body>
 </html>
