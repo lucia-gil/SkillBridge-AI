@@ -68,7 +68,7 @@
               <td><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span></td>
               <td class="cell-actions">
                 <a th:href="@{/resource-manager/colaboradores/{id}(id=${c.perfilId})}">Ver perfil</a>
-                <button type="button" th:if="${c.estado == 'activo'}" class="danger" th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}">Suspender</button>
+                <button type="button" th:if="${c.estado == 'activo' and c.perfilId != miPerfilId}" class="danger" th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}">Suspender</button>
                 <button type="button" th:unless="${c.estado == 'activo'}" th:attr="data-reactivar=${c.perfilId}, data-nombre=${c.nombre}">Reactivar</button>
               </td>
             </tr>

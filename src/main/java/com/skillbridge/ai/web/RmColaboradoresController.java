@@ -110,6 +110,11 @@ public class RmColaboradoresController {
         model.addAttribute("catalogoHabilidades", catalogoHabilidades);
         model.addAttribute("habilidadIdSeleccionada", habilidadId);
         model.addAttribute("estadoSeleccionado", estado);
+        // Se usa en la plantilla para esconder el botón "Suspender" en la
+        // propia fila del usuario logueado - nadie debería poder
+        // auto-suspenderse (se quedaría sin acceso, sin nadie más que
+        // pueda reactivarlo fácilmente).
+        model.addAttribute("miPerfilId", sesion.getPerfilId());
 
         return "resource-manager/colaboradores";
     }
@@ -160,7 +165,17 @@ public class RmColaboradoresController {
     /** Update real: activar/desactivar cuenta (soft delete, igual que el resto del sistema). */
     @PostMapping("/colaboradores/{perfilId}/estado")
     public String cambiarEstado(@PathVariable Long perfilId, @RequestParam String nuevoEstado,
-                                RedirectAttributes redirectAttributes) {
+                                HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+
+        // Bloqueo de auto-suspensión: defensa en el backend, no solo en la
+        // plantilla (que esconde el botón) - así alguien no puede saltarse
+        // esto armando la petición a mano contra la URL directa.
+        if (perfilId.equals(sesion.getPerfilId()) && "inactivo".equals(nuevoEstado)) {
+            redirectAttributes.addFlashAttribute("error", "No puedes suspender tu propia cuenta.");
+            return "redirect:/resource-manager/colaboradores.html";
+        }
+
         Perfil p = perfilRepository.findById(perfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("El colaborador ya no existe."));
         p.setEstado(nuevoEstado);

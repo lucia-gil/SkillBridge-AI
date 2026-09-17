@@ -5,6 +5,7 @@ import com.skillbridge.ai.dto.CertificadoFila;
 import com.skillbridge.ai.dto.HabilidadFila;
 import com.skillbridge.ai.dto.HabilidadPerfilFila;
 import com.skillbridge.ai.model.CategoriaHabilidad;
+import com.skillbridge.ai.model.CertificadoHabilidad;
 import com.skillbridge.ai.model.Habilidad;
 import com.skillbridge.ai.model.PerfilHabilidad;
 import com.skillbridge.ai.model.PerfilHabilidadId;
@@ -145,11 +146,43 @@ public class HabilidadService {
                     Habilidad h = catalogo.get(ph.getId().getHabilidadId());
                     if (h == null) return null; // habilidad borrada del catálogo desde que se declaró: se omite
                     String desde = ph.getFechaDeclaracion() != null ? ph.getFechaDeclaracion().format(FORMATO_FECHA) : "—";
-                    return new HabilidadPerfilFila(h.getId(), h.getNombre(), h.getCategoria().getNombre(), ph.getNivel(), desde);
+                    boolean validada = ph.getValidadoPorId() != null;
+                    List<CertificadoFila> certificados = certificadoHabilidadRepository
+                            .findByPerfilIdAndHabilidadId(perfilId, h.getId()).stream()
+                            .map(c -> new CertificadoFila(c.getNombreArchivo(), c.getUrlArchivo()))
+                            .collect(Collectors.toList());
+                    return new HabilidadPerfilFila(h.getId(), h.getNombre(), h.getCategoria().getNombre(), ph.getNivel(), desde, validada, certificados);
                 })
                 .filter(java.util.Objects::nonNull)
                 .sorted((a, b) -> a.getNombre().compareToIgnoreCase(b.getNombre()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Agrega, reemplaza o quita la constancia de UNA habilidad ya
+     * declarada. Como es "como máximo un certificado por habilidad"
+     * (Opción A), primero se borra el que hubiera antes de guardar el
+     * nuevo - así "editar" y "quitar" (dejando urlArchivo vacío) usan el
+     * mismo método, sin necesitar un endpoint de DELETE aparte.
+     */
+    @Transactional
+    public void actualizarCertificado(Long perfilId, Long habilidadId, String nombreArchivo, String urlArchivo,
+                                      Long actorUsuarioId) {
+        PerfilHabilidadId id = new PerfilHabilidadId(perfilId, habilidadId);
+        if (!perfilHabilidadRepository.existsById(id)) {
+            throw new OperacionInvalidaException("Esa habilidad ya no está declarada en tu perfil.");
+        }
+        certificadoHabilidadRepository.deleteByPerfilIdAndHabilidadId(perfilId, habilidadId);
+        if (urlArchivo != null && !urlArchivo.isBlank()) {
+            CertificadoHabilidad cert = new CertificadoHabilidad();
+            cert.setPerfilId(perfilId);
+            cert.setHabilidadId(habilidadId);
+            cert.setNombreArchivo(nombreArchivo != null && !nombreArchivo.isBlank() ? nombreArchivo : "constancia");
+            cert.setUrlArchivo(urlArchivo);
+            certificadoHabilidadRepository.save(cert);
+        }
+        auditoriaService.registrar(actorUsuarioId, "CERTIFICADO_ACTUALIZADO", "perfil_habilidad", perfilId, null, null,
+                "Constancia actualizada para habilidad " + habilidadId + ".");
     }
 
     /**
@@ -159,9 +192,16 @@ public class HabilidadService {
      * registrarse (ver AuthService.nivelDesdeTexto), reproducida aquí porque
      * ese método de AuthService es privado y este flujo corre fuera del
      * registro.
+     *
+     * nombreArchivo/urlArchivo son OPCIONALES (Opción A: link externo, no
+     * subida de archivo real - ver certificados_habilidad). Si el
+     * colaborador los deja vacíos, la habilidad igual se guarda, solo que
+     * sin constancia de respaldo (el Resource Manager la verá marcada como
+     * "sin constancia adjunta" al momento de validarla).
      */
     @Transactional
-    public void agregarAlPerfil(Long perfilId, Long habilidadId, String nivelTexto, Long actorUsuarioId) {
+    public void agregarAlPerfil(Long perfilId, Long habilidadId, String nivelTexto, Long actorUsuarioId,
+                                String nombreArchivo, String urlArchivo) {
         Habilidad h = habilidadRepository.findById(habilidadId)
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona una habilidad válida del catálogo."));
         int nivel = nivelDesdeTexto(nivelTexto);
@@ -174,6 +214,16 @@ public class HabilidadService {
             ph.setNivel(nivel);
         }
         perfilHabilidadRepository.save(ph);
+
+        if (urlArchivo != null && !urlArchivo.isBlank()) {
+            CertificadoHabilidad cert = new CertificadoHabilidad();
+            cert.setPerfilId(perfilId);
+            cert.setHabilidadId(habilidadId);
+            cert.setNombreArchivo(nombreArchivo != null && !nombreArchivo.isBlank() ? nombreArchivo : "constancia");
+            cert.setUrlArchivo(urlArchivo);
+            certificadoHabilidadRepository.save(cert);
+        }
+
         auditoriaService.registrar(actorUsuarioId, yaExistia ? "PERFIL_HABILIDAD_ACTUALIZADA" : "PERFIL_HABILIDAD_AGREGADA",
                 "perfil_habilidad", perfilId, null, null, h.getNombre() + " · " + nivelTexto);
     }

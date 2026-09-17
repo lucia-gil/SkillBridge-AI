@@ -19,7 +19,7 @@
          seguir ejecutando el JAR embebido con "mvn spring-boot:run" en
          desarrollo (ver SkillbridgeAiApplication, que extiende
          SpringBootServletInitializer para soportar ambos casos). -->
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <name>skillbridge-ai</name>
     <description>SkillBridge AI - plataforma interna de gestion de talento (NexaCorp)</description>
 
@@ -85,7 +85,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>

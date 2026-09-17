@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,7 +41,7 @@ public class ColaboradorPerfilController {
     private final ShellModelBuilder shellModelBuilder;
 
     public ColaboradorPerfilController(ProyectoService proyectoService, HabilidadService habilidadService,
-                                        CuentaService cuentaService, ShellModelBuilder shellModelBuilder) {
+                                       CuentaService cuentaService, ShellModelBuilder shellModelBuilder) {
         this.proyectoService = proyectoService;
         this.habilidadService = habilidadService;
         this.cuentaService = cuentaService;
@@ -71,11 +72,35 @@ public class ColaboradorPerfilController {
 
     @PostMapping("/perfil/habilidades")
     public String agregarHabilidad(@RequestParam Long habilidadId, @RequestParam String nivel,
+                                   @RequestParam(required = false) String nombreArchivo,
+                                   @RequestParam(required = false) String urlArchivo,
+                                   HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            habilidadService.agregarAlPerfil(sesion.getPerfilId(), habilidadId, nivel, sesion.getUsuarioId(),
+                    nombreArchivo, urlArchivo);
+            redirectAttributes.addFlashAttribute("exito", "Habilidad agregada a tu perfil.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/colaborador/perfil.html";
+    }
+
+    /**
+     * Editar (o quitar, dejando urlArchivo vacío) la constancia de UNA
+     * habilidad ya declarada - lo que faltaba para poder ver/editar el
+     * link después de haberlo cargado la primera vez.
+     */
+    @PostMapping("/perfil/habilidades/{habilidadId}/certificado")
+    public String editarCertificado(@PathVariable Long habilidadId,
+                                    @RequestParam(required = false) String nombreArchivo,
+                                    @RequestParam(required = false) String urlArchivo,
                                     HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            habilidadService.agregarAlPerfil(sesion.getPerfilId(), habilidadId, nivel, sesion.getUsuarioId());
-            redirectAttributes.addFlashAttribute("exito", "Habilidad agregada a tu perfil.");
+            habilidadService.actualizarCertificado(sesion.getPerfilId(), habilidadId, nombreArchivo, urlArchivo,
+                    sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Constancia actualizada.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi perfil · SkillBridge AI</title>
-<link rel="stylesheet" href="/css/tokens.css">
-<link rel="stylesheet" href="/css/base.css">
-<link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi perfil · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
 <div class="app-shell">
@@ -41,9 +41,25 @@
             </div>
             <div class="card-body">
               <div th:if="${habilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no declaraste ninguna habilidad.</div>
-              <div style="display:flex; flex-wrap:wrap; gap:var(--space-3);">
-                <span class="skill-pill" th:each="h : ${habilidades}" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
-                      th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
+
+              <div th:each="h : ${habilidades}" style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+                <div style="flex:1; min-width:0;">
+                  <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
+                        th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
+                  <span th:if="${h.validada}" class="badge badge-green" style="margin-left:6px;">Validada por RM</span>
+
+                  <!-- Certificado ya cargado: se muestra el link -->
+                  <div th:if="${h.tieneCertificado}" th:each="cert : ${h.certificados}" style="margin-top:6px; font-size:var(--fs-xs);">
+                    <svg class="icon icon-sm" style="vertical-align:-2px;"><use href="/img/icons.svg#icon-file-text"></use></svg>
+                    <a th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                  </div>
+                  <div th:unless="${h.tieneCertificado}" class="text-tertiary" style="margin-top:6px; font-size:var(--fs-xs);">Sin constancia adjunta</div>
+                </div>
+
+                <button type="button" class="btn btn-secondary btn-sm"
+                        th:attr="data-editar-cert=${h.habilidadId}, data-cert-nombre=${h.certificados.isEmpty() ? '' : h.certificados[0].nombreArchivo}, data-cert-url=${h.certificados.isEmpty() ? '' : h.certificados[0].urlArchivo}">
+                  <span th:text="${h.tieneCertificado} ? 'Editar constancia' : 'Agregar constancia'">Editar constancia</span>
+                </button>
               </div>
             </div>
           </section>
@@ -54,14 +70,14 @@
               <table class="data-table">
                 <thead><tr><th>Proyecto</th><th>Rol</th><th>Periodo</th><th>Dedicación</th><th>Estado</th></tr></thead>
                 <tbody>
-                  <tr th:if="${historial.isEmpty()}"><td colspan="5" class="text-tertiary" style="text-align:center; padding:var(--space-6);">Todavía no tienes asignaciones registradas.</td></tr>
-                  <tr th:each="h : ${historial}">
-                    <td class="cell-primary" th:text="${h.nombre}">Proyecto</td>
-                    <td th:text="${h.rolLabel}">Rol</td>
-                    <td th:text="${h.periodoLabel}">Periodo</td>
-                    <td class="mono" th:text="${h.cargaPorcentaje} + '%'">0%</td>
-                    <td><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></td>
-                  </tr>
+                <tr th:if="${historial.isEmpty()}"><td colspan="5" class="text-tertiary" style="text-align:center; padding:var(--space-6);">Todavía no tienes asignaciones registradas.</td></tr>
+                <tr th:each="h : ${historial}">
+                  <td class="cell-primary" th:text="${h.nombre}">Proyecto</td>
+                  <td th:text="${h.rolLabel}">Rol</td>
+                  <td th:text="${h.periodoLabel}">Periodo</td>
+                  <td class="mono" th:text="${h.cargaPorcentaje} + '%'">0%</td>
+                  <td><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></td>
+                </tr>
                 </tbody>
               </table>
             </div>
@@ -109,26 +125,57 @@
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
-window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
-var CATALOGO_HABILIDADES = /*[[${catalogoHabilidades}]]*/ [];
-document.addEventListener("DOMContentLoaded", function () {
-  var submitForm = window.SBAI.submitForm;
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+  var CATALOGO_HABILIDADES = /*[[${catalogoHabilidades}]]*/ [];
+  document.addEventListener("DOMContentLoaded", function () {
+    var submitForm = window.SBAI.submitForm;
 
-  document.getElementById("add-skill-btn").addEventListener("click", function () {
-    var options = CATALOGO_HABILIDADES.map(function (h) { return '<option value="' + h.id + '">' + h.nombre + '</option>'; }).join("");
-    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia.</p></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Habilidad</label><select class="select" id="new-skill-id">' + options + '</select></div>' +
-      '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
-    var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#confirm-add-skill").addEventListener("click", function () {
-      var habilidadId = backdrop.querySelector("#new-skill-id").value;
-      if (!habilidadId) { SBAI.toast.show("Selecciona una habilidad del catálogo.", { type: "error" }); return; }
-      submitForm("/colaborador/perfil/habilidades", { habilidadId: habilidadId, nivel: backdrop.querySelector("#new-skill-level").value });
+    document.getElementById("add-skill-btn").addEventListener("click", function () {
+      var options = CATALOGO_HABILIDADES.map(function (h) { return '<option value="' + h.id + '">' + h.nombre + '</option>'; }).join("");
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia.</p></div>' +
+              '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+              '<div class="modal-body"><div class="field"><label class="field-label">Habilidad</label><select class="select" id="new-skill-id">' + options + '</select></div>' +
+              '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div>' +
+              '<div class="field"><label class="field-label">Constancia de respaldo (opcional)</label>' +
+              '<input class="input" type="url" id="new-skill-cert-url" placeholder="Link a tu certificado (Drive, Coursera, LinkedIn Learning...)">' +
+              '<p class="field-hint">Un link ayuda a que el Resource Manager valide tu habilidad más rápido, pero no es obligatorio.</p></div>' +
+              '<div class="field"><label class="field-label">Nombre del archivo (opcional)</label><input class="input" type="text" id="new-skill-cert-name" placeholder="Ej. certificado-react.pdf"></div>' +
+              '</div>' +
+              '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#confirm-add-skill").addEventListener("click", function () {
+        var habilidadId = backdrop.querySelector("#new-skill-id").value;
+        if (!habilidadId) { SBAI.toast.show("Selecciona una habilidad del catálogo.", { type: "error" }); return; }
+        submitForm("/colaborador/perfil/habilidades", {
+          habilidadId: habilidadId,
+          nivel: backdrop.querySelector("#new-skill-level").value,
+          urlArchivo: backdrop.querySelector("#new-skill-cert-url").value,
+          nombreArchivo: backdrop.querySelector("#new-skill-cert-name").value
+        });
+      });
+    });
+    document.querySelectorAll("[data-editar-cert]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var habilidadId = btn.dataset.editarCert;
+        var nombreActual = btn.dataset.certNombre || "";
+        var urlActual = btn.dataset.certUrl || "";
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Constancia de habilidad</h2></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body">' +
+                '<div class="field"><label class="field-label">Link</label><input class="input" type="url" id="edit-cert-url" value="' + urlActual + '" placeholder="Link a tu certificado"></div>' +
+                '<div class="field"><label class="field-label">Nombre del archivo</label><input class="input" type="text" id="edit-cert-name" value="' + nombreActual + '" placeholder="Ej. certificado.pdf"></div>' +
+                '<p class="field-hint">Deja el link vacío y guarda para quitar la constancia.</p>' +
+                '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-edit-cert">Guardar</button></div></div>';
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelector("#confirm-edit-cert").addEventListener("click", function () {
+          submitForm("/colaborador/perfil/habilidades/" + habilidadId + "/certificado", {
+            urlArchivo: backdrop.querySelector("#edit-cert-url").value,
+            nombreArchivo: backdrop.querySelector("#edit-cert-name").value
+          });
+        });
+      });
     });
   });
-});
 </script>
 </body>
 </html>
