@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${perfil.usuario.nombreCompleto} + ' · SkillBridge AI'">Perfil · SkillBridge AI</title>
+    <link rel="stylesheet" href="/css/tokens.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div class="main-content">
+        <div th:replace="~{fragments/topbar :: topbar}"></div>
+        <main class="page-content" id="page-content">
+
+            <a href="/resource-manager/colaboradores.html" class="text-tertiary" style="font-size:var(--fs-xs); display:inline-block; margin-bottom:var(--space-4);">← Volver a Colaboradores</a>
+
+            <!-- Encabezado tipo CV -->
+            <section class="card card-pad">
+                <div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">
+                    <span class="avatar avatar-lg" style="background:var(--navy-700);" th:text="${#strings.substring(perfil.usuario.nombreCompleto,0,1)}">N</span>
+                    <div style="flex:1; min-width:220px;">
+                        <h2 style="font-size:var(--fs-lg);" th:text="${perfil.usuario.nombreCompleto}">Nombre</h2>
+                        <p class="text-tertiary" th:text="${perfil.cargo} + ' · ' + ${perfil.usuario.correo}">Cargo · correo</p>
+                        <span class="badge" th:classappend="${perfil.estado == 'activo'} ? 'badge-green' : 'badge-red'"
+                              th:text="${perfil.estado == 'activo'} ? 'Activo' : 'Inactivo'" style="margin-top:var(--space-2);">Estado</span>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:var(--fs-xl); font-weight:700; color:var(--navy-700);" th:text="${ocupacion} + '%'">0%</div>
+                        <div class="label-mono">OCUPACIÓN ACTUAL</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Datos generales -->
+            <section class="card card-pad" style="margin-top:var(--space-6);">
+                <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Datos generales</h3>
+                <div class="info-row"><span class="info-row-label">Experiencia</span><span class="info-row-value" th:text="${perfil.experienciaAnios} + ' año(s)'">0 años</span></div>
+                <div class="info-row"><span class="info-row-label">Disponibilidad declarada</span><span class="info-row-value" th:text="${perfil.disponibilidadPorcentaje} + '%'">100%</span></div>
+                <div class="info-row" th:if="${perfil.biografia != null and !perfil.biografia.isBlank()}">
+                    <span class="info-row-label">Biografía</span><span class="info-row-value" th:text="${perfil.biografia}">—</span>
+                </div>
+            </section>
+
+            <!-- Habilidades con certificados y validación -->
+            <section class="card card-pad" style="margin-top:var(--space-6);">
+                <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-2);">Habilidades declaradas</h3>
+                <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);">Nivel autodeclarado por el colaborador; el Resource Manager confirma que le parece correcto</p>
+
+                <div th:if="${habilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no declaró ninguna habilidad.</div>
+
+                <div th:each="h : ${habilidades}" style="border:1px solid var(--border-subtle); border-radius:8px; padding:var(--space-4); margin-bottom:var(--space-3);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-3);">
+                        <div>
+                            <strong th:text="${h.nombre}">Habilidad</strong>
+                            <span class="text-tertiary" style="font-size:var(--fs-xs);" th:text="'(' + ${h.categoriaNombre} + ' · ' + ${h.nivelLabel} + ')'">(Categoría · Nivel)</span>
+                        </div>
+                        <span th:if="${h.validada}" class="badge badge-green">Validada</span>
+                        <button type="button" th:unless="${h.validada}" class="btn btn-secondary btn-sm"
+                                th:attr="data-validar-habilidad=${h.habilidadId}">Validar</button>
+                    </div>
+
+                    <!-- Certificados de respaldo (Opción A: link externo) -->
+                    <div style="margin-top:var(--space-3);">
+                        <div th:if="${h.certificados.isEmpty()}" class="callout warn" style="margin:0;">
+                            <span class="callout-body" style="font-size:var(--fs-xs);">Sin constancia adjunta — esta validación se basaría solo en criterio del Resource Manager, no en evidencia documental.</span>
+                        </div>
+                        <div th:each="cert : ${h.certificados}" style="display:flex; align-items:center; gap:6px; font-size:var(--fs-xs); margin-bottom:4px;">
+                            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg>
+                            <a th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+    window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+    var PERFIL_ID = /*[[${perfil.id}]]*/ 0;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var submitForm = window.SBAI.submitForm;
+        document.querySelectorAll("[data-validar-habilidad]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                submitForm("/resource-manager/colaboradores/" + PERFIL_ID + "/habilidades/" + btn.dataset.validarHabilidad + "/validar", {});
+            });
+        });
+    });
+</script>
+</body>
+</html>

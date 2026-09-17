@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inicio · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <!-- ── KPI tiles con iconos y acentos de color ── -->
+      <div class="kpi-grid">
+        <div class="kpi-tile accent-blue">
+          <div class="kpi-tile-icon blue">
+            <svg class="icon"><use href="/img/icons.svg#icon-briefcase"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Proyectos activos</span>
+          <span class="kpi-tile-value" th:text="${proyectosActivos}">0</span>
+          <span class="kpi-tile-meta" th:if="${proyectos.size() > proyectosActivos}" th:text="'de ' + ${proyectos.size()} + ' en total'">de N en total</span>
+        </div>
+        <div class="kpi-tile accent-red">
+          <div class="kpi-tile-icon red">
+            <svg class="icon"><use href="/img/icons.svg#icon-trending-up"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Avance promedio</span>
+          <span class="kpi-tile-value" th:text="${avancePromedio} + '%'">0%</span>
+          <span class="kpi-tile-meta" th:text="'vs plan de tus proyectos'">vs plan</span>
+        </div>
+        <div class="kpi-tile accent-green">
+          <div class="kpi-tile-icon green">
+            <svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Personas asignadas</span>
+          <span class="kpi-tile-value" th:text="${totalMiembros}">0</span>
+          <span class="kpi-tile-meta" th:text="'en ' + ${proyectos.size()} + ' proyecto(s)'">en N proyectos</span>
+        </div>
+        <div class="kpi-tile accent-violet">
+          <div class="kpi-tile-icon violet">
+            <svg class="icon"><use href="/img/icons.svg#icon-search-check"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Hilos en tus foros</span>
+          <span class="kpi-tile-value" th:text="${totalHilos}">0</span>
+          <span class="kpi-tile-meta" th:if="${!hilosRecientes.isEmpty()}" th:text="${hilosRecientes.size()} + ' recientes'">N recientes</span>
+        </div>
+      </div>
+
+      <!-- ── Avance de mis proyectos (card principal) ── -->
+      <section class="card">
+        <div class="card-header">
+          <div class="card-header-icon-row">
+            <div class="card-header-icon blue">
+              <svg class="icon"><use href="/img/icons.svg#icon-bar-chart"></use></svg>
+            </div>
+            <div class="card-header-text">
+              <h2>Avance de mis proyectos</h2>
+              <p>La barra muestra el avance real de cada proyecto</p>
+            </div>
+          </div>
+          <a href="proyectos.html" class="btn btn-tertiary btn-sm">Gestionar proyectos →</a>
+        </div>
+        <div class="card-body-flush" id="avance-list">
+          <div th:if="${proyectos.isEmpty()}" style="padding:var(--space-8); text-align:center;" class="text-tertiary">
+            Todavía no gestionas proyectos. Crea uno en "Proyectos".
+          </div>
+          <div th:each="p,stat : ${proyectos}" class="avance-row" style="padding:var(--space-5) var(--space-6); border-bottom:1px solid var(--border-subtle);" th:styleappend="${stat.last} ? 'border-bottom:none;' : ''">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); margin-bottom:var(--space-3);">
+              <div style="display:flex; align-items:center; gap:var(--space-3); min-width:0;">
+                <span class="avatar" style="border-radius:var(--radius-md); background:var(--navy-700); width:32px; height:32px; font-size:var(--fs-xs);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
+                <div style="min-width:0;">
+                  <div style="font-weight:600; font-size:var(--fs-sm);" th:text="${p.nombre}">Proyecto</div>
+                  <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${p.pmNombre}">PM</div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:var(--space-4);">
+                <span class="mono" style="font-size:var(--fs-sm); font-weight:600; min-width:40px; text-align:right;" th:text="${p.avance} + '%'">0%</span>
+                <span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span>
+                <span class="text-tertiary" style="font-size:var(--fs-xs); white-space:nowrap;" th:text="${p.fechaInicioLabel} + ' — ' + ${p.fechaFinLabel}">fechas</span>
+              </div>
+            </div>
+            <div class="progress-bar" style="height:8px;">
+              <div class="progress-bar-fill" th:classappend="${p.avance >= 70 ? 'green' : (p.avance >= 40 ? '' : 'amber')}" th:style="'width:' + ${p.avance} + '%;'"></div>
+            </div>
+          </div>
+        </div>
+        <div class="agenda-pagination" id="avance-pagination" th:if="${proyectos.size() > 3}" style="padding:var(--space-4) var(--space-6);">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <strong id="avance-range">0–0</strong> de <strong id="avance-total">0</strong> proyectos</span>
+          <div class="pagination" id="avance-pages" aria-label="Paginación de proyectos"></div>
+        </div>
+      </section>
+
+      <!-- ── Grid de detalle: foros + notificaciones (misma altura) ── -->
+      <div class="detail-grid" style="align-items:stretch;">
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+
+          <section class="card" style="display:flex; flex-direction:column; flex:1;">
+            <div class="card-header">
+              <div class="card-header-icon-row">
+                <div class="card-header-icon violet">
+                  <svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg>
+                </div>
+                <div class="card-header-text"><h2>Actividad en foros</h2></div>
+              </div>
+              <a href="foros.html" class="btn btn-tertiary btn-sm">Ir a foros →</a></div>
+            <div class="card-body-flush" style="flex:1;">
+              <div th:if="${hilosRecientes.isEmpty()}" style="padding:var(--space-6); text-align:center;" class="text-tertiary">Todavía no hay hilos en tus proyectos.</div>
+              <a th:each="t : ${hilosRecientes}" th:href="'foro-hilo.html?id=' + ${t.id}" style="display:block; padding:var(--space-4) var(--space-6); border-bottom:1px solid var(--border-subtle); color:inherit;">
+                <div style="font-size:var(--fs-sm); font-weight:500;" th:text="${t.titulo}">Título</div>
+                <div class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" th:text="${t.proyectoNombre} + ' · ' + ${t.numRespuestas} + ' respuestas · ' + ${t.fechaLabel}">meta</div>
+              </a>
+            </div>
+          </section>
+
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <section class="card" style="display:flex; flex-direction:column; flex:1;">
+            <div class="card-header">
+              <div class="card-header-icon-row">
+                <div class="card-header-icon amber">
+                  <svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg>
+                </div>
+                <div class="card-header-text"><h2>Notificaciones recientes</h2></div>
+              </div>
+              <span class="badge badge-blue" th:if="${unreadCount > 0}" th:text="${unreadCount} + ' nuevas'">0 nuevas</span>
+            </div>
+            <div class="card-body-flush" style="flex:1;">
+              <div th:if="${notifications.isEmpty()}" style="padding:var(--space-6); text-align:center;" class="text-tertiary">Sin notificaciones todavía.</div>
+              <div th:each="n : ${notifications}" style="padding:var(--space-4) var(--space-6); border-bottom:1px solid var(--border-subtle); font-size:var(--fs-xs);">
+                <span style="color:var(--text-primary);" th:text="${n.titulo}">Título</span>
+                <div class="text-tertiary" style="margin-top:4px;" th:text="${n.fechaLabel}">fecha</div>
+              </div>
+            </div>
+            <div class="card-footer" style="justify-content:center;"><a href="notificaciones.html">Ver todas →</a></div>
+          </section>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var wrap = document.getElementById("avance-list");
+  if (!wrap) return;
+  var rows = Array.prototype.slice.call(wrap.querySelectorAll(".avance-row"));
+  if (rows.length <= 3) return;
+
+  var porPagina = 3;
+  var paginaActual = 1;
+  var totalPaginas = Math.max(1, Math.ceil(rows.length / porPagina));
+
+  function botonPagina(texto, destino, activo, deshabilitado, etiqueta) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "page-btn" + (activo ? " active" : "");
+    btn.textContent = texto;
+    btn.disabled = deshabilitado;
+    if (etiqueta) btn.setAttribute("aria-label", etiqueta);
+    btn.addEventListener("click", function () { paginaActual = destino; render(); });
+    return btn;
+  }
+
+  function dibujarPaginas() {
+    var contenedor = document.getElementById("avance-pages");
+    if (!contenedor) return;
+    contenedor.innerHTML = "";
+    contenedor.appendChild(botonPagina("‹", paginaActual - 1, false, paginaActual === 1, "Página anterior"));
+    for (var i = 1; i <= totalPaginas; i++) {
+      contenedor.appendChild(botonPagina(String(i), i, i === paginaActual, false, "Página " + i));
+    }
+    contenedor.appendChild(botonPagina("›", paginaActual + 1, false, paginaActual === totalPaginas, "Página siguiente"));
+  }
+
+  function render() {
+    var inicio = (paginaActual - 1) * porPagina;
+    var fin = Math.min(inicio + porPagina, rows.length);
+    rows.forEach(function (row, i) { row.hidden = !(i >= inicio && i < fin); });
+    var range = document.getElementById("avance-range");
+    var total = document.getElementById("avance-total");
+    if (range) range.textContent = (inicio + 1) + "–" + fin;
+    if (total) total.textContent = rows.length;
+    dibujarPaginas();
+  }
+
+  render();
+});
+</script>
+</body>
+</html>

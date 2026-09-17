@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colaboradores · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <section class="card">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${colaboradores.size()} + ' colaboradores en esta vista'">0 colaboradores</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Directorio completo del equipo</p>
+          </div>
+          <div class="table-filters">
+            <select class="select" id="filtro-habilidad" onchange="aplicarFiltros()">
+              <option value="">Habilidad: todas</option>
+              <option th:each="h : ${catalogoHabilidades}"
+                      th:value="${h.id}"
+                      th:text="${h.nombre} + ' (' + ${h.categoria.nombre} + ')'"
+                      th:selected="${habilidadIdSeleccionada != null and habilidadIdSeleccionada == h.id}">
+              </option>
+            </select>
+            <select class="select" id="filtro-estado" onchange="aplicarFiltros()">
+              <option value="">Estado: todos</option>
+              <option value="activo" th:selected="${estadoSeleccionado == 'activo'}">Activo</option>
+              <option value="inactivo" th:selected="${estadoSeleccionado == 'inactivo'}">Inactivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div th:if="${colaboradores.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+          <span class="state-panel-title">Sin colaboradores con estos filtros</span>
+          <span class="state-panel-desc">Ajusta la habilidad o el estado seleccionado.</span>
+        </div>
+
+        <div class="table-scroll" th:unless="${colaboradores.isEmpty()}">
+          <table class="data-table">
+            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Habilidades principales</th><th>Ocupación</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="colaboradores-body">
+            <tr th:each="c : ${colaboradores}" class="colaboradores-row">
+              <td class="cell-person">
+                <span class="avatar avatar-sm" th:text="${c.iniciales}">MR</span>
+                <span class="cell-person-text"><span class="cell-person-name" th:text="${c.nombre}">Nombre</span><span class="cell-person-sub" th:text="${c.correo}">correo</span></span>
+              </td>
+              <td th:text="${c.cargo}">Cargo</td>
+              <td>
+                <span th:each="h : ${c.habilidadesTop}" class="badge badge-neutral" style="margin-right:4px;" th:text="${h.nombre}">Skill</span>
+                <span th:if="${c.habilidadesTop.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin habilidades declaradas</span>
+              </td>
+              <td>
+                <div class="progress-inline" style="min-width:100px;">
+                  <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${c.ocupacion > 100} ? 'red' : (${c.ocupacion >= 90} ? 'amber' : '')" th:style="'width:' + ${c.ocupacion > 100 ? 100 : c.ocupacion} + '%;'"></div></div>
+                  <span class="progress-value" th:text="${c.ocupacion} + '%'">0%</span>
+                </div>
+              </td>
+              <td><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span></td>
+              <td class="cell-actions">
+                <a th:href="@{/resource-manager/colaboradores/{id}(id=${c.perfilId})}">Ver perfil</a>
+                <button type="button" th:if="${c.estado == 'activo' and c.perfilId != miPerfilId}" class="danger" th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}">Suspender</button>
+                <button type="button" th:unless="${c.estado == 'activo'}" th:attr="data-reactivar=${c.perfilId}, data-nombre=${c.nombre}">Reactivar</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer" id="colaboradores-pagination" th:unless="${colaboradores.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);">Mostrando <span id="colaboradores-range">0</span></span>
+          <div class="pagination" id="colaboradores-pages" aria-label="Paginación de colaboradores"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script src="/js/pagination.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+
+  function aplicarFiltros() {
+    var habilidadId = document.getElementById("filtro-habilidad").value;
+    var estado = document.getElementById("filtro-estado").value;
+    var params = new URLSearchParams();
+    if (habilidadId) params.set("habilidadId", habilidadId);
+    if (estado) params.set("estado", estado);
+    window.location.href = "/resource-manager/colaboradores.html" + (params.toString() ? "?" + params.toString() : "");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var submitForm = window.SBAI.submitForm;
+
+    window.SBAI.pagination.initSimple({
+      container: "#colaboradores-body",
+      rowSelector: ".colaboradores-row",
+      pageSize: 10,
+      mode: "numbered",
+      pagerEl: "#colaboradores-pages",
+      rangeEl: "#colaboradores-range",
+      hideIfSinglePageEl: "#colaboradores-pagination"
+    });
+
+    document.querySelectorAll("[data-suspender]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        SBAI.modal.confirm({
+          title: "¿Suspender a " + btn.dataset.nombre + "?",
+          desc: "Perderá acceso a la plataforma hasta que se reactive su cuenta. No afecta sus asignaciones históricas.",
+          confirmLabel: "Suspender",
+          variant: "destructive",
+          onConfirm: function () {
+            submitForm("/resource-manager/colaboradores/" + btn.dataset.suspender + "/estado", { nuevoEstado: "inactivo" });
+          }
+        });
+      });
+    });
+
+    document.querySelectorAll("[data-reactivar]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        submitForm("/resource-manager/colaboradores/" + btn.dataset.reactivar + "/estado", { nuevoEstado: "activo" });
+      });
+    });
+  });
+</script>
+</body>
+</html>

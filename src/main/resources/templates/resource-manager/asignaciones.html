@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asignaciones · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <!-- th:replace inserta el sidebar/topbar reales (con el usuario logueado,
+       su rol, notificaciones) en vez de los <aside>/<header> vacios que
+       tenia el mock -->
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <!-- Caso "no hay proyectos todavia" -->
+      <div th:if="${proyectos.isEmpty()}" class="card">
+        <div class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></span>
+          <span class="state-panel-title">Todavía no hay proyectos en la plataforma</span>
+          <span class="state-panel-desc">Cuando un Project Manager cree un proyecto, aparecerá aquí para que puedas asignar colaboradores.</span>
+        </div>
+      </div>
+
+      <!-- Un "card" por cada proyecto, con su equipo actual -->
+      <div th:unless="${proyectos.isEmpty()}" id="proyectos-rm-zone">
+      <div id="proyectos-rm-list" style="display:flex; flex-direction:column; gap:var(--space-5);">
+        <section class="card proyectos-rm-row" th:each="p : ${proyectos}">
+          <div class="table-toolbar">
+            <div data-project-toggle style="cursor:pointer; display:flex; align-items:center; gap:var(--space-3); min-width:0;">
+              <svg class="icon icon-sm project-toggle-chevron" style="flex-shrink:0; transition:transform var(--dur-base) var(--ease-standard);"><use href="/img/icons.svg#icon-chevron-right"></use></svg>
+              <div style="min-width:0;">
+                <strong th:text="${p.nombre}">Proyecto</strong>
+                <span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}" style="margin-left:var(--space-2);">Estado</span>
+                <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">
+                  <span th:text="${p.equipo.size()}">0</span> asignaciones activas · PM: <span th:text="${p.pmNombre}">Sin asignar</span>
+                  <button type="button" class="link-btn" th:attr="data-cambiar-pm=${p.id}, data-proyecto-nombre=${p.nombre}" style="margin-left:6px;">(cambiar)</button>
+                </p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" th:attr="data-asignar-proyecto=${p.id}, data-proyecto-nombre=${p.nombre}">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Registrar asignación</button>
+          </div>
+
+          <div class="project-body" hidden>
+            <div th:if="${p.equipo.isEmpty()}" class="state-panel">
+              <span class="state-panel-title">Sin colaboradores asignados</span>
+              <span class="state-panel-desc">Usa "Registrar asignación" para armar el equipo de este proyecto.</span>
+            </div>
+
+            <div class="table-scroll" th:unless="${p.equipo.isEmpty()}">
+              <table class="data-table">
+                <thead><tr><th>Colaborador</th><th>Rol en el proyecto</th><th>Dedicación</th><th>Acciones</th></tr></thead>
+                <tbody>
+                <!-- th:each recorre p.equipo (List<MiembroEquipoFila>) que
+                     ya viene armado desde ProyectoService.obtenerDetalle():
+                     no se calcula nada en el HTML, solo se pinta -->
+                <tr th:each="m : ${p.equipo}">
+                  <td class="cell-person">
+                    <span class="avatar avatar-sm" th:text="${m.iniciales}">MR</span>
+                    <span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">correo</span></span>
+                  </td>
+                  <td><span class="badge" th:classappend="${m.rolEnProyectoCrudo == 'project_manager'} ? 'badge-blue' : 'badge-neutral'" th:text="${m.rolLabel}">Rol</span></td>
+                  <td>
+                    <div class="progress-inline" style="min-width:100px;">
+                      <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${m.cargaPorcentaje} + '%;'"></div></div>
+                      <span class="progress-value" th:text="${m.cargaPorcentaje} + '%'">0%</span>
+                    </div>
+                  </td>
+                  <td class="cell-actions">
+                    <!-- data-finalizar-asignacion guarda el id; el JS de
+                         abajo lo usa para armar la URL del POST -->
+                    <button type="button" class="danger" th:attr="data-finalizar-asignacion=${m.asignacionId}">Finalizar</button>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div id="proyectos-rm-pagination" style="display:flex; justify-content:center; padding-top:var(--space-4);" hidden>
+        <div class="pagination-dots" id="proyectos-rm-dots" aria-label="Paginación de proyectos"></div>
+      </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script src="/js/pagination.js"></script>
+<script th:inline="javascript">
+  // SBAI_FLASH trae los mensajes de exito/error que dejo el Controller con
+  // redirectAttributes.addFlashAttribute(...) - topbar-actions.js los lee
+  // de aca y muestra el toast correspondiente al cargar la pagina.
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+
+  // PERFILES se usa para llenar el <select> del modal sin tener que pedirlo
+  // al servidor otra vez cuando el usuario abre el formulario.
+  var PERFILES = /*[[${perfiles}]]*/ [];
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var submitForm = window.SBAI.submitForm;
+
+    window.SBAI.pagination.initSimple({
+      container: "#proyectos-rm-list",
+      rowSelector: ".proyectos-rm-row",
+      pageSize: 5,
+      mode: "dots",
+      pagerEl: "#proyectos-rm-dots",
+      hideIfSinglePageEl: "#proyectos-rm-pagination",
+      keyboardHoverEl: "#proyectos-rm-zone"
+    });
+
+    // Acordeón: cada proyecto arranca colapsado (la lista de proyectos
+    // puede ser larga) y se expande al hacer clic en su encabezado.
+    document.querySelectorAll("[data-project-toggle]").forEach(function (header) {
+      var section = header.closest(".card");
+      var body = section.querySelector(".project-body");
+      var chevron = header.querySelector(".project-toggle-chevron");
+      header.addEventListener("click", function () {
+        var expanded = !body.hidden;
+        body.hidden = expanded;
+        chevron.style.transform = expanded ? "" : "rotate(90deg)";
+      });
+    });
+
+    // Botón "Finalizar" de cada fila de la tabla — pide confirmación antes de
+    // ejecutar, para que un clic accidental no finalice una asignación sin
+    // querer (sigue siendo soft-delete, pero un clic de menos molesta igual).
+    document.querySelectorAll("[data-finalizar-asignacion]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var fila = b.closest("tr");
+        var nombre = fila ? fila.querySelector(".cell-person-name").textContent : "este colaborador";
+        SBAI.modal.confirm({
+          title: "¿Finalizar la asignación de " + nombre + "?",
+          desc: "Dejará de aparecer como parte activa del equipo de este proyecto. Esto no borra su historial.",
+          confirmLabel: "Finalizar",
+          variant: "destructive",
+          onConfirm: function () {
+            submitForm("/resource-manager/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar", {});
+          }
+        });
+      });
+    });
+
+    // Botón "(cambiar)" junto al nombre del PM de cada proyecto
+    document.querySelectorAll("[data-cambiar-pm]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var proyectoId = btn.dataset.cambiarPm;
+        var proyectoNombre = btn.dataset.proyectoNombre || "";
+        var options = PERFILES.map(function (p) {
+          return '<option value="' + p.perfilId + '">' + p.nombre + ' · ' + p.correo + '</option>';
+        }).join("");
+
+        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+                '<div class="modal-header"><div><h2>Cambiar Project Manager</h2><p>' + proyectoNombre + '</p></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body">' +
+                '<div class="field"><label class="field-label">Nuevo Project Manager</label><select class="select" id="pm-perfil">' + options + '</select></div>' +
+                '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="pm-confirm">Confirmar cambio</button></div></div>';
+
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelector("#pm-confirm").addEventListener("click", function () {
+          var nuevoPm = backdrop.querySelector("#pm-perfil").value;
+          submitForm("/resource-manager/proyectos/" + proyectoId + "/cambiar-pm", { nuevoPmPerfilId: nuevoPm });
+        });
+      });
+    });
+
+    // Botón "Registrar asignación" de cada proyecto
+    document.querySelectorAll("[data-asignar-proyecto]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var proyectoId = btn.dataset.asignarProyecto;
+        var proyectoNombre = btn.dataset.proyectoNombre || "";
+        var options = PERFILES.map(function (p) {
+          return '<option value="' + p.perfilId + '">' + p.nombre + ' · ' + p.correo + '</option>';
+        }).join("");
+
+        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+                '<div class="modal-header"><div><h2>Registrar asignación</h2><p>' + proyectoNombre + '</p></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body">' +
+                '<div class="field"><label class="field-label">Colaborador</label><select class="select" id="as-perfil">' + options + '</select></div>' +
+                '<div class="field"><label class="field-label">Rol en el proyecto</label><select class="select" id="as-rol"><option value="colaborador">Colaborador</option><option value="project_manager">Project Manager</option></select></div>' +
+                '<div class="field-row"><div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" min="1" max="100" value="20" id="as-carga"></div>' +
+                '<div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" id="as-fecha"></div></div>' +
+                '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="as-confirm">Registrar</button></div></div>';
+
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelector("#as-confirm").addEventListener("click", function () {
+          var perfil = backdrop.querySelector("#as-perfil").value;
+          if (!perfil) { SBAI.toast.show("Selecciona un colaborador.", { type: "error" }); return; }
+          // submitForm arma un <form method="POST"> oculto y lo envia -
+          // es la funcion que ya usa el resto del sistema (topbar-actions.js),
+          // por eso Resource Manager la reutiliza tal cual, sin reinventar
+          // una llamada fetch/AJAX aparte.
+          submitForm("/resource-manager/proyectos/" + proyectoId + "/asignar", {
+            perfilId: perfil,
+            rolEnProyecto: backdrop.querySelector("#as-rol").value,
+            cargaPorcentaje: backdrop.querySelector("#as-carga").value,
+            fechaInicio: backdrop.querySelector("#as-fecha").value
+          });
+        });
+      });
+    });
+  });
+</script>
+</body>
+</html>

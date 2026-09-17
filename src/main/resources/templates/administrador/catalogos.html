@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogos técnicos · SkillBridge AI</title>
+    <link rel="stylesheet" href="/css/tokens.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div class="main-content">
+        <div th:replace="~{fragments/topbar :: topbar}"></div>
+        <main class="page-content" id="page-content">
+
+            <!-- ===================== TIPOS DE NOTIFICACIÓN ===================== -->
+            <section class="card" style="margin-bottom:var(--space-6);">
+                <div class="table-toolbar">
+                    <div class="card-header-icon-row">
+                        <div class="card-header-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg></div>
+                        <div>
+                            <strong th:text="${tiposNotificacion.size()} + ' tipos de notificación'">0 tipos</strong>
+                            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Usados al crear cada notificación (ej. "alerta", "solicitud").</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" id="add-notif-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar tipo</button>
+                </div>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                        <tr th:each="t : ${tiposNotificacion}">
+                            <td class="mono" th:text="${t.codigo}">codigo</td>
+                            <td th:text="${t.nombre}">Nombre</td>
+                            <td class="text-tertiary" th:text="${t.descripcion}">—</td>
+                            <td class="cell-actions">
+                                <button type="button" data-edit-notif th:attr="data-id=${t.id}, data-nombre=${t.nombre}, data-descripcion=${t.descripcion}">Editar</button>
+                                <button type="button" class="danger" data-delete-notif th:attr="data-id=${t.id}, data-nombre=${t.nombre}">Eliminar</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ===================== TIPOS DE EVENTO ===================== -->
+            <section class="card" style="margin-bottom:var(--space-6);">
+                <div class="table-toolbar">
+                    <div class="card-header-icon-row">
+                        <div class="card-header-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-calendar"></use></svg></div>
+                        <div>
+                            <strong th:text="${tiposEvento.size()} + ' tipos de evento'">0 tipos</strong>
+                            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Para el futuro calendario de proyectos (entregable, reunión, hito).</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" id="add-evento-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar tipo</button>
+                </div>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Color</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                        <tr th:each="t : ${tiposEvento}">
+                            <td class="mono" th:text="${t.codigo}">codigo</td>
+                            <td th:text="${t.nombre}">Nombre</td>
+                            <td class="text-tertiary" th:text="${t.descripcion}">—</td>
+                            <td>
+                                <span th:if="${t.color != null}" style="display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px;" th:style="'background:' + ${t.color} + ';'"></span>
+                                <span class="mono" th:text="${t.color}">—</span>
+                            </td>
+                            <td class="cell-actions">
+                                <button type="button" data-edit-evento th:attr="data-id=${t.id}, data-nombre=${t.nombre}, data-descripcion=${t.descripcion}, data-color=${t.color}">Editar</button>
+                                <button type="button" class="danger" data-delete-evento th:attr="data-id=${t.id}, data-nombre=${t.nombre}">Eliminar</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ===================== TIPOS DE AUDIENCIA ===================== -->
+            <section class="card">
+                <div class="table-toolbar">
+                    <div class="card-header-icon-row">
+                        <div class="card-header-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div>
+                        <div>
+                            <strong th:text="${tiposAudiencia.size()} + ' tipos de audiencia'">0 tipos</strong>
+                            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Para "dirigido a" del futuro calendario (todos, solo PM, solo colaboradores).</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" id="add-audiencia-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar tipo</button>
+                </div>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                        <tr th:each="t : ${tiposAudiencia}">
+                            <td class="mono" th:text="${t.codigo}">codigo</td>
+                            <td th:text="${t.nombre}">Nombre</td>
+                            <td class="text-tertiary" th:text="${t.descripcion}">—</td>
+                            <td class="cell-actions">
+                                <button type="button" data-edit-audiencia th:attr="data-id=${t.id}, data-nombre=${t.nombre}, data-descripcion=${t.descripcion}">Editar</button>
+                                <button type="button" class="danger" data-delete-audiencia th:attr="data-id=${t.id}, data-nombre=${t.nombre}">Eliminar</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script src="/js/modal.js"></script>
+<script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", function () {
+        window.SBAI.dropdown.init(document);
+
+        var exito = /*[[${exito}]]*/ null;
+        var error = /*[[${error}]]*/ null;
+        if (exito) SBAI.toast.show(exito, { type: "success" });
+        if (error) SBAI.toast.show(error, { type: "error" });
+
+        function submitForm(action, fields) {
+            var form = document.createElement("form");
+            form.method = "POST";
+            form.action = action;
+            Object.keys(fields).forEach(function (k) {
+                var input = document.createElement("input");
+                input.type = "hidden"; input.name = k; input.value = fields[k] || "";
+                form.appendChild(input);
+            });
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // ---------------- Tipos de notificación ----------------
+        document.getElementById("add-notif-btn").addEventListener("click", function () {
+            var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar tipo de notificación</h2></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body"><div class="field"><label class="field-label">Código</label><input class="input" id="new-notif-codigo" placeholder="ej. recordatorio"></div>' +
+                '<div class="field"><label class="field-label">Nombre</label><input class="input" id="new-notif-nombre" placeholder="Ej. Recordatorio"></div>' +
+                '<div class="field"><label class="field-label">Descripción</label><input class="input" id="new-notif-desc" placeholder="Opcional"></div></div>' +
+                '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="new-notif-confirm">Agregar</button></div></div>';
+            var backdrop = SBAI.modal.open(html);
+            backdrop.querySelector("#new-notif-confirm").addEventListener("click", function () {
+                var codigo = backdrop.querySelector("#new-notif-codigo").value.trim();
+                var nombre = backdrop.querySelector("#new-notif-nombre").value.trim();
+                if (!codigo || !nombre) { SBAI.toast.show("Código y nombre son obligatorios.", { type: "error" }); return; }
+                submitForm("/administrador/catalogos/notificacion", { codigo: codigo, nombre: nombre, descripcion: backdrop.querySelector("#new-notif-desc").value });
+            });
+        });
+
+        document.querySelectorAll("[data-edit-notif]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var id = btn.dataset.id;
+                var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar tipo de notificación</h2></div>' +
+                    '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                    '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="edit-notif-nombre" value="' + btn.dataset.nombre + '"></div>' +
+                    '<div class="field"><label class="field-label">Descripción</label><input class="input" id="edit-notif-desc" value="' + (btn.dataset.descripcion || "") + '"></div></div>' +
+                    '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="edit-notif-confirm">Guardar</button></div></div>';
+                var backdrop = SBAI.modal.open(html);
+                backdrop.querySelector("#edit-notif-confirm").addEventListener("click", function () {
+                    submitForm("/administrador/catalogos/notificacion/" + id + "/editar", { nombre: backdrop.querySelector("#edit-notif-nombre").value, descripcion: backdrop.querySelector("#edit-notif-desc").value });
+                });
+            });
+        });
+
+        document.querySelectorAll("[data-delete-notif]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                SBAI.modal.confirm({
+                    title: "¿Eliminar \"" + btn.dataset.nombre + "\"?",
+                    desc: "Si ya hay notificaciones creadas con este tipo, no se podrá eliminar.",
+                    confirmLabel: "Eliminar", variant: "destructive",
+                    onConfirm: function () { submitForm("/administrador/catalogos/notificacion/" + btn.dataset.id + "/eliminar", {}); }
+                });
+            });
+        });
+
+        // ---------------- Tipos de evento ----------------
+        document.getElementById("add-evento-btn").addEventListener("click", function () {
+            var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar tipo de evento</h2></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body"><div class="field"><label class="field-label">Código</label><input class="input" id="new-evento-codigo" placeholder="ej. hito"></div>' +
+                '<div class="field"><label class="field-label">Nombre</label><input class="input" id="new-evento-nombre" placeholder="Ej. Hito"></div>' +
+                '<div class="field"><label class="field-label">Descripción</label><input class="input" id="new-evento-desc" placeholder="Opcional"></div>' +
+                '<div class="field"><label class="field-label">Color (hex)</label><input class="input" id="new-evento-color" placeholder="#43A047"></div></div>' +
+                '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="new-evento-confirm">Agregar</button></div></div>';
+            var backdrop = SBAI.modal.open(html);
+            backdrop.querySelector("#new-evento-confirm").addEventListener("click", function () {
+                var codigo = backdrop.querySelector("#new-evento-codigo").value.trim();
+                var nombre = backdrop.querySelector("#new-evento-nombre").value.trim();
+                if (!codigo || !nombre) { SBAI.toast.show("Código y nombre son obligatorios.", { type: "error" }); return; }
+                submitForm("/administrador/catalogos/evento", {
+                    codigo: codigo, nombre: nombre,
+                    descripcion: backdrop.querySelector("#new-evento-desc").value,
+                    color: backdrop.querySelector("#new-evento-color").value
+                });
+            });
+        });
+
+        document.querySelectorAll("[data-edit-evento]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var id = btn.dataset.id;
+                var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar tipo de evento</h2></div>' +
+                    '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                    '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="edit-evento-nombre" value="' + btn.dataset.nombre + '"></div>' +
+                    '<div class="field"><label class="field-label">Descripción</label><input class="input" id="edit-evento-desc" value="' + (btn.dataset.descripcion || "") + '"></div>' +
+                    '<div class="field"><label class="field-label">Color (hex)</label><input class="input" id="edit-evento-color" value="' + (btn.dataset.color || "") + '"></div></div>' +
+                    '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="edit-evento-confirm">Guardar</button></div></div>';
+                var backdrop = SBAI.modal.open(html);
+                backdrop.querySelector("#edit-evento-confirm").addEventListener("click", function () {
+                    submitForm("/administrador/catalogos/evento/" + id + "/editar", {
+                        nombre: backdrop.querySelector("#edit-evento-nombre").value,
+                        descripcion: backdrop.querySelector("#edit-evento-desc").value,
+                        color: backdrop.querySelector("#edit-evento-color").value
+                    });
+                });
+            });
+        });
+
+        document.querySelectorAll("[data-delete-evento]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                SBAI.modal.confirm({
+                    title: "¿Eliminar \"" + btn.dataset.nombre + "\"?",
+                    desc: "Se quitará del catálogo de tipos de evento.",
+                    confirmLabel: "Eliminar", variant: "destructive",
+                    onConfirm: function () { submitForm("/administrador/catalogos/evento/" + btn.dataset.id + "/eliminar", {}); }
+                });
+            });
+        });
+
+        // ---------------- Tipos de audiencia ----------------
+        document.getElementById("add-audiencia-btn").addEventListener("click", function () {
+            var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar tipo de audiencia</h2></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body"><div class="field"><label class="field-label">Código</label><input class="input" id="new-audiencia-codigo" placeholder="ej. solo_pm"></div>' +
+                '<div class="field"><label class="field-label">Nombre</label><input class="input" id="new-audiencia-nombre" placeholder="Ej. Solo Project Manager"></div>' +
+                '<div class="field"><label class="field-label">Descripción</label><input class="input" id="new-audiencia-desc" placeholder="Opcional"></div></div>' +
+                '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="new-audiencia-confirm">Agregar</button></div></div>';
+            var backdrop = SBAI.modal.open(html);
+            backdrop.querySelector("#new-audiencia-confirm").addEventListener("click", function () {
+                var codigo = backdrop.querySelector("#new-audiencia-codigo").value.trim();
+                var nombre = backdrop.querySelector("#new-audiencia-nombre").value.trim();
+                if (!codigo || !nombre) { SBAI.toast.show("Código y nombre son obligatorios.", { type: "error" }); return; }
+                submitForm("/administrador/catalogos/audiencia", { codigo: codigo, nombre: nombre, descripcion: backdrop.querySelector("#new-audiencia-desc").value });
+            });
+        });
+
+        document.querySelectorAll("[data-edit-audiencia]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var id = btn.dataset.id;
+                var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar tipo de audiencia</h2></div>' +
+                    '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                    '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="edit-audiencia-nombre" value="' + btn.dataset.nombre + '"></div>' +
+                    '<div class="field"><label class="field-label">Descripción</label><input class="input" id="edit-audiencia-desc" value="' + (btn.dataset.descripcion || "") + '"></div></div>' +
+                    '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="edit-audiencia-confirm">Guardar</button></div></div>';
+                var backdrop = SBAI.modal.open(html);
+                backdrop.querySelector("#edit-audiencia-confirm").addEventListener("click", function () {
+                    submitForm("/administrador/catalogos/audiencia/" + id + "/editar", { nombre: backdrop.querySelector("#edit-audiencia-nombre").value, descripcion: backdrop.querySelector("#edit-audiencia-desc").value });
+                });
+            });
+        });
+
+        document.querySelectorAll("[data-delete-audiencia]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                SBAI.modal.confirm({
+                    title: "¿Eliminar \"" + btn.dataset.nombre + "\"?",
+                    desc: "Se quitará del catálogo de tipos de audiencia.",
+                    confirmLabel: "Eliminar", variant: "destructive",
+                    onConfirm: function () { submitForm("/administrador/catalogos/audiencia/" + btn.dataset.id + "/eliminar", {}); }
+                });
+            });
+        });
+    });
+</script>
+</body>
+</html>

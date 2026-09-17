@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inicio · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <div class="kpi-grid">
+        <div class="kpi-tile"><span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">SOBRE-ASIGNADOS</span><span class="kpi-tile-value" th:text="${kpiSobreAsignados}">0</span><span class="kpi-tile-meta down" th:if="${kpiSobreAsignados > 0}">requieren acción</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">CAPACIDAD LIBRE</span><span class="kpi-tile-value" th:text="${kpiCapacidadLibre} + ' h'">0 h</span><span class="kpi-tile-meta">esta semana, equipo completo</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">PROPUESTAS PENDIENTES</span><span class="kpi-tile-value" th:text="${kpiSolicitudesPendientes}">0</span><span class="kpi-tile-meta warn" th:if="${kpiSolicitudesPendientes > 0}">de AI Talent Matching</span></div>
+      </div>
+
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5); flex-wrap:wrap; gap:var(--space-3);">
+          <div>
+            <h2 style="font-size:var(--fs-md);">Mapa de carga por colaborador</h2>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de dedicación asignada por semana · <span th:text="${rangoLabel}">rango</span></p>
+          </div>
+          <div style="display:flex; align-items:center; gap:var(--space-4); flex-wrap:wrap;">
+            <div class="heatmap-legend">
+              <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:#EAF1FC;"></span>&lt; 60%</span>
+              <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--green-bg);"></span>60–89%</span>
+              <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--amber-bg);"></span>90–100%</span>
+              <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--red-bg);"></span>&gt; 100%</span>
+            </div>
+            <div class="btn-group">
+              <a class="btn btn-secondary btn-sm" th:href="'inicio.html?semanaOffset=' + ${semanaOffset - 1}">← Anteriores</a>
+              <a class="btn btn-secondary btn-sm" th:if="${semanaOffset != 0}" href="inicio.html">Hoy</a>
+              <a class="btn btn-secondary btn-sm" th:href="'inicio.html?semanaOffset=' + ${semanaOffset + 1}">Siguientes →</a>
+            </div>
+          </div>
+        </div>
+        <div th:if="${heatmap.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-layers"></use></svg></span>
+          <span class="state-panel-title">Sin asignaciones activas en este rango de semanas</span>
+        </div>
+        <div class="heatmap-scroll" th:unless="${heatmap.isEmpty()}">
+          <table class="heatmap-table">
+            <thead><tr><th>Colaborador</th><th th:each="et : ${etiquetasSemana}" th:text="${et}">S00</th><th>Prom.</th></tr></thead>
+            <tbody id="heatmap-body">
+              <tr th:each="row : ${heatmap}" class="heatmap-row">
+                <td><div class="heatmap-person-cell"><span class="avatar avatar-sm" th:text="${row.iniciales}">MR</span><span><div style="font-size:var(--fs-xs); font-weight:500;" th:text="${row.nombre}">Nombre</div><div class="text-tertiary" style="font-size:10px;" th:text="${row.cargo}">Cargo</div></span></div></td>
+                <td th:each="celda : ${row.valores}"><span class="heatmap-cell" th:classappend="${celda.nivelClass}" th:text="${celda.valor}">0</span></td>
+                <td><span class="mono" style="font-weight:600; font-size:var(--fs-xs);" th:text="${row.promedio} + '%'">0%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer" id="heatmap-pagination" th:unless="${heatmap.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);">Mostrando <span id="heatmap-range">0</span></span>
+          <div class="pagination" id="heatmap-pages" aria-label="Paginación del mapa de carga"></div>
+        </div>
+      </section>
+
+      <div class="detail-grid" style="margin-top:var(--space-6);">
+        <section class="card">
+          <div class="card-header"><div class="card-header-text"><h2>Sobre-asignación</h2><p>Colaboradores por encima del 100% de carga activa</p></div></div>
+          <div style="display:flex; flex-direction:column; gap:var(--space-4); padding:var(--space-6);" th:unless="${sobrecargados.isEmpty()}">
+            <div class="callout danger" style="margin:0;" th:each="c : ${sobrecargados}">
+              <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
+              <span class="callout-body">
+                <span class="callout-title" th:text="${c.nombre} + ' (' + ${c.promedio} + '%) · ' + ${c.cargo}">Nombre</span>
+                <div class="callout-actions"><a class="btn btn-secondary btn-sm" href="colaboradores.html">Ver colaboradores</a></div>
+              </span>
+            </div>
+          </div>
+          <div class="state-panel" th:if="${sobrecargados.isEmpty()}">
+            <span class="state-panel-title">Nadie por encima del 100% ahora mismo</span>
+          </div>
+        </section>
+
+        <section class="card card-pad">
+          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Habilidades más declaradas en el equipo</h3>
+          <div th:if="${habilidadesDeclaradas.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
+          <div th:each="s : ${habilidadesDeclaradas}" style="margin-bottom:var(--space-3);">
+            <div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;">
+              <span style="font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
+              <span class="text-tertiary mono" th:text="${s.vacantes()} + ' persona(s)'">0</span>
+            </div>
+            <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${habilidadesDeclaradas.get(0).vacantes() > 0 ? (s.vacantes() * 100 / habilidadesDeclaradas.get(0).vacantes()) : 0} + '%;'"></div></div>
+          </div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/mock-data.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script src="/js/pagination.js"></script>
+<script th:inline="javascript">
+document.addEventListener("DOMContentLoaded", function () {
+  window.SBAI.pagination.initSimple({
+    container: "#heatmap-body",
+    rowSelector: ".heatmap-row",
+    pageSize: 10,
+    mode: "numbered",
+    pagerEl: "#heatmap-pages",
+    rangeEl: "#heatmap-range",
+    hideIfSinglePageEl: "#heatmap-pagination"
+  });
+});
+</script>
+</body>
+</html>
