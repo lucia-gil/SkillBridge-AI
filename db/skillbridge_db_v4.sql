@@ -630,7 +630,7 @@ CREATE TABLE certificados_habilidad (
     fecha_subida        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_cert_perfil_habilidad FOREIGN KEY (perfil_id, habilidad_id)
         REFERENCES perfil_habilidad(perfil_id, habilidad_id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -824,3 +824,4 @@ INSERT INTO perfil_habilidad (perfil_id, habilidad_id, nivel)
 VALUES
  (@diego_id, (SELECT id FROM habilidades WHERE nombre='React'), 3),
  (@diego_id, (SELECT id FROM habilidades WHERE nombre='Docker'), 2);
+ 
