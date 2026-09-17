@@ -39,13 +39,16 @@ public class EventoService {
     private final TipoEventoRepository tipoEventoRepository;
     private final TipoAudienciaRepository tipoAudienciaRepository;
     private final AsignacionRepository asignacionRepository;
+    private final NotificacionService notificacionService;
 
     public EventoService(EventoProyectoRepository eventoRepository, TipoEventoRepository tipoEventoRepository,
-                         TipoAudienciaRepository tipoAudienciaRepository, AsignacionRepository asignacionRepository) {
+                         TipoAudienciaRepository tipoAudienciaRepository, AsignacionRepository asignacionRepository,
+                         NotificacionService notificacionService) {
         this.eventoRepository = eventoRepository;
         this.tipoEventoRepository = tipoEventoRepository;
         this.tipoAudienciaRepository = tipoAudienciaRepository;
         this.asignacionRepository = asignacionRepository;
+        this.notificacionService = notificacionService;
     }
 
     private List<Long> proyectoIdsDe(Long perfilId) {
@@ -65,7 +68,9 @@ public class EventoService {
                 .collect(Collectors.toList());
     }
 
-    /** Eventos visibles para el perfil segun su rol (PM ve 'todos'+'solo_pm'; colaborador 'todos'+'solo_colaboradores'). */
+    /**
+     * Eventos visibles para el perfil segun su rol (PM ve 'todos'+'solo_pm'; colaborador 'todos'+'solo_colaboradores').
+     */
     public List<EventoFila> listar(Long perfilId, boolean esPm) {
         List<Long> ids = proyectoIdsDe(perfilId);
         if (ids.isEmpty()) return List.of();
@@ -136,6 +141,34 @@ public class EventoService {
         if (enlaceVirtual != null && !enlaceVirtual.isBlank()) e.setEnlaceVirtual(enlaceVirtual.trim());
         if (audiencia != null) e.setAudienciaId(audiencia.getId());
         e.setEstado("pendiente");
-        return eventoRepository.save(e);
+        EventoProyecto guardado = eventoRepository.save(e);
+        notificarAlEquipo(guardado, perfilId, audiencia);
+        return guardado;
+    }
+
+    /**
+     * Avisa al equipo del proyecto cuando se crea un evento nuevo, respetando
+     * la audiencia elegida (mismo criterio que usa listar() para decidir
+     * quien VE el evento). Quien lo crea no se notifica a si mismo.
+     */
+    private void notificarAlEquipo(EventoProyecto evento, Long creadorPerfilId, TipoAudiencia audiencia) {
+        String audienciaCodigo = audiencia != null ? audiencia.getCodigo() : "todos";
+        List<Asignacion> equipo = asignacionRepository.listarEquipoDeProyecto(evento.getProyectoId(), "activa");
+        if (equipo.isEmpty()) return;
+        // "evento" recien se creo con new EventoProyecto() - su relacion
+        // .proyecto nunca se cargo (solo se seteo proyectoId), por eso el
+        // nombre del proyecto se toma de un miembro del equipo (ese si viene
+        // cargado desde la consulta JPQL, dentro de la misma transaccion).
+        String nombreProyecto = equipo.get(0).getProyecto().getNombre();
+        String enlace = "/colaborador/calendario.html";
+        for (Asignacion a : equipo) {
+            if (a.getPerfilId().equals(creadorPerfilId)) continue; // no te notificas a ti mismo
+            boolean esPmDeEsteMiembro = "project_manager".equals(a.getRolEnProyecto());
+            if (!audienciaVisible(audienciaCodigo, esPmDeEsteMiembro)) continue;
+            notificacionService.crear(a.getPerfilId(), "info",
+                    "Nuevo evento: " + evento.getTitulo(),
+                    "Se agregó un evento a " + nombreProyecto + ".",
+                    enlace);
+        }
     }
 }

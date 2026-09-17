@@ -3,6 +3,8 @@ package com.skillbridge.ai.web;
 import com.skillbridge.ai.dto.EventoFila;
 import com.skillbridge.ai.dto.ProyectoOpcion;
 import com.skillbridge.ai.dto.UsuarioSesion;
+import com.skillbridge.ai.repository.TipoAudienciaRepository;
+import com.skillbridge.ai.repository.TipoEventoRepository;
 import com.skillbridge.ai.service.EventoService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
@@ -21,15 +23,26 @@ import java.util.List;
  * Calendario conectado a datos reales (colaborador y project-manager): agenda de
  * eventos de "eventos_proyecto" (reunion/entregable/hito) de los proyectos del
  * usuario, respetando la audiencia. "Nuevo evento" guarda en la tabla real.
+ *
+ * Los <select> de Tipo y Audiencia del formulario "Nuevo evento" YA NO tienen
+ * las opciones escritas a mano en el HTML - se listan dinamicamente desde
+ * tipos_evento/tipos_audiencia (ver tiposEvento/tiposAudiencia en el modelo).
+ * Asi, si el Administrador agrega un tipo nuevo desde su panel de Catalogos
+ * tecnicos, aparece aqui solo, sin tocar este archivo.
  */
 @Controller
 public class CalendarioController {
 
     private final EventoService eventoService;
+    private final TipoEventoRepository tipoEventoRepository;
+    private final TipoAudienciaRepository tipoAudienciaRepository;
     private final ShellModelBuilder shellModelBuilder;
 
-    public CalendarioController(EventoService eventoService, ShellModelBuilder shellModelBuilder) {
+    public CalendarioController(EventoService eventoService, TipoEventoRepository tipoEventoRepository,
+                                TipoAudienciaRepository tipoAudienciaRepository, ShellModelBuilder shellModelBuilder) {
         this.eventoService = eventoService;
+        this.tipoEventoRepository = tipoEventoRepository;
+        this.tipoAudienciaRepository = tipoAudienciaRepository;
         this.shellModelBuilder = shellModelBuilder;
     }
 
@@ -52,6 +65,8 @@ public class CalendarioController {
         model.addAttribute("eventos", eventos);
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("nuevoUrl", nuevoUrl);
+        model.addAttribute("tiposEvento", tipoEventoRepository.findAll());
+        model.addAttribute("tiposAudiencia", tipoAudienciaRepository.findAll());
         return plantilla;
     }
 
