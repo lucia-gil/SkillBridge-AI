@@ -8,6 +8,25 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
+<style>
+  .assignment-summary{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:var(--space-4);margin-bottom:var(--space-5)}
+  .assignment-summary-item{position:relative;display:flex;align-items:center;gap:var(--space-4);min-height:116px;padding:var(--space-5);overflow:hidden;border:1px solid var(--summary-border);border-radius:16px;background:linear-gradient(135deg,#fff 10%,var(--summary-bg) 100%);box-shadow:0 7px 20px rgba(15,31,66,.06);transition:transform .2s ease,box-shadow .2s ease}
+  .assignment-summary-item::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--summary-accent)}
+  .assignment-summary-item::after{content:"";position:absolute;width:110px;height:110px;right:-42px;bottom:-58px;border-radius:50%;background:var(--summary-glow);pointer-events:none}
+  .assignment-summary-item:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(15,31,66,.11)}
+  .assignment-summary-projects{--summary-accent:#315fd6;--summary-bg:#f0f5ff;--summary-border:#d9e4ff;--summary-glow:rgba(49,95,214,.10)}
+  .assignment-summary-team{--summary-accent:#159978;--summary-bg:#eefbf7;--summary-border:#d2f1e7;--summary-glow:rgba(21,153,120,.11)}
+  .assignment-summary-vacancies{--summary-accent:#d99022;--summary-bg:#fff8e9;--summary-border:#f5e3bb;--summary-glow:rgba(217,144,34,.12)}
+  .assignment-summary-icon{position:relative;z-index:1;display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:14px;color:#fff;background:var(--summary-accent);box-shadow:0 7px 16px var(--summary-glow)}
+  .assignment-summary-icon .icon{width:23px;height:23px}
+  .assignment-summary-content{position:relative;z-index:1;min-width:0}
+  .assignment-summary-value{display:block;font-size:30px;line-height:1;font-weight:750;letter-spacing:-.04em;color:var(--navy-800)}
+  .assignment-summary-label{display:block;margin-top:7px;font-size:var(--fs-sm);font-weight:650;color:var(--navy-700)}
+  .assignment-summary-hint{display:block;margin-top:3px;font-size:11px;color:var(--text-tertiary)}
+  .coverage-cell{min-width:180px}.vacancy-zero{color:var(--green-fg);font-weight:600}.team-modal-table{max-height:330px;overflow:auto;border:1px solid var(--border-subtle);border-radius:var(--radius-md)}
+  .assign-panel{margin-top:var(--space-5);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-subtle);border-radius:var(--radius-md)}
+  @media(max-width:760px){.assignment-summary{grid-template-columns:1fr}.table-toolbar{align-items:stretch}.table-filters{width:100%}.table-filters .input,.table-filters .select{width:100%}}
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -16,101 +35,88 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div th:if="${proyectos.isEmpty()}" class="card">
-        <div class="state-panel">
-          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></span>
-          <span class="state-panel-title">No gestionas proyectos todavia</span>
-          <span class="state-panel-desc">Crea un proyecto en la seccion "Proyectos" para empezar a asignar colaboradores.</span>
+      <div class="assignment-summary">
+        <div class="assignment-summary-item assignment-summary-projects">
+          <span class="assignment-summary-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+          <span class="assignment-summary-content"><span class="assignment-summary-value" th:text="${proyectos.size()}">0</span><span class="assignment-summary-label">Proyectos gestionados</span><span class="assignment-summary-hint">Total bajo tu gestión</span></span>
+        </div>
+        <div class="assignment-summary-item assignment-summary-team">
+          <span class="assignment-summary-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+          <span class="assignment-summary-content"><span class="assignment-summary-value" th:text="${totalColaboradores}">0</span><span class="assignment-summary-label">Colaboradores asignados</span><span class="assignment-summary-hint">Personas activas en equipos</span></span>
+        </div>
+        <div class="assignment-summary-item assignment-summary-vacancies">
+          <span class="assignment-summary-icon"><svg class="icon"><use href="/img/icons.svg#icon-user"></use></svg></span>
+          <span class="assignment-summary-content"><span class="assignment-summary-value" th:text="${totalVacantes}">0</span><span class="assignment-summary-label">Vacantes pendientes</span><span class="assignment-summary-hint">Cupos aún por cubrir</span></span>
         </div>
       </div>
 
-      <div th:unless="${proyectos.isEmpty()}" style="display:flex; flex-direction:column; gap:var(--space-5);">
-        <section class="card" th:each="p : ${proyectos}">
-          <div class="table-toolbar">
-            <div>
-              <strong th:text="${p.nombre}">Proyecto</strong>
-              <span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}" style="margin-left:var(--space-2);">Estado</span>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" th:text="${p.equipo.size()} + ' asignaciones activas'">0 asignaciones</p>
+      <section class="card" th:if="${proyectos.isEmpty()}">
+        <div class="state-panel"><span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></span><span class="state-panel-title">No gestionas proyectos todavía</span><span class="state-panel-desc">Crea un proyecto en la sección “Proyectos” para empezar a asignar colaboradores.</span></div>
+      </section>
+
+      <section class="card" th:unless="${proyectos.isEmpty()}">
+        <div class="table-toolbar">
+          <div><strong>Proyectos y equipos</strong><p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:2px">Abre un proyecto para consultar o modificar sus colaboradores.</p></div>
+          <div class="table-filters">
+            <input class="input" id="assignment-search" type="search" placeholder="Buscar proyecto..." style="min-width:240px">
+            <select class="select" id="assignment-state"><option value="todos">Todos los estados</option><option value="planificacion">Planificación</option><option value="activo">Activo</option><option value="en_pausa">En pausa</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option></select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Proyecto</th><th>Estado</th><th>Colaboradores</th><th>Cobertura</th><th>Vacantes</th><th>Acción</th></tr></thead>
+            <tbody id="assignment-projects-body">
+              <tr th:each="p : ${proyectos}" data-assignment-row th:attr="data-name=${#strings.toLowerCase(p.nombre)},data-state=${p.estadoCrudo}">
+                <td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm);background:var(--navy-700)" th:text="${#strings.substring(p.nombre,0,1)}">P</span><span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span class="cell-person-sub" th:text="'PM: ' + ${p.pmNombre}">PM</span></span></td>
+                <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
+                <td class="mono" th:text="${p.colaboradoresAsignados} + ' de ' + ${p.colaboradoresRequeridos}">0 de 0</td>
+                <td class="coverage-cell"><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:classappend="${p.cupoCompleto} ? 'green' : 'amber'" th:style="'width:' + ${p.coberturaPorcentaje} + '%'"></div></div><span class="progress-value" th:text="${p.coberturaPorcentaje} + '%'">0%</span></div></td>
+                <td><span th:class="${p.vacantes == 0} ? 'vacancy-zero' : 'mono'" th:text="${p.vacantes == 0} ? 'Completo' : ${p.vacantes}">0</span></td>
+                <td><button type="button" class="btn btn-secondary btn-sm" th:attr="data-view-team=${p.id}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg>Ver colaboradores</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="state-panel" id="assignment-empty" hidden><span class="state-panel-title">No hay proyectos con esos filtros</span><span class="state-panel-desc">Prueba con otro nombre o estado.</span></div>
+        </div>
+        <div class="table-footer">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="assignment-visible-count">0</span> de <span id="assignment-filtered-count">0</span> proyectos</span>
+          <div class="pagination"><button class="page-btn" id="assignment-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="assignment-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="assignment-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
+      </section>
+
+      <div id="assignment-team-templates" hidden>
+        <template th:each="p : ${proyectos}" th:attr="data-team-project=${p.id}">
+          <div>
+            <div class="modal-header"><div><h2 th:text="${p.nombre}">Proyecto</h2><p th:text="${p.colaboradoresAsignados} + ' de ' + ${p.colaboradoresRequeridos} + ' colaboradores asignados'">Equipo</p></div><button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>
+            <div class="modal-body">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)"><div><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span><span class="text-tertiary" style="font-size:var(--fs-xs);margin-left:var(--space-2)" th:text="${p.vacantes} + ' vacante(s) disponible(s)'">Vacantes</span></div><button type="button" class="btn btn-primary btn-sm" data-show-assignment-form th:disabled="${p.cupoCompleto}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg><span th:text="${p.cupoCompleto} ? 'Cupo completo' : 'Asignar colaborador'">Asignar colaborador</span></button></div>
+
+              <div class="state-panel" th:if="${p.equipo.isEmpty()}"><span class="state-panel-title">Sin integrantes asignados</span></div>
+              <div class="team-modal-table" th:unless="${p.equipo.isEmpty()}"><table class="data-table"><thead><tr><th>Integrante</th><th>Rol</th><th>Dedicación</th><th>Acción</th></tr></thead><tbody>
+                <tr th:each="m : ${p.equipo}"><td class="cell-person"><span class="avatar avatar-sm" th:text="${m.iniciales}">AB</span><span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">Correo</span></span></td><td><span class="badge" th:classappend="${m.rolEnProyectoCrudo == 'project_manager'} ? 'badge-blue' : 'badge-neutral'" th:text="${m.rolLabel}">Rol</span></td><td class="mono" th:text="${m.cargaPorcentaje} + '%'">0%</td><td class="cell-actions"><button type="button" class="danger" th:if="${m.rolEnProyectoCrudo == 'colaborador'}" th:attr="data-finalizar-asignacion=${m.asignacionId}">Finalizar</button><span class="text-tertiary" th:if="${m.rolEnProyectoCrudo == 'project_manager'}">Responsable</span></td></tr>
+              </tbody></table></div>
+
+              <div class="assign-panel" data-assignment-form hidden th:unless="${p.cupoCompleto}">
+                <h3 style="font-size:var(--fs-sm);margin-bottom:var(--space-4)">Nueva asignación</h3>
+                <div class="field"><label class="field-label">Colaborador</label><select class="select" data-field="perfilId"><option value="">Selecciona una persona</option><option th:each="perfil : ${perfiles}" th:value="${perfil.perfilId()}" th:text="${perfil.nombre()} + ' · ' + ${perfil.correo()}">Persona</option></select></div>
+                <input type="hidden" value="colaborador" data-field="rolEnProyecto">
+                <div class="field-row"><div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" min="1" max="100" value="50" data-field="cargaPorcentaje"></div><div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" data-field="fechaInicio"></div></div>
+                <div class="btn-group" style="justify-content:flex-end"><button type="button" class="btn btn-secondary btn-sm" data-hide-assignment-form>Cancelar</button><button type="button" class="btn btn-primary btn-sm" th:attr="data-assign-project=${p.id}">Confirmar asignación</button></div>
+              </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" th:attr="data-asignar-proyecto=${p.id}, data-proyecto-nombre=${p.nombre}">
-              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Asignar colaborador</button>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div>
           </div>
-
-          <div th:if="${p.equipo.isEmpty()}" class="state-panel">
-            <span class="state-panel-title">Sin colaboradores asignados</span>
-            <span class="state-panel-desc">Usa "Asignar colaborador" para armar el equipo de este proyecto.</span>
-          </div>
-
-          <div class="table-scroll" th:unless="${p.equipo.isEmpty()}">
-            <table class="data-table">
-              <thead><tr><th>Colaborador</th><th>Rol en el proyecto</th><th>Dedicacion</th><th>Acciones</th></tr></thead>
-              <tbody>
-                <tr th:each="m : ${p.equipo}">
-                  <td class="cell-person">
-                    <span class="avatar avatar-sm" th:text="${m.iniciales}">MR</span>
-                    <span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">correo</span></span>
-                  </td>
-                  <td><span class="badge" th:classappend="${m.rolEnProyectoCrudo == 'project_manager'} ? 'badge-blue' : 'badge-neutral'" th:text="${m.rolLabel}">Rol</span></td>
-                  <td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${m.cargaPorcentaje} + '%;'"></div></div><span class="progress-value" th:text="${m.cargaPorcentaje} + '%'">0%</span></div></td>
-                  <td class="cell-actions"><button type="button" class="danger" th:attr="data-finalizar-asignacion=${m.asignacionId}">Finalizar</button></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+        </template>
       </div>
-
     </main>
   </div>
 </div>
-
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/command-palette.js"></script>
 <script src="/js/topbar-actions.js"></script>
-<script th:inline="javascript">
-window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
-var PERFILES = /*[[${perfiles}]]*/ [];
-
-document.addEventListener("DOMContentLoaded", function () {
-  var submitForm = window.SBAI.submitForm;
-
-  document.querySelectorAll("[data-finalizar-asignacion]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      submitForm("/project-manager/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar", { volver: "asignaciones" });
-    });
-  });
-
-  document.querySelectorAll("[data-asignar-proyecto]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var proyectoId = btn.dataset.asignarProyecto;
-      var proyectoNombre = btn.dataset.proyectoNombre || "";
-      var options = PERFILES.map(function (p) { return '<option value="' + p.perfilId + '">' + p.nombre + ' · ' + p.correo + '</option>'; }).join("");
-      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-        '<div class="modal-header"><div><h2>Asignar colaborador</h2><p>' + proyectoNombre + '</p></div>' +
-        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body">' +
-        '<div class="field"><label class="field-label">Colaborador</label><select class="select" id="as-perfil">' + options + '</select></div>' +
-        '<div class="field"><label class="field-label">Rol en el proyecto</label><select class="select" id="as-rol"><option value="colaborador">Colaborador</option><option value="project_manager">Project Manager</option></select></div>' +
-        '<div class="field-row"><div class="field"><label class="field-label">Dedicacion (%)</label><input class="input" type="number" min="1" max="100" value="50" id="as-carga"></div>' +
-        '<div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" id="as-fecha"></div></div>' +
-        '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="as-confirm">Asignar</button></div></div>';
-      var backdrop = SBAI.modal.open(html);
-      backdrop.querySelector("#as-confirm").addEventListener("click", function () {
-        var perfil = backdrop.querySelector("#as-perfil").value;
-        if (!perfil) { SBAI.toast.show("Selecciona un colaborador.", { type: "error" }); return; }
-        submitForm("/project-manager/proyectos/" + proyectoId + "/asignar", {
-          perfilId: perfil,
-          rolEnProyecto: backdrop.querySelector("#as-rol").value,
-          cargaPorcentaje: backdrop.querySelector("#as-carga").value,
-          fechaInicio: backdrop.querySelector("#as-fecha").value,
-          volver: "asignaciones"
-        });
-      });
-    });
-  });
-});
-</script>
+<script th:inline="javascript">window.SBAI_FLASH={exito:/*[[${exito}]]*/null,error:/*[[${error}]]*/null};</script>
+<script src="/js/pm-asignaciones.js"></script>
 </body>
 </html>

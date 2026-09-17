@@ -47,11 +47,15 @@ public class AsignacionesPmController {
                 .collect(Collectors.toList());
         List<PerfilOpcion> perfiles = proyectoService.listarPerfilesParaAsignar();
         long totalMiembros = proyectos.stream().mapToLong(p -> p.getEquipo().size()).sum();
+        long totalColaboradores = proyectos.stream().mapToLong(ProyectoDetalle::getColaboradoresAsignados).sum();
+        long totalVacantes = proyectos.stream().mapToLong(ProyectoDetalle::getVacantes).sum();
 
         shellModelBuilder.aplicar(model, sesion, "asignaciones.html", "Asignaciones",
                 totalMiembros + " asignaciones activas en tus " + proyectos.size() + " proyectos");
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("perfiles", perfiles);
+        model.addAttribute("totalColaboradores", totalColaboradores);
+        model.addAttribute("totalVacantes", totalVacantes);
         return "project-manager/asignaciones";
     }
 }
