@@ -24,53 +24,33 @@
     <!-- NAVEGACIÓN -->
     <nav class="sidebar-nav" aria-label="Navegación principal">
 
-
-        <a class="sidebar-nav-item"
-            th:classappend="${item.href == activeHref} ? 'active'"
-            th:href="${item.href}"
-            th:each="item : ${navItems}">
-
+        <a
+                class="sidebar-nav-item"
+                th:classappend="${item.href == activeHref} ? 'active'"
+                th:href="${item.href}"
+                th:each="item : ${navItems}"
+        >
             <svg class="icon">
                 <use th:href="@{'/img/icons.svg#' + ${item.icon}}"></use>
             </svg>
 
             <span
                     class="sidebar-nav-item-label"
-                    th:text="${item.label}">
-                    Label
+                    th:text="${item.label}"
+            >
+                Label
             </span>
 
-             <span
-                class="counter-badge"
-                th:if="${item.badge != null and item.badge > 0}"
-                th:text="${item.badge}">
+            <span
+                    class="counter-badge"
+                    th:if="${item.badge != null and item.badge > 0}"
+                    th:text="${item.badge}"
+            >
                 0
             </span>
         </a>
 
     </nav>
-
-    <!-- USUARIO -->
-    <div class="sidebar-footer">
-
-        <button
-                type="button"
-                class="sidebar-user"
-                data-dropdown-trigger="user-menu-sidebar"
-        >
-
-            <!-- Menú -->
-            <svg class="icon sidebar-user-menu-icon" style="margin-left:auto;">
-                <use href="/img/icons.svg#icon-more-h"></use>
-            </svg>
-
-        </button>
-
-        <div
-                th:replace="~{fragments/modals :: user-menu('user-menu-sidebar', 'align-left')}"
-        ></div>
-
-    </div>
 
 </aside>
 

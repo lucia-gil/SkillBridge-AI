@@ -1,50 +1,79 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reportes · SkillBridge AI</title>
-<link rel="stylesheet" href="/css/tokens.css">
-<link rel="stylesheet" href="/css/base.css">
-<link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
-
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
-
-      <div class="detail-grid" style="margin-top:var(--space-6);">
-        <section class="card card-pad">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
-            <div>
-              <h2 style="font-size:var(--fs-md);">Evolución de ocupación</h2>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="evo-subtitle"></p>
-            </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar</button>
-          </div>
-          <div class="bar-chart" id="evo-chart"></div>
-        </section>
-
-        <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Habilidades más demandadas</h3>
-          <div id="skills-demand"></div>
-        </section>
+      <div class="kpi-grid">
+        <div class="kpi-tile"><span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">SOBRE-ASIGNADOS</span><span class="kpi-tile-value" th:text="${kpiSobreAsignados}">0</span><span class="kpi-tile-meta down" th:if="${kpiSobreAsignados > 0}">requieren acción</span></div>
+        <div class="kpi-tile"><span class="kpi-tile-label">COLABORADORES EVALUADOS</span><span class="kpi-tile-value" th:text="${kpiColaboradoresEvaluados}">0</span></div>
       </div>
 
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Habilidades más demandadas</h3>
+        <div th:if="${topHabilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
+        <div th:each="s : ${topHabilidades}" style="display:flex; align-items:center; gap:var(--space-4); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+          <span style="flex:1; font-size:var(--fs-sm); font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
+          <div class="progress-bar" style="max-width:200px;"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
+          <span class="mono text-tertiary" style="font-size:var(--fs-xs); min-width:110px; text-align:right;" th:text="${s.vacantes()} + ' persona(s)'">0 personas</span>
+        </div>
+      </section>
+
       <section class="card" style="margin-top:var(--space-6);">
-        <div class="card-header"><div class="card-header-text"><h2>Ocupación por colaborador</h2><p>Promedio de las últimas 6 semanas</p></div></div>
-        <div class="table-scroll">
+        <div class="table-toolbar">
+          <div>
+            <strong>Ocupación por colaborador</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Suma de dedicaciones activas por colaborador, en todos sus proyectos</p>
+          </div>
+        </div>
+
+        <div th:if="${ocupacion.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-layers"></use></svg></span>
+          <span class="state-panel-title">Todavía no hay asignaciones activas</span>
+          <span class="state-panel-desc">Cuando se registren asignaciones desde "Asignaciones", aparecerán aquí.</span>
+        </div>
+
+        <div class="table-scroll" th:unless="${ocupacion.isEmpty()}">
           <table class="data-table">
-            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación promedio</th><th>Estado</th></tr></thead>
-            <tbody id="detail-body"></tbody>
+            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación</th><th>Estado</th></tr></thead>
+            <tbody id="reportes-ocupacion-body">
+            <tr th:each="o : ${ocupacion}" data-reportes-ocupacion-row>
+              <td class="cell-person">
+                <span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span>
+                <span class="cell-person-name" th:text="${o.nombre}">Nombre</span>
+              </td>
+              <td th:text="${o.cargo}">Cargo</td>
+              <td>
+                <div class="progress-inline" style="min-width:110px;">
+                  <div class="progress-bar">
+                    <div class="progress-bar-fill"
+                         th:classappend="${o.promedio > 100} ? 'red' : (${o.promedio >= 90} ? 'amber' : '')"
+                         th:style="'width:' + ${#numbers.formatDecimal(o.promedio > 100 ? 100 : o.promedio, 1, 0)} + '%;'"></div>
+                  </div>
+                  <span class="progress-value" th:text="${o.promedio} + '%'">0%</span>
+                </div>
+              </td>
+              <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
+            </tr>
+            </tbody>
           </table>
+        </div>
+        <div class="table-footer" th:unless="${ocupacion.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="reportes-ocupacion-visible-count">0</span> de <span id="reportes-ocupacion-total-count">0</span> colaboradores</span>
+          <div class="pagination"><button class="page-btn" id="reportes-ocupacion-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="reportes-ocupacion-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="reportes-ocupacion-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
       </section>
 
@@ -52,58 +81,45 @@
   </div>
 </div>
 
-<script src="/js/mock-data.js"></script>
-<script src="/js/state.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
-<script src="/js/table-filter.js"></script>
 <script src="/js/command-palette.js"></script>
-<script src="/js/modal.js"></script>
-<script src="/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "resource-manager", active: "reportes.html", title: "Reportes", subtitle: "Ocupación y demanda de habilidades · Q3 2026" });
-  if (!cfg) return;
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+  document.addEventListener("DOMContentLoaded", function () {
+    // Paginación en el cliente: mismo patrón que resource-manager/ocupacion.html.
+    var rows = Array.from(document.querySelectorAll("[data-reportes-ocupacion-row]"));
+    if (!rows.length) return;
 
-  var r = MOCK.rmReport;
-  document.getElementById("evo-subtitle").textContent = "Últimos 6 meses · meta " + r.meta + "%";
+    var pageSize = 8;
+    var page = 1;
+    var visibleCount = document.getElementById("reportes-ocupacion-visible-count");
+    var totalCount = document.getElementById("reportes-ocupacion-total-count");
+    var pageLabel = document.getElementById("reportes-ocupacion-page-label");
+    var previous = document.getElementById("reportes-ocupacion-prev");
+    var next = document.getElementById("reportes-ocupacion-next");
 
-  document.getElementById("kpi-grid").innerHTML = [
-    { label: "OCUPACIÓN PROMEDIO", value: r.ocupacionPromedio + "%", meta: "meta " + r.meta + "%", cls: "warn" },
-    { label: "SOBRE-ASIGNADOS", value: r.sobreAsignados, meta: "requieren acción", cls: "down" },
-    { label: "CAPACIDAD LIBRE", value: r.capacidadLibre + " h", meta: "próximas 6 semanas" },
-    { label: "SOLICITUDES PENDIENTES", value: r.solicitudesPendientes, meta: r.vencenHoy + " vencen hoy", cls: "warn" }
-  ].map(function (k) { return '<div class="kpi-tile"><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
+    function render() {
+      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = rows.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      visibleCount.textContent = visible.length;
+      totalCount.textContent = rows.length;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
 
-  document.getElementById("evo-chart").innerHTML = r.evolucion.map(function (m) {
-    return '<div class="bar-chart-col"><span class="bar-chart-value">' + m.pct + '%</span>' +
-      '<div class="bar-chart-track"><div class="bar-chart-fill' + (m.pct >= r.meta ? " accent" : "") + '" style="height:' + m.pct + '%;"></div></div>' +
-      '<span class="bar-chart-label">' + m.mes + '</span></div>';
-  }).join("");
-
-  var maxDemand = Math.max.apply(null, MOCK.skillsDemand.map(function (s) { return s.vacantes; }));
-  document.getElementById("skills-demand").innerHTML = MOCK.skillsDemand.map(function (s) {
-    return '<div style="margin-bottom:var(--space-3);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;"><span style="font-weight:500;">' + s.nombre + '</span><span class="text-tertiary mono">' + s.vacantes + ' vacantes</span></div>' +
-      '<div class="progress-bar"><div class="progress-bar-fill" style="width:' + Math.round((s.vacantes / maxDemand) * 100) + '%;"></div></div></div>';
-  }).join("");
-
-  function estadoInfo(v) {
-    if (v > 100) return { badge: "badge-red", label: "Sobre-asignado" };
-    if (v >= 90) return { badge: "badge-amber", label: "Al límite" };
-    if (v >= 60) return { badge: "badge-green", label: "Óptimo" };
-    return { badge: "badge-neutral", label: "Subutilizado" };
-  }
-
-  document.getElementById("detail-body").innerHTML = r.ocupacionPorColaborador.map(function (o) {
-    var ei = estadoInfo(o.promedio);
-    return '<tr><td class="cell-person"><span class="avatar avatar-sm">' + o.iniciales + '</span><span class="cell-person-name">' + o.nombre + '</span></td>' +
-      "<td>" + o.cargo + '</td><td class="mono">' + o.promedio + '%</td><td><span class="badge ' + ei.badge + '">' + ei.label + "</span></td></tr>";
-  }).join("");
-
-  document.getElementById("export-btn").addEventListener("click", function () {
-    SBAI.toast.show("Generando exportable de reportes en PDF…");
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+      if (page < pages) { page++; render(); }
+    });
+    render();
   });
-});
 </script>
 </body>
 </html>

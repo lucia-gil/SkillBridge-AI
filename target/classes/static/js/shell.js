@@ -22,24 +22,22 @@
       var isActive = item.href === activeHref;
       var badge = item.badge ? item.badge() : null;
       return '<a class="sidebar-nav-item' + (isActive ? " active" : "") + '" href="' + item.href + '"' + (isActive ? ' aria-current="page"' : "") + ">" +
-        icon(item.icon) +
-        '<span class="sidebar-nav-item-label">' + item.label + "</span>" +
-        (badge ? '<span class="counter-badge">' + badge + "</span>" : "") +
-        "</a>";
+          icon(item.icon) +
+          '<span class="sidebar-nav-item-label">' + item.label + "</span>" +
+          (badge ? '<span class="counter-badge">' + badge + "</span>" : "") +
+          "</a>";
     }).join("");
 
     return (
-      '<div class="sidebar-brand"><span class="sidebar-brand-mark">' + icon("icon-logo") + '</span><span class="sidebar-brand-text">SkillBridge AI</span></div>' +
-      '<div class="sidebar-role-badge">' + config.label + "</div>" +
-      '<nav class="sidebar-nav" aria-label="Navegación principal">' + items + "</nav>" +
-      '<div class="sidebar-footer">' +
-      '<button type="button" class="sidebar-user" data-dropdown-trigger="user-menu-sidebar">' +
-      '<span class="avatar avatar-sm">' + user.iniciales + "</span>" +
-      '<span class="sidebar-user-text"><span class="sidebar-user-name">' + user.nombre + '</span><span class="sidebar-user-email">' + user.correo + "</span></span>" +
-      icon("icon-more-h") +
-      "</button>" +
-      userMenuPanel("user-menu-sidebar", "align-left") +
-      "</div>"
+        '<div class="sidebar-brand"><span class="sidebar-brand-mark">' + icon("icon-logo") + '</span><span class="sidebar-brand-text">SkillBridge AI</span></div>' +
+        '<div class="sidebar-role-badge">' + config.label + "</div>" +
+        '<nav class="sidebar-nav" aria-label="Navegación principal">' + items + "</nav>" +
+        '<div class="sidebar-footer">' +
+        '<button type="button" class="sidebar-user" data-dropdown-trigger="user-menu-sidebar">' +
+        '<svg class="icon sidebar-user-menu-icon" style="margin-left:auto;"><use href="' + window.SBAI.state.STATIC + 'img/icons.svg#icon-more-h"></use></svg>' +
+        "</button>" +
+        userMenuPanel("user-menu-sidebar", "align-right") +
+        "</div>"
     );
   }
 
@@ -51,35 +49,35 @@
     // la pantalla por encima del header.
     var openUpwardStyle = id === "user-menu-sidebar" ? ' style="bottom: calc(100% + 8px); top: auto;"' : "";
     return '<div class="dropdown-panel dropdown-menu' + (align === "align-right" ? " align-right" : "") + '" data-dropdown-panel="' + id + '"' + openUpwardStyle + '>' +
-      '<a class="dropdown-item" href="mi-cuenta.html">' + icon("icon-user") + "Mi cuenta</a>" +
-      '<a class="dropdown-item" href="mi-cuenta.html">' + icon("icon-settings") + "Configuración</a>" +
-      '<div class="dropdown-divider"></div>' +
-      '<button type="button" class="dropdown-item danger" data-action="logout">' + icon("icon-log-out") + "Cerrar sesión</button>" +
-      "</div>";
+        '<a class="dropdown-item" href="mi-cuenta.html">' + icon("icon-user") + "Mi cuenta</a>" +
+        '<a class="dropdown-item" href="mi-cuenta.html">' + icon("icon-settings") + "Configuración</a>" +
+        '<div class="dropdown-divider"></div>' +
+        '<button type="button" class="dropdown-item danger" data-action="logout">' + icon("icon-log-out") + "Cerrar sesión</button>" +
+        "</div>";
   }
 
   function topbarHtml(roleSlug, config, opts) {
     var user = config.user();
     var unread = window.SBAI.state.getUnreadCount(roleSlug);
     return (
-      '<div class="topbar-heading"><span class="topbar-title">' + (opts.title || "") + '</span>' +
-      '<span class="topbar-subtitle">' + (opts.subtitle || "") + "</span></div>" +
-      '<button type="button" class="topbar-search" data-open-command-palette><svg class="icon"><use href="' + window.SBAI.state.STATIC + 'img/icons.svg#icon-search"></use></svg>' +
-      '<span>Buscar colaboradores, proyectos o habilidades…</span><kbd>⌘K</kbd></button>' +
-      '<div class="topbar-actions">' +
-      '<a class="topbar-ai-btn" href="asistente-ia.html">' + icon("icon-sparkles") + "<span>Asistente IA</span></a>" +
-      '<div class="dropdown">' +
-      '<button type="button" class="topbar-icon-btn" data-dropdown-trigger="notif-panel" aria-label="Notificaciones">' + icon("icon-bell") +
-      (unread > 0 ? '<span class="counter-badge" data-unread-badge>' + unread + "</span>" : "") + "</button>" +
-      notifPanelHtml(roleSlug) +
-      "</div>" +
-      '<div class="dropdown">' +
-      '<button type="button" class="topbar-user-btn" data-dropdown-trigger="user-menu-topbar">' +
-      '<span class="avatar avatar-sm">' + user.iniciales + "</span>" +
-      icon("icon-chevron-down", "icon-sm") +
-      "</button>" +
-      userMenuPanel("user-menu-topbar", "align-right") +
-      "</div></div>"
+        '<div class="topbar-heading"><span class="topbar-title">' + (opts.title || "") + '</span>' +
+        '<span class="topbar-subtitle">' + (opts.subtitle || "") + "</span></div>" +
+        '<button type="button" class="topbar-search" data-open-command-palette><svg class="icon"><use href="' + window.SBAI.state.STATIC + 'img/icons.svg#icon-search"></use></svg>' +
+        '<span>Buscar colaboradores, proyectos o habilidades…</span><kbd>⌘K</kbd></button>' +
+        '<div class="topbar-actions">' +
+        '<a class="topbar-ai-btn" href="asistente-ia.html">' + icon("icon-sparkles") + "<span>Asistente IA</span></a>" +
+        '<div class="dropdown">' +
+        '<button type="button" class="topbar-icon-btn" data-dropdown-trigger="notif-panel" aria-label="Notificaciones">' + icon("icon-bell") +
+        (unread > 0 ? '<span class="counter-badge" data-unread-badge>' + unread + "</span>" : "") + "</button>" +
+        notifPanelHtml(roleSlug) +
+        "</div>" +
+        '<div class="dropdown">' +
+        '<button type="button" class="topbar-user-btn" data-dropdown-trigger="user-menu-topbar">' +
+        '<span class="avatar avatar-sm">' + user.iniciales + "</span>" +
+        icon("icon-chevron-down", "icon-sm") +
+        "</button>" +
+        userMenuPanel("user-menu-topbar", "align-right") +
+        "</div></div>"
     );
   }
 
@@ -94,17 +92,17 @@
     var items = list.map(function (n) {
       var read = window.SBAI.state.isRead(roleSlug, n.id);
       return '<div class="notif-item' + (read ? "" : " unread") + '" data-notif-id="' + n.id + '">' +
-        '<span class="notif-item-icon ' + notifIconClass(n.tipo) + '">' + icon(n.icon, "icon-sm") + "</span>" +
-        '<span class="notif-item-body"><span class="notif-item-title">' + n.titulo + '</span>' +
-        '<span class="notif-item-desc">' + n.desc + '</span>' +
-        '<span class="notif-item-time">' + n.hora + "</span></span></div>";
+          '<span class="notif-item-icon ' + notifIconClass(n.tipo) + '">' + icon(n.icon, "icon-sm") + "</span>" +
+          '<span class="notif-item-body"><span class="notif-item-title">' + n.titulo + '</span>' +
+          '<span class="notif-item-desc">' + n.desc + '</span>' +
+          '<span class="notif-item-time">' + n.hora + "</span></span></div>";
     }).join("") || '<div class="state-panel" style="padding:32px 16px;"><span class="state-panel-icon">' + icon("icon-bell") + '</span><span class="state-panel-desc">No tienes notificaciones.</span></div>';
 
     return '<div class="dropdown-panel notif-panel align-right" data-dropdown-panel="notif-panel">' +
-      '<div class="notif-panel-header"><h3>Notificaciones</h3><button type="button" class="btn btn-tertiary btn-sm" data-action="mark-all-read-quick">Marcar leídas</button></div>' +
-      '<div class="notif-panel-list">' + items + "</div>" +
-      '<div class="notif-panel-footer"><a href="notificaciones.html">Ver todas las notificaciones →</a></div>' +
-      "</div>";
+        '<div class="notif-panel-header"><h3>Notificaciones</h3><button type="button" class="btn btn-tertiary btn-sm" data-action="mark-all-read-quick">Marcar leídas</button></div>' +
+        '<div class="notif-panel-list">' + items + "</div>" +
+        '<div class="notif-panel-footer"><a href="notificaciones.html">Ver todas las notificaciones →</a></div>' +
+        "</div>";
   }
 
   function refreshBadges(roleSlug, config) {

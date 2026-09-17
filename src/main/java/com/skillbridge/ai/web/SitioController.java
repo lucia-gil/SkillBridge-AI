@@ -74,13 +74,11 @@ public class SitioController {
         return vista(request);
     }
 
-    // Resource Manager: ocupacion/asignaciones/colaboradores/ai-talent-matching
-    // YA tienen controlador real (RmOcupacionController,
+    // Resource Manager: ocupacion/asignaciones/colaboradores/ai-talent-matching/
+    // inicio/reportes YA tienen controlador real (RmOcupacionController,
     // RmAsignacionesController, RmColaboradoresController,
-    // TalentMatchingController).
+    // TalentMatchingController, RmInicioController, RmReportesController).
     @GetMapping({
-            "/resource-manager/inicio.html",
-            "/resource-manager/reportes.html",
             "/resource-manager/mi-cuenta.html",
             "/resource-manager/notificaciones.html",
             "/resource-manager/asistente-ia.html"
