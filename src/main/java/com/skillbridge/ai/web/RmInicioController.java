@@ -64,6 +64,9 @@ public class RmInicioController {
 
     @GetMapping("/resource-manager/inicio.html")
     public String inicio(@RequestParam(defaultValue = "0") int semanaOffset, HttpSession session, Model model) {
+        // Nunca se muestran semanas futuras más allá de "hoy": el botón
+        // "Siguientes" solo puede acercar de vuelta al presente, no superarlo.
+        if (semanaOffset > 0) semanaOffset = 0;
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
 
         // ---------- KPIs ----------

@@ -29,7 +29,7 @@
     }).join("");
 
     return (
-      '<div class="sidebar-brand"><span class="sidebar-brand-mark">' + icon("icon-logo") + '</span><span class="sidebar-brand-text">SkillBridge AI</span></div>' +
+      '<div class="sidebar-brand"><span class="sidebar-brand-logo-crop"><img src="' + window.SBAI.state.STATIC + 'img/logo_blanco.png" alt="SkillBridge" class="sidebar-brand-logo"></span></div>' +
       '<div class="sidebar-role-badge">' + config.label + "</div>" +
       '<nav class="sidebar-nav" aria-label="Navegación principal">' + items + "</nav>" +
       '<div class="sidebar-footer">' +
@@ -63,8 +63,6 @@
     return (
       '<div class="topbar-heading"><span class="topbar-title">' + (opts.title || "") + '</span>' +
       '<span class="topbar-subtitle">' + (opts.subtitle || "") + "</span></div>" +
-      '<button type="button" class="topbar-search" data-open-command-palette><svg class="icon"><use href="' + window.SBAI.state.STATIC + 'img/icons.svg#icon-search"></use></svg>' +
-      '<span>Buscar colaboradores, proyectos o habilidades…</span><kbd>⌘K</kbd></button>' +
       '<div class="topbar-actions">' +
       '<a class="topbar-ai-btn" href="asistente-ia.html">' + icon("icon-sparkles") + "<span>Asistente IA</span></a>" +
       '<div class="dropdown">' +
@@ -161,7 +159,6 @@
     if (topbarEl) topbarEl.innerHTML = topbarHtml(opts.role, config, opts);
 
     window.SBAI.dropdown.init(document);
-    window.SBAI.commandPalette.init(opts.role);
     wireShellActions(opts.role, config);
 
     if (window.SBAI.tableFilter) window.SBAI.tableFilter.init(document);

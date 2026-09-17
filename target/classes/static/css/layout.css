@@ -27,18 +27,38 @@
 .sidebar-brand {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-3);
   padding: var(--space-6) var(--space-5);
   flex-shrink: 0;
 }
-.sidebar-brand-mark {
-  width: 34px; height: 34px; border-radius: var(--radius-md);
-  background: var(--navy-900);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
+/* logo_blanco.png (600x416) trae mucho espacio transparente alrededor
+   del trazo "SkillBridge" (para el swoosh que iba arriba en otras
+   versiones del logo); el trazo real ocupa solo el rectangulo
+   x:[51,564] y:[145,277] del lienzo. En vez de mostrar el <img> completo
+   (que deja un colchon vacio enorme arriba/abajo), se recorta ese
+   rectangulo: el wrapper define el tamaño visible final y el <img>,
+   escalado y desplazado con position:absolute, deja ese rectangulo
+   exactamente dentro del wrapper. */
+.sidebar-brand-logo-crop {
+  width: 175px;
+  height: 45px;
+  overflow: hidden;
+  position: relative;
+  display: block;
 }
-.sidebar-brand-mark svg { width: 19px; height: 19px; }
-.sidebar-brand-text { font-size: var(--fs-base); font-weight: var(--fw-semibold); color: white; letter-spacing: -0.01em; }
+.sidebar-brand-logo {
+  position: absolute;
+  width: 204.5px;
+  height: 141.8px;
+  left: -17.4px;
+  top: -49.4px;
+  max-width: none;
+}
+@media (max-width: 1180px) {
+  .sidebar-brand-logo-crop { width: 32px; height: 8px; }
+  .sidebar-brand-logo { width: 37.4px; height: 26px; left: -3.2px; top: -9px; }
+}
 
 .sidebar-role-badge {
   margin: 0 var(--space-5) var(--space-4);
@@ -128,13 +148,14 @@
   padding: 0 var(--space-3);
   height: 40px;
   width: 100%;
-  max-width: 360px;
+  max-width: 460px;
+  min-width: 0;
   color: var(--text-tertiary);
   cursor: pointer;
   flex-shrink: 1;
 }
 .topbar-search:hover { border-color: var(--border-strong); }
-.topbar-search span { font-size: var(--fs-sm); flex: 1; text-align: left; }
+.topbar-search span { font-size: var(--fs-sm); flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .topbar-search kbd { font-family: var(--font-mono); font-size: 10px; border: 1px solid var(--border-default); border-radius: 4px; padding: 2px 6px; background: var(--surface); }
 
 .topbar-actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
@@ -173,14 +194,12 @@
 /* Responsive: sidebar colapsa a íconos, luego a drawer */
 @media (max-width: 1180px) {
   .app-shell { grid-template-columns: var(--sidebar-w-collapsed) 1fr; }
-  .sidebar-brand-text, .sidebar-nav-item-label, .sidebar-role-badge, .sidebar-user-text { display: none; }
+  .sidebar-nav-item-label, .sidebar-role-badge, .sidebar-user-text { display: none; }
   .sidebar-nav-item { justify-content: center; }
   .sidebar-user { justify-content: center; }
 }
 @media (max-width: 860px) {
   .topbar-heading { display: none; }
-  .topbar-search span, .topbar-search kbd { display: none; }
-  .topbar-search { width: 40px; padding: 0; justify-content: center; }
 }
 
 /* =========================================================
@@ -228,7 +247,12 @@
 }
 .auth-aside-top { position: relative; z-index: 1; }
 .auth-aside-brand { display: flex; align-items: center; gap: var(--space-3); }
-.auth-aside-brand img { height: 48px; width: auto; }
+/* logo_blanco.png trae bastante espacio transparente alrededor del
+   trazo (para el swoosh que arquea sobre la "k"), asi que su altura
+   visible real es bastante menor que el alto del <img>: hay que dejar
+   el lienzo grande para que el trazo se note claramente mas grande
+   que el titular de al lado (--fs-2xl, 34px). */
+.auth-aside-brand img { height: 160px; width: auto; }
 .auth-aside-eyebrow { display: block; margin-top: var(--space-5); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: var(--fw-medium); letter-spacing: var(--tracking-label); text-transform: uppercase; color: rgba(255,255,255,0.55); }
 .auth-aside-headline { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); line-height: var(--lh-tight); margin: var(--space-6) 0 var(--space-4); max-width: 460px; letter-spacing: -0.01em; }
 .auth-aside-sub { font-size: var(--fs-base); color: rgba(255,255,255,0.72); line-height: var(--lh-relaxed); max-width: 420px; }

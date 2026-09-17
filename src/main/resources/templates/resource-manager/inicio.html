@@ -17,10 +17,10 @@
     <main class="page-content" id="page-content">
 
       <div class="kpi-grid">
-        <div class="kpi-tile"><span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">SOBRE-ASIGNADOS</span><span class="kpi-tile-value" th:text="${kpiSobreAsignados}">0</span><span class="kpi-tile-meta down" th:if="${kpiSobreAsignados > 0}">requieren acción</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">CAPACIDAD LIBRE</span><span class="kpi-tile-value" th:text="${kpiCapacidadLibre} + ' h'">0 h</span><span class="kpi-tile-meta">esta semana, equipo completo</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">PROPUESTAS PENDIENTES</span><span class="kpi-tile-value" th:text="${kpiSolicitudesPendientes}">0</span><span class="kpi-tile-meta warn" th:if="${kpiSolicitudesPendientes > 0}">de AI Talent Matching</span></div>
+        <div class="kpi-tile accent-blue"><div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></div><span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span></div>
+        <div class="kpi-tile accent-red"><div class="kpi-tile-icon red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></div><span class="kpi-tile-label">SOBRE-ASIGNADOS</span><span class="kpi-tile-value" th:text="${kpiSobreAsignados}">0</span><span class="kpi-tile-meta down" th:if="${kpiSobreAsignados > 0}">requieren acción</span></div>
+        <div class="kpi-tile accent-green"><div class="kpi-tile-icon green"><svg class="icon"><use href="/img/icons.svg#icon-user-check"></use></svg></div><span class="kpi-tile-label">CAPACIDAD LIBRE</span><span class="kpi-tile-value" th:text="${kpiCapacidadLibre} + ' h'">0 h</span><span class="kpi-tile-meta">esta semana, equipo completo</span></div>
+        <div class="kpi-tile accent-violet"><div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></div><span class="kpi-tile-label">PROPUESTAS PENDIENTES</span><span class="kpi-tile-value" th:text="${kpiSolicitudesPendientes}">0</span><span class="kpi-tile-meta warn" th:if="${kpiSolicitudesPendientes > 0}">de AI Talent Matching</span></div>
       </div>
 
       <section class="card card-pad" style="margin-top:var(--space-6);">
@@ -37,9 +37,15 @@
               <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--red-bg);"></span>&gt; 100%</span>
             </div>
             <div class="btn-group">
-              <a class="btn btn-secondary btn-sm" th:href="'inicio.html?semanaOffset=' + ${semanaOffset - 1}">← Anteriores</a>
-              <a class="btn btn-secondary btn-sm" th:if="${semanaOffset != 0}" href="inicio.html">Hoy</a>
-              <a class="btn btn-secondary btn-sm" th:href="'inicio.html?semanaOffset=' + ${semanaOffset + 1}">Siguientes →</a>
+              <a class="btn btn-secondary btn-sm btn-icon-only" th:href="'inicio.html?semanaOffset=' + ${semanaOffset - 1}" aria-label="Semanas anteriores">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-left"></use></svg>
+              </a>
+              <a class="btn btn-secondary btn-sm btn-icon-only" th:if="${semanaOffset != 0}" href="inicio.html" aria-label="Ir a la semana actual">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-home"></use></svg>
+              </a>
+              <a class="btn btn-secondary btn-sm btn-icon-only" th:if="${semanaOffset != 0}" th:href="'inicio.html?semanaOffset=' + ${semanaOffset + 1}" aria-label="Semanas siguientes">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-right"></use></svg>
+              </a>
             </div>
           </div>
         </div>
@@ -102,7 +108,7 @@
 <script src="/js/mock-data.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
-<script src="/js/command-palette.js"></script>
+
 <script src="/js/topbar-actions.js"></script>
 <script src="/js/pagination.js"></script>
 <script th:inline="javascript">

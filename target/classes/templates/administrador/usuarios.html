@@ -17,10 +17,10 @@
     <main class="page-content" id="page-content">
 
       <div class="kpi-grid">
-        <div class="kpi-tile"><span class="kpi-tile-label">TOTAL USUARIOS</span><span class="kpi-tile-value" th:text="${kpis.total}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">SIN ROL ASIGNADO</span><span class="kpi-tile-value" th:text="${kpis.sinRol}">0</span><span class="kpi-tile-meta warn"></span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">SUSPENDIDOS</span><span class="kpi-tile-value" th:text="${kpis.suspendidos}">0</span><span class="kpi-tile-meta down"></span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">ADMINISTRADORES</span><span class="kpi-tile-value" th:text="${kpis.administradores}">0</span></div>
+        <div class="kpi-tile accent-blue"><div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div><span class="kpi-tile-label">TOTAL USUARIOS</span><span class="kpi-tile-value" th:text="${kpis.total}">0</span></div>
+        <div class="kpi-tile accent-amber"><div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></div><span class="kpi-tile-label">SIN ROL ASIGNADO</span><span class="kpi-tile-value" th:text="${kpis.sinRol}">0</span><span class="kpi-tile-meta warn"></span></div>
+        <div class="kpi-tile accent-red"><div class="kpi-tile-icon red"><svg class="icon"><use href="/img/icons.svg#icon-user-x"></use></svg></div><span class="kpi-tile-label">SUSPENDIDOS</span><span class="kpi-tile-value" th:text="${kpis.suspendidos}">0</span><span class="kpi-tile-meta down"></span></div>
+        <div class="kpi-tile accent-violet"><div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-shield-check"></use></svg></div><span class="kpi-tile-label">ADMINISTRADORES</span><span class="kpi-tile-value" th:text="${kpis.administradores}">0</span></div>
       </div>
 
       <section class="card" style="margin-top:var(--space-6);">
@@ -89,7 +89,6 @@
 <script src="/js/table-filter.js"></script>
 <script src="/js/pagination.js"></script>
 <script src="/js/topbar-actions.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/modal.js"></script>
 <script th:inline="javascript">
 document.addEventListener("DOMContentLoaded", function () {

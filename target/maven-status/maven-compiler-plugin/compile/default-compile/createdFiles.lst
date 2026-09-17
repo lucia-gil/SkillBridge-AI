@@ -6,6 +6,7 @@ com\skillbridge\ai\dto\CertificadoFila.class
 com\skillbridge\ai\model\Asignacion.class
 com\skillbridge\ai\web\AdminConfiguracionController.class
 com\skillbridge\ai\web\ProyectosPmController.class
+com\skillbridge\ai\web\RmReportesController$PuntoEvolucion.class
 com\skillbridge\ai\model\CorreoAutorizado.class
 com\skillbridge\ai\util\PasswordPolicy.class
 com\skillbridge\ai\repository\CertificadoHabilidadRepository.class
@@ -16,6 +17,7 @@ com\skillbridge\ai\model\ProyectoHabilidadRequerida.class
 com\skillbridge\ai\model\TipoNotificacion.class
 com\skillbridge\ai\dto\EventoCalendario.class
 com\skillbridge\ai\web\InicioPmController.class
+com\skillbridge\ai\web\RmReportesController.class
 com\skillbridge\ai\service\TalentMatchingService.class
 com\skillbridge\ai\web\TalentMatchingController.class
 com\skillbridge\ai\dto\CuentaResumen.class
@@ -50,7 +52,6 @@ com\skillbridge\ai\dto\VacanteHabilidad.class
 com\skillbridge\ai\repository\ProyectoHabilidadRequeridaRepository.class
 com\skillbridge\ai\web\AdminInicioController.class
 com\skillbridge\ai\repository\TipoAudienciaRepository.class
-com\skillbridge\ai\web\RmInicioController.class
 com\skillbridge\ai\dto\PropuestaAsignacionFila.class
 com\skillbridge\ai\dto\HabilidadFila.class
 com\skillbridge\ai\model\Habilidad.class

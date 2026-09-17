@@ -38,16 +38,6 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     if (window.SBAI.dropdown) window.SBAI.dropdown.init(document);
-    // El botón de búsqueda (⌘K) del topbar existe en todas las páginas
-    // migradas, pero command-palette.js solo agrega su listener de click
-    // si algo llama a .init(...). Se centraliza aquí para no repetirlo en
-    // cada plantilla: el rol se deduce del primer segmento de la URL
-    // (/administrador/..., /resource-manager/..., etc.), que es como este
-    // proyecto ya organiza sus rutas por rol.
-    if (window.SBAI.commandPalette) {
-      var rol = window.location.pathname.split("/")[1] || "";
-      window.SBAI.commandPalette.init(rol);
-    }
 
     document.body.addEventListener("click", function (e) {
       if (e.target.closest('[data-action="logout"]')) {

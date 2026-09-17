@@ -54,6 +54,10 @@
           <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
           <span class="state-panel-title">Sin proyectos con estos filtros</span>
         </div>
+        <div class="table-footer" id="proyectos-admin-pagination">
+          <span class="text-tertiary" style="font-size:var(--fs-xs);">Mostrando <span id="proyectos-admin-range">0</span></span>
+          <div class="pagination" id="proyectos-admin-pages" aria-label="Paginación de proyectos"></div>
+        </div>
       </section>
 
       <!-- Detalle precalculado por proyecto (ver Javadoc de AdminProyectosController) -->
@@ -131,12 +135,18 @@
 <script src="/js/dropdown.js"></script>
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/topbar-actions.js"></script>
+<script src="/js/pagination.js"></script>
 <script th:inline="javascript">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.tableFilter.init(document);
+  window.SBAI.pagination.initFiltered({
+    scope: "proyectos-admin",
+    pageSize: 10,
+    pagerEl: "#proyectos-admin-pages",
+    rangeEl: "#proyectos-admin-range"
+  });
   var submitForm = window.SBAI.submitForm;
 
   document.querySelectorAll("[data-view-project]").forEach(function (btn) {

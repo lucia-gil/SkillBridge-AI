@@ -247,19 +247,20 @@
 .kpi-tile.accent-blue::before { background: var(--blue-fg); }
 .kpi-tile.accent-green::before { background: var(--green-fg); }
 .kpi-tile.accent-amber::before { background: var(--amber-fg); }
-.kpi-tile.accent-violet::before { background: var(--violet-fg); }
+.kpi-tile.accent-violet::before, .kpi-tile.accent-purple::before { background: var(--violet-fg); }
 .kpi-tile.accent-red::before { background: var(--red-fg); }
 
 .kpi-tile.accent-blue { --tile-bg: var(--blue-bg); --tile-border: var(--blue-border); --tile-glow: rgba(44,91,176,.10); }
 .kpi-tile.accent-green { --tile-bg: var(--green-bg); --tile-border: var(--green-border); --tile-glow: rgba(21,153,120,.11); }
 .kpi-tile.accent-amber { --tile-bg: var(--amber-bg); --tile-border: var(--amber-border); --tile-glow: rgba(217,144,34,.12); }
-.kpi-tile.accent-violet { --tile-bg: var(--violet-bg); --tile-border: var(--violet-border); --tile-glow: rgba(110,78,190,.11); }
+/* "purple" es alias de "violet": mismo tono, dos nombres usados indistintamente en las plantillas */
+.kpi-tile.accent-violet, .kpi-tile.accent-purple { --tile-bg: var(--violet-bg); --tile-border: var(--violet-border); --tile-glow: rgba(110,78,190,.11); }
 .kpi-tile.accent-red { --tile-bg: var(--red-bg); --tile-border: var(--red-border); --tile-glow: rgba(196,60,40,.11); }
-.kpi-tile.accent-blue, .kpi-tile.accent-green, .kpi-tile.accent-amber, .kpi-tile.accent-violet, .kpi-tile.accent-red {
+.kpi-tile.accent-blue, .kpi-tile.accent-green, .kpi-tile.accent-amber, .kpi-tile.accent-violet, .kpi-tile.accent-purple, .kpi-tile.accent-red {
   background: linear-gradient(135deg, #fff 10%, var(--tile-bg) 100%);
   border-color: var(--tile-border);
 }
-.kpi-tile.accent-blue::after, .kpi-tile.accent-green::after, .kpi-tile.accent-amber::after, .kpi-tile.accent-violet::after, .kpi-tile.accent-red::after {
+.kpi-tile.accent-blue::after, .kpi-tile.accent-green::after, .kpi-tile.accent-amber::after, .kpi-tile.accent-violet::after, .kpi-tile.accent-purple::after, .kpi-tile.accent-red::after {
   content: ""; position: absolute; width: 110px; height: 110px; right: -42px; bottom: -58px; border-radius: 50%; background: var(--tile-glow); pointer-events: none; z-index: 0;
 }
 .kpi-tile-icon, .kpi-tile-label, .kpi-tile-value, .kpi-tile-meta { position: relative; z-index: 1; }
@@ -269,7 +270,7 @@
 .kpi-tile-icon.blue { background: var(--blue-bg); color: var(--blue-fg); }
 .kpi-tile-icon.green { background: var(--green-bg); color: var(--green-fg); }
 .kpi-tile-icon.amber { background: var(--amber-bg); color: var(--amber-fg); }
-.kpi-tile-icon.violet { background: var(--violet-bg); color: var(--violet-fg); }
+.kpi-tile-icon.violet, .kpi-tile-icon.purple { background: var(--violet-bg); color: var(--violet-fg); }
 .kpi-tile-icon.red { background: var(--red-bg); color: var(--red-fg); }
 
 /* Chip de ícono en encabezados de card */

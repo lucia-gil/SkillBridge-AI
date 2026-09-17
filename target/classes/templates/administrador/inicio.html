@@ -17,10 +17,10 @@
     <main class="page-content" id="page-content">
 
       <div class="kpi-grid">
-        <div class="kpi-tile"><span class="kpi-tile-label">COLABORADORES ACTIVOS</span><span class="kpi-tile-value" th:text="${kpiColaboradoresActivos}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">PROYECTOS EN CURSO</span><span class="kpi-tile-value" th:text="${kpiProyectosEnCurso}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">ASIGNACIONES ACTIVAS</span><span class="kpi-tile-value" th:text="${kpiAsignacionesActivas}">0</span></div>
+        <div class="kpi-tile accent-blue"><div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div><span class="kpi-tile-label">COLABORADORES ACTIVOS</span><span class="kpi-tile-value" th:text="${kpiColaboradoresActivos}">0</span></div>
+        <div class="kpi-tile accent-violet"><div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></div><span class="kpi-tile-label">PROYECTOS EN CURSO</span><span class="kpi-tile-value" th:text="${kpiProyectosEnCurso}">0</span></div>
+        <div class="kpi-tile accent-amber"><div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></div><span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span></div>
+        <div class="kpi-tile accent-green"><div class="kpi-tile-icon green"><svg class="icon"><use href="/img/icons.svg#icon-briefcase"></use></svg></div><span class="kpi-tile-label">ASIGNACIONES ACTIVAS</span><span class="kpi-tile-value" th:text="${kpiAsignacionesActivas}">0</span></div>
       </div>
 
       <div class="detail-grid" style="margin-top:var(--space-6); align-items:stretch;">
@@ -111,7 +111,6 @@
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/modal.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script src="/js/pagination.js"></script>
 <script th:inline="javascript">
