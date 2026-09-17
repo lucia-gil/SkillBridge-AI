@@ -137,8 +137,7 @@
 
     <div class="auth-aside-top">
       <div class="auth-aside-brand">
-        <span class="sidebar-brand-mark"><svg class="icon"><use href="/img/icons.svg#icon-logo"></use></svg></span>
-        <span class="sidebar-brand-text">SkillBridge AI</span>
+        <img src="/img/logo_blanco.png" alt="SkillBridge AI" style="height: 36px; width: auto;">
       </div>
       <span class="auth-aside-eyebrow">NEXACORP · ACCESO CORPORATIVO</span>
       <h1 class="auth-aside-headline">El talento correcto, en el proyecto correcto.</h1>
@@ -261,9 +260,6 @@
     document.getElementById("login-email").addEventListener("blur", validateEmail);
     document.getElementById("login-password").addEventListener("blur", validatePassword);
 
-    // Validacion en el navegador antes de dejar pasar el submit real hacia
-    // /auth/login.html (POST) - el servidor valida de nuevo igual, esto solo
-    // evita un viaje al servidor con campos obviamente vacios.
     document.getElementById("login-form").addEventListener("submit", function (e) {
       var okEmail = validateEmail();
       var okPass = validatePassword();
