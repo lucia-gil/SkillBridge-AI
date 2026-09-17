@@ -43,7 +43,12 @@ public class TalentMatchingController {
         Long seleccionado = proyectoId != null ? proyectoId : (proyectos.isEmpty() ? null : proyectos.get(0).id());
         List<MatchingCandidato> candidatos = Collections.emptyList();
         if (seleccionado != null) {
-            try { candidatos = matchingService.calcular(sesion.getPerfilId(), seleccionado, dedicacion, ph, pe, pd); }
+            try {
+                candidatos = matchingService.calcular(sesion.getPerfilId(), seleccionado, dedicacion, ph, pe, pd);
+                // Solo se muestran los 5 mejores candidatos en la vista, para que
+                // la lista no quede mas larga que el panel de detalle al costado.
+                if (candidatos.size() > 5) candidatos = candidatos.subList(0, 5);
+            }
             catch (OperacionInvalidaException ex) { model.addAttribute("errorVista", ex.getMessage()); }
         }
         String nombreProyecto = proyectos.stream().filter(p -> p.id().equals(seleccionado)).map(MatchingProyectoOpcion::nombre).findFirst().orElse("Selecciona un proyecto");

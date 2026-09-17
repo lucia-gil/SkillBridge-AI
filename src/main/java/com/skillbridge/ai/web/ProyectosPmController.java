@@ -70,11 +70,13 @@ public class ProyectosPmController {
                 .map(proyectoService::obtenerDetalle)
                 .collect(Collectors.toList());
         List<PerfilOpcion> perfiles = proyectoService.listarPerfilesParaAsignar();
+        int colaboradoresDisponibles = proyectoService.contarColaboradoresDisponibles(sesion.getPerfilId());
 
         shellModelBuilder.aplicar(model, sesion, "proyectos.html", "Proyectos",
                 "Tus " + proyectos.size() + " proyectos como Project Manager");
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("perfiles", perfiles);
+        model.addAttribute("colaboradoresDisponibles", colaboradoresDisponibles);
         return "project-manager/proyectos";
     }
 

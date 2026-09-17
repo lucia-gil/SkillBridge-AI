@@ -181,8 +181,17 @@ public class ProyectoService {
         if (fechaInicio == null) {
             throw new OperacionInvalidaException("La fecha de inicio es obligatoria.");
         }
-        if (fechaFinEstimada != null && fechaFinEstimada.isBefore(fechaInicio)) {
+        if (fechaInicio.isBefore(LocalDate.now())) {
+            throw new OperacionInvalidaException("La fecha de inicio no puede ser anterior a la fecha actual.");
+        }
+        if (fechaFinEstimada == null) {
+            throw new OperacionInvalidaException("La fecha de fin estimada es obligatoria.");
+        }
+        if (fechaFinEstimada.isBefore(fechaInicio)) {
             throw new OperacionInvalidaException("La fecha de fin estimada no puede ser anterior al inicio.");
+        }
+        if (ChronoUnit.DAYS.between(fechaInicio, fechaFinEstimada) < 7) {
+            throw new OperacionInvalidaException("Debe haber al menos 7 días de diferencia entre la fecha de inicio y la fecha de fin.");
         }
         Perfil pm = perfilRepository.findById(pmPerfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona un Project Manager válido."));

@@ -138,6 +138,7 @@
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+window.SBAI_DISPONIBLES = /*[[${colaboradoresDisponibles}]]*/ 0;
 document.addEventListener("DOMContentLoaded", function () {
   if (window.SBAI.tableFilter) window.SBAI.tableFilter.init(document);
   var submitForm = window.SBAI.submitForm;
@@ -174,31 +175,83 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function isoHoy() { var d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function sumarDiasIso(iso, dias) {
+    var d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + dias);
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function diffDiasIso(isoA, isoB) {
+    var a = new Date(isoA + "T00:00:00");
+    var b = new Date(isoB + "T00:00:00");
+    return Math.round((b - a) / 86400000);
+  }
+
   document.getElementById("new-project-btn").addEventListener("click", function () {
+    var hoy = isoHoy();
+    var disponibles = window.SBAI_DISPONIBLES || 0;
     var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
       '<div class="modal-header"><div><h2>Nuevo proyecto</h2><p>Seras el Project Manager de este proyecto.</p></div>' +
       '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
       '<div class="modal-body">' +
+      '<div class="callout danger" id="np-error" hidden style="margin-bottom:var(--space-4);">' +
+        '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
+        '<span class="callout-body" id="np-error-text"></span>' +
+      '</div>' +
       '<div class="field"><label class="field-label">Nombre</label><input class="input" id="np-nombre"></div>' +
       '<div class="field"><label class="field-label">Descripcion</label><textarea class="input" id="np-desc" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
       '<div class="field"><label class="field-label">Tecnologias (separadas por coma)</label><input class="input" id="np-tech" placeholder="React, Node.js, PostgreSQL"></div>' +
-      '<div class="field-row"><div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" id="np-inicio"></div>' +
-      '<div class="field"><label class="field-label">Fecha de fin estimada</label><input class="input" type="date" id="np-fin"></div></div>' +
-      '<div class="field"><label class="field-label">Colaboradores requeridos</label><input class="input" type="number" min="0" value="3" id="np-colab"></div>' +
+      '<div class="field-row"><div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" id="np-inicio" min="' + hoy + '"></div>' +
+      '<div class="field"><label class="field-label">Fecha de fin estimada</label><input class="input" type="date" id="np-fin" min="' + sumarDiasIso(hoy, 7) + '"></div></div>' +
+      '<div class="field"><label class="field-label">Colaboradores requeridos (max. ' + disponibles + ' disponible(s))</label><input class="input" type="number" min="0" max="' + disponibles + '" value="0" id="np-colab"></div>' +
       '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
     var backdrop = SBAI.modal.open(html);
+
+    var errorBox = backdrop.querySelector("#np-error");
+    var errorText = backdrop.querySelector("#np-error-text");
+    function mostrarError(msg) { errorText.textContent = msg; errorBox.hidden = false; }
+    function ocultarError() { errorBox.hidden = true; }
+
+    var inicioInput = backdrop.querySelector("#np-inicio");
+    var finInput = backdrop.querySelector("#np-fin");
+    inicioInput.addEventListener("change", function () {
+      if (inicioInput.value) finInput.min = sumarDiasIso(inicioInput.value, 7);
+    });
+
+    var colabInput = backdrop.querySelector("#np-colab");
+    colabInput.addEventListener("input", function () {
+      if (colabInput.value === "") return;
+      var valor = parseInt(colabInput.value, 10);
+      if (isNaN(valor)) { colabInput.value = 0; return; }
+      if (valor > disponibles) { colabInput.value = disponibles; mostrarError("No hay colaboradores suficientes. Solo hay " + disponibles + " colaborador(es) disponible(s) en este momento."); }
+      else if (valor < 0) { colabInput.value = 0; }
+      else { ocultarError(); }
+    });
+
     backdrop.querySelector("#np-confirm").addEventListener("click", function () {
+      ocultarError();
       var nombre = backdrop.querySelector("#np-nombre").value.trim();
-      var inicio = backdrop.querySelector("#np-inicio").value;
-      if (!nombre) { SBAI.toast.show("Ingresa un nombre para el proyecto.", { type: "error" }); return; }
-      if (!inicio) { SBAI.toast.show("Selecciona la fecha de inicio.", { type: "error" }); return; }
+      var inicio = inicioInput.value;
+      var fin = finInput.value;
+      var colab = parseInt(backdrop.querySelector("#np-colab").value, 10);
+
+      if (!nombre) { mostrarError("Ingresa un nombre para el proyecto."); return; }
+      if (!inicio) { mostrarError("Selecciona la fecha de inicio."); return; }
+      if (inicio < hoy) { mostrarError("La fecha de inicio no puede ser anterior a hoy."); return; }
+      if (!fin) { mostrarError("Selecciona la fecha de fin estimada."); return; }
+      if (fin < inicio) { mostrarError("La fecha de fin no puede ser anterior a la fecha de inicio."); return; }
+      if (diffDiasIso(inicio, fin) < 7) { mostrarError("Debe haber al menos 7 días de diferencia entre la fecha de inicio y la fecha de fin."); return; }
+      if (isNaN(colab) || colab < 0) { mostrarError("Ingresa una cantidad válida de colaboradores."); return; }
+      if (colab > disponibles) { mostrarError("No hay colaboradores suficientes. Solo hay " + disponibles + " colaborador(es) disponible(s) en este momento."); return; }
+
       submitForm("/project-manager/proyectos", {
         nombre: nombre,
         descripcion: backdrop.querySelector("#np-desc").value,
         tecnologias: backdrop.querySelector("#np-tech").value,
         fechaInicio: inicio,
-        fechaFinEstimada: backdrop.querySelector("#np-fin").value,
-        colaboradoresRequeridos: backdrop.querySelector("#np-colab").value
+        fechaFinEstimada: fin,
+        colaboradoresRequeridos: colab
       });
     });
   });
