@@ -870,3 +870,130 @@
 .health-dot.degraded { background: var(--amber-fg); }
 .health-dot.down { background: var(--red-fg); }
 .health-row-value { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-secondary); }
+
+/* =========================================================
+   SIDEBAR USER
+   ========================================================= */
+
+.sidebar-user {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  padding: 0.7rem 0.75rem;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: transparent;
+  color: inherit;
+
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+          background-color 0.2s ease,
+          transform 0.2s ease;
+}
+
+.sidebar-user:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+
+/* Avatar */
+
+.sidebar-user-avatar {
+  flex: 0 0 auto;
+}
+
+
+/* Contenedor nombre + correo */
+
+.sidebar-user-text {
+  min-width: 0;
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+
+  gap: 0.18rem;
+
+  overflow: hidden;
+}
+
+
+/* Nombre */
+
+.sidebar-user-name {
+  display: block;
+  width: 100%;
+
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+
+  color: #ffffff;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Correo */
+
+.sidebar-user-email {
+  display: block;
+  width: 100%;
+
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.25;
+
+  color: rgba(255, 255, 255, 0.62);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Icono de menú */
+
+.sidebar-user-menu-icon {
+  flex: 0 0 auto;
+
+  width: 18px;
+  height: 18px;
+
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* =========================================================
+   SIDEBAR BRAND / LOGO
+   ========================================================= */
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center ;
+
+  min-height: 68px;
+  padding: 0 1.25rem;
+}
+
+.sidebar-logo {
+  display: block;
+
+  width: auto;
+  height: 98px;
+
+  max-width: 190px;
+
+  object-fit: contain;
+  object-position: left center;
+}
