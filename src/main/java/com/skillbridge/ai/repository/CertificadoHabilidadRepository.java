@@ -1,0 +1,11 @@
+package com.skillbridge.ai.repository;
+
+import com.skillbridge.ai.model.CertificadoHabilidad;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface CertificadoHabilidadRepository extends JpaRepository<CertificadoHabilidad, Long> {
+
+    List<CertificadoHabilidad> findByPerfilIdAndHabilidadId(Long perfilId, Long habilidadId);
+}

@@ -1,6 +1,7 @@
 package com.skillbridge.ai.service;
 
 import com.skillbridge.ai.dto.CategoriaConConteo;
+import com.skillbridge.ai.dto.CertificadoFila;
 import com.skillbridge.ai.dto.HabilidadFila;
 import com.skillbridge.ai.dto.HabilidadPerfilFila;
 import com.skillbridge.ai.model.CategoriaHabilidad;
@@ -8,6 +9,7 @@ import com.skillbridge.ai.model.Habilidad;
 import com.skillbridge.ai.model.PerfilHabilidad;
 import com.skillbridge.ai.model.PerfilHabilidadId;
 import com.skillbridge.ai.repository.CategoriaHabilidadRepository;
+import com.skillbridge.ai.repository.CertificadoHabilidadRepository;
 import com.skillbridge.ai.repository.HabilidadRepository;
 import com.skillbridge.ai.repository.PerfilHabilidadRepository;
 import com.skillbridge.ai.repository.ProyectoHabilidadRequeridaRepository;
@@ -39,17 +41,20 @@ public class HabilidadService {
     private final CategoriaHabilidadRepository categoriaHabilidadRepository;
     private final PerfilHabilidadRepository perfilHabilidadRepository;
     private final ProyectoHabilidadRequeridaRepository proyectoHabilidadRequeridaRepository;
+    private final CertificadoHabilidadRepository certificadoHabilidadRepository;
     private final AuditoriaService auditoriaService;
 
     public HabilidadService(HabilidadRepository habilidadRepository,
                             CategoriaHabilidadRepository categoriaHabilidadRepository,
                             PerfilHabilidadRepository perfilHabilidadRepository,
                             ProyectoHabilidadRequeridaRepository proyectoHabilidadRequeridaRepository,
+                            CertificadoHabilidadRepository certificadoHabilidadRepository,
                             AuditoriaService auditoriaService) {
         this.habilidadRepository = habilidadRepository;
         this.categoriaHabilidadRepository = categoriaHabilidadRepository;
         this.perfilHabilidadRepository = perfilHabilidadRepository;
         this.proyectoHabilidadRequeridaRepository = proyectoHabilidadRequeridaRepository;
+        this.certificadoHabilidadRepository = certificadoHabilidadRepository;
         this.auditoriaService = auditoriaService;
     }
 
@@ -187,7 +192,11 @@ public class HabilidadService {
                     if (h == null) return null;
                     String desde = ph.getFechaDeclaracion() != null ? ph.getFechaDeclaracion().format(FORMATO_FECHA) : "—";
                     boolean validada = ph.getValidadoPorId() != null;
-                    return new HabilidadPerfilFila(h.getId(), h.getNombre(), h.getCategoria().getNombre(), ph.getNivel(), desde, validada);
+                    List<CertificadoFila> certificados = certificadoHabilidadRepository
+                            .findByPerfilIdAndHabilidadId(perfilId, h.getId()).stream()
+                            .map(c -> new CertificadoFila(c.getNombreArchivo(), c.getUrlArchivo()))
+                            .collect(Collectors.toList());
+                    return new HabilidadPerfilFila(h.getId(), h.getNombre(), h.getCategoria().getNombre(), ph.getNivel(), desde, validada, certificados);
                 })
                 .filter(java.util.Objects::nonNull)
                 .sorted((a, b) -> a.getNombre().compareToIgnoreCase(b.getNombre()))

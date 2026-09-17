@@ -16,11 +16,37 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
+      <!-- ── KPI tiles con iconos y acentos de color (mismo lenguaje visual que project-manager/inicio.html) ── -->
       <div class="kpi-grid">
-        <div class="kpi-tile"><span class="kpi-tile-label">PROYECTOS ACTIVOS</span><span class="kpi-tile-value" th:text="${proyectosActivos.size()}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">CARGA ACTIVA</span><span class="kpi-tile-value" th:text="${cargaActiva} + '%'">0%</span><span class="kpi-tile-meta" th:classappend="${cargaActiva > 100} ? 'down' : ''" th:text="${cargaActiva > 100} ? 'sobre el límite' : 'dentro del límite'"></span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">HABILIDADES DECLARADAS</span><span class="kpi-tile-value" th:text="${habilidadesDeclaradas}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">HABILIDADES VALIDADAS</span><span class="kpi-tile-value" th:text="${habilidadesValidadas} + ' / ' + ${habilidadesDeclaradas}">0 / 0</span></div>
+        <div class="kpi-tile accent-blue">
+          <div class="kpi-tile-icon blue">
+            <svg class="icon"><use href="/img/icons.svg#icon-briefcase"></use></svg>
+          </div>
+          <span class="kpi-tile-label">PROYECTOS ACTIVOS</span>
+          <span class="kpi-tile-value" th:text="${proyectosActivos.size()}">0</span>
+        </div>
+        <div class="kpi-tile" th:classappend="${cargaActiva > 100} ? 'accent-red' : 'accent-amber'">
+          <div class="kpi-tile-icon" th:classappend="${cargaActiva > 100} ? 'red' : 'amber'">
+            <svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg>
+          </div>
+          <span class="kpi-tile-label">CARGA ACTIVA</span>
+          <span class="kpi-tile-value" th:text="${cargaActiva} + '%'">0%</span>
+          <span class="kpi-tile-meta" th:classappend="${cargaActiva > 100} ? 'down' : ''" th:text="${cargaActiva > 100} ? 'sobre el límite' : 'dentro del límite'"></span>
+        </div>
+        <div class="kpi-tile accent-violet">
+          <div class="kpi-tile-icon violet">
+            <svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg>
+          </div>
+          <span class="kpi-tile-label">HABILIDADES DECLARADAS</span>
+          <span class="kpi-tile-value" th:text="${habilidadesDeclaradas}">0</span>
+        </div>
+        <div class="kpi-tile accent-green">
+          <div class="kpi-tile-icon green">
+            <svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg>
+          </div>
+          <span class="kpi-tile-label">HABILIDADES VALIDADAS</span>
+          <span class="kpi-tile-value" th:text="${habilidadesValidadas} + ' / ' + ${habilidadesDeclaradas}">0 / 0</span>
+        </div>
       </div>
 
       <div class="detail-grid">

@@ -33,11 +33,11 @@
 }
 .sidebar-brand-mark {
   width: 34px; height: 34px; border-radius: var(--radius-md);
-  background: var(--blue-accent);
+  background: var(--navy-900);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.sidebar-brand-mark svg { width: 19px; height: 19px; stroke: white; }
+.sidebar-brand-mark svg { width: 19px; height: 19px; }
 .sidebar-brand-text { font-size: var(--fs-base); font-weight: var(--fw-semibold); color: white; letter-spacing: -0.01em; }
 
 .sidebar-role-badge {
@@ -208,7 +208,22 @@
   content: "";
   position: absolute; inset: 0;
   background-image: radial-gradient(circle at 20% 20%, rgba(91,141,239,0.18), transparent 45%),
-    radial-gradient(circle at 85% 75%, rgba(91,141,239,0.14), transparent 40%);
+    radial-gradient(circle at 85% 75%, rgba(91,141,239,0.14), transparent 40%),
+    radial-gradient(circle at 12% 88%, rgba(139,92,246,0.22), transparent 42%),
+    radial-gradient(circle at 92% 8%, rgba(34,211,238,0.18), transparent 40%);
+  pointer-events: none;
+}
+
+/* Halo con el gradiente de marca (mismo púrpura→cian del logo del sidebar),
+   para que login/recuperar-password se sientan parte del mismo rediseño. */
+.auth-aside::after {
+  content: "";
+  position: absolute;
+  width: 480px; height: 480px;
+  right: -160px; bottom: -160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(34,211,238,0.16) 55%, transparent 75%);
+  filter: blur(10px);
   pointer-events: none;
 }
 .auth-aside-top { position: relative; z-index: 1; }
@@ -225,8 +240,30 @@
   padding: var(--space-8);
   background: var(--surface);
 }
-.auth-card { width: 100%; max-width: 420px; }
+.auth-card { width: 100%; max-width: 420px; animation: auth-card-in .5s var(--ease-standard) both; }
 .auth-card-wide { max-width: 500px; }
+@keyframes auth-card-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Botón principal y foco de inputs con el gradiente de marca (púrpura→cian),
+   alcance limitado a las vistas de acceso para no afectar el resto de la app. */
+.auth-card .btn-primary {
+  background: linear-gradient(135deg, #8B5CF6 0%, #22D3EE 100%);
+  border: none;
+  box-shadow: 0 4px 14px rgba(139,92,246,0.28);
+}
+.auth-card .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+.auth-card .btn-primary:active:not(:disabled) { filter: brightness(0.96); }
+.auth-card .btn-primary:focus-visible { box-shadow: 0 4px 14px rgba(139,92,246,0.28), var(--shadow-focus); }
+
+.auth-card .input:focus,
+.auth-card .input-wrap .input:focus {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 4px rgba(139,92,246,0.16);
+  outline: none;
+}
 .auth-card-logo-mobile { display: none; align-items: center; gap: var(--space-3); margin-bottom: var(--space-8); }
 @media (max-width: 980px) { .auth-card-logo-mobile { display: flex; } }
 .auth-card-title { font-size: var(--fs-xl); font-weight: var(--fw-semibold); color: var(--text-primary); letter-spacing: -0.01em; }

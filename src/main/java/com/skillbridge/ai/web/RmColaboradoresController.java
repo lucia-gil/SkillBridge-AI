@@ -42,12 +42,12 @@ import java.util.stream.Collectors;
  * distinto: aquí es manual y exacto ("tiene React sí o no"), allá es
  * semántico ("necesito experiencia en salud digital").
  *
- * El detalle de habilidades de cada colaborador viaja YA CARGADO dentro de
- * cada ColaboradorFila (no hay un endpoint AJAX aparte para el modal "Ver
- * perfil"): con el volumen de colaboradores esperado en un proyecto de
- * curso, es más simple construir el modal en el navegador a partir de los
- * datos que ya llegaron con la página, igual que hace resource-manager/
- * asignaciones.html con su lista de PERFILES.
+ * El detalle de habilidades de cada colaborador se muestra en una página
+ * dedicada (/resource-manager/colaboradores/{perfilId}, tipo CV/carpeta
+ * personal) en vez del modal "Ver perfil" anterior: ahí es donde viven las
+ * constancias de respaldo (certificados_habilidad, un link por habilidad)
+ * y el botón "Validar" de cada una. Es UNA sola plantilla reusada para
+ * cualquier perfil, no una página por persona.
  */
 @Controller
 @RequestMapping("/resource-manager")
@@ -114,6 +114,33 @@ public class RmColaboradoresController {
         return "resource-manager/colaboradores";
     }
 
+    /**
+     * Vista completa del colaborador (tipo CV), reemplaza al modal "Ver
+     * perfil" anterior. Es UNA sola plantilla reusada para cualquier
+     * colaborador - el {perfilId} en la URL es lo único que cambia; el
+     * Controller busca ESE perfil puntual y la plantilla se llena con sus
+     * datos, sin necesitar una página por persona.
+     */
+    @GetMapping("/colaboradores/{perfilId}")
+    public String detalle(@PathVariable Long perfilId, HttpSession session, Model model) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+
+        Perfil p = perfilRepository.buscarConUsuario(perfilId)
+                .orElseThrow(() -> new OperacionInvalidaException("El colaborador ya no existe."));
+        List<HabilidadPerfilFila> habilidades = habilidadService.habilidadesConValidacion(perfilId);
+        Integer sumaCarga = asignacionRepository.sumarCargaActivaDePerfil(perfilId);
+        int ocupacion = sumaCarga != null ? sumaCarga : 0;
+
+        shellModelBuilder.aplicar(model, sesion, "colaboradores.html", p.getUsuario().getNombreCompleto(),
+                "Perfil profesional");
+
+        model.addAttribute("perfil", p);
+        model.addAttribute("ocupacion", ocupacion);
+        model.addAttribute("habilidades", habilidades);
+
+        return "resource-manager/colaborador-detalle";
+    }
+
     /** Update real: aprueba el nivel que el colaborador se autodeclaró (RF02). */
     @PostMapping("/colaboradores/{perfilId}/habilidades/{habilidadId}/validar")
     public String validarHabilidad(@PathVariable Long perfilId, @PathVariable Long habilidadId,
@@ -125,7 +152,9 @@ public class RmColaboradoresController {
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
-        return "redirect:/resource-manager/colaboradores.html";
+        // Vuelve a la pagina de DETALLE (no a la lista): la accion de
+        // validar ahora vive en la vista tipo CV, no en el modal viejo.
+        return "redirect:/resource-manager/colaboradores/" + perfilId;
     }
 
     /** Update real: activar/desactivar cuenta (soft delete, igual que el resto del sistema). */

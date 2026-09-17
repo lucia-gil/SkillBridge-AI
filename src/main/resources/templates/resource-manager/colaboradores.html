@@ -67,7 +67,7 @@
               </td>
               <td><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span></td>
               <td class="cell-actions">
-                <button type="button" th:attr="data-ver-perfil=${c.perfilId}">Ver perfil</button>
+                <a th:href="@{/resource-manager/colaboradores/{id}(id=${c.perfilId})}">Ver perfil</a>
                 <button type="button" th:if="${c.estado == 'activo'}" class="danger" th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}">Suspender</button>
                 <button type="button" th:unless="${c.estado == 'activo'}" th:attr="data-reactivar=${c.perfilId}, data-nombre=${c.nombre}">Reactivar</button>
               </td>
@@ -89,12 +89,6 @@
 <script th:inline="javascript">
   window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 
-  // Todo el detalle de habilidades de cada colaborador viaja aca, ya
-  // calculado por el Controller (nombre, categoria, nivel, si esta
-  // validada) - el modal "Ver perfil" se arma con esto, sin pedirle nada
-  // mas al servidor.
-  var COLABORADORES = /*[[${colaboradores}]]*/ [];
-
   function aplicarFiltros() {
     var habilidadId = document.getElementById("filtro-habilidad").value;
     var estado = document.getElementById("filtro-estado").value;
@@ -106,39 +100,6 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var submitForm = window.SBAI.submitForm;
-
-    document.querySelectorAll("[data-ver-perfil]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var perfilId = Number(btn.dataset.verPerfil);
-        var c = COLABORADORES.filter(function (x) { return x.perfilId === perfilId; })[0];
-        if (!c) return;
-
-        var filasHabilidad = c.habilidades.map(function (h) {
-          return '<div class="info-row">' +
-                  '<span class="info-row-label">' + h.nombre + ' <span class="text-tertiary">(' + h.categoriaNombre + ' · ' + h.nivelLabel + ')</span></span>' +
-                  (h.validada
-                          ? '<span class="badge badge-green">Validada</span>'
-                          : '<button type="button" class="btn btn-secondary btn-sm" data-validar="' + h.habilidadId + '">Validar</button>') +
-                  '</div>';
-        }).join("") || '<p class="text-tertiary" style="font-size:var(--fs-xs);">Sin habilidades declaradas todavía.</p>';
-
-        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-                '<div class="modal-header"><div><h2>' + c.nombre + '</h2><p>' + c.cargo + ' · ' + c.correo + '</p></div>' +
-                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-                '<div class="modal-body">' +
-                '<div class="info-row"><span class="info-row-label">Ocupación actual</span><span class="info-row-value mono">' + c.ocupacion + '%</span></div>' +
-                '<p class="label-mono" style="margin:var(--space-4) 0 var(--space-2);">Habilidades declaradas</p>' +
-                filasHabilidad +
-                '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
-
-        var backdrop = SBAI.modal.open(html);
-        backdrop.querySelectorAll("[data-validar]").forEach(function (vbtn) {
-          vbtn.addEventListener("click", function () {
-            submitForm("/resource-manager/colaboradores/" + perfilId + "/habilidades/" + vbtn.dataset.validar + "/validar", {});
-          });
-        });
-      });
-    });
 
     document.querySelectorAll("[data-suspender]").forEach(function (btn) {
       btn.addEventListener("click", function () {

@@ -1,5 +1,7 @@
 package com.skillbridge.ai.dto;
 
+import java.util.List;
+
 /** Una habilidad declarada por un colaborador en su perfil (colaborador/perfil.html, resource-manager/colaboradores.html). */
 public class HabilidadPerfilFila {
 
@@ -10,9 +12,10 @@ public class HabilidadPerfilFila {
     private final String nivelLabel;
     private final String declaradaDesdeLabel;
     private final boolean validada;
+    private final List<CertificadoFila> certificados;
 
     public HabilidadPerfilFila(Long habilidadId, String nombre, String categoriaNombre, int nivelNumero, String declaradaDesdeLabel) {
-        this(habilidadId, nombre, categoriaNombre, nivelNumero, declaradaDesdeLabel, false);
+        this(habilidadId, nombre, categoriaNombre, nivelNumero, declaradaDesdeLabel, false, List.of());
     }
 
     // Sobrecarga con "validada": se agrega aparte (en vez de cambiar el
@@ -20,6 +23,15 @@ public class HabilidadPerfilFila {
     // en colaborador/perfil.html - ese caso de uso no necesita saber si un
     // Resource Manager valido la habilidad, solo resource-manager/colaboradores.html.
     public HabilidadPerfilFila(Long habilidadId, String nombre, String categoriaNombre, int nivelNumero, String declaradaDesdeLabel, boolean validada) {
+        this(habilidadId, nombre, categoriaNombre, nivelNumero, declaradaDesdeLabel, validada, List.of());
+    }
+
+    // Sobrecarga con "certificados": usada por la vista de detalle completo
+    // del colaborador (resource-manager/colaborador-detalle.html), que
+    // necesita mostrar los links de respaldo que el colaborador adjuntó
+    // para cada habilidad (o avisar que no adjuntó ninguno).
+    public HabilidadPerfilFila(Long habilidadId, String nombre, String categoriaNombre, int nivelNumero,
+                               String declaradaDesdeLabel, boolean validada, List<CertificadoFila> certificados) {
         this.habilidadId = habilidadId;
         this.nombre = nombre;
         this.categoriaNombre = categoriaNombre;
@@ -33,6 +45,7 @@ public class HabilidadPerfilFila {
         };
         this.declaradaDesdeLabel = declaradaDesdeLabel;
         this.validada = validada;
+        this.certificados = certificados;
     }
 
     public Long getHabilidadId() {
@@ -61,5 +74,13 @@ public class HabilidadPerfilFila {
 
     public boolean isValidada() {
         return validada;
+    }
+
+    public List<CertificadoFila> getCertificados() {
+        return certificados;
+    }
+
+    public boolean isTieneCertificado() {
+        return !certificados.isEmpty();
     }
 }
