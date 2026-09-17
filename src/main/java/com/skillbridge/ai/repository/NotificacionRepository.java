@@ -15,6 +15,11 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
 
     long countByPerfilIdAndLeidaFalse(Long perfilId);
 
+    // Se usa desde el catalogo de tipos_notificacion (Admin) para bloquear
+    // que se elimine un tipo que ya tiene notificaciones reales apuntando
+    // a el.
+    long countByTipoId(Long tipoId);
+
     @Modifying
     @Query("update Notificacion n set n.leida = true where n.perfilId = :perfilId")
     void marcarTodasLeidas(@Param("perfilId") Long perfilId);
