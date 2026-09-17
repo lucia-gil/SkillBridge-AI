@@ -84,6 +84,14 @@ public class RmAsignacionesController {
 
         long totalAsignaciones = proyectos.stream().mapToLong(p -> p.getEquipo().size()).sum();
 
+        // Estas dos sumas alimentan las tarjetas resumen de la nueva tabla
+        // paginada (mismo patron que AsignacionesPmController): total de
+        // colaboradores activos y total de vacantes pendientes, sumados
+        // sobre TODOS los proyectos de la plataforma (no solo los del RM,
+        // ya que el RM ve el panorama global).
+        long totalColaboradores = proyectos.stream().mapToLong(ProyectoDetalle::getColaboradoresAsignados).sum();
+        long totalVacantes = proyectos.stream().mapToLong(ProyectoDetalle::getVacantes).sum();
+
         // ShellModelBuilder llena el sidebar/topbar (nombre de usuario,
         // rol, badges de notificaciones, etc.) - es codigo compartido por
         // TODAS las pantallas del sistema, no algo que tengamos que armar
@@ -93,6 +101,8 @@ public class RmAsignacionesController {
 
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("perfiles", perfiles);
+        model.addAttribute("totalColaboradores", totalColaboradores);
+        model.addAttribute("totalVacantes", totalVacantes);
 
         // El nombre del archivo que devolvemos ("resource-manager/asignaciones")
         // le dice a Spring Boot que busque la plantilla en
