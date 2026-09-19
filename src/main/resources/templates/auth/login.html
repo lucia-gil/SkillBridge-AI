@@ -175,7 +175,7 @@
       </div>
 
       <h2 class="auth-card-title">Iniciar sesión</h2>
-      <p class="auth-card-sub">Usa tu cuenta corporativa de NexaCorp.</p>
+      <p class="auth-card-sub">Ingresa con tu correo y contraseña.</p>
 
       <div th:if="${error}" th:text="${error}"
            style="background:#fdecea; border:1px solid #d32f2f; color:#b71c1c; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
@@ -187,7 +187,7 @@
           <label class="field-label" for="login-email">Correo corporativo</label>
           <div class="input-wrap">
             <svg class="icon"><use href="/img/icons.svg#icon-mail"></use></svg>
-            <input class="input has-left-icon" type="email" id="login-email" name="email" placeholder="nombre.apellido@nexacorp.com"
+            <input class="input has-left-icon" type="email" id="login-email" name="email" placeholder="Ingresa tu correo electrónico"
                    th:value="${correoIntentado} ?: ''" autocomplete="username" required>
           </div>
           <div class="field-error"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-alert-circle"></use></svg>Escribe un correo válido.</div>
