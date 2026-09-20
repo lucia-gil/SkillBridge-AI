@@ -56,6 +56,18 @@ public class CuentaController {
                         SesionKeys.USUARIO
                 );
 
+        // Todo usuario deberia tener un perfil (se crean juntos al
+        // registrarse), pero Administrador y Resource Manager a veces
+        // llegan aqui con perfilId nulo en sesion (cuentas cargadas fuera
+        // del flujo normal de registro). En vez de que "Mi cuenta" quede
+        // rota con un 500, se crea el perfil que falta y se actualiza la
+        // sesion, para esta y las siguientes peticiones.
+        if (sesion.getPerfilId() == null) {
+            Long perfilId = cuentaService.asegurarPerfil(sesion.getUsuarioId());
+            sesion.setPerfilId(perfilId);
+            session.setAttribute(SesionKeys.USUARIO, sesion);
+        }
+
         String volver =
                 "/" + Roles.slug(sesion.getRolEfectivo())
                         + "/mi-cuenta.html";

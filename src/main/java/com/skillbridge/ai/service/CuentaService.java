@@ -59,6 +59,30 @@ public class CuentaService {
         this.auditoriaService = auditoriaService;
     }
 
+    /**
+     * Garantiza que el usuario tenga una fila en "perfiles" y devuelve su id.
+     *
+     * Todo usuario DEBERÍA tener una: el auto-registro (AuthService.registrar())
+     * crea usuario+perfil juntos, siempre. Pero si por algún motivo externo a
+     * ese flujo (datos cargados a mano, un seed viejo con un id fijo mal
+     * resuelto) un usuario quedó sin perfil, "Mi cuenta" quedaba rota para
+     * siempre con un 500 ("Tu perfil ya no existe") - en vez de eso, se crea
+     * uno mínimo aquí la primera vez que hace falta.
+     */
+    @Transactional
+    public Long asegurarPerfil(Long usuarioId) {
+        return perfilRepository.findByUsuarioId(usuarioId)
+                .map(Perfil::getId)
+                .orElseGet(() -> {
+                    Perfil perfil = new Perfil();
+                    perfil.setUsuarioId(usuarioId);
+                    perfil.setDisponibilidadPorcentaje(100);
+                    perfil.setExperienciaAnios(0);
+                    perfil.setEstado("activo");
+                    return perfilRepository.save(perfil).getId();
+                });
+    }
+
     /** rolEfectivo se recibe de la sesión. */
     public CuentaResumen obtenerResumen(
             Long perfilId,

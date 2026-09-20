@@ -23,13 +23,19 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Centro de notificaciones (administrador/notificaciones.html y
- * colaborador/notificaciones.html): un único controlador, real sobre
- * "notificaciones"/"preferencias_notificacion". Las pestañas de tipo se
- * generan a partir de los tipos que realmente aparecen en las
- * notificaciones del perfil (esta entrega solo genera "asignacion" y
- * "foro_respuesta" como efecto de acciones reales, ver DataSeeder), en vez
- * de una lista fija de categorías que el mockup inventaba por rol.
+ * Centro de notificaciones (administrador/, colaborador/, resource-manager/
+ * y project-manager/notificaciones.html): un único controlador para los 4
+ * roles, real sobre "notificaciones"/"preferencias_notificacion". Antes
+ * Resource Manager y Project Manager seguían sirviendo la version mock
+ * (SitioController + mock-data.js); se retiraron de ahi (mapearlas tambien
+ * alli produciria "Ambiguous mapping") y ahora usan la misma plantilla real
+ * que ya tenian Administrador y Colaborador - no hay nada especifico de rol
+ * en ella, todo sale de ${volver}/${user}/${notificaciones} etc.
+ * Las pestañas de tipo se generan a partir de los tipos que realmente
+ * aparecen en las notificaciones del perfil (esta entrega solo genera
+ * "asignacion" y "foro_respuesta" como efecto de acciones reales, ver
+ * DataSeeder), en vez de una lista fija de categorías que el mockup
+ * inventaba por rol.
  */
 @Controller
 public class NotificacionesController {
@@ -39,14 +45,19 @@ public class NotificacionesController {
     private final ShellModelBuilder shellModelBuilder;
 
     public NotificacionesController(NotificacionService notificacionService,
-                                     PreferenciaNotificacionService preferenciaNotificacionService,
-                                     ShellModelBuilder shellModelBuilder) {
+                                    PreferenciaNotificacionService preferenciaNotificacionService,
+                                    ShellModelBuilder shellModelBuilder) {
         this.notificacionService = notificacionService;
         this.preferenciaNotificacionService = preferenciaNotificacionService;
         this.shellModelBuilder = shellModelBuilder;
     }
 
-    @GetMapping({"/administrador/notificaciones.html", "/colaborador/notificaciones.html"})
+    @GetMapping({
+            "/administrador/notificaciones.html",
+            "/colaborador/notificaciones.html",
+            "/resource-manager/notificaciones.html",
+            "/project-manager/notificaciones.html"
+    })
     public String notificaciones(HttpSession session, Model model) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         String volver = "/" + Roles.slug(sesion.getRolEfectivo()) + "/notificaciones.html";
@@ -93,7 +104,7 @@ public class NotificacionesController {
 
     @PostMapping("/notificaciones/preferencias")
     public String actualizarPreferencias(@RequestParam Map<String, String> params, @RequestParam String volver, HttpSession session,
-                                          RedirectAttributes redirectAttributes) {
+                                         RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         Map<String, Boolean> seleccion = new LinkedHashMap<>();
         for (String tipo : PreferenciaNotificacionService.TIPOS_EVENTO) {
@@ -105,7 +116,10 @@ public class NotificacionesController {
     }
 
     private String rutaSegura(String volver) {
-        if ("/administrador/notificaciones.html".equals(volver) || "/colaborador/notificaciones.html".equals(volver)) {
+        if ("/administrador/notificaciones.html".equals(volver)
+                || "/colaborador/notificaciones.html".equals(volver)
+                || "/resource-manager/notificaciones.html".equals(volver)
+                || "/project-manager/notificaciones.html".equals(volver)) {
             return volver;
         }
         return "/auth/login.html";

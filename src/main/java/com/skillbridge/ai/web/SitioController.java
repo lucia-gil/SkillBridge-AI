@@ -68,15 +68,15 @@ public class SitioController {
         return vista(request);
     }
 
-    // Project Manager: solo quedan como mock las paginas aun no migradas.
+    // Project Manager: solo queda como mock la pagina aun no migrada.
     // proyectos/asignaciones/foros/foro-hilo/calendario/reportes/
-    // ai-talent-matching YA tienen controlador real. mi-cuenta.html tambien
-    // es real (CuentaController) por eso se retiro de esta lista: dejarla
-    // mapeada aqui tambien produce el error de "Ambiguous mapping".
+    // ai-talent-matching YA tienen controlador real. mi-cuenta.html y
+    // notificaciones.html tambien son reales (CuentaController /
+    // NotificacionesController) por eso se retiraron de esta lista: dejarlas
+    // mapeadas aqui tambien produce el error de "Ambiguous mapping".
     @GetMapping({
             "/project-manager/proyecto-detalle.html",
-            "/project-manager/asistente-ia.html",
-            "/project-manager/notificaciones.html"
+            "/project-manager/asistente-ia.html"
     })
     public String projectManager(HttpServletRequest request, Model model) {
         model.addAttribute("rolSlug", "project-manager");
@@ -87,10 +87,9 @@ public class SitioController {
     // inicio/reportes YA tienen controlador real (RmOcupacionController,
     // RmAsignacionesController, RmColaboradoresController,
     // TalentMatchingController, RmInicioController, RmReportesController).
-    // mi-cuenta.html tambien es real (CuentaController), por eso se retiro
-    // de esta lista.
+    // mi-cuenta.html y notificaciones.html tambien son reales (CuentaController
+    // / NotificacionesController), por eso se retiraron de esta lista.
     @GetMapping({
-            "/resource-manager/notificaciones.html",
             "/resource-manager/asistente-ia.html"
     })
     public String resourceManager(HttpServletRequest request, Model model) {
