@@ -1,0 +1,113 @@
+/*
+  auth-center.css — Layout centrado para vistas de acceso "simples"
+  (login, recuperar-password): sin panel lateral, solo la card sobre un
+  fondo gris claro con textura de puntos sutil.
+
+  Comparten esto: auth/login.html, auth/recuperar-password.html.
+  auth/registro.html sigue usando el layout de dos columnas de layout.css
+  (.auth-shell / .auth-aside) — no incluye esta hoja, así que no le afecta.
+*/
+
+.auth-center-page {
+    min-height: 100vh;
+    background: var(--canvas);
+    background-image:
+            radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 60%),
+            radial-gradient(circle at 1px 1px, rgba(22,33,58,0.06) 1px, transparent 0);
+    background-size: 100% 100%, 22px 22px;
+    background-position: center -10%, 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+    position: relative;
+}
+
+/* Enlace fijo en la esquina, fuera de la card (distinto de .auth-back-link,
+   que ya existe en layout.css para el enlace "Volver a iniciar sesión"
+   dentro de la card de recuperar-password). */
+.auth-corner-back {
+    position: fixed;
+    top: var(--space-6);
+    left: var(--space-6);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-secondary);
+    z-index: 5;
+}
+.auth-corner-back:hover { color: var(--text-primary); }
+.auth-corner-back .icon { width: 16px; height: 16px; }
+
+.auth-center-page .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-3);
+    padding: var(--space-8);
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+    z-index: 1;
+}
+
+.auth-center-page .input-wrap .input,
+.auth-center-page .input {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+    padding: var(--space-3) var(--space-4);
+    transition: box-shadow var(--dur-fast), border-color var(--dur-fast);
+}
+
+.auth-center-page .input-wrap .input:focus,
+.auth-center-page .input:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 4px rgba(139,92,246,0.16);
+    outline: none;
+}
+
+.auth-center-page .auth-card-header {
+    text-align: center;
+    margin-bottom: var(--space-6);
+}
+.auth-center-page .auth-card-header img {
+    height: 34px;
+    width: auto;
+    object-fit: contain;
+    margin: 0 auto;
+    display: block;
+}
+
+.auth-center-page .auth-card-title,
+.auth-center-page .auth-card-sub {
+    text-align: center;
+}
+.auth-center-page .auth-card-sub { margin-bottom: var(--space-6); }
+
+.auth-center-page .auth-card-body .field-row a {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.auth-center-page .btn-primary {
+    background: linear-gradient(135deg, #8B5CF6 0%, #22D3EE 100%);
+    border: none;
+    box-shadow: 0 4px 14px rgba(139,92,246,0.28);
+}
+.auth-center-page .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+.auth-center-page .btn-primary:active:not(:disabled) { filter: brightness(0.96); }
+
+.auth-center-page .auth-divider { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-6) 0; }
+.auth-center-page .auth-divider::before,
+.auth-center-page .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
+.auth-center-page .auth-divider span { font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); color: var(--text-tertiary); text-transform: uppercase; }
+
+/* El link interno "Volver a iniciar sesión" (.auth-back-link, definido en
+   layout.css) queda arriba del título dentro de la card; solo ajustamos
+   que no choque con el corner-back de la página en mobile. */
+@media (max-width: 480px) {
+    .auth-corner-back { position: absolute; top: var(--space-4); left: var(--space-4); }
+    .auth-center-page .auth-card { padding: var(--space-6); }
+}
