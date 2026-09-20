@@ -677,6 +677,9 @@
 .chat-window { display: flex; flex-direction: column; height: 100%; min-height: 560px; }
 .chat-messages { flex: 1; overflow-y: auto; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); }
 .chat-date-sep { text-align: center; font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); color: var(--text-tertiary); text-transform: uppercase; margin: var(--space-2) 0; }
+.chat-msg-row { display: flex; align-items: flex-end; gap: var(--space-2); max-width: 84%; align-self: flex-start; }
+.chat-msg-avatar { background: var(--navy-700); color: var(--text-inverse); }
+.chat-msg-row .chat-msg { max-width: none; }
 .chat-msg { display: flex; flex-direction: column; gap: 4px; max-width: 78%; }
 .chat-msg.user { align-self: flex-end; align-items: flex-end; }
 .chat-msg.assistant { align-self: flex-start; align-items: flex-start; }
@@ -704,7 +707,13 @@
 .chat-composer-send:disabled { opacity: 0.4; cursor: not-allowed; }
 .chat-disclaimer { font-size: 11px; color: var(--text-tertiary); text-align: center; padding: 0 var(--space-6) var(--space-4); }
 
-.ai-context-card { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); border-radius: var(--radius-md); background: var(--surface-sunken); }
+.ai-context-card { display: flex; flex-direction: row; align-items: flex-start; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-md); background: var(--surface-sunken); }
+.ai-context-card-icon { width: 32px; height: 32px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ai-context-card-icon.blue { background: var(--blue-bg); color: var(--blue-fg); }
+.ai-context-card-icon.violet { background: var(--violet-bg); color: var(--violet-fg); }
+.ai-context-card-icon.green { background: var(--green-bg); color: var(--green-fg); }
+.ai-context-card-icon.amber { background: var(--amber-bg); color: var(--amber-fg); }
+.ai-context-card-text { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .ai-context-card-title { font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-primary); }
 .ai-context-card-sub { font-size: 11px; color: var(--text-tertiary); }
 

@@ -17,10 +17,22 @@
     <main class="page-content" id="page-content">
 
       <div class="kpi-grid">
-        <div class="kpi-tile"><span class="kpi-tile-label">COLABORADORES ACTIVOS</span><span class="kpi-tile-value" th:text="${kpis.colaboradoresActivos}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">PROYECTOS EN CURSO</span><span class="kpi-tile-value" th:text="${kpis.proyectosEnCurso}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">HABILIDADES EN CATÁLOGO</span><span class="kpi-tile-value" th:text="${kpis.habilidadesCatalogo}">0</span><span class="kpi-tile-meta warn" th:text="${kpis.habilidadesSinAsignar} + ' sin proyecto asociado'"></span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">ASIGNACIONES ACTIVAS</span><span class="kpi-tile-value" th:text="${kpis.asignacionesActivas}">0</span></div>
+        <div class="kpi-tile accent-blue">
+          <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div>
+          <span class="kpi-tile-label">COLABORADORES ACTIVOS</span><span class="kpi-tile-value" th:text="${kpis.colaboradoresActivos}">0</span>
+        </div>
+        <div class="kpi-tile accent-green">
+          <div class="kpi-tile-icon green"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></div>
+          <span class="kpi-tile-label">PROYECTOS EN CURSO</span><span class="kpi-tile-value" th:text="${kpis.proyectosEnCurso}">0</span>
+        </div>
+        <div class="kpi-tile accent-amber">
+          <div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-book"></use></svg></div>
+          <span class="kpi-tile-label">HABILIDADES EN CATÁLOGO</span><span class="kpi-tile-value" th:text="${kpis.habilidadesCatalogo}">0</span><span class="kpi-tile-meta warn" th:text="${kpis.habilidadesSinAsignar} + ' sin proyecto asociado'"></span>
+        </div>
+        <div class="kpi-tile accent-violet">
+          <div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-user-check"></use></svg></div>
+          <span class="kpi-tile-label">ASIGNACIONES ACTIVAS</span><span class="kpi-tile-value" th:text="${kpis.asignacionesActivas}">0</span>
+        </div>
       </div>
 
       <div class="detail-grid" style="margin-top:var(--space-6);">

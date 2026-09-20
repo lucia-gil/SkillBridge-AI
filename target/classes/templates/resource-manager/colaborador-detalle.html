@@ -70,7 +70,8 @@
                         </div>
                         <div th:each="cert : ${h.certificados}" style="display:flex; align-items:center; gap:6px; font-size:var(--fs-xs); margin-bottom:4px;">
                             <svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg>
-                            <a th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                            <a th:if="${cert.tieneArchivo}" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                            <a th:unless="${cert.tieneArchivo}" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
                         </div>
                     </div>
                 </div>

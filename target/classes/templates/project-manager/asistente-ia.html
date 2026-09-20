@@ -11,6 +11,7 @@
 </head>
 <body>
 <script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
+<script th:inline="javascript">window.SBAI_REAL_USER = { nombre: /*[[${sesionNombreCompleto}]]*/ null, iniciales: /*[[${sesionIniciales}]]*/ null };</script>
 
 <div class="app-shell">
   <aside class="sidebar" id="sbai-sidebar"></aside>
