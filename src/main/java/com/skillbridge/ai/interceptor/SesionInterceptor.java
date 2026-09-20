@@ -52,7 +52,8 @@ public class SesionInterceptor implements HandlerInterceptor {
         response.setHeader("Pragma", "no-cache");
 
         String ruta = request.getRequestURI().substring(request.getContextPath().length());
-        boolean rutaCompartidaEntreRoles = ruta.startsWith("/cuenta/") || ruta.startsWith("/notificaciones/");
+        boolean rutaCompartidaEntreRoles = ruta.startsWith("/cuenta/") || ruta.startsWith("/notificaciones/")
+                || ruta.startsWith("/certificados/");
         String rolRequerido = rolRequeridoPara(ruta);
         if (rolRequerido == null && !rutaCompartidaEntreRoles) {
             return true; // ruta no protegida

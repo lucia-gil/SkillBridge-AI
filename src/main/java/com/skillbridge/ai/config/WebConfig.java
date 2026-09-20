@@ -29,7 +29,8 @@ public class WebConfig implements WebMvcConfigurer {
                         // /notificaciones/** sin sesión no se redirige a login,
                         // revienta con NullPointerException (ver SesionInterceptor).
                         "/cuenta/**",
-                        "/notificaciones/**"
+                        "/notificaciones/**",
+                        "/certificados/**"
                 );
     }
 }

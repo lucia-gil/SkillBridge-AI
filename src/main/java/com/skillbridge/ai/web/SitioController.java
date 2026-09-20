@@ -1,6 +1,9 @@
 package com.skillbridge.ai.web;
 
+import com.skillbridge.ai.dto.UsuarioSesion;
+import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,6 +43,27 @@ public class SitioController {
         return path;
     }
 
+    /*
+     * El nombre/iniciales reales del usuario logueado, para que el shell JS
+     * legacy (shell.js + state.js) los use en vez del nombre de mentira que
+     * trae mock-data.js (MOCK.roleUsers.*). Se exponen como atributos del
+     * Model y cada plantilla los vuelca a window.SBAI_REAL_USER antes de
+     * que corra shell.js.
+     */
+    private void agregarUsuarioReal(HttpSession session, Model model) {
+        UsuarioSesion sesion =
+                (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+
+        model.addAttribute(
+                "sesionNombreCompleto",
+                sesion != null ? sesion.getNombreCompleto() : null
+        );
+        model.addAttribute(
+                "sesionIniciales",
+                sesion != null ? sesion.getIniciales() : null
+        );
+    }
+
     @GetMapping("/auth/recuperar-password.html")
     public String recuperarPassword() {
         return "auth/recuperar-password";
@@ -48,15 +72,17 @@ public class SitioController {
     // Unico mock que le queda a Administrador: el chatbot de IA esta fuera
     // de alcance por pedido explicito, aunque el resto del rol es real.
     @GetMapping("/administrador/asistente-ia.html")
-    public String administrador(HttpServletRequest request, Model model) {
+    public String administrador(HttpServletRequest request, HttpSession session, Model model) {
         model.addAttribute("rolSlug", "administrador");
+        agregarUsuarioReal(session, model);
         return vista(request);
     }
 
     // Idem para Colaborador.
     @GetMapping("/colaborador/asistente-ia.html")
-    public String colaborador(HttpServletRequest request, Model model) {
+    public String colaborador(HttpServletRequest request, HttpSession session, Model model) {
         model.addAttribute("rolSlug", "colaborador");
+        agregarUsuarioReal(session, model);
         return vista(request);
     }
 
@@ -69,8 +95,9 @@ public class SitioController {
             "/project-manager/asistente-ia.html",
             "/project-manager/notificaciones.html"
     })
-    public String projectManager(HttpServletRequest request, Model model) {
+    public String projectManager(HttpServletRequest request, HttpSession session, Model model) {
         model.addAttribute("rolSlug", "project-manager");
+        agregarUsuarioReal(session, model);
         return vista(request);
     }
 
@@ -83,8 +110,9 @@ public class SitioController {
             "/resource-manager/notificaciones.html",
             "/resource-manager/asistente-ia.html"
     })
-    public String resourceManager(HttpServletRequest request, Model model) {
+    public String resourceManager(HttpServletRequest request, HttpSession session, Model model) {
         model.addAttribute("rolSlug", "resource-manager");
+        agregarUsuarioReal(session, model);
         return vista(request);
     }
 }

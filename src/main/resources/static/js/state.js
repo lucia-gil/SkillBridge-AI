@@ -56,14 +56,29 @@
   }
 
   /* -------- Navegación por rol -------- */
+
+  // Superpone el nombre/iniciales reales del usuario logueado (inyectados
+  // por el controlador Spring vía window.SBAI_REAL_USER) sobre el usuario
+  // de mentira de mock-data.js, para que sidebar/topbar muestren el nombre
+  // correcto aunque el resto de la página siga siendo mock.
+  function usuarioConNombreReal(mockUser) {
+    var real = window.SBAI_REAL_USER;
+    if (!real || !real.nombre) return mockUser;
+    var merged = Object.assign({}, mockUser);
+    merged.nombre = real.nombre;
+    if (real.iniciales) merged.iniciales = real.iniciales;
+    return merged;
+  }
+
   var NAV_CONFIG = {
     colaborador: {
       label: "Colaborador",
-      user: function () { return MOCK.roleUsers.colaborador; },
+      user: function () { return usuarioConNombreReal(MOCK.roleUsers.colaborador); },
       items: [
         { label: "Inicio", icon: "icon-home", href: "inicio.html" },
         { label: "Mi perfil", icon: "icon-user", href: "perfil.html" },
         { label: "Mis proyectos", icon: "icon-folder", href: "proyectos.html" },
+        { label: "Calendario", icon: "icon-calendar", href: "calendario.html" },
         { label: "Foros", icon: "icon-message", href: "foros.html" },
         { label: "Asistente IA", icon: "icon-sparkles", href: "asistente-ia.html" },
         { label: "Notificaciones", icon: "icon-bell", href: "notificaciones.html", badge: function () { return getUnreadCount("colaborador"); } }
@@ -71,11 +86,12 @@
     },
     "project-manager": {
       label: "Project Manager",
-      user: function () { return MOCK.roleUsers.pm; },
+      user: function () { return usuarioConNombreReal(MOCK.roleUsers.pm); },
       items: [
         { label: "Inicio", icon: "icon-home", href: "inicio.html" },
         { label: "Proyectos", icon: "icon-folder", href: "proyectos.html" },
         { label: "Asignaciones", icon: "icon-target", href: "asignaciones.html" },
+        { label: "Calendario", icon: "icon-calendar", href: "calendario.html" },
         { label: "AI Talent Matching", icon: "icon-search-check", href: "ai-talent-matching.html", badge: function () { return MOCK.matchingVacancy.otrasVacantes.length + 1; } },
         { label: "Foros", icon: "icon-message", href: "foros.html" },
         { label: "Asistente IA", icon: "icon-sparkles", href: "asistente-ia.html" },
@@ -84,7 +100,7 @@
     },
     "resource-manager": {
       label: "Resource Manager",
-      user: function () { return MOCK.roleUsers.rm; },
+      user: function () { return usuarioConNombreReal(MOCK.roleUsers.rm); },
       items: [
         { label: "Inicio", icon: "icon-home", href: "inicio.html" },
         { label: "Ocupación del equipo", icon: "icon-layers", href: "ocupacion.html" },
@@ -96,7 +112,7 @@
     },
     administrador: {
       label: "Administrador",
-      user: function () { return MOCK.roleUsers.admin; },
+      user: function () { return usuarioConNombreReal(MOCK.roleUsers.admin); },
       items: [
         { label: "Inicio", icon: "icon-home", href: "inicio.html" },
         { label: "Usuarios y roles", icon: "icon-users", href: "usuarios.html", badge: function () { return MOCK.usersKpi.sinRol; } },

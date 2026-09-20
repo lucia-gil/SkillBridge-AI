@@ -17,10 +17,22 @@
     <main class="page-content" id="page-content">
 
       <div class="kpi-grid">
-        <div class="kpi-tile"><span class="kpi-tile-label">EVENTOS DE SEVERIDAD ALTA</span><span class="kpi-tile-value" th:text="${altaCount}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">EVENTOS DE SEVERIDAD MEDIA</span><span class="kpi-tile-value" th:text="${mediaCount}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">EVENTOS INFORMATIVOS</span><span class="kpi-tile-value" th:text="${infoCount}">0</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">TOTAL (ÚLTIMOS 200)</span><span class="kpi-tile-value" th:text="${eventos.size()}">0</span></div>
+        <div class="kpi-tile accent-red">
+          <div class="kpi-tile-icon red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></div>
+          <span class="kpi-tile-label">EVENTOS DE SEVERIDAD ALTA</span><span class="kpi-tile-value" th:text="${altaCount}">0</span>
+        </div>
+        <div class="kpi-tile accent-amber">
+          <div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></div>
+          <span class="kpi-tile-label">EVENTOS DE SEVERIDAD MEDIA</span><span class="kpi-tile-value" th:text="${mediaCount}">0</span>
+        </div>
+        <div class="kpi-tile accent-blue">
+          <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-info"></use></svg></div>
+          <span class="kpi-tile-label">EVENTOS INFORMATIVOS</span><span class="kpi-tile-value" th:text="${infoCount}">0</span>
+        </div>
+        <div class="kpi-tile accent-violet">
+          <div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-bar-chart"></use></svg></div>
+          <span class="kpi-tile-label">TOTAL (ÚLTIMOS 200)</span><span class="kpi-tile-value" th:text="${eventos.size()}">0</span>
+        </div>
       </div>
 
       <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 2.4fr 1fr; align-items: stretch;">

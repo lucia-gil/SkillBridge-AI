@@ -29,7 +29,7 @@
     }).join("");
 
     return (
-        '<div class="sidebar-brand"><span class="sidebar-brand-mark">' + icon("icon-logo") + '</span><span class="sidebar-brand-text">SkillBridge AI</span></div>' +
+        '<div class="sidebar-brand"><img src="' + window.SBAI.state.STATIC + 'img/logo_blanco.png" alt="SkillBridge AI" class="sidebar-logo"></div>' +
         '<div class="sidebar-role-badge">' + config.label + "</div>" +
         '<nav class="sidebar-nav" aria-label="Navegación principal">' + items + "</nav>" +
         '<div class="sidebar-footer">' +
@@ -50,7 +50,6 @@
     var openUpwardStyle = id === "user-menu-sidebar" ? ' style="bottom: calc(100% + 8px); top: auto;"' : "";
     return '<div class="dropdown-panel dropdown-menu' + (align === "align-right" ? " align-right" : "") + '" data-dropdown-panel="' + id + '"' + openUpwardStyle + '>' +
         '<a class="dropdown-item" href="mi-cuenta.html">' + icon("icon-user") + "Mi cuenta</a>" +
-        '<a class="dropdown-item" href="mi-cuenta.html">' + icon("icon-settings") + "Configuración</a>" +
         '<div class="dropdown-divider"></div>' +
         '<button type="button" class="dropdown-item danger" data-action="logout">' + icon("icon-log-out") + "Cerrar sesión</button>" +
         "</div>";
@@ -74,6 +73,7 @@
         '<div class="dropdown">' +
         '<button type="button" class="topbar-user-btn" data-dropdown-trigger="user-menu-topbar">' +
         '<span class="avatar avatar-sm">' + user.iniciales + "</span>" +
+        '<span class="topbar-user-name">' + user.nombre + "</span>" +
         icon("icon-chevron-down", "icon-sm") +
         "</button>" +
         userMenuPanel("user-menu-topbar", "align-right") +

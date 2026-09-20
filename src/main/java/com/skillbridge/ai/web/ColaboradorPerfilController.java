@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
@@ -74,11 +75,12 @@ public class ColaboradorPerfilController {
     public String agregarHabilidad(@RequestParam Long habilidadId, @RequestParam String nivel,
                                    @RequestParam(required = false) String nombreArchivo,
                                    @RequestParam(required = false) String urlArchivo,
+                                   @RequestParam(required = false) MultipartFile archivo,
                                    HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             habilidadService.agregarAlPerfil(sesion.getPerfilId(), habilidadId, nivel, sesion.getUsuarioId(),
-                    nombreArchivo, urlArchivo);
+                    nombreArchivo, urlArchivo, archivo);
             redirectAttributes.addFlashAttribute("exito", "Habilidad agregada a tu perfil.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -95,11 +97,12 @@ public class ColaboradorPerfilController {
     public String editarCertificado(@PathVariable Long habilidadId,
                                     @RequestParam(required = false) String nombreArchivo,
                                     @RequestParam(required = false) String urlArchivo,
+                                    @RequestParam(required = false) MultipartFile archivo,
                                     HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             habilidadService.actualizarCertificado(sesion.getPerfilId(), habilidadId, nombreArchivo, urlArchivo,
-                    sesion.getUsuarioId());
+                    archivo, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Constancia actualizada.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

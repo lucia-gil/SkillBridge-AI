@@ -17,6 +17,8 @@
     return hh + ":" + mm;
   }
 
+  var AVATAR_HTML = '<span class="avatar avatar-sm chat-msg-avatar"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg></span>';
+
   function bubbleHtml(msg) {
     var cardHtml = "";
     if (msg.card) {
@@ -24,9 +26,13 @@
         '<div class="chat-msg-card-sub">' + msg.card.sub + '</div>' +
         '<button type="button" class="btn btn-tertiary btn-sm" data-toast-fact="' + msg.card.titulo.replace(/"/g, "&quot;") + '">' + msg.card.accion + " →</button></div>";
     }
-    return '<div class="chat-msg ' + msg.role + '">' +
+    var body = '<div class="chat-msg ' + msg.role + '">' +
       '<div class="chat-bubble">' + msg.texto + cardHtml + "</div>" +
       '<div class="chat-meta">' + msg.meta + "</div></div>";
+    if (msg.role === "assistant") {
+      return '<div class="chat-msg-row">' + AVATAR_HTML + body + "</div>";
+    }
+    return body;
   }
 
   function renderHistory(role, el) {
@@ -88,8 +94,8 @@
     messagesEl.scrollTop = messagesEl.scrollHeight;
 
     var typingEl = document.createElement("div");
-    typingEl.className = "chat-msg assistant";
-    typingEl.innerHTML = '<div class="chat-bubble"><span class="chat-typing"><span></span><span></span><span></span></span></div>';
+    typingEl.className = "chat-msg-row";
+    typingEl.innerHTML = AVATAR_HTML + '<div class="chat-msg assistant"><div class="chat-bubble"><span class="chat-typing"><span></span><span></span><span></span></span></div></div>';
     messagesEl.appendChild(typingEl);
     messagesEl.scrollTop = messagesEl.scrollHeight;
 

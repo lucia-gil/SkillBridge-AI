@@ -5,10 +5,14 @@ import java.time.LocalDateTime;
 
 /**
  * Constancia/certificado que respalda UNA habilidad declarada por un
- * perfil (perfil_habilidad). Opción A (link, no subida de archivo real):
- * url_archivo es un link externo (Drive, Coursera, LinkedIn Learning...)
- * que el colaborador pega desde su propio perfil - no hay manejo de
- * binarios en el servidor, para mantener el alcance simple.
+ * perfil (perfil_habilidad).
+ *
+ * Dos formas de respaldo, mutuamente excluyentes en la práctica (si se
+ * sube un archivo, se usa ese; si no, se usa el link):
+ *  - Opción A (link): url_archivo es un link externo (Drive, Coursera,
+ *    LinkedIn Learning...) que el colaborador pega desde su propio perfil.
+ *  - Opción B (archivo real): contenido_archivo/tipo_archivo guardan el
+ *    PDF subido tal cual, mismo patrón que Usuario.fotoPerfil.
  */
 @Entity
 @Table(name = "certificados_habilidad")
@@ -27,8 +31,15 @@ public class CertificadoHabilidad {
     @Column(name = "nombre_archivo", nullable = false, length = 200)
     private String nombreArchivo;
 
-    @Column(name = "url_archivo", nullable = false, length = 500)
+    @Column(name = "url_archivo", length = 500)
     private String urlArchivo;
+
+    @Lob
+    @Column(name = "contenido_archivo")
+    private byte[] contenidoArchivo;
+
+    @Column(name = "tipo_archivo", length = 100)
+    private String tipoArchivo;
 
     @Column(name = "fecha_subida", insertable = false, updatable = false)
     private LocalDateTime fechaSubida;
@@ -67,6 +78,26 @@ public class CertificadoHabilidad {
 
     public void setUrlArchivo(String urlArchivo) {
         this.urlArchivo = urlArchivo;
+    }
+
+    public byte[] getContenidoArchivo() {
+        return contenidoArchivo;
+    }
+
+    public void setContenidoArchivo(byte[] contenidoArchivo) {
+        this.contenidoArchivo = contenidoArchivo;
+    }
+
+    public String getTipoArchivo() {
+        return tipoArchivo;
+    }
+
+    public void setTipoArchivo(String tipoArchivo) {
+        this.tipoArchivo = tipoArchivo;
+    }
+
+    public boolean tieneArchivo() {
+        return contenidoArchivo != null && contenidoArchivo.length > 0;
     }
 
     public LocalDateTime getFechaSubida() {

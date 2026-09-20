@@ -18,7 +18,9 @@ import com.skillbridge.ai.util.OperacionInvalidaException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,9 @@ public class HabilidadService {
     private final ProyectoHabilidadRequeridaRepository proyectoHabilidadRequeridaRepository;
     private final CertificadoHabilidadRepository certificadoHabilidadRepository;
     private final AuditoriaService auditoriaService;
+
+    /** Mismo límite que spring.servlet.multipart.max-file-size (5 MB). */
+    private static final long MAX_CERTIFICADO_BYTES = 5L * 1024 * 1024;
 
     public HabilidadService(HabilidadRepository habilidadRepository,
                             CategoriaHabilidadRepository categoriaHabilidadRepository,
@@ -149,7 +154,7 @@ public class HabilidadService {
                     boolean validada = ph.getValidadoPorId() != null;
                     List<CertificadoFila> certificados = certificadoHabilidadRepository
                             .findByPerfilIdAndHabilidadId(perfilId, h.getId()).stream()
-                            .map(c -> new CertificadoFila(c.getNombreArchivo(), c.getUrlArchivo()))
+                            .map(c -> new CertificadoFila(c.getId(), c.getNombreArchivo(), c.getUrlArchivo(), c.tieneArchivo()))
                             .collect(Collectors.toList());
                     return new HabilidadPerfilFila(h.getId(), h.getNombre(), h.getCategoria().getNombre(), ph.getNivel(), desde, validada, certificados);
                 })
@@ -167,18 +172,14 @@ public class HabilidadService {
      */
     @Transactional
     public void actualizarCertificado(Long perfilId, Long habilidadId, String nombreArchivo, String urlArchivo,
-                                      Long actorUsuarioId) {
+                                      MultipartFile archivo, Long actorUsuarioId) {
         PerfilHabilidadId id = new PerfilHabilidadId(perfilId, habilidadId);
         if (!perfilHabilidadRepository.existsById(id)) {
             throw new OperacionInvalidaException("Esa habilidad ya no está declarada en tu perfil.");
         }
         certificadoHabilidadRepository.deleteByPerfilIdAndHabilidadId(perfilId, habilidadId);
-        if (urlArchivo != null && !urlArchivo.isBlank()) {
-            CertificadoHabilidad cert = new CertificadoHabilidad();
-            cert.setPerfilId(perfilId);
-            cert.setHabilidadId(habilidadId);
-            cert.setNombreArchivo(nombreArchivo != null && !nombreArchivo.isBlank() ? nombreArchivo : "constancia");
-            cert.setUrlArchivo(urlArchivo);
+        CertificadoHabilidad cert = construirCertificadoSiCorresponde(perfilId, habilidadId, nombreArchivo, urlArchivo, archivo);
+        if (cert != null) {
             certificadoHabilidadRepository.save(cert);
         }
         auditoriaService.registrar(actorUsuarioId, "CERTIFICADO_ACTUALIZADO", "perfil_habilidad", perfilId, null, null,
@@ -201,7 +202,7 @@ public class HabilidadService {
      */
     @Transactional
     public void agregarAlPerfil(Long perfilId, Long habilidadId, String nivelTexto, Long actorUsuarioId,
-                                String nombreArchivo, String urlArchivo) {
+                                String nombreArchivo, String urlArchivo, MultipartFile archivo) {
         Habilidad h = habilidadRepository.findById(habilidadId)
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona una habilidad válida del catálogo."));
         int nivel = nivelDesdeTexto(nivelTexto);
@@ -215,17 +216,70 @@ public class HabilidadService {
         }
         perfilHabilidadRepository.save(ph);
 
-        if (urlArchivo != null && !urlArchivo.isBlank()) {
-            CertificadoHabilidad cert = new CertificadoHabilidad();
-            cert.setPerfilId(perfilId);
-            cert.setHabilidadId(habilidadId);
-            cert.setNombreArchivo(nombreArchivo != null && !nombreArchivo.isBlank() ? nombreArchivo : "constancia");
-            cert.setUrlArchivo(urlArchivo);
+        CertificadoHabilidad cert = construirCertificadoSiCorresponde(perfilId, habilidadId, nombreArchivo, urlArchivo, archivo);
+        if (cert != null) {
+            certificadoHabilidadRepository.deleteByPerfilIdAndHabilidadId(perfilId, habilidadId);
             certificadoHabilidadRepository.save(cert);
         }
 
         auditoriaService.registrar(actorUsuarioId, yaExistia ? "PERFIL_HABILIDAD_ACTUALIZADA" : "PERFIL_HABILIDAD_AGREGADA",
                 "perfil_habilidad", perfilId, null, null, h.getNombre() + " · " + nivelTexto);
+    }
+
+    /**
+     * Construye el CertificadoHabilidad a guardar a partir de lo que mandó
+     * el formulario: si viene un archivo real (PDF), tiene prioridad sobre
+     * el link. Si no viene ni archivo ni link, no hay nada que guardar
+     * (devuelve null - la habilidad queda "sin constancia adjunta").
+     */
+    private CertificadoHabilidad construirCertificadoSiCorresponde(Long perfilId, Long habilidadId,
+                                                                    String nombreArchivo, String urlArchivo,
+                                                                    MultipartFile archivo) {
+        boolean hayArchivo = archivo != null && !archivo.isEmpty();
+        boolean hayLink = urlArchivo != null && !urlArchivo.isBlank();
+        if (!hayArchivo && !hayLink) {
+            return null;
+        }
+
+        CertificadoHabilidad cert = new CertificadoHabilidad();
+        cert.setPerfilId(perfilId);
+        cert.setHabilidadId(habilidadId);
+
+        if (hayArchivo) {
+            validarPdf(archivo);
+            try {
+                cert.setContenidoArchivo(archivo.getBytes());
+            } catch (IOException ex) {
+                throw new OperacionInvalidaException("No se pudo procesar el archivo del certificado.");
+            }
+            cert.setTipoArchivo("application/pdf");
+            String nombreOriginal = archivo.getOriginalFilename();
+            cert.setNombreArchivo(nombreArchivo != null && !nombreArchivo.isBlank() ? nombreArchivo
+                    : (nombreOriginal != null && !nombreOriginal.isBlank() ? nombreOriginal : "certificado.pdf"));
+        } else {
+            cert.setUrlArchivo(urlArchivo);
+            cert.setNombreArchivo(nombreArchivo != null && !nombreArchivo.isBlank() ? nombreArchivo : "constancia");
+        }
+        return cert;
+    }
+
+    private void validarPdf(MultipartFile archivo) {
+        if (archivo.getSize() > MAX_CERTIFICADO_BYTES) {
+            throw new OperacionInvalidaException("El certificado no puede superar los 5 MB.");
+        }
+        String contentType = archivo.getContentType();
+        if (contentType == null || !contentType.equalsIgnoreCase("application/pdf")) {
+            throw new OperacionInvalidaException("El certificado debe ser un archivo PDF.");
+        }
+        try {
+            byte[] cabecera = archivo.getInputStream().readNBytes(5);
+            String firma = new String(cabecera, java.nio.charset.StandardCharsets.US_ASCII);
+            if (!firma.startsWith("%PDF-")) {
+                throw new OperacionInvalidaException("El archivo seleccionado no es un PDF válido.");
+            }
+        } catch (IOException ex) {
+            throw new OperacionInvalidaException("No se pudo leer el certificado seleccionado.");
+        }
     }
 
     /**
@@ -244,7 +298,7 @@ public class HabilidadService {
                     boolean validada = ph.getValidadoPorId() != null;
                     List<CertificadoFila> certificados = certificadoHabilidadRepository
                             .findByPerfilIdAndHabilidadId(perfilId, h.getId()).stream()
-                            .map(c -> new CertificadoFila(c.getNombreArchivo(), c.getUrlArchivo()))
+                            .map(c -> new CertificadoFila(c.getId(), c.getNombreArchivo(), c.getUrlArchivo(), c.tieneArchivo()))
                             .collect(Collectors.toList());
                     return new HabilidadPerfilFila(h.getId(), h.getNombre(), h.getCategoria().getNombre(), ph.getNivel(), desde, validada, certificados);
                 })
