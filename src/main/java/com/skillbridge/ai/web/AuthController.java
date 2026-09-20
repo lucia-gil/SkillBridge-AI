@@ -45,7 +45,7 @@ public class AuthController {
         if (session != null && session.getAttribute(SesionKeys.USUARIO) != null) {
             return "redirect:" + homeDe((UsuarioSesion) session.getAttribute(SesionKeys.USUARIO));
         }
-        return "redirect:/auth/login.html";
+        return "redirect:/bienvenida.html";
     }
 
     // ───────────────────────── Login ─────────────────────────
@@ -63,10 +63,10 @@ public class AuthController {
 
     @PostMapping("/auth/login.html")
     public String login(@RequestParam String email,
-                         @RequestParam String password,
-                         HttpServletRequest request,
-                         HttpServletResponse response,
-                         RedirectAttributes redirectAttributes) {
+                        @RequestParam String password,
+                        HttpServletRequest request,
+                        HttpServletResponse response,
+                        RedirectAttributes redirectAttributes) {
 
         // Cabeceras de seguridad (mismo criterio que LoginServlet de QuintaOla-SGA)
         response.setHeader("X-Frame-Options", "DENY");
@@ -123,13 +123,13 @@ public class AuthController {
 
     @PostMapping("/auth/registro.html")
     public String registro(@RequestParam String nombres,
-                            @RequestParam String apellidos,
-                            @RequestParam String correo,
-                            @RequestParam(required = false) String cargo,
-                            @RequestParam String contrasena,
-                            @RequestParam String contrasena2,
-                            @RequestParam(required = false, defaultValue = "[]") String habilidadesJson,
-                            RedirectAttributes redirectAttributes) {
+                           @RequestParam String apellidos,
+                           @RequestParam String correo,
+                           @RequestParam(required = false) String cargo,
+                           @RequestParam String contrasena,
+                           @RequestParam String contrasena2,
+                           @RequestParam(required = false, defaultValue = "[]") String habilidadesJson,
+                           RedirectAttributes redirectAttributes) {
 
         List<HabilidadDeclarada> habilidades;
         try {
