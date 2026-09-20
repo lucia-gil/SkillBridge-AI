@@ -25,6 +25,11 @@
     .calendar-event-card .event-card-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
     .calendar-event-card .event-card-time{margin-top:2px}
     .agenda-pagination{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-top:var(--space-6);padding:0 2px}
+    .event-card-actions{display:flex;gap:6px;margin-left:auto;flex:0 0 auto}
+    .event-card-actions button{background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:4px;border-radius:6px;display:grid;place-items:center}
+    .event-card-actions button:hover{background:var(--event-soft);color:var(--event-accent)}
+    .event-card-actions button.danger:hover{background:#fff2ef;color:#d9574d}
+    .event-card-actions .icon{width:14px;height:14px}
     @media(max-width:1100px){.agenda-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:720px){.agenda-grid{grid-template-columns:1fr}.agenda-pagination{align-items:flex-start;flex-direction:column}}
   </style>
@@ -65,7 +70,11 @@
 
       <div th:unless="${eventos.isEmpty()}" class="agenda-grid" id="agenda-grid">
         <div class="event-card calendar-event-card" th:each="e : ${eventos}" data-evento
-             th:attr="data-tipo=${e.tipoCodigo}, data-proyecto=${e.proyectoNombre}"
+             th:attr="data-tipo=${e.tipoCodigo}, data-proyecto=${e.proyectoNombre},
+                      data-id=${e.id}, data-proyecto-id=${e.proyectoId}, data-titulo=${e.titulo},
+                      data-descripcion=${e.descripcion} ?: '', data-ubicacion=${e.ubicacion} ?: '',
+                      data-enlace=${e.enlaceVirtual} ?: '', data-audiencia=${e.audienciaCodigo},
+                      data-fecha-iso=${e.fechaInicioIso}"
              th:classappend="${e.tipoCodigo == 'entregable'} ? ' event-entregable' : (${e.tipoCodigo == 'hito'} ? ' event-hito' : ' event-reunion')">
           <div class="event-card-date">
             <div class="event-card-date-day" th:text="${e.diaNum}">5</div>
@@ -74,9 +83,17 @@
           <div class="event-card-body">
             <div class="event-card-top">
               <span class="event-type"><span class="event-type-icon"><svg class="icon"><use th:href="${e.tipoCodigo == 'entregable'} ? '/img/icons.svg#icon-download' : (${e.tipoCodigo == 'hito'} ? '/img/icons.svg#icon-target' : '/img/icons.svg#icon-users')"></use></svg></span><span th:text="${e.tipoNombre}">Reunión</span></span>
-              <span class="badge" style="margin-left:auto;"
+              <span class="badge"
                     th:classappend="${e.estado == 'cumplido' ? 'badge-green' : (e.estado == 'atrasado' ? 'badge-red' : (e.estado == 'cancelado' ? 'badge-neutral' : 'badge-blue'))}"
                     th:text="${e.estado}">estado</span>
+              <div class="event-card-actions" th:if="${e.puedeGestionar}">
+                <button type="button" data-edit-evento title="Editar evento" aria-label="Editar evento">
+                  <svg class="icon"><use href="/img/icons.svg#icon-edit"></use></svg>
+                </button>
+                <button type="button" class="danger" data-delete-evento title="Eliminar evento" aria-label="Eliminar evento">
+                  <svg class="icon"><use href="/img/icons.svg#icon-trash"></use></svg>
+                </button>
+              </div>
             </div>
             <div class="event-card-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span th:text="${e.titulo}">Titulo</span>
@@ -112,6 +129,8 @@
 <script th:inline="javascript">
   window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
   var NUEVO_URL = /*[[${nuevoUrl}]]*/ "/colaborador/calendario/nuevo";
+  var EDITAR_BASE_URL = "/colaborador/calendario/";
+  var ELIMINAR_BASE_URL = "/colaborador/calendario/";
   var PROYECTOS = /*[[${proyectos}]]*/ [];
   var TIPOS_EVENTO = /*[[${tiposEvento}]]*/ [];
   var TIPOS_AUDIENCIA = /*[[${tiposAudiencia}]]*/ [];
@@ -260,6 +279,78 @@
         });
       });
     }
+    // ───────── Editar / Eliminar evento ─────────
+    // Comparte el mismo formulario (fecha con hora en dropdown + minutos)
+    // que "Nuevo evento", pero sin el <select> de proyecto: un evento no
+    // cambia de proyecto al editarse, solo sus datos.
+    function abrirModalEditar(card) {
+      var d = card.dataset;
+      var partes = (d.fechaIso || "").split("T"); // "2026-09-20T08:30" -> ["2026-09-20","08:30"]
+      var dia = partes[0] || "";
+      var horaMin = (partes[1] || "00:00").split(":");
+      var hora = horaMin[0] || "00";
+      var minuto = horaMin[1] || "00";
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+              '<div class="modal-header"><div><h2>Editar evento</h2><p>' + d.proyecto + '</p></div>' +
+              '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+              '<div class="modal-body">' +
+              '<div class="field"><label class="field-label">Tipo</label><select class="select" id="ed-tipo">' + tipoOptions() + '</select></div>' +
+              '<div class="field"><label class="field-label">Titulo</label><input class="input" id="ed-titulo" value="' + (d.titulo || "").replace(/"/g, "&quot;") + '"></div>' +
+              '<div class="field-row"><div class="field"><label class="field-label">Fecha y hora</label><div style="display:flex; gap:6px;"><input class="input" type="date" id="ed-fecha-dia" value="' + dia + '" style="flex:1; min-width:0; padding-left:8px; padding-right:4px;"><div class="dropdown" style="flex:0 0 auto;"><button type="button" class="input" data-dropdown-trigger="ed-hora-dd" style="width:58px; padding:0 8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><span data-hora-label>' + hora + '</span><svg class="icon" style="width:14px; height:14px;"><use href="/img/icons.svg#icon-chevron-down"></use></svg></button><div class="dropdown-panel" data-dropdown-panel="ed-hora-dd" style="max-height:210px; overflow-y:auto; min-width:58px; padding:4px;">' + horaDropdownItems() + '</div><input type="hidden" id="ed-fecha-hora" value="' + hora + '"></div><select class="select" id="ed-fecha-min" style="width:64px; flex:0 0 auto;">' + minutoOptions() + '</select></div></div>' +
+              '<div class="field"><label class="field-label">Audiencia</label><select class="select" id="ed-aud">' + audienciaOptions() + '</select></div></div>' +
+              '<div class="field-row"><div class="field"><label class="field-label">Ubicacion (opcional)</label><input class="input" id="ed-ubic" value="' + (d.ubicacion || "").replace(/"/g, "&quot;") + '" placeholder="Sala 3 / Oficina"></div>' +
+              '<div class="field"><label class="field-label">Enlace virtual (opcional)</label><input class="input" id="ed-enlace" value="' + (d.enlace || "").replace(/"/g, "&quot;") + '" placeholder="https://meet..."></div></div>' +
+              '<div class="field"><label class="field-label">Descripcion (opcional)</label><textarea class="input" id="ed-desc" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);">' + (d.descripcion || "") + '</textarea></div>' +
+              '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ed-confirm">Guardar cambios</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      if (window.SBAI.dropdown) window.SBAI.dropdown.init(document);
+      backdrop.querySelector("#ed-tipo").value = d.tipo;
+      backdrop.querySelector("#ed-aud").value = d.audiencia;
+      backdrop.querySelectorAll("[data-hora-value]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          backdrop.querySelector("#ed-fecha-hora").value = btn.dataset.horaValue;
+          backdrop.querySelector('[data-dropdown-trigger="ed-hora-dd"] [data-hora-label]').textContent = btn.dataset.horaValue;
+          window.SBAI.dropdown.close("ed-hora-dd");
+        });
+      });
+      backdrop.querySelector("#ed-confirm").addEventListener("click", function () {
+        var titulo = backdrop.querySelector("#ed-titulo").value.trim();
+        var diaVal = backdrop.querySelector("#ed-fecha-dia").value;
+        var horaVal = backdrop.querySelector("#ed-fecha-hora").value;
+        var minutoVal = backdrop.querySelector("#ed-fecha-min").value;
+        var fecha = diaVal ? (diaVal + "T" + horaVal + ":" + minutoVal) : "";
+        if (!titulo) { SBAI.toast.show("Escribe un titulo.", { type: "error" }); return; }
+        if (!diaVal) { SBAI.toast.show("Selecciona la fecha y hora.", { type: "error" }); return; }
+        submitForm(EDITAR_BASE_URL + d.id + "/editar", {
+          tipo: backdrop.querySelector("#ed-tipo").value,
+          titulo: titulo,
+          fechaInicio: fecha,
+          audiencia: backdrop.querySelector("#ed-aud").value,
+          ubicacion: backdrop.querySelector("#ed-ubic").value,
+          enlace: backdrop.querySelector("#ed-enlace").value,
+          descripcion: backdrop.querySelector("#ed-desc").value
+        });
+      });
+    }
+
+    document.querySelectorAll("[data-edit-evento]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        abrirModalEditar(btn.closest("[data-evento]"));
+      });
+    });
+
+    document.querySelectorAll("[data-delete-evento]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var card = btn.closest("[data-evento]");
+        SBAI.modal.confirm({
+          title: "¿Eliminar \"" + card.dataset.titulo + "\"?",
+          desc: "Esta accion no se puede deshacer.",
+          confirmLabel: "Eliminar", variant: "destructive",
+          onConfirm: function () { submitForm(ELIMINAR_BASE_URL + card.dataset.id + "/eliminar", {}); }
+        });
+      });
+    });
+
     aplicar();
   });
 </script>

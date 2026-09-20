@@ -17,11 +17,23 @@ public class EventoFila {
     private final String estado;
     private final String audienciaCodigo;
     private final String audienciaLabel;
+    /** true si el perfil que pidio la lista puede editar/eliminar ESTE evento (ver EventoService.puedeGestionar). */
+    private final boolean puedeGestionar;
+    // Campos "crudos" (sin formatear) que necesita el modal de edicion para
+    // precargar el formulario: la fila ya trae fechaLabel/horaLabel legibles
+    // para mostrar, pero el <input type="datetime-local"> necesita el ISO.
+    private final Long proyectoId;
+    private final String descripcion;
+    private final String ubicacion;
+    private final String enlaceVirtual;
+    private final String fechaInicioIso;
 
     public EventoFila(Long id, int diaNum, String mesAbrev, String fechaLabel, String horaLabel,
                       String tipoCodigo, String tipoNombre, String tipoColor, String titulo,
                       String proyectoNombre, String ubicacionLabel, String estado,
-                      String audienciaCodigo, String audienciaLabel) {
+                      String audienciaCodigo, String audienciaLabel, boolean puedeGestionar,
+                      Long proyectoId, String descripcion, String ubicacion, String enlaceVirtual,
+                      String fechaInicioIso) {
         this.id = id;
         this.diaNum = diaNum;
         this.mesAbrev = mesAbrev;
@@ -36,6 +48,12 @@ public class EventoFila {
         this.estado = estado;
         this.audienciaCodigo = audienciaCodigo;
         this.audienciaLabel = audienciaLabel;
+        this.puedeGestionar = puedeGestionar;
+        this.proyectoId = proyectoId;
+        this.descripcion = descripcion;
+        this.ubicacion = ubicacion;
+        this.enlaceVirtual = enlaceVirtual;
+        this.fechaInicioIso = fechaInicioIso;
     }
 
     public Long getId() { return id; }
@@ -52,4 +70,10 @@ public class EventoFila {
     public String getEstado() { return estado; }
     public String getAudienciaCodigo() { return audienciaCodigo; }
     public String getAudienciaLabel() { return audienciaLabel; }
+    public boolean isPuedeGestionar() { return puedeGestionar; }
+    public Long getProyectoId() { return proyectoId; }
+    public String getDescripcion() { return descripcion; }
+    public String getUbicacion() { return ubicacion; }
+    public String getEnlaceVirtual() { return enlaceVirtual; }
+    public String getFechaInicioIso() { return fechaInicioIso; }
 }

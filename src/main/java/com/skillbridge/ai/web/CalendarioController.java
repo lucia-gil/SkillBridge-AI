@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -58,7 +59,7 @@ public class CalendarioController {
 
     private String vista(HttpSession session, Model model, String plantilla, boolean esPm, String nuevoUrl) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-        List<EventoFila> eventos = eventoService.listar(sesion.getPerfilId(), esPm);
+        List<EventoFila> eventos = eventoService.listar(sesion.getPerfilId(), esPm, sesion.getRolOrganizacional());
         List<ProyectoOpcion> proyectos = eventoService.misProyectos(sesion.getPerfilId());
         shellModelBuilder.aplicar(model, sesion, "calendario.html", "Calendario",
                 "Eventos de tus proyectos - " + eventos.size() + " eventos");
@@ -96,6 +97,60 @@ public class CalendarioController {
         try {
             eventoService.crear(sesion.getPerfilId(), proyectoId, tipo, titulo, descripcion, fechaInicio, ubicacion, enlace, audiencia);
             ra.addFlashAttribute("exito", "Evento \"" + titulo.trim() + "\" creado.");
+        } catch (OperacionInvalidaException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+    }
+
+    @PostMapping("/colaborador/calendario/{id}/editar")
+    public String editarColaborador(@PathVariable Long id, @RequestParam String tipo, @RequestParam String titulo,
+                                    @RequestParam(required = false) String descripcion, @RequestParam String fechaInicio,
+                                    @RequestParam(required = false) String ubicacion, @RequestParam(required = false) String enlace,
+                                    @RequestParam(required = false) String audiencia,
+                                    HttpSession session, RedirectAttributes ra) {
+        editar(session, ra, id, tipo, titulo, descripcion, fechaInicio, ubicacion, enlace, audiencia);
+        return "redirect:/colaborador/calendario.html";
+    }
+
+    @PostMapping("/project-manager/calendario/{id}/editar")
+    public String editarPm(@PathVariable Long id, @RequestParam String tipo, @RequestParam String titulo,
+                           @RequestParam(required = false) String descripcion, @RequestParam String fechaInicio,
+                           @RequestParam(required = false) String ubicacion, @RequestParam(required = false) String enlace,
+                           @RequestParam(required = false) String audiencia,
+                           HttpSession session, RedirectAttributes ra) {
+        editar(session, ra, id, tipo, titulo, descripcion, fechaInicio, ubicacion, enlace, audiencia);
+        return "redirect:/project-manager/calendario.html";
+    }
+
+    private void editar(HttpSession session, RedirectAttributes ra, Long id, String tipo, String titulo,
+                        String descripcion, String fechaInicio, String ubicacion, String enlace, String audiencia) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            eventoService.editar(id, sesion.getPerfilId(), sesion.getRolOrganizacional(), tipo, titulo, descripcion,
+                    fechaInicio, ubicacion, enlace, audiencia);
+            ra.addFlashAttribute("exito", "Evento \"" + titulo.trim() + "\" actualizado.");
+        } catch (OperacionInvalidaException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+    }
+
+    @PostMapping("/colaborador/calendario/{id}/eliminar")
+    public String eliminarColaborador(@PathVariable Long id, HttpSession session, RedirectAttributes ra) {
+        eliminar(session, ra, id);
+        return "redirect:/colaborador/calendario.html";
+    }
+
+    @PostMapping("/project-manager/calendario/{id}/eliminar")
+    public String eliminarPm(@PathVariable Long id, HttpSession session, RedirectAttributes ra) {
+        eliminar(session, ra, id);
+        return "redirect:/project-manager/calendario.html";
+    }
+
+    private void eliminar(HttpSession session, RedirectAttributes ra, Long id) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            eventoService.eliminar(id, sesion.getPerfilId(), sesion.getRolOrganizacional());
+            ra.addFlashAttribute("exito", "Evento eliminado.");
         } catch (OperacionInvalidaException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
         }

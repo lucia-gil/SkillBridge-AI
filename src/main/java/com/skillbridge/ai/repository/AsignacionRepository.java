@@ -56,6 +56,12 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 
     Optional<Asignacion> findByProyectoIdAndPerfilIdAndEstado(Long proyectoId, Long perfilId, String estado);
 
+    // Usado por EventoService.puedeGestionar() para saber si el perfil es el
+    // PM activo de un proyecto puntual (permiso de editar/eliminar CUALQUIER
+    // evento de ese proyecto, no solo los que el mismo creo).
+    boolean existsByProyectoIdAndPerfilIdAndRolEnProyectoAndEstado(
+            Long proyectoId, Long perfilId, String rolEnProyecto, String estado);
+
     @Query("select coalesce(sum(a.cargaPorcentaje), 0) from Asignacion a where a.perfilId = :perfilId and a.estado = 'activa'")
     Integer sumarCargaActivaDePerfil(@Param("perfilId") Long perfilId);
 
