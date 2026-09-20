@@ -43,7 +43,9 @@ public class CuentaController {
 
     @GetMapping({
             "/administrador/mi-cuenta.html",
-            "/colaborador/mi-cuenta.html"
+            "/colaborador/mi-cuenta.html",
+            "/resource-manager/mi-cuenta.html",
+            "/project-manager/mi-cuenta.html"
     })
     public String miCuenta(
             HttpSession session,
@@ -296,7 +298,9 @@ public class CuentaController {
     private String rutaSegura(String volver) {
 
         if ("/administrador/mi-cuenta.html".equals(volver)
-                || "/colaborador/mi-cuenta.html".equals(volver)) {
+                || "/colaborador/mi-cuenta.html".equals(volver)
+                || "/resource-manager/mi-cuenta.html".equals(volver)
+                || "/project-manager/mi-cuenta.html".equals(volver)) {
 
             return volver;
         }

@@ -62,11 +62,11 @@ public class SitioController {
 
     // Project Manager: solo quedan como mock las paginas aun no migradas.
     // proyectos/asignaciones/foros/foro-hilo/calendario/reportes/
-    // ai-talent-matching YA tienen controlador real.
+    // ai-talent-matching/mi-cuenta YA tienen controlador real (mi-cuenta via
+    // CuentaController).
     @GetMapping({
             "/project-manager/proyecto-detalle.html",
             "/project-manager/asistente-ia.html",
-            "/project-manager/mi-cuenta.html",
             "/project-manager/notificaciones.html"
     })
     public String projectManager(HttpServletRequest request, Model model) {
@@ -75,11 +75,11 @@ public class SitioController {
     }
 
     // Resource Manager: ocupacion/asignaciones/colaboradores/ai-talent-matching/
-    // inicio/reportes YA tienen controlador real (RmOcupacionController,
+    // inicio/reportes/mi-cuenta YA tienen controlador real (RmOcupacionController,
     // RmAsignacionesController, RmColaboradoresController,
-    // TalentMatchingController, RmInicioController, RmReportesController).
+    // TalentMatchingController, RmInicioController, RmReportesController,
+    // CuentaController).
     @GetMapping({
-            "/resource-manager/mi-cuenta.html",
             "/resource-manager/notificaciones.html",
             "/resource-manager/asistente-ia.html"
     })

@@ -274,9 +274,9 @@
   content: "";
   position: absolute; inset: 0;
   background-image: radial-gradient(circle at 20% 20%, rgba(91,141,239,0.18), transparent 45%),
-    radial-gradient(circle at 85% 75%, rgba(91,141,239,0.14), transparent 40%),
-    radial-gradient(circle at 12% 88%, rgba(139,92,246,0.22), transparent 42%),
-    radial-gradient(circle at 92% 8%, rgba(34,211,238,0.18), transparent 40%);
+  radial-gradient(circle at 85% 75%, rgba(91,141,239,0.14), transparent 40%),
+  radial-gradient(circle at 12% 88%, rgba(139,92,246,0.22), transparent 42%),
+  radial-gradient(circle at 92% 8%, rgba(34,211,238,0.18), transparent 40%);
   pointer-events: none;
 }
 
@@ -294,8 +294,51 @@
 }
 .auth-aside-top { position: relative; z-index: 1; }
 .auth-aside-brand { display: flex; align-items: center; gap: var(--space-3); }
-.auth-aside-headline { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); line-height: var(--lh-tight); margin: var(--space-10) 0 var(--space-4); max-width: 460px; letter-spacing: -0.01em; }
+
+/* Etiqueta pequeña sobre el titular (antes sin estilos: salía como texto
+   plano del mismo tamaño que el resto del párrafo). */
+.auth-aside-eyebrow {
+  display: inline-block;
+  margin-top: var(--space-8);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: #7EE8DC;
+}
+
+.auth-aside-headline { font-size: clamp(1.9rem, 1.1vw + 1.6rem, 2.6rem); font-weight: var(--fw-semibold); line-height: 1.12; margin: var(--space-4) 0 var(--space-6); max-width: 480px; letter-spacing: -0.02em; }
 .auth-aside-sub { font-size: var(--fs-base); color: rgba(255,255,255,0.72); line-height: var(--lh-relaxed); max-width: 420px; }
+
+/* Lista de features del panel de acceso (antes sin estilos: se veía como
+   texto plano apilado, sin iconos visibles ni separación). */
+.auth-feature-list {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.auth-feature-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-base);
+  color: rgba(255,255,255,0.82);
+}
+.auth-feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.24);
+  color: #22D3EE;
+}
 .auth-aside-stats { position: relative; z-index: 1; display: flex; gap: var(--space-8); margin: var(--space-10) 0; }
 .auth-aside-stat-value { font-size: var(--fs-xl); font-weight: var(--fw-semibold); }
 .auth-aside-stat-label { font-family: var(--font-mono); font-size: var(--fs-2xs); letter-spacing: var(--tracking-label); text-transform: uppercase; color: rgba(255,255,255,0.5); margin-top: 4px; }

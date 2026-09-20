@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<!--
+  publico/landing.html — Landing pública de SkillBridge AI (pre-login).
+
+  Inspirada en la estructura de una landing SaaS moderna (nav sticky, hero
+  con doble CTA, pasos numerados "cómo funciona", banda de métricas y CTA
+  final), pero con el sistema de diseño propio de SkillBridge AI (tokens.css,
+  gradiente de marca morado→cian, logos reales) y contenido propio.
+
+  TODO LO MARCADO "dato de ejemplo" es placeholder: reemplázalo por tus
+  cifras/copys reales antes de publicar.
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillBridge AI · El talento correcto, en el proyecto correcto</title>
+    <link rel="icon" type="image/png" href="/img/logo-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/tokens.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/landing.css">
+</head>
+<body class="landing">
+<svg style="display:none"><use></use></svg>
+
+<!-- ============ NAV ============ -->
+<header class="landing-nav">
+    <div class="landing-container landing-nav-row">
+        <a class="landing-nav-brand" th:href="@{/}">
+            <img src="/img/logo-horizontal-tight.png" alt="SkillBridge AI">
+        </a>
+        <nav class="landing-nav-links">
+            <a href="#como-funciona">Cómo funciona</a>
+            <a href="#funcionalidades">Funcionalidades</a>
+            <a href="#roles">Roles</a>
+            <a href="#">Precios</a>
+        </nav>
+        <div class="landing-nav-actions">
+            <a th:href="@{/auth/login.html}" class="btn btn-tertiary">Iniciar sesión</a>
+            <a th:href="@{/auth/registro.html}" class="btn btn-primary btn-sm">Crear cuenta</a>
+        </div>
+    </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="landing-hero">
+    <div class="landing-container landing-hero-grid">
+        <div>
+            <span class="landing-eyebrow">NexaCorp · Gestión de talento con IA</span>
+            <h1>El talento correcto, en el proyecto correcto.</h1>
+            <p class="landing-hero-sub">
+                SkillBridge AI conecta habilidades, disponibilidad y proyectos con
+                matching por inteligencia artificial, para que cada asignación tenga
+                sentido desde el primer día — sin hojas de cálculo ni adivinar quién
+                está libre.
+            </p>
+            <div class="landing-hero-actions">
+                <a th:href="@{/auth/registro.html}" class="btn btn-primary btn-lg">
+                    Crear cuenta gratis
+                    <svg class="icon icon-sm"><use href="/img/icons.svg#icon-arrow-right"></use></svg>
+                </a>
+                <a href="#como-funciona" class="btn btn-secondary btn-lg">Ver cómo funciona</a>
+            </div>
+            <p class="landing-hero-note">Acceso para tu equipo en minutos · dato de ejemplo, reemplázalo por tu propuesta real.</p>
+        </div>
+
+        <div class="landing-hero-visual">
+            <!-- Mockup ilustrativo del AI Talent Matching, no es una captura real -->
+            <div class="mockup-card mockup-card-main">
+                <div class="mockup-card-header">
+                    <div>
+                        <div class="mockup-card-title">AI Talent Matching</div>
+                        <div class="mockup-card-sub">Proyecto: Portal de Clientes</div>
+                    </div>
+                    <div class="mockup-score"><b>92</b><span>/100</span></div>
+                </div>
+
+                <div class="mockup-row">
+                    <div class="mockup-avatar">MF</div>
+                    <div>
+                        <div class="mockup-row-name">María Fernández</div>
+                        <div class="mockup-row-skills">
+                            <span class="badge badge-violet">Java</span>
+                            <span class="badge badge-blue">Spring Boot</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mockup-row">
+                    <div class="mockup-avatar">JR</div>
+                    <div>
+                        <div class="mockup-row-name">Jorge Ramos</div>
+                        <div class="mockup-row-skills">
+                            <span class="badge badge-green">React</span>
+                            <span class="badge badge-neutral">Docker</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mockup-card mockup-card-floating">
+                <div class="mockup-floating-label">Carga del equipo</div>
+                <div class="mockup-floating-value">68% ocupado</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ STATS (dato de ejemplo) ============ -->
+<section class="landing-stats">
+    <div class="landing-container landing-stats-row">
+        <div>
+            <div class="landing-stat-value">184</div>
+            <div class="landing-stat-label">Colaboradores activos</div>
+        </div>
+        <div>
+            <div class="landing-stat-value">27</div>
+            <div class="landing-stat-label">Proyectos en curso</div>
+        </div>
+        <div>
+            <div class="landing-stat-value">312</div>
+            <div class="landing-stat-label">Habilidades mapeadas</div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CÓMO FUNCIONA ============ -->
+<section class="landing-section" id="como-funciona">
+    <div class="landing-container">
+        <div class="landing-section-head">
+            <span class="landing-section-kicker">Cómo funciona</span>
+            <h2>De la habilidad al equipo, en cuatro pasos.</h2>
+            <p>Sin procesos manuales: SkillBridge AI conecta lo que tu gente sabe hacer con lo que tus proyectos necesitan.</p>
+        </div>
+
+        <div class="steps-grid" id="funcionalidades">
+            <div class="step-card">
+                <div class="step-card-top">
+                    <span class="step-number">01</span>
+                    <span class="step-icon"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></span>
+                </div>
+                <h3>Perfila tu talento</h3>
+                <p>Cada colaborador declara sus habilidades, nivel (1–5) y disponibilidad. El sistema conoce a tu equipo real, no una hoja de cálculo desactualizada.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-card-top">
+                    <span class="step-number">02</span>
+                    <span class="step-icon"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></span>
+                </div>
+                <h3>Match con IA</h3>
+                <p>El AI Talent Matching cruza habilidades requeridas, experiencia y carga disponible, y te explica en lenguaje simple por qué recomienda a cada persona.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-card-top">
+                    <span class="step-number">03</span>
+                    <span class="step-icon"><svg class="icon"><use href="/img/icons.svg#icon-shield-check"></use></svg></span>
+                </div>
+                <h3>Asigna sin quemar a tu equipo</h3>
+                <p>Límites de carga por colaborador y excepciones aprobadas evitan sobreasignar a tus mejores perfiles.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-card-top">
+                    <span class="step-number">04</span>
+                    <span class="step-icon"><svg class="icon"><use href="/img/icons.svg#icon-bar-chart"></use></svg></span>
+                </div>
+                <h3>Sigue el progreso</h3>
+                <p>Calendario automático por proyecto, foros con resumen por IA y reportes de auditoría en tiempo real.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ BANDA DE MÉTRICAS (dato de ejemplo) ============ -->
+<section class="landing-metrics">
+    <div class="landing-container landing-metrics-row">
+        <div>
+            <div class="landing-metric-value">-40%*</div>
+            <p class="landing-metric-label">de tiempo armando equipos para un proyecto nuevo.</p>
+        </div>
+        <div>
+            <div class="landing-metric-value">+90%*</div>
+            <p class="landing-metric-label">de encaje habilidad-proyecto reportado por los Project Managers.</p>
+        </div>
+    </div>
+    <div class="landing-container">
+        <p class="landing-metric-footnote">*Cifras de ejemplo — reemplázalas por tus métricas reales antes de publicar.</p>
+    </div>
+</section>
+
+<!-- ============ ROLES ============ -->
+<section class="landing-section" id="roles">
+    <div class="landing-container">
+        <div class="landing-section-head">
+            <span class="landing-section-kicker">Un sistema, cuatro vistas</span>
+            <h2>Cada rol ve exactamente lo que necesita.</h2>
+            <p>Permisos y paneles distintos para que nadie se pierda en información que no le corresponde.</p>
+        </div>
+
+        <div class="roles-grid">
+            <div class="role-card">
+                <span class="step-icon"><svg class="icon"><use href="/img/icons.svg#icon-shield"></use></svg></span>
+                <h4>Administrador</h4>
+                <p>Gestiona usuarios, catálogo de habilidades, configuración global y auditoría.</p>
+            </div>
+            <div class="role-card">
+                <span class="step-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+                <h4>Resource Manager</h4>
+                <p>Controla ocupación del equipo, asignaciones y disponibilidad por colaborador.</p>
+            </div>
+            <div class="role-card">
+                <span class="step-icon"><svg class="icon"><use href="/img/icons.svg#icon-briefcase"></use></svg></span>
+                <h4>Project Manager</h4>
+                <p>Crea proyectos, usa AI Talent Matching y sigue avances con reportes propios.</p>
+            </div>
+            <div class="role-card">
+                <span class="step-icon"><svg class="icon"><use href="/img/icons.svg#icon-user"></use></svg></span>
+                <h4>Colaborador</h4>
+                <p>Declara sus habilidades, revisa su calendario y participa en los foros del proyecto.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CTA FINAL ============ -->
+<div class="landing-cta">
+    <div class="landing-cta-card">
+        <h2>¿Listo para encontrar al equipo correcto?</h2>
+        <p>Crea tu cuenta corporativa y deja que SkillBridge AI arme la recomendación por ti.</p>
+        <div class="landing-cta-actions">
+            <a th:href="@{/auth/registro.html}" class="btn btn-brand btn-lg">Crear cuenta gratis</a>
+            <a th:href="@{/auth/login.html}" class="btn btn-outline-inverse btn-lg">Ya tengo cuenta</a>
+        </div>
+    </div>
+</div>
+
+<!-- ============ FOOTER ============ -->
+<footer class="landing-footer">
+    <div class="landing-container landing-footer-grid">
+        <div class="landing-footer-brand">
+            <img src="/img/logo-horizontal-tight.png" alt="SkillBridge AI">
+            <p>Gestión de talento y proyectos con matching por inteligencia artificial, para equipos de NexaCorp.</p>
+        </div>
+        <div class="landing-footer-col">
+            <h5>Producto</h5>
+            <ul>
+                <li><a href="#como-funciona">Cómo funciona</a></li>
+                <li><a href="#funcionalidades">Funcionalidades</a></li>
+                <li><a href="#roles">Roles</a></li>
+                <li><a href="#">Precios</a></li>
+            </ul>
+        </div>
+        <div class="landing-footer-col">
+            <h5>Empresa</h5>
+            <ul>
+                <li><a href="#">Sobre NexaCorp</a></li>
+                <li><a href="#">Contacto</a></li>
+                <li><a href="#">Trabaja con nosotros</a></li>
+            </ul>
+        </div>
+        <div class="landing-footer-col">
+            <h5>Cuenta</h5>
+            <ul>
+                <li><a th:href="@{/auth/login.html}">Iniciar sesión</a></li>
+                <li><a th:href="@{/auth/registro.html}">Crear cuenta</a></li>
+                <li><a th:href="@{/auth/recuperar-password.html}">Recuperar contraseña</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="landing-container landing-footer-bottom">
+        <span>© 2026 NexaCorp · SkillBridge AI</span>
+        <span>Intranet corporativa · v2.4.0 — dato de ejemplo</span>
+    </div>
+</footer>
+
+</body>
+</html>

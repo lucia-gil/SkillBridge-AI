@@ -1,0 +1,322 @@
+/*
+  landing.css — Landing pública de SkillBridge AI
+  Página de marketing/bienvenida (pre-login). Reutiliza tokens.css,
+  base.css y components.css (botones, cards, badges); este archivo solo
+  agrega las secciones propias de esta vista: nav pública, hero, tira de
+  stats, "cómo funciona", banda de métricas, roles y footer.
+  Todo lo marcado con “dato de ejemplo” es placeholder para reemplazar.
+*/
+
+.landing {
+    background: var(--canvas);
+    color: var(--text-primary);
+}
+
+.landing-container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+}
+
+/* ========================= Nav pública ========================= */
+.landing-nav {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-topbar);
+    background: rgba(244, 245, 247, 0.82);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.landing-nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+}
+.landing-nav-brand { display: flex; align-items: center; }
+.landing-nav-brand img { height: 30px; width: auto; display: block; }
+.landing-nav-links {
+    display: flex;
+    align-items: center;
+}
+.landing-nav-links a {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-secondary);
+    margin-right: var(--space-7);
+}
+.landing-nav-links a:last-child { margin-right: 0; }
+.landing-nav-links a:hover { color: var(--text-primary); }
+.landing-nav-actions { display: flex; align-items: center; gap: var(--space-3); }
+@media (max-width: 860px) {
+    .landing-nav-links { display: none; }
+}
+
+/* ========================= Hero ========================= */
+.landing-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-16) 0 var(--space-12);
+}
+.landing-hero-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+    align-items: center;
+}
+.landing-hero-grid > div:first-child { flex: 1 1 460px; }
+.landing-hero-visual { flex: 1 1 380px; }
+.landing-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--violet-fg);
+    background: var(--violet-bg);
+    border: 1px solid var(--violet-border);
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+}
+.landing-hero h1 {
+    margin: var(--space-5) 0 var(--space-4);
+    font-size: clamp(2.1rem, 1.4vw + 2rem, 3.4rem);
+    font-weight: var(--fw-bold);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    color: var(--navy-900);
+    max-width: 620px;
+}
+.landing-hero-sub {
+    font-size: var(--fs-md);
+    line-height: var(--lh-relaxed);
+    color: var(--text-secondary);
+    max-width: 540px;
+}
+.landing-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-7);
+    flex-wrap: wrap;
+}
+.landing-hero-note {
+    margin-top: var(--space-4);
+    font-size: var(--fs-xs);
+    color: var(--text-tertiary);
+}
+
+/* ---- Visual del hero: mockup de AI Talent Matching (no es una captura
+   real de producto, es una representación simplificada con placeholders) ---- */
+.landing-hero-visual { position: relative; min-height: 360px; }
+.mockup-card {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-3);
+    padding: var(--space-6);
+}
+.mockup-card-main {
+    position: relative;
+    z-index: 2;
+    max-width: 380px;
+    margin-left: auto;
+}
+.mockup-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5); }
+.mockup-card-title { font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text-primary); }
+.mockup-card-sub { font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: 2px; }
+.mockup-score {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-family: var(--font-mono);
+    color: var(--green-fg);
+}
+.mockup-score b { font-size: var(--fs-xl); }
+.mockup-score span { font-size: var(--fs-xs); }
+.mockup-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--border-subtle);
+}
+.mockup-row:first-of-type { border-top: none; }
+.mockup-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #8B5CF6, #22D3EE);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: var(--fs-xs); font-weight: var(--fw-bold); flex-shrink: 0;
+}
+.mockup-row-name { font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--text-primary); }
+.mockup-row-skills { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.mockup-card-floating {
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    bottom: -18px;
+    width: 230px;
+    padding: var(--space-4);
+    transform: rotate(-4deg);
+}
+.mockup-floating-label { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--text-tertiary); font-family: var(--font-mono); }
+.mockup-floating-value { font-size: var(--fs-lg); font-weight: var(--fw-bold); color: var(--navy-900); margin-top: 2px; }
+
+/* ========================= Tira de stats ========================= */
+.landing-stats {
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface);
+}
+.landing-stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    padding: var(--space-8) 0;
+    text-align: center;
+}
+.landing-stats-row > div { flex: 1 1 200px; }
+.landing-stat-value { font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: var(--navy-900); letter-spacing: -0.02em; }
+.landing-stat-label { font-size: var(--fs-xs); color: var(--text-tertiary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: var(--tracking-label); margin-top: 4px; }
+
+/* ========================= Cómo funciona ========================= */
+.landing-section { padding: var(--space-16) 0; }
+.landing-section-head { max-width: 620px; margin-bottom: var(--space-10); }
+.landing-section-kicker {
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--blue-link);
+}
+.landing-section-head h2 { font-size: var(--fs-2xl); font-weight: var(--fw-bold); letter-spacing: -0.02em; margin: var(--space-3) 0 var(--space-3); color: var(--navy-900); }
+.landing-section-head p { font-size: var(--fs-base); color: var(--text-secondary); line-height: var(--lh-relaxed); }
+
+.steps-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+}
+.step-card { flex: 1 1 380px; }
+.step-card {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    position: relative;
+    transition: transform var(--dur-base) var(--ease-standard), box-shadow var(--dur-base) var(--ease-standard);
+}
+.step-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+.step-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+.step-number { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--border-strong); font-weight: var(--fw-semibold); }
+.step-icon {
+    width: 40px; height: 40px; border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--violet-bg); color: var(--violet-fg);
+}
+.step-card h3 { font-size: var(--fs-md); font-weight: var(--fw-semibold); color: var(--text-primary); margin-bottom: var(--space-2); }
+.step-card p { font-size: var(--fs-sm); color: var(--text-secondary); line-height: var(--lh-relaxed); }
+
+/* ========================= Banda de métricas (oscura) ========================= */
+.landing-metrics {
+    background: linear-gradient(160deg, var(--navy-900) 0%, var(--navy-700) 100%);
+    color: #fff;
+    padding: var(--space-14) 0;
+}
+.landing-metrics-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-10);
+    align-items: center;
+}
+.landing-metrics-row > div { flex: 1 1 300px; }
+.landing-metric-value {
+    font-size: clamp(2.6rem, 3vw, 4rem);
+    font-weight: var(--fw-bold);
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #C4B5FD, #67E8F9);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.landing-metric-label { font-size: var(--fs-base); color: rgba(255,255,255,0.75); margin-top: var(--space-2); max-width: 320px; }
+.landing-metric-footnote { font-size: var(--fs-2xs); color: rgba(255,255,255,0.4); margin-top: var(--space-8); }
+
+/* ========================= Roles ========================= */
+.roles-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+}
+.role-card { flex: 1 1 230px; }
+.role-card {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+}
+.role-card .step-icon { margin-bottom: var(--space-4); }
+.role-card h4 { font-size: var(--fs-base); font-weight: var(--fw-semibold); color: var(--text-primary); margin-bottom: var(--space-2); }
+.role-card p { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: var(--lh-normal); }
+
+/* ========================= CTA final ========================= */
+.landing-cta {
+    margin: 0 auto var(--space-16);
+    max-width: 1180px;
+    padding: 0 var(--space-6);
+}
+.landing-cta-card {
+    background: linear-gradient(135deg, var(--navy-900) 0%, #241a4d 55%, var(--navy-700) 100%);
+    border-radius: var(--radius-xl);
+    padding: var(--space-12) var(--space-10);
+    text-align: center;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.landing-cta-card h2 { font-size: var(--fs-2xl); font-weight: var(--fw-bold); letter-spacing: -0.02em; margin-bottom: var(--space-3); }
+.landing-cta-card p { font-size: var(--fs-base); color: rgba(255,255,255,0.72); max-width: 480px; margin: 0 auto var(--space-7); }
+.landing-cta-actions { display: flex; align-items: center; justify-content: center; gap: var(--space-4); flex-wrap: wrap; }
+
+/* Botón con el gradiente de marca, reutilizado igual que en /auth */
+.landing .btn-brand {
+    background: linear-gradient(135deg, #8B5CF6 0%, #22D3EE 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(139,92,246,0.28);
+}
+.landing .btn-brand:hover:not(:disabled) { filter: brightness(1.06); }
+.landing .btn-outline-inverse {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+}
+.landing .btn-outline-inverse:hover:not(:disabled) { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.5); }
+
+/* ========================= Footer ========================= */
+.landing-footer { background: var(--surface); border-top: 1px solid var(--border-subtle); padding: var(--space-12) 0 var(--space-8); }
+.landing-footer-grid { display: flex; flex-wrap: wrap; gap: var(--space-8); }
+.landing-footer-brand { flex: 1 1 260px; }
+.landing-footer-col { flex: 1 1 150px; }
+.landing-footer-brand img { height: 26px; width: auto; margin-bottom: var(--space-4); }
+.landing-footer-brand p { font-size: var(--fs-sm); color: var(--text-tertiary); max-width: 260px; line-height: var(--lh-relaxed); }
+.landing-footer-col h5 { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--text-tertiary); font-family: var(--font-mono); margin-bottom: var(--space-4); }
+.landing-footer-col ul { display: flex; flex-direction: column; gap: var(--space-3); }
+.landing-footer-col a { font-size: var(--fs-sm); color: var(--text-secondary); }
+.landing-footer-col a:hover { color: var(--text-primary); }
+.landing-footer-bottom {
+    margin-top: var(--space-10);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--fs-xs);
+    color: var(--text-tertiary);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}

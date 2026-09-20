@@ -130,6 +130,19 @@
       return '<option value="' + t.codigo + '">' + t.nombre + '</option>';
     }).join("");
   }
+  function horaDropdownItems() {
+    var out = "";
+    for (var h = 0; h < 24; h++) {
+      var v = (h < 10 ? "0" : "") + h;
+      out += '<button type="button" class="dropdown-item" data-hora-value="' + v + '" style="justify-content:center; padding:6px 4px;">' + v + '</button>';
+    }
+    return out;
+  }
+  function minutoOptions() {
+    return ["00", "15", "30", "45"].map(function (m) {
+      return '<option value="' + m + '">' + m + '</option>';
+    }).join("");
+  }
 
   document.addEventListener("DOMContentLoaded", function () {
     var submitForm = window.SBAI.submitForm;
@@ -211,18 +224,29 @@
                 '<div class="field-row"><div class="field"><label class="field-label">Proyecto</label><select class="select" id="ev-proj">' + opts + '</select></div>' +
                 '<div class="field"><label class="field-label">Tipo</label><select class="select" id="ev-tipo">' + tipoOptions() + '</select></div></div>' +
                 '<div class="field"><label class="field-label">Titulo</label><input class="input" id="ev-titulo" placeholder="Daily de sprint, Entrega v1..."></div>' +
-                '<div class="field-row"><div class="field"><label class="field-label">Fecha y hora</label><input class="input" type="datetime-local" id="ev-fecha"></div>' +
+                '<div class="field-row"><div class="field"><label class="field-label">Fecha y hora</label><div style="display:flex; gap:6px;"><input class="input" type="date" id="ev-fecha-dia" style="flex:1; min-width:0; padding-left:8px; padding-right:4px;"><div class="dropdown" style="flex:0 0 auto;"><button type="button" class="input" data-dropdown-trigger="ev-hora-dd" style="width:58px; padding:0 8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><span data-hora-label>00</span><svg class="icon" style="width:14px; height:14px;"><use href="/img/icons.svg#icon-chevron-down"></use></svg></button><div class="dropdown-panel" data-dropdown-panel="ev-hora-dd" style="max-height:210px; overflow-y:auto; min-width:58px; padding:4px;">' + horaDropdownItems() + '</div><input type="hidden" id="ev-fecha-hora" value="00"></div><select class="select" id="ev-fecha-min" style="width:64px; flex:0 0 auto;">' + minutoOptions() + '</select></div></div>' +
                 '<div class="field"><label class="field-label">Audiencia</label><select class="select" id="ev-aud">' + audienciaOptions() + '</select></div></div>' +
                 '<div class="field-row"><div class="field"><label class="field-label">Ubicacion (opcional)</label><input class="input" id="ev-ubic" placeholder="Sala 3 / Oficina"></div>' +
                 '<div class="field"><label class="field-label">Enlace virtual (opcional)</label><input class="input" id="ev-enlace" placeholder="https://meet..."></div></div>' +
                 '<div class="field"><label class="field-label">Descripcion (opcional)</label><textarea class="input" id="ev-desc" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
                 '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ev-confirm">Crear evento</button></div></div>';
         var backdrop = SBAI.modal.open(html);
+        if (window.SBAI.dropdown) window.SBAI.dropdown.init(document);
+        backdrop.querySelectorAll("[data-hora-value]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            backdrop.querySelector("#ev-fecha-hora").value = btn.dataset.horaValue;
+            backdrop.querySelector('[data-dropdown-trigger="ev-hora-dd"] [data-hora-label]').textContent = btn.dataset.horaValue;
+            window.SBAI.dropdown.close("ev-hora-dd");
+          });
+        });
         backdrop.querySelector("#ev-confirm").addEventListener("click", function () {
           var titulo = backdrop.querySelector("#ev-titulo").value.trim();
-          var fecha = backdrop.querySelector("#ev-fecha").value;
+          var dia = backdrop.querySelector("#ev-fecha-dia").value;
+          var hora = backdrop.querySelector("#ev-fecha-hora").value;
+          var minuto = backdrop.querySelector("#ev-fecha-min").value;
+          var fecha = dia ? (dia + "T" + hora + ":" + minuto) : "";
           if (!titulo) { SBAI.toast.show("Escribe un titulo.", { type: "error" }); return; }
-          if (!fecha) { SBAI.toast.show("Selecciona la fecha y hora.", { type: "error" }); return; }
+          if (!dia) { SBAI.toast.show("Selecciona la fecha y hora.", { type: "error" }); return; }
           submitForm(NUEVO_URL, {
             proyectoId: backdrop.querySelector("#ev-proj").value,
             tipo: backdrop.querySelector("#ev-tipo").value,

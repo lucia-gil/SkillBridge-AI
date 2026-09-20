@@ -17,9 +17,9 @@
     <main class="page-content" id="page-content">
 
       <div class="kpi-grid">
-        <div class="kpi-tile"><span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">SOBRE-ASIGNADOS</span><span class="kpi-tile-value" th:text="${kpiSobreAsignados}">0</span><span class="kpi-tile-meta down" th:if="${kpiSobreAsignados > 0}">requieren acción</span></div>
-        <div class="kpi-tile"><span class="kpi-tile-label">COLABORADORES EVALUADOS</span><span class="kpi-tile-value" th:text="${kpiColaboradoresEvaluados}">0</span></div>
+        <div class="kpi-tile accent-blue"><div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></div><span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span></div>
+        <div class="kpi-tile accent-red"><div class="kpi-tile-icon red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></div><span class="kpi-tile-label">SOBRE-ASIGNADOS</span><span class="kpi-tile-value" th:text="${kpiSobreAsignados}">0</span><span class="kpi-tile-meta down" th:if="${kpiSobreAsignados > 0}">requieren acción</span></div>
+        <div class="kpi-tile accent-violet"><div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-user-check"></use></svg></div><span class="kpi-tile-label">COLABORADORES EVALUADOS</span><span class="kpi-tile-value" th:text="${kpiColaboradoresEvaluados}">0</span></div>
       </div>
 
       <section class="card card-pad" style="margin-top:var(--space-6);">

@@ -43,10 +43,10 @@
 
     .auth-card-header {
       text-align: center;
-      margin-bottom: var(--space-4);
+      margin-bottom: var(--space-6);
     }
     .auth-card-header img {
-      height: 112px;
+      height: 40px;
       width: auto;
       object-fit: contain;
       margin: 0 auto;
@@ -137,7 +137,7 @@
 
     <div class="auth-aside-top">
       <div class="auth-aside-brand">
-        <img src="/img/logo_blanco.png" alt="SkillBridge AI" style="height: 36px; width: auto;">
+        <img src="/img/logo_blanco-tight.png" alt="SkillBridge AI" style="height: 26px; width: auto;">
       </div>
       <span class="auth-aside-eyebrow">NEXACORP · ACCESO CORPORATIVO</span>
       <h1 class="auth-aside-headline">El talento correcto, en el proyecto correcto.</h1>
@@ -171,7 +171,7 @@
     <div class="auth-card card card-pad">
 
       <div class="auth-card-header">
-        <img src="/img/logo-horizontal.png" alt="SkillBridge AI">
+        <img src="/img/logo-horizontal-tight.png" alt="SkillBridge AI">
       </div>
 
       <h2 class="auth-card-title">Iniciar sesión</h2>
@@ -211,14 +211,18 @@
           <a href="recuperar-password.html" style="font-size:var(--fs-sm); font-weight:500;">¿Olvidaste tu contraseña?</a>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block btn-lg">Entrar</button>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+          Entrar
+          <svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-right"></use></svg>
+        </button>
 
         <div class="auth-divider"><span>o bien</span></div>
 
-        <button type="button" class="btn btn-secondary btn-block btn-lg" id="sso-btn">Continuar con SSO corporativo</button>
+        <button type="button" class="btn btn-secondary btn-block btn-lg" id="sso-btn">
+          Continuar con SSO corporativo
+          <svg class="icon icon-sm"><use href="/img/icons.svg#icon-external-link"></use></svg>
+        </button>
       </form>
-
-      <p class="auth-footer-link">¿No tienes cuenta? <a href="registro.html">Crea una cuenta</a></p>
     </div>
   </main>
 </div>
