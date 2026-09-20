@@ -14,12 +14,15 @@ public class HiloDetalle {
     private final String contenido;
     private final int numVistas;
     private final boolean permiteMarcarSolucion;
+    private final boolean permiteEditarHilo;
+    private final boolean permiteEliminarHilo;
     private final List<RespuestaFila> respuestas;
     private final List<String> participantesIniciales;
     private final List<HiloResumen> relacionados;
 
     public HiloDetalle(Long id, String titulo, Long proyectoId, String proyectoNombre, String autorNombre,
                         String fechaLabel, String contenido, int numVistas, boolean permiteMarcarSolucion,
+                        boolean permiteEditarHilo, boolean permiteEliminarHilo,
                         List<RespuestaFila> respuestas, List<String> participantesIniciales, List<HiloResumen> relacionados) {
         this.id = id;
         this.titulo = titulo;
@@ -30,6 +33,8 @@ public class HiloDetalle {
         this.contenido = contenido;
         this.numVistas = numVistas;
         this.permiteMarcarSolucion = permiteMarcarSolucion;
+        this.permiteEditarHilo = permiteEditarHilo;
+        this.permiteEliminarHilo = permiteEliminarHilo;
         this.respuestas = respuestas;
         this.participantesIniciales = participantesIniciales;
         this.relacionados = relacionados;
@@ -69,6 +74,14 @@ public class HiloDetalle {
 
     public boolean isPermiteMarcarSolucion() {
         return permiteMarcarSolucion;
+    }
+
+    public boolean isPermiteEditarHilo() {
+        return permiteEditarHilo;
+    }
+
+    public boolean isPermiteEliminarHilo() {
+        return permiteEliminarHilo;
     }
 
     public List<RespuestaFila> getRespuestas() {

@@ -75,4 +75,59 @@ public class ForoHiloPmController {
         }
         return "redirect:/project-manager/foro-hilo.html?id=" + hiloId;
     }
+
+    @PostMapping("/foro-hilo/{id}/editar")
+    public String editarHilo(@PathVariable Long id, @RequestParam String titulo, @RequestParam String contenido,
+                             HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            foroService.editarHilo(id, sesion.getPerfilId(), titulo, contenido);
+            redirectAttributes.addFlashAttribute("exito", "El hilo se actualizo.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/project-manager/foro-hilo.html?id=" + id;
+    }
+
+    // El PM puede eliminar cualquier publicacion de los foros de sus
+    // proyectos (moderacion), igual que ya puede marcar-solucion en
+    // cualquier hilo: se pasa true como actorEsAdmin.
+    @PostMapping("/foro-hilo/{id}/eliminar")
+    public String eliminarHilo(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            foroService.eliminarHilo(id, sesion.getPerfilId(), true);
+            redirectAttributes.addFlashAttribute("exito", "El hilo se elimino.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/project-manager/foro-hilo.html?id=" + id;
+        }
+        return "redirect:/project-manager/foros.html";
+    }
+
+    @PostMapping("/foro-hilo/{hiloId}/respuestas/{respuestaId}/editar")
+    public String editarRespuesta(@PathVariable Long hiloId, @PathVariable Long respuestaId, @RequestParam String contenido,
+                                  HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            foroService.editarRespuesta(respuestaId, sesion.getPerfilId(), contenido);
+            redirectAttributes.addFlashAttribute("exito", "La respuesta se actualizo.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/project-manager/foro-hilo.html?id=" + hiloId;
+    }
+
+    @PostMapping("/foro-hilo/{hiloId}/respuestas/{respuestaId}/eliminar")
+    public String eliminarRespuesta(@PathVariable Long hiloId, @PathVariable Long respuestaId,
+                                    HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            foroService.eliminarRespuesta(respuestaId, sesion.getPerfilId(), true);
+            redirectAttributes.addFlashAttribute("exito", "La respuesta se elimino.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/project-manager/foro-hilo.html?id=" + hiloId;
+    }
 }

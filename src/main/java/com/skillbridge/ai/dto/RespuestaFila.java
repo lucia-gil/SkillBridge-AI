@@ -10,8 +10,11 @@ public class RespuestaFila {
     private final String fechaLabel;
     private final String contenido;
     private final boolean esSolucion;
+    private final boolean permiteEditar;
+    private final boolean permiteEliminar;
 
-    public RespuestaFila(Long id, String autorNombre, String autorCargo, String fechaLabel, String contenido, boolean esSolucion) {
+    public RespuestaFila(Long id, String autorNombre, String autorCargo, String fechaLabel, String contenido, boolean esSolucion,
+                          boolean permiteEditar, boolean permiteEliminar) {
         this.id = id;
         this.autorNombre = autorNombre;
         this.autorCargo = autorCargo != null ? autorCargo : "";
@@ -19,6 +22,8 @@ public class RespuestaFila {
         this.fechaLabel = fechaLabel;
         this.contenido = contenido;
         this.esSolucion = esSolucion;
+        this.permiteEditar = permiteEditar;
+        this.permiteEliminar = permiteEliminar;
     }
 
     public Long getId() {
@@ -47,5 +52,13 @@ public class RespuestaFila {
 
     public boolean isEsSolucion() {
         return esSolucion;
+    }
+
+    public boolean isPermiteEditar() {
+        return permiteEditar;
+    }
+
+    public boolean isPermiteEliminar() {
+        return permiteEliminar;
     }
 }

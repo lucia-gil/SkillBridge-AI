@@ -31,4 +31,8 @@ public interface ForoPublicacionRepository extends JpaRepository<ForoPublicacion
 
     @Query("select f from ForoPublicacion f where f.publicacionPadreId is null and f.proyectoId = :proyectoId and f.id <> :excludeId order by f.fechaPublicacion desc")
     List<ForoPublicacion> listarRelacionados(@Param("proyectoId") Long proyectoId, @Param("excludeId") Long excludeId);
+
+    // Usado al eliminar un hilo: primero se borran todas sus respuestas
+    // (misma tabla autorreferencial) para no violar la FK antes de borrar el hilo.
+    void deleteByPublicacionPadreId(Long padreId);
 }

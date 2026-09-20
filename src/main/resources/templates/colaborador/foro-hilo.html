@@ -40,6 +40,10 @@
                     <span class="text-tertiary" style="font-size:11px; margin-left:auto;" th:text="${hilo.fechaLabel}">fecha</span>
                   </div>
                   <p class="post-text" th:text="${hilo.contenido}">Contenido</p>
+                  <div class="post-actions" th:if="${hilo.permiteEditarHilo or hilo.permiteEliminarHilo}">
+                    <button type="button" th:if="${hilo.permiteEditarHilo}" data-editar-hilo>Editar</button>
+                    <button type="button" th:if="${hilo.permiteEliminarHilo}" data-eliminar-hilo>Eliminar</button>
+                  </div>
                 </div>
               </article>
 
@@ -53,8 +57,10 @@
                     <span class="text-tertiary" style="font-size:11px; margin-left:auto;" th:text="${r.fechaLabel}">tiempo</span>
                   </div>
                   <p class="post-text" th:text="${r.contenido}">Texto</p>
-                  <div class="post-actions" th:if="${hilo.permiteMarcarSolucion and !r.esSolucion}">
-                    <button type="button" th:attr="data-marcar-solucion=${r.id}">Marcar como solución</button>
+                  <div class="post-actions" th:if="${(hilo.permiteMarcarSolucion and !r.esSolucion) or r.permiteEditar or r.permiteEliminar}">
+                    <button type="button" th:if="${hilo.permiteMarcarSolucion and !r.esSolucion}" th:attr="data-marcar-solucion=${r.id}">Marcar como solución</button>
+                    <button type="button" th:if="${r.permiteEditar}" th:attr="data-editar-respuesta=${r.id}">Editar</button>
+                    <button type="button" th:if="${r.permiteEliminar}" th:attr="data-eliminar-respuesta=${r.id}">Eliminar</button>
                   </div>
                 </div>
               </article>
@@ -121,6 +127,69 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("[data-marcar-solucion]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       submitForm("/colaborador/foro-hilo/" + HILO_ID + "/respuestas/" + btn.dataset.marcarSolucion + "/marcar-solucion", {});
+    });
+  });
+
+  var editarHiloBtn = document.querySelector("[data-editar-hilo]");
+  if (editarHiloBtn) {
+    editarHiloBtn.addEventListener("click", function () {
+      var tituloActual = document.querySelector("h1").textContent;
+      var contenidoActual = document.querySelector(".post-text").textContent;
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar hilo</h2></div>' +
+              '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+              '<div class="modal-body">' +
+              '<div class="field"><label class="field-label">Titulo</label><input class="input" type="text" id="edit-hilo-titulo" value="' + tituloActual.replace(/"/g, "&quot;") + '"></div>' +
+              '<div class="field"><label class="field-label">Mensaje</label><textarea class="input" id="edit-hilo-contenido" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);">' + contenidoActual + '</textarea></div>' +
+              '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-editar-hilo">Guardar</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#confirm-editar-hilo").addEventListener("click", function () {
+        var titulo = backdrop.querySelector("#edit-hilo-titulo").value.trim();
+        var contenido = backdrop.querySelector("#edit-hilo-contenido").value.trim();
+        if (!titulo || !contenido) { SBAI.toast.show("Completa el titulo y el mensaje.", { type: "error" }); return; }
+        submitForm("/colaborador/foro-hilo/" + HILO_ID + "/editar", { titulo: titulo, contenido: contenido });
+      });
+    });
+  }
+
+  var eliminarHiloBtn = document.querySelector("[data-eliminar-hilo]");
+  if (eliminarHiloBtn) {
+    eliminarHiloBtn.addEventListener("click", function () {
+      SBAI.modal.confirm({
+        title: "Eliminar este hilo?",
+        desc: "Se eliminara el hilo y todas sus respuestas. Esta accion no se puede deshacer.",
+        confirmLabel: "Eliminar", variant: "destructive",
+        onConfirm: function () { submitForm("/colaborador/foro-hilo/" + HILO_ID + "/eliminar", {}); }
+      });
+    });
+  }
+
+  document.querySelectorAll("[data-editar-respuesta]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var respuestaId = btn.dataset.editarRespuesta;
+      var article = btn.closest(".post");
+      var contenidoActual = article.querySelector(".post-text").textContent;
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar respuesta</h2></div>' +
+              '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+              '<div class="modal-body"><div class="field"><textarea class="input" id="edit-resp-contenido" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);">' + contenidoActual + '</textarea></div></div>' +
+              '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-editar-resp">Guardar</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#confirm-editar-resp").addEventListener("click", function () {
+        var contenido = backdrop.querySelector("#edit-resp-contenido").value.trim();
+        if (!contenido) { SBAI.toast.show("Escribe una respuesta antes de guardar.", { type: "error" }); return; }
+        submitForm("/colaborador/foro-hilo/" + HILO_ID + "/respuestas/" + respuestaId + "/editar", { contenido: contenido });
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-eliminar-respuesta]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var respuestaId = btn.dataset.eliminarRespuesta;
+      SBAI.modal.confirm({
+        title: "Eliminar esta respuesta?",
+        desc: "Esta accion no se puede deshacer.",
+        confirmLabel: "Eliminar", variant: "destructive",
+        onConfirm: function () { submitForm("/colaborador/foro-hilo/" + HILO_ID + "/respuestas/" + respuestaId + "/eliminar", {}); }
+      });
     });
   });
 });

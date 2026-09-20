@@ -78,4 +78,58 @@ public class ForoHiloController {
         }
         return "redirect:/colaborador/foro-hilo.html?id=" + hiloId;
     }
+
+    @PostMapping("/foro-hilo/{id}/editar")
+    public String editarHilo(@PathVariable Long id, @RequestParam String titulo, @RequestParam String contenido,
+                              HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            foroService.editarHilo(id, sesion.getPerfilId(), titulo, contenido);
+            redirectAttributes.addFlashAttribute("exito", "El hilo se actualizó.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/colaborador/foro-hilo.html?id=" + id;
+    }
+
+    @PostMapping("/foro-hilo/{id}/eliminar")
+    public String eliminarHilo(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        boolean esAdmin = Roles.ADMINISTRADOR.equals(sesion.getRolEfectivo());
+        try {
+            foroService.eliminarHilo(id, sesion.getPerfilId(), esAdmin);
+            redirectAttributes.addFlashAttribute("exito", "El hilo se eliminó.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/colaborador/foro-hilo.html?id=" + id;
+        }
+        return "redirect:/colaborador/foros.html";
+    }
+
+    @PostMapping("/foro-hilo/{hiloId}/respuestas/{respuestaId}/editar")
+    public String editarRespuesta(@PathVariable Long hiloId, @PathVariable Long respuestaId, @RequestParam String contenido,
+                                   HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            foroService.editarRespuesta(respuestaId, sesion.getPerfilId(), contenido);
+            redirectAttributes.addFlashAttribute("exito", "La respuesta se actualizó.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/colaborador/foro-hilo.html?id=" + hiloId;
+    }
+
+    @PostMapping("/foro-hilo/{hiloId}/respuestas/{respuestaId}/eliminar")
+    public String eliminarRespuesta(@PathVariable Long hiloId, @PathVariable Long respuestaId,
+                                     HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        boolean esAdmin = Roles.ADMINISTRADOR.equals(sesion.getRolEfectivo());
+        try {
+            foroService.eliminarRespuesta(respuestaId, sesion.getPerfilId(), esAdmin);
+            redirectAttributes.addFlashAttribute("exito", "La respuesta se eliminó.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/colaborador/foro-hilo.html?id=" + hiloId;
+    }
 }

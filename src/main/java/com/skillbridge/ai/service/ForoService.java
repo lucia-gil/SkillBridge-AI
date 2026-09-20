@@ -121,7 +121,9 @@ public class ForoService {
         List<RespuestaFila> respuestas = respuestasCrudo.stream()
                 .map(r -> new RespuestaFila(r.getId(), r.getAutor().getUsuario().getNombreCompleto(),
                         r.getAutor().getCargo(), r.getFechaPublicacion() != null ? r.getFechaPublicacion().format(FORMATO) : "",
-                        r.getContenido(), Boolean.TRUE.equals(r.getEsSolucion())))
+                        r.getContenido(), Boolean.TRUE.equals(r.getEsSolucion()),
+                        r.getAutorId().equals(viewerPerfilId),
+                        viewerEsAdmin || r.getAutorId().equals(viewerPerfilId)))
                 .collect(Collectors.toList());
 
         Set<String> participantes = new LinkedHashSet<>();
@@ -137,11 +139,14 @@ public class ForoService {
                 .collect(Collectors.toList());
 
         boolean permiteMarcarSolucion = viewerEsAdmin || hilo.getAutorId().equals(viewerPerfilId);
+        boolean permiteEditarHilo = hilo.getAutorId().equals(viewerPerfilId);
+        boolean permiteEliminarHilo = viewerEsAdmin || hilo.getAutorId().equals(viewerPerfilId);
 
         return new HiloDetalle(hilo.getId(), hilo.getTitulo(), hilo.getProyectoId(), hilo.getProyecto().getNombre(),
                 hilo.getAutor().getUsuario().getNombreCompleto(),
                 hilo.getFechaPublicacion() != null ? hilo.getFechaPublicacion().format(FORMATO) : "",
-                hilo.getContenido(), hilo.getNumVistas(), permiteMarcarSolucion, respuestas, participantesIniciales, relacionados);
+                hilo.getContenido(), hilo.getNumVistas(), permiteMarcarSolucion, permiteEditarHilo, permiteEliminarHilo,
+                respuestas, participantesIniciales, relacionados);
     }
 
     @Transactional
@@ -198,5 +203,76 @@ public class ForoService {
         }
         hilo.setEsFijado(valor);
         foroPublicacionRepository.save(hilo);
+    }
+
+    /**
+     * Editar solo la cambia quien la escribio (autor): ni un administrador ni
+     * el Project Manager pueden reescribir el mensaje de otra persona, solo
+     * moderar (eliminar) - ver eliminarHilo/eliminarRespuesta.
+     */
+    @Transactional
+    public void editarHilo(Long hiloId, Long actorPerfilId, String nuevoTitulo, String nuevoContenido) {
+        ForoPublicacion hilo = foroPublicacionRepository.findById(hiloId)
+                .orElseThrow(() -> new OperacionInvalidaException("El hilo ya no existe."));
+        if (hilo.getPublicacionPadreId() != null) {
+            throw new OperacionInvalidaException("Esto no es un hilo.");
+        }
+        if (!hilo.getAutorId().equals(actorPerfilId)) {
+            throw new OperacionInvalidaException("Solo quien abrió el hilo puede editarlo.");
+        }
+        if (nuevoTitulo == null || nuevoTitulo.isBlank()) {
+            throw new OperacionInvalidaException("Escribe un título para el hilo.");
+        }
+        if (nuevoContenido == null || nuevoContenido.isBlank()) {
+            throw new OperacionInvalidaException("Escribe un mensaje para el hilo.");
+        }
+        hilo.setTitulo(nuevoTitulo.trim());
+        hilo.setContenido(nuevoContenido.trim());
+        foroPublicacionRepository.save(hilo);
+    }
+
+    @Transactional
+    public void editarRespuesta(Long respuestaId, Long actorPerfilId, String nuevoContenido) {
+        ForoPublicacion respuesta = foroPublicacionRepository.findById(respuestaId)
+                .orElseThrow(() -> new OperacionInvalidaException("La respuesta ya no existe."));
+        if (respuesta.getPublicacionPadreId() == null) {
+            throw new OperacionInvalidaException("Esto no es una respuesta.");
+        }
+        if (!respuesta.getAutorId().equals(actorPerfilId)) {
+            throw new OperacionInvalidaException("Solo quien escribió la respuesta puede editarla.");
+        }
+        if (nuevoContenido == null || nuevoContenido.isBlank()) {
+            throw new OperacionInvalidaException("Escribe una respuesta antes de guardar.");
+        }
+        respuesta.setContenido(nuevoContenido.trim());
+        foroPublicacionRepository.save(respuesta);
+    }
+
+    /** Eliminar el hilo se lleva sus respuestas (misma tabla autorreferencial). */
+    @Transactional
+    public void eliminarHilo(Long hiloId, Long actorPerfilId, boolean actorEsAdmin) {
+        ForoPublicacion hilo = foroPublicacionRepository.findById(hiloId)
+                .orElseThrow(() -> new OperacionInvalidaException("El hilo ya no existe."));
+        if (hilo.getPublicacionPadreId() != null) {
+            throw new OperacionInvalidaException("Esto no es un hilo.");
+        }
+        if (!actorEsAdmin && !hilo.getAutorId().equals(actorPerfilId)) {
+            throw new OperacionInvalidaException("Solo quien abrió el hilo (o un administrador) puede eliminarlo.");
+        }
+        foroPublicacionRepository.deleteByPublicacionPadreId(hiloId);
+        foroPublicacionRepository.delete(hilo);
+    }
+
+    @Transactional
+    public void eliminarRespuesta(Long respuestaId, Long actorPerfilId, boolean actorEsAdmin) {
+        ForoPublicacion respuesta = foroPublicacionRepository.findById(respuestaId)
+                .orElseThrow(() -> new OperacionInvalidaException("La respuesta ya no existe."));
+        if (respuesta.getPublicacionPadreId() == null) {
+            throw new OperacionInvalidaException("Esto no es una respuesta.");
+        }
+        if (!actorEsAdmin && !respuesta.getAutorId().equals(actorPerfilId)) {
+            throw new OperacionInvalidaException("Solo quien escribió la respuesta (o un administrador) puede eliminarla.");
+        }
+        foroPublicacionRepository.delete(respuesta);
     }
 }
