@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="/css/layout.css">
   <style>
     .agenda-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-5)}
-    .calendar-event-card{--event-accent:#4778dc;--event-soft:#edf3ff;position:relative;display:flex;align-items:flex-start;gap:var(--space-4);overflow:hidden;cursor:default;background:linear-gradient(135deg,#fff 60%,var(--event-soft));box-shadow:0 4px 14px rgba(15,31,66,.05);padding:var(--space-4) var(--space-4) var(--space-4) calc(var(--space-4) + 4px)}
+    .calendar-event-card{--event-accent:#4778dc;--event-soft:#edf3ff;position:relative;display:flex;align-items:flex-start;gap:var(--space-4);overflow:hidden;cursor:pointer;background:linear-gradient(135deg,#fff 60%,var(--event-soft));box-shadow:0 4px 14px rgba(15,31,66,.05);padding:var(--space-4) var(--space-4) var(--space-4) calc(var(--space-4) + 4px);transition:box-shadow .15s,transform .15s}
+    .calendar-event-card:hover{box-shadow:0 8px 22px rgba(15,31,66,.09);transform:translateY(-1px)}
     .calendar-event-card::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--event-accent)}
     .calendar-event-card[data-tipo="entregable"]{--event-accent:#d9574d;--event-soft:#fff2ef}
     .calendar-event-card[data-tipo="hito"]{--event-accent:#45a15c;--event-soft:#effaf2}
@@ -30,6 +31,18 @@
     .event-card-actions button:hover{background:var(--event-soft);color:var(--event-accent)}
     .event-card-actions button.danger:hover{background:#fff2ef;color:#d9574d}
     .event-card-actions .icon{width:14px;height:14px}
+    /* Modal "Ver detalle" del evento */
+    .event-detail-badges{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:var(--space-5)}
+    .event-detail-rows{display:flex;flex-direction:column;gap:var(--space-4);padding:var(--space-4);border-radius:12px;background:var(--surface-sunken);margin-bottom:var(--space-5)}
+    .event-detail-row{display:flex;align-items:flex-start;gap:12px}
+    .event-detail-row .icon{width:16px;height:16px;flex:0 0 auto;margin-top:2px;color:var(--text-tertiary)}
+    .event-detail-row-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .event-detail-label{font-size:10px;font-weight:650;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary)}
+    .event-detail-value{font-size:var(--fs-sm);color:var(--text-primary);word-break:break-word}
+    .event-detail-value a{color:var(--event-accent, #4778dc);text-decoration:none}
+    .event-detail-value a:hover{text-decoration:underline}
+    .event-detail-desc-label{font-size:10px;font-weight:650;text-transform:uppercase;letter-spacing:.05em;color:var(--text-tertiary);margin-bottom:6px;display:block}
+    .event-detail-desc-text{font-size:var(--fs-sm);color:var(--text-secondary);line-height:1.6;white-space:pre-wrap}
     @media(max-width:1100px){.agenda-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:720px){.agenda-grid{grid-template-columns:1fr}.agenda-pagination{align-items:flex-start;flex-direction:column}}
   </style>
@@ -74,7 +87,10 @@
                       data-id=${e.id}, data-proyecto-id=${e.proyectoId}, data-titulo=${e.titulo},
                       data-descripcion=${e.descripcion} ?: '', data-ubicacion=${e.ubicacion} ?: '',
                       data-enlace=${e.enlaceVirtual} ?: '', data-audiencia=${e.audienciaCodigo},
-                      data-fecha-iso=${e.fechaInicioIso}"
+                      data-fecha-iso=${e.fechaInicioIso}, data-tipo-nombre=${e.tipoNombre},
+                      data-audiencia-label=${e.audienciaLabel}, data-estado=${e.estado},
+                      data-fecha-label=${e.fechaLabel}, data-hora-label=${e.horaLabel},
+                      data-puede-gestionar=${e.puedeGestionar}"
              th:classappend="${e.tipoCodigo == 'entregable'} ? ' event-entregable' : (${e.tipoCodigo == 'hito'} ? ' event-hito' : ' event-reunion')">
           <div class="event-card-date">
             <div class="event-card-date-day" th:text="${e.diaNum}">5</div>
@@ -333,21 +349,117 @@
       });
     }
 
+    function confirmarEliminar(card) {
+      SBAI.modal.confirm({
+        title: "¿Eliminar \"" + card.dataset.titulo + "\"?",
+        desc: "Esta accion no se puede deshacer.",
+        confirmLabel: "Eliminar", variant: "destructive",
+        onConfirm: function () { submitForm(ELIMINAR_BASE_URL + card.dataset.id + "/eliminar", {}); }
+      });
+    }
+
     document.querySelectorAll("[data-edit-evento]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
         abrirModalEditar(btn.closest("[data-evento]"));
       });
     });
 
     document.querySelectorAll("[data-delete-evento]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var card = btn.closest("[data-evento]");
-        SBAI.modal.confirm({
-          title: "¿Eliminar \"" + card.dataset.titulo + "\"?",
-          desc: "Esta accion no se puede deshacer.",
-          confirmLabel: "Eliminar", variant: "destructive",
-          onConfirm: function () { submitForm(ELIMINAR_BASE_URL + card.dataset.id + "/eliminar", {}); }
+      btn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        confirmarEliminar(btn.closest("[data-evento]"));
+      });
+    });
+
+    // ───────── Ver detalle del evento ─────────
+    // Click en cualquier parte de la tarjeta (fuera de los botones de accion,
+    // que ya frenan la propagacion arriba) abre un modal de solo lectura con
+    // TODOS los datos: fecha, hora, ubicacion/enlace, audiencia y descripcion
+    // completa - la tarjeta solo muestra un resumen recortado.
+    var CLASE_TIPO = { entregable: "badge-red", hito: "badge-green", reunion: "badge-blue" };
+    var CLASE_ESTADO = { cumplido: "badge-green", atrasado: "badge-red", cancelado: "badge-neutral" };
+
+    function esUrl(texto) {
+      return /^https?:\/\//i.test(texto || "");
+    }
+
+    function escaparHtml(texto) {
+      var div = document.createElement("div");
+      div.textContent = texto || "";
+      return div.innerHTML;
+    }
+
+    function abrirModalDetalle(card) {
+      var d = card.dataset;
+      var claseEstado = CLASE_ESTADO[d.estado] || "badge-blue";
+      var puedeGestionar = d.puedeGestionar === "true";
+
+      var filas = "";
+      filas += '<div class="event-detail-row">' + icono("icon-calendar") +
+              '<div class="event-detail-row-body"><span class="event-detail-label">Fecha y hora</span>' +
+              '<span class="event-detail-value">' + escaparHtml(d.fechaLabel) + ' · ' + escaparHtml(d.horaLabel) + '</span></div></div>';
+      if (d.ubicacion) {
+        filas += '<div class="event-detail-row">' + icono("icon-pin") +
+                '<div class="event-detail-row-body"><span class="event-detail-label">Ubicacion</span>' +
+                '<span class="event-detail-value">' + escaparHtml(d.ubicacion) + '</span></div></div>';
+      }
+      if (d.enlace) {
+        var valorEnlace = esUrl(d.enlace)
+                ? '<a href="' + escaparHtml(d.enlace) + '" target="_blank" rel="noopener">' + escaparHtml(d.enlace) + '</a>'
+                : escaparHtml(d.enlace);
+        filas += '<div class="event-detail-row">' + icono("icon-external-link") +
+                '<div class="event-detail-row-body"><span class="event-detail-label">Enlace virtual</span>' +
+                '<span class="event-detail-value">' + valorEnlace + '</span></div></div>';
+      }
+      filas += '<div class="event-detail-row">' + icono("icon-users") +
+              '<div class="event-detail-row-body"><span class="event-detail-label">Audiencia</span>' +
+              '<span class="event-detail-value">' + escaparHtml(d.audienciaLabel) + '</span></div></div>';
+
+      var descripcionHtml = d.descripcion
+              ? '<div class="event-detail-desc-text">' + escaparHtml(d.descripcion) + '</div>'
+              : '<div class="event-detail-desc-text text-tertiary">Sin descripcion.</div>';
+
+      var botonesFooter = '<button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>';
+      if (puedeGestionar) {
+        botonesFooter += '<button type="button" class="btn btn-destructive-solid" id="det-eliminar">Eliminar</button>' +
+                '<button type="button" class="btn btn-primary" id="det-editar">Editar</button>';
+      }
+
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+              '<div class="modal-header"><div><h2>' + escaparHtml(d.titulo) + '</h2><p>' + escaparHtml(d.proyecto) + '</p></div>' +
+              '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar">' + icono("icon-x") + '</button></div>' +
+              '<div class="modal-body">' +
+              '<div class="event-detail-badges">' +
+              '<span class="badge ' + (CLASE_TIPO[d.tipo] || "badge-blue") + '">' + escaparHtml(d.tipoNombre) + '</span>' +
+              '<span class="badge ' + claseEstado + '">' + escaparHtml(d.estado) + '</span>' +
+              (d.audiencia === "solo_pm" ? '<span class="badge badge-neutral">Solo PM</span>' : '') +
+              '</div>' +
+              '<div class="event-detail-rows">' + filas + '</div>' +
+              '<span class="event-detail-desc-label">Descripcion</span>' + descripcionHtml +
+              '</div><div class="modal-footer">' + botonesFooter + '</div></div>';
+
+      var backdrop = SBAI.modal.open(html);
+      if (puedeGestionar) {
+        backdrop.querySelector("#det-editar").addEventListener("click", function () {
+          SBAI.modal.closeTop();
+          abrirModalEditar(card);
         });
+        backdrop.querySelector("#det-eliminar").addEventListener("click", function () {
+          SBAI.modal.closeTop();
+          confirmarEliminar(card);
+        });
+      }
+    }
+
+    function icono(nombre) {
+      return '<svg class="icon"><use href="/img/icons.svg#' + nombre + '"></use></svg>';
+    }
+
+    cards.forEach(function (card) {
+      card.addEventListener("click", function (ev) {
+        if (ev.target.closest(".event-card-actions")) return;
+        abrirModalDetalle(card);
       });
     });
 
