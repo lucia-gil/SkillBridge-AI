@@ -41,8 +41,7 @@
             <a href="#">Precios</a>
         </nav>
         <div class="landing-nav-actions">
-            <a th:href="@{/auth/login.html}" class="btn btn-tertiary">Iniciar sesión</a>
-            <a th:href="@{/auth/registro.html}" class="btn btn-primary btn-sm">Crear cuenta</a>
+            <a th:href="@{/auth/login.html}" class="btn btn-primary btn-sm">Iniciar sesión</a>
         </div>
     </div>
 </header>
@@ -60,8 +59,8 @@
                 está libre.
             </p>
             <div class="landing-hero-actions">
-                <a th:href="@{/auth/registro.html}" class="btn btn-primary btn-lg">
-                    Crear cuenta gratis
+                <a th:href="@{/auth/login.html}" class="btn btn-primary btn-lg">
+                    Iniciar sesión
                     <svg class="icon icon-sm"><use href="/img/icons.svg#icon-arrow-right"></use></svg>
                 </a>
                 <a href="#como-funciona" class="btn btn-secondary btn-lg">Ver cómo funciona</a>
@@ -232,10 +231,9 @@
 <div class="landing-cta">
     <div class="landing-cta-card">
         <h2>¿Listo para encontrar al equipo correcto?</h2>
-        <p>Crea tu cuenta corporativa y deja que SkillBridge AI arme la recomendación por ti.</p>
+        <p>Inicia sesión con tu cuenta corporativa y deja que SkillBridge AI arme la recomendación por ti.</p>
         <div class="landing-cta-actions">
-            <a th:href="@{/auth/registro.html}" class="btn btn-brand btn-lg">Crear cuenta gratis</a>
-            <a th:href="@{/auth/login.html}" class="btn btn-outline-inverse btn-lg">Ya tengo cuenta</a>
+            <a th:href="@{/auth/login.html}" class="btn btn-brand btn-lg">Iniciar sesión</a>
         </div>
     </div>
 </div>
@@ -268,7 +266,6 @@
             <h5>Cuenta</h5>
             <ul>
                 <li><a th:href="@{/auth/login.html}">Iniciar sesión</a></li>
-                <li><a th:href="@{/auth/registro.html}">Crear cuenta</a></li>
                 <li><a th:href="@{/auth/recuperar-password.html}">Recuperar contraseña</a></li>
             </ul>
         </div>
