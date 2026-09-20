@@ -51,6 +51,7 @@ public class NavService {
                 items.add(new NavItem("Inicio", "icon-home", "inicio.html"));
                 items.add(new NavItem("Mi perfil", "icon-user", "perfil.html"));
                 items.add(new NavItem("Mis proyectos", "icon-folder", "proyectos.html"));
+                items.add(new NavItem("Entregables", "icon-file-text", "entregables.html"));
                 items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
                 items.add(new NavItem("Foros", "icon-message", "foros.html"));
                 items.add(new NavItem("Asistente IA", "icon-sparkles", "asistente-ia.html"));

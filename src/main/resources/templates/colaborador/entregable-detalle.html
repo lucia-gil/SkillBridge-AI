@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entregable · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <section class="card card-pad">
+        <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-2);">
+          <a th:href="@{/colaborador/entregables.html}" class="text-tertiary">← Volver a Mis entregables</a>
+        </p>
+        <h2 style="font-size:var(--fs-lg);" th:text="${entregable.titulo}">Título</h2>
+        <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" th:text="${proyecto.nombre}">Proyecto</p>
+        <p class="text-secondary" style="margin:var(--space-3) 0 var(--space-4); white-space:pre-wrap;" th:text="${entregable.descripcion} ?: 'Sin descripción.'">Descripción</p>
+        <div class="info-row"><span class="info-row-label">Apertura</span><span class="info-row-value" th:text="${fechaAperturaLabel}">fecha</span></div>
+        <div class="info-row"><span class="info-row-label">Cierre</span><span class="info-row-value" th:text="${fechaCierreLabel}">fecha</span></div>
+        <div class="info-row"><span class="info-row-label">Puntaje máximo</span><span class="info-row-value mono" th:text="${entregable.puntajeMaximo}">20</span></div>
+      </section>
+
+      <!-- Revisión del PM: solo si ya calificó/comentó -->
+      <section class="card card-pad" style="margin-top:var(--space-6);" th:if="${fila.estadoCrudo == 'revisado'}">
+        <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-3);">Revisión del Project Manager</h3>
+        <div class="info-row"><span class="info-row-label">Calificación</span><span class="info-row-value mono" th:text="${fila.calificacionLabel} + ' / ' + ${entregable.puntajeMaximo}">— / 20</span></div>
+        <div style="margin-top:var(--space-3);" th:if="${fila.comentarioPm}">
+          <p class="field-label" style="margin-bottom:4px;">Comentario</p>
+          <p class="text-secondary" style="white-space:pre-wrap;" th:text="${fila.comentarioPm}">Comentario</p>
+        </div>
+      </section>
+
+      <!-- Mi entrega actual, si existe -->
+      <section class="card card-pad" style="margin-top:var(--space-6);" th:if="${fila.entrego}">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <h3 style="font-size:var(--fs-md);">Tu entrega</h3>
+          <span class="badge" th:classappend="${fila.estadoBadgeClass}" th:text="${fila.estadoLabel}">Estado</span>
+        </div>
+        <p class="text-tertiary" style="font-size:var(--fs-xs); margin:var(--space-2) 0 var(--space-4);">
+          Enviado el <span th:text="${fila.fechaEntregaLabel}">fecha</span>
+          <span th:if="${fila.atrasado}" class="badge badge-amber" style="margin-left:4px;">Atrasado</span>
+        </p>
+        <div style="display:flex; flex-direction:column; gap:var(--space-2); font-size:var(--fs-sm);">
+          <a th:if="${fila.urlEntrega}" th:href="${fila.urlEntrega}" target="_blank" rel="noopener">🔗 <span th:text="${fila.urlEntrega}">link</span></a>
+          <a th:if="${fila.tieneArchivo}" th:href="@{'/entregas/' + ${fila.entregaId} + '/archivo'}" target="_blank">📎 <span th:text="${fila.archivoNombre}">archivo</span></a>
+          <p th:if="${fila.texto}" class="text-secondary" style="white-space:pre-wrap;" th:text="${fila.texto}">texto</p>
+        </div>
+        <div class="btn-group" style="margin-top:var(--space-4);">
+          <button type="button" class="btn btn-secondary btn-sm" id="borrar-entrega-btn">Borrar entrega</button>
+        </div>
+      </section>
+
+      <!-- Formulario: entregar (o reemplazar/editar la entrega ya hecha) -->
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);" th:text="${fila.entrego ? 'Editar entrega' : 'Entregar'}">Entregar</h3>
+        <div class="field"><label class="field-label">Texto (opcional)</label>
+          <textarea class="input" id="ent-texto" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);" th:text="${fila.texto}"></textarea></div>
+        <div class="field"><label class="field-label">Link (opcional)</label>
+          <input class="input" type="url" id="ent-url" th:value="${fila.urlEntrega}" placeholder="https://github.com/tu-usuario/tu-repo"></div>
+        <div class="field"><label class="field-label">Archivo (opcional — PDF, Word, Excel, imagen, ZIP o .txt, máx. 15 MB)</label>
+          <input class="input" type="file" id="ent-archivo"></div>
+        <p class="field-hint">Sube al menos uno de los tres (texto, link o archivo). Puedes entregar de nuevo antes o después del cierre; si ya pasó la fecha de cierre, tu entrega quedará marcada como atrasada.</p>
+        <div class="btn-group" style="justify-content:flex-end; margin-top:var(--space-4);">
+          <button type="button" class="btn btn-primary" id="entregar-btn" th:text="${fila.entrego ? 'Guardar cambios' : 'Entregar'}">Entregar</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+var ENTREGABLE_ID = /*[[${entregable.id}]]*/ 0;
+document.addEventListener("DOMContentLoaded", function () {
+  var submitForm = window.SBAI.submitForm;
+
+  // Igual patrón que colaborador/perfil.html: un input[type=file] no puede
+  // ir dentro de un form armado con inputs hidden, así que se mueve el
+  // input real (con el FileList que el usuario ya eligió) a un form nuevo.
+  function submitFormConArchivo(action, fields, fileInputEl) {
+    var form = document.createElement("form");
+    form.method = "POST";
+    form.action = action;
+    form.enctype = "multipart/form-data";
+    Object.keys(fields || {}).forEach(function (k) {
+      var input = document.createElement("input");
+      input.type = "hidden"; input.name = k; input.value = fields[k] == null ? "" : fields[k];
+      form.appendChild(input);
+    });
+    fileInputEl.name = "archivo";
+    form.appendChild(fileInputEl);
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  document.getElementById("entregar-btn").addEventListener("click", function () {
+    var texto = document.getElementById("ent-texto").value.trim();
+    var url = document.getElementById("ent-url").value.trim();
+    var fileInput = document.getElementById("ent-archivo");
+    var hayArchivo = fileInput.files && fileInput.files[0];
+    if (!texto && !url && !hayArchivo) {
+      SBAI.toast.show("Adjunta al menos texto, un link o un archivo.", { type: "error" });
+      return;
+    }
+    var fields = { texto: texto, urlEntrega: url };
+    if (hayArchivo) {
+      submitFormConArchivo("/colaborador/entregables/" + ENTREGABLE_ID + "/entregar", fields, fileInput);
+    } else {
+      submitForm("/colaborador/entregables/" + ENTREGABLE_ID + "/entregar", fields);
+    }
+  });
+
+  var borrarBtn = document.getElementById("borrar-entrega-btn");
+  if (borrarBtn) {
+    borrarBtn.addEventListener("click", function () {
+      SBAI.modal.confirm({
+        title: "¿Borrar tu entrega?", desc: "Esta acción es permanente. Tendrás que volver a subir todo si cambias de opinión.",
+        confirmLabel: "Borrar entrega", variant: "destructive",
+        onConfirm: function () { submitForm("/colaborador/entregables/" + ENTREGABLE_ID + "/eliminar", {}); }
+      });
+    });
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entregables · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <section class="card">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${entregables.size()} + ' entregables'">0 entregables</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">
+              <a th:href="@{/project-manager/proyectos.html}" class="text-tertiary">← Volver a Proyectos</a> ·
+              <span th:text="${proyecto.nombre}">Proyecto</span>
+            </p>
+          </div>
+          <div class="table-filters">
+            <select class="select" data-filter-scope="entregables-pm" data-filter-key="estado">
+              <option value="todos">Estado: todos</option>
+              <option value="abierto">Abierto</option><option value="cerrado">Cerrado</option><option value="cancelado">Cancelado</option>
+            </select>
+            <button type="button" class="btn btn-primary btn-sm" id="new-entregable-btn">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo entregable</button>
+          </div>
+        </div>
+
+        <div th:if="${entregables.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+          <span class="state-panel-title">Todavía no hay entregables</span>
+          <span class="state-panel-desc">Crea el primero con el botón "Nuevo entregable".</span>
+        </div>
+
+        <div class="table-scroll" th:unless="${entregables.isEmpty()}">
+          <table class="data-table">
+            <thead><tr><th>Título</th><th>Apertura</th><th>Cierre</th><th>Entregas</th><th>Revisadas</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              <tr th:each="e : ${entregables}" data-filter-row="entregables-pm"
+                  th:attr="data-f-estado=${e.vencido ? 'cerrado' : (e.estadoCrudo == 'cancelado' ? 'cancelado' : 'abierto')}">
+                <td class="cell-person">
+                  <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+                  <span class="cell-person-name" th:text="${e.titulo}">Título</span>
+                </td>
+                <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${e.fechaAperturaLabel}">fecha</td>
+                <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${e.fechaCierreLabel}">fecha</td>
+                <td class="mono" th:text="${e.totalEntregados} + ' / ' + ${e.totalEquipo}">0 / 0</td>
+                <td class="mono" th:text="${e.totalRevisados} + ' / ' + ${e.totalEntregados}">0 / 0</td>
+                <td><span class="badge" th:classappend="${e.estadoBadgeClass}" th:text="${e.estadoLabel}">Estado</span></td>
+                <td class="cell-actions">
+                  <a th:href="@{'/project-manager/entregables/' + ${e.id} + '.html'}">Revisar</a>
+                  <button type="button" th:attr="data-editar=${e.id}, data-titulo=${e.titulo}, data-descripcion=${e.descripcion}, data-puntaje=${e.puntajeMaximoLabel}">Editar</button>
+                  <button type="button" class="danger" th:if="${e.estadoCrudo != 'cancelado'}" th:attr="data-cancelar=${e.id}">Cancelar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="state-panel" data-filter-empty="entregables-pm" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+          <span class="state-panel-title">Sin entregables con estos filtros</span>
+        </div>
+        <div class="table-footer" th:unless="${entregables.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="ent-visible-count">0</span> de <span id="ent-filtered-count">0</span> entregables</span>
+          <div class="pagination"><button class="page-btn" id="ent-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="ent-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="ent-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+var PROYECTO_ID = /*[[${proyecto.id}]]*/ 0;
+document.addEventListener("DOMContentLoaded", function () {
+  window.SBAI.tableFilter.init(document);
+  var submitForm = window.SBAI.submitForm;
+
+  function formularioHtml(titulo, valores) {
+    valores = valores || {};
+    return '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+      '<div class="modal-header"><div><h2>' + titulo + '</h2></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body">' +
+      '<div class="field"><label class="field-label">Título</label><input class="input" id="ent-titulo" value="' + (valores.titulo || "") + '" placeholder="Entregable 1 - Lista de requerimientos"></div>' +
+      '<div class="field"><label class="field-label">Descripción / instrucciones</label><textarea class="input" id="ent-desc" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);">' + (valores.descripcion || "") + '</textarea></div>' +
+      '<div class="field-row">' +
+      '<div class="field"><label class="field-label">Apertura</label><input class="input" type="datetime-local" id="ent-apertura" value="' + (valores.apertura || "") + '"></div>' +
+      '<div class="field"><label class="field-label">Cierre</label><input class="input" type="datetime-local" id="ent-cierre" value="' + (valores.cierre || "") + '"></div>' +
+      '</div>' +
+      '<div class="field"><label class="field-label">Puntaje máximo</label><input class="input" type="number" min="1" step="0.5" id="ent-puntaje" value="' + (valores.puntaje || "20") + '"></div>' +
+      '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ent-confirm">' + (valores.id ? "Guardar cambios" : "Crear entregable") + '</button></div></div>';
+  }
+
+  document.getElementById("new-entregable-btn").addEventListener("click", function () {
+    var backdrop = SBAI.modal.open(formularioHtml("Nuevo entregable"));
+    backdrop.querySelector("#ent-confirm").addEventListener("click", function () {
+      var titulo = backdrop.querySelector("#ent-titulo").value.trim();
+      var apertura = backdrop.querySelector("#ent-apertura").value;
+      var cierre = backdrop.querySelector("#ent-cierre").value;
+      if (!titulo) { SBAI.toast.show("Ingresa un título.", { type: "error" }); return; }
+      if (!apertura || !cierre) { SBAI.toast.show("Selecciona apertura y cierre.", { type: "error" }); return; }
+      submitForm("/project-manager/proyectos/" + PROYECTO_ID + "/entregables", {
+        titulo: titulo,
+        descripcion: backdrop.querySelector("#ent-desc").value,
+        fechaApertura: apertura,
+        fechaCierre: cierre,
+        puntajeMaximo: backdrop.querySelector("#ent-puntaje").value
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-editar]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.editar;
+      var backdrop = SBAI.modal.open(formularioHtml("Editar entregable", {
+        id: id, titulo: btn.dataset.titulo, descripcion: btn.dataset.descripcion || "", puntaje: btn.dataset.puntaje
+      }));
+      backdrop.querySelector("#ent-confirm").addEventListener("click", function () {
+        var titulo = backdrop.querySelector("#ent-titulo").value.trim();
+        var apertura = backdrop.querySelector("#ent-apertura").value;
+        var cierre = backdrop.querySelector("#ent-cierre").value;
+        if (!titulo) { SBAI.toast.show("Ingresa un título.", { type: "error" }); return; }
+        if (!apertura || !cierre) { SBAI.toast.show("Selecciona apertura y cierre.", { type: "error" }); return; }
+        submitForm("/project-manager/entregables/" + id + "/editar", {
+          proyectoId: PROYECTO_ID,
+          titulo: titulo,
+          descripcion: backdrop.querySelector("#ent-desc").value,
+          fechaApertura: apertura,
+          fechaCierre: cierre,
+          puntajeMaximo: backdrop.querySelector("#ent-puntaje").value
+        });
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-cancelar]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.cancelar;
+      SBAI.modal.confirm({
+        title: "¿Cancelar este entregable?", desc: "Ya no aceptará entregas nuevas. Las que ya existan se conservan.",
+        confirmLabel: "Cancelar entregable", variant: "destructive",
+        onConfirm: function () { submitForm("/project-manager/entregables/" + id + "/cancelar", { proyectoId: PROYECTO_ID }); }
+      });
+    });
+  });
+
+  // Paginación sobre el filtro de Estado (mismo patrón que administrador/proyectos.html).
+  (function () {
+    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="entregables-pm"]'));
+    if (!rows.length) return;
+    var estadoSelect = document.querySelector('[data-filter-scope="entregables-pm"][data-filter-key="estado"]');
+    var emptyPanel = document.querySelector('[data-filter-empty="entregables-pm"]');
+    var visibleCount = document.getElementById("ent-visible-count");
+    var filteredCount = document.getElementById("ent-filtered-count");
+    var pageLabel = document.getElementById("ent-page-label");
+    var previous = document.getElementById("ent-prev");
+    var next = document.getElementById("ent-next");
+    var pageSize = 8, page = 1;
+
+    function matches(row) {
+      var estado = estadoSelect ? estadoSelect.value : "todos";
+      return !estado || estado === "todos" || row.dataset.fEstado === estado;
+    }
+    function render() {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
+      visibleCount.textContent = visible.length;
+      filteredCount.textContent = matched.length;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
+    if (estadoSelect) estadoSelect.addEventListener("change", function () { page = 1; render(); });
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (page < pages) { page++; render(); }
+    });
+    render();
+  })();
+});
+</script>
+</body>
+</html>

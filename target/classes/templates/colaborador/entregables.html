@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis entregables · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <section class="card">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${entregables.size()} + ' entregables'">0 entregables</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">De todos tus proyectos activos</p>
+          </div>
+          <div class="table-filters">
+            <select class="select" data-filter-scope="mis-entregables" data-filter-key="estado">
+              <option value="todos">Estado: todos</option>
+              <option value="sin_entregar">Sin entregar</option><option value="enviado">Entregado</option><option value="revisado">Revisado</option>
+            </select>
+          </div>
+        </div>
+
+        <div th:if="${entregables.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+          <span class="state-panel-title">No tienes entregables por ahora</span>
+        </div>
+
+        <div class="table-scroll" th:unless="${entregables.isEmpty()}">
+          <table class="data-table">
+            <thead><tr><th>Entregable</th><th>Proyecto</th><th>Cierre</th><th>Mi estado</th><th>Calificación</th><th>Acciones</th></tr></thead>
+            <tbody>
+              <tr th:each="e : ${entregables}" data-filter-row="mis-entregables"
+                  th:attr="data-f-estado=${e.miEntrega != null ? e.miEntrega.estadoCrudo : 'sin_entregar'}">
+                <td class="cell-person">
+                  <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+                  <span class="cell-person-name" th:text="${e.titulo}">Título</span>
+                </td>
+                <td th:text="${e.proyectoNombre}">Proyecto</td>
+                <td class="text-tertiary" style="font-size:var(--fs-xs);">
+                  <span th:text="${e.fechaCierreLabel}">fecha</span>
+                  <span class="badge badge-red" style="margin-left:4px;" th:if="${e.vencido and e.miEntrega == null}">Vencido</span>
+                </td>
+                <td>
+                  <span class="badge badge-neutral" th:if="${e.miEntrega == null}">Sin entregar</span>
+                  <span class="badge" th:if="${e.miEntrega != null}" th:classappend="${e.miEntrega.estadoBadgeClass}" th:text="${e.miEntrega.estadoLabel}">Estado</span>
+                </td>
+                <td class="mono" th:text="${e.miEntrega != null ? e.miEntrega.calificacionLabel : '—'} + ' / ' + ${e.puntajeMaximoLabel}">— / 20</td>
+                <td class="cell-actions"><a th:href="@{'/colaborador/entregables/' + ${e.id} + '.html'}" th:text="${e.miEntrega != null ? 'Ver mi entrega' : 'Entregar'}">Entregar</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="state-panel" data-filter-empty="mis-entregables" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+          <span class="state-panel-title">Sin entregables con este estado</span>
+        </div>
+        <div class="table-footer" th:unless="${entregables.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="me-visible-count">0</span> de <span id="me-filtered-count">0</span></span>
+          <div class="pagination"><button class="page-btn" id="me-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="me-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="me-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+document.addEventListener("DOMContentLoaded", function () {
+  window.SBAI.tableFilter.init(document);
+  (function () {
+    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="mis-entregables"]'));
+    if (!rows.length) return;
+    var estadoSelect = document.querySelector('[data-filter-scope="mis-entregables"][data-filter-key="estado"]');
+    var emptyPanel = document.querySelector('[data-filter-empty="mis-entregables"]');
+    var visibleCount = document.getElementById("me-visible-count");
+    var filteredCount = document.getElementById("me-filtered-count");
+    var pageLabel = document.getElementById("me-page-label");
+    var previous = document.getElementById("me-prev");
+    var next = document.getElementById("me-next");
+    var pageSize = 8, page = 1;
+
+    function matches(row) {
+      var estado = estadoSelect ? estadoSelect.value : "todos";
+      return !estado || estado === "todos" || row.dataset.fEstado === estado;
+    }
+    function render() {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
+      visibleCount.textContent = visible.length;
+      filteredCount.textContent = matched.length;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
+    if (estadoSelect) estadoSelect.addEventListener("change", function () { page = 1; render(); });
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (page < pages) { page++; render(); }
+    });
+    render();
+  })();
+});
+</script>
+</body>
+</html>
