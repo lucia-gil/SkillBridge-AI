@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reportes globales · SkillBridge AI</title>
-<link rel="stylesheet" href="/css/tokens.css">
-<link rel="stylesheet" href="/css/base.css">
-<link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes globales · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
 <div class="app-shell">
@@ -69,15 +69,19 @@
         <div class="table-scroll" th:unless="${ocupacion.isEmpty()}">
           <table class="data-table">
             <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación (suma de dedicaciones activas)</th><th>Estado</th></tr></thead>
-            <tbody>
-              <tr th:each="o : ${ocupacion}">
-                <td class="cell-person"><span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span><span class="cell-person-name" th:text="${o.nombre}">Nombre</span></td>
-                <td th:text="${o.cargo}">Cargo</td>
-                <td class="mono" th:text="${o.promedio} + '%'">0%</td>
-                <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
-              </tr>
+            <tbody id="reportes-ocupacion-body">
+            <tr th:each="o : ${ocupacion}" data-reportes-ocupacion-row>
+              <td class="cell-person"><span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span><span class="cell-person-name" th:text="${o.nombre}">Nombre</span></td>
+              <td th:text="${o.cargo}">Cargo</td>
+              <td class="mono" th:text="${o.promedio} + '%'">0%</td>
+              <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
+            </tr>
             </tbody>
           </table>
+        </div>
+        <div class="table-footer" th:unless="${ocupacion.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="reportes-ocupacion-visible-count">0</span> de <span id="reportes-ocupacion-total-count">0</span> colaboradores</span>
+          <div class="pagination"><button class="page-btn" id="reportes-ocupacion-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="reportes-ocupacion-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="reportes-ocupacion-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
       </section>
 
@@ -89,5 +93,40 @@
 <script src="/js/dropdown.js"></script>
 <script src="/js/command-palette.js"></script>
 <script src="/js/topbar-actions.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Paginación en el cliente: mismo patrón que resource-manager/reportes.html.
+    var rows = Array.from(document.querySelectorAll("[data-reportes-ocupacion-row]"));
+    if (!rows.length) return;
+
+    var pageSize = 8;
+    var page = 1;
+    var visibleCount = document.getElementById("reportes-ocupacion-visible-count");
+    var totalCount = document.getElementById("reportes-ocupacion-total-count");
+    var pageLabel = document.getElementById("reportes-ocupacion-page-label");
+    var previous = document.getElementById("reportes-ocupacion-prev");
+    var next = document.getElementById("reportes-ocupacion-next");
+
+    function render() {
+      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = rows.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      visibleCount.textContent = visible.length;
+      totalCount.textContent = rows.length;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
+
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+      if (page < pages) { page++; render(); }
+    });
+    render();
+  });
+</script>
 </body>
 </html>

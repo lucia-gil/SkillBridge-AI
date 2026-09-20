@@ -23,10 +23,13 @@
         <div style="display:flex; flex-direction:column; gap:var(--space-4);">
           <button type="button" class="btn btn-secondary btn-block" id="new-convo-btn">
             <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nueva conversación</button>
-          <div>
-            <p class="label-mono" style="margin-bottom:var(--space-2); padding:0 var(--space-2);">Historial</p>
+          <section class="card card-pad">
+            <div class="card-header-icon-row" style="margin-bottom:var(--space-3);">
+              <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-message"></use></svg></span>
+              <p class="label-mono">Historial</p>
+            </div>
             <div id="chat-history"></div>
-          </div>
+          </section>
         </div>
 
         <section class="card chat-window">
