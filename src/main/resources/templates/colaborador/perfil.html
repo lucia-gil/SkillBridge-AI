@@ -21,7 +21,10 @@
 
           <section class="card card-pad">
             <div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">
-              <span class="avatar avatar-lg" style="background:var(--navy-700);" th:text="${resumen.iniciales}">MR</span>
+              <span class="account-photo-large">
+                <img th:if="${user.tieneFoto}" th:src="@{/perfil/foto}" th:alt="${resumen.nombreCompleto}">
+                <span th:unless="${user.tieneFoto}" class="avatar avatar-lg" style="background:var(--navy-700);" th:text="${resumen.iniciales}">MR</span>
+              </span>
               <div style="flex:1; min-width:200px;">
                 <h2 style="font-size:var(--fs-lg);" th:text="${resumen.nombreCompleto}">Nombre</h2>
                 <p class="text-tertiary" style="margin-top:2px;" th:text="${resumen.cargo}">Cargo</p>
@@ -58,10 +61,15 @@
                     <div th:unless="${h.tieneCertificado}" class="text-tertiary" style="margin-top:6px; font-size:var(--fs-xs);">Sin constancia adjunta</div>
                   </div>
 
-                  <button type="button" class="btn btn-secondary btn-sm"
-                          th:attr="data-editar-cert=${h.habilidadId}, data-cert-nombre=${h.certificados.isEmpty() ? '' : h.certificados[0].nombreArchivo}, data-cert-url=${h.certificados.isEmpty() ? '' : h.certificados[0].urlArchivo}, data-cert-tiene-archivo=${h.certificados.isEmpty() ? false : h.certificados[0].tieneArchivo}, data-cert-id=${h.certificados.isEmpty() ? '' : h.certificados[0].id}">
-                    <span th:text="${h.tieneCertificado} ? 'Editar constancia' : 'Agregar constancia'">Editar constancia</span>
-                  </button>
+                  <div class="cell-actions" style="flex:0 0 auto; flex-wrap:wrap; justify-content:flex-end;">
+                    <button type="button" data-editar-nivel
+                            th:attr="data-id=${h.habilidadId}, data-nombre=${h.nombre}, data-nivel-label=${h.nivelLabel}">Editar nivel</button>
+                    <button type="button" data-editar-cert
+                            th:attr="data-id=${h.habilidadId}, data-cert-nombre=${h.certificados.isEmpty() ? '' : h.certificados[0].nombreArchivo}, data-cert-url=${h.certificados.isEmpty() ? '' : h.certificados[0].urlArchivo}, data-cert-tiene-archivo=${h.certificados.isEmpty() ? false : h.certificados[0].tieneArchivo}, data-cert-id=${h.certificados.isEmpty() ? '' : h.certificados[0].id}"
+                            th:text="${h.tieneCertificado} ? 'Editar constancia' : 'Agregar constancia'">Editar constancia</button>
+                    <button type="button" class="danger" data-eliminar-habilidad
+                            th:attr="data-id=${h.habilidadId}, data-nombre=${h.nombre}">Eliminar</button>
+                  </div>
                 </div>
               </div>
               <div class="table-footer" th:unless="${habilidades.isEmpty()}">
@@ -194,14 +202,14 @@
     });
     document.querySelectorAll("[data-editar-cert]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var habilidadId = btn.dataset.editarCert;
+        var habilidadId = btn.dataset.id;
         var nombreActual = btn.dataset.certNombre || "";
         var urlActual = btn.dataset.certUrl || "";
         var tieneArchivoActual = btn.dataset.certTieneArchivo === "true";
         var certId = btn.dataset.certId || "";
         var avisoArchivo = tieneArchivoActual
-          ? '<p class="field-hint">Ya tienes un PDF subido (<a href="/certificados/' + certId + '/archivo" target="_blank" rel="noopener">verlo</a>). Sube uno nuevo para reemplazarlo.</p>'
-          : "";
+                ? '<p class="field-hint">Ya tienes un PDF subido (<a href="/certificados/' + certId + '/archivo" target="_blank" rel="noopener">verlo</a>). Sube uno nuevo para reemplazarlo.</p>'
+                : "";
         var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Constancia de habilidad</h2></div>' +
                 '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
                 '<div class="modal-body">' +
@@ -225,6 +233,41 @@
           } else {
             submitForm("/colaborador/perfil/habilidades/" + habilidadId + "/certificado", fields);
           }
+        });
+      });
+    });
+
+    // ───────── Editar nivel / Eliminar habilidad declarada ─────────
+    document.querySelectorAll("[data-editar-nivel]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var habilidadId = btn.dataset.id;
+        var nivelActual = btn.dataset.nivelLabel || "Básico";
+        var opciones = ["Básico", "Intermedio", "Avanzado", "Experto"];
+        var opcionesHtml = opciones.map(function (o) {
+          return '<option' + (o === nivelActual ? ' selected' : '') + '>' + o + '</option>';
+        }).join("");
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar nivel</h2><p>' + btn.dataset.nombre + '</p></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body"><div class="field"><label class="field-label">Nivel</label><select class="select" id="edit-nivel-select">' + opcionesHtml + '</select></div>' +
+                '<p class="field-hint">Si cambias el nivel, la validación previa del Resource Manager (si la tenías) se pierde y debe volver a revisarse.</p></div>' +
+                '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-edit-nivel">Guardar</button></div></div>';
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelector("#confirm-edit-nivel").addEventListener("click", function () {
+          submitForm("/colaborador/perfil/habilidades/" + habilidadId + "/nivel", {
+            nivel: backdrop.querySelector("#edit-nivel-select").value
+          });
+        });
+      });
+    });
+
+    document.querySelectorAll("[data-eliminar-habilidad]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var habilidadId = btn.dataset.id;
+        SBAI.modal.confirm({
+          title: "¿Eliminar \"" + btn.dataset.nombre + "\" de tu perfil?",
+          desc: "Se quitará la habilidad y su constancia de respaldo, si tenías una. Esta acción no se puede deshacer.",
+          confirmLabel: "Eliminar", variant: "destructive",
+          onConfirm: function () { submitForm("/colaborador/perfil/habilidades/" + habilidadId + "/eliminar", {}); }
         });
       });
     });

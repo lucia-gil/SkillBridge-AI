@@ -109,4 +109,31 @@ public class ColaboradorPerfilController {
         }
         return "redirect:/colaborador/perfil.html";
     }
+
+    /** Edita solo el nivel de una habilidad ya declarada (completa el CRUD). */
+    @PostMapping("/perfil/habilidades/{habilidadId}/nivel")
+    public String editarNivel(@PathVariable Long habilidadId, @RequestParam String nivel,
+                              HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            habilidadService.editarNivelDePerfil(sesion.getPerfilId(), habilidadId, nivel, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Nivel actualizado.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/colaborador/perfil.html";
+    }
+
+    /** Quita una habilidad declarada del perfil (y su constancia, en cascada). */
+    @PostMapping("/perfil/habilidades/{habilidadId}/eliminar")
+    public String eliminarHabilidad(@PathVariable Long habilidadId, HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            habilidadService.eliminarDePerfil(sesion.getPerfilId(), habilidadId, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Habilidad eliminada de tu perfil.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/colaborador/perfil.html";
+    }
 }

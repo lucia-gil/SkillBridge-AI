@@ -233,8 +233,8 @@ public class HabilidadService {
      * (devuelve null - la habilidad queda "sin constancia adjunta").
      */
     private CertificadoHabilidad construirCertificadoSiCorresponde(Long perfilId, Long habilidadId,
-                                                                    String nombreArchivo, String urlArchivo,
-                                                                    MultipartFile archivo) {
+                                                                   String nombreArchivo, String urlArchivo,
+                                                                   MultipartFile archivo) {
         boolean hayArchivo = archivo != null && !archivo.isEmpty();
         boolean hayLink = urlArchivo != null && !urlArchivo.isBlank();
         if (!hayArchivo && !hayLink) {
@@ -305,6 +305,49 @@ public class HabilidadService {
                 .filter(java.util.Objects::nonNull)
                 .sorted((a, b) -> a.getNombre().compareToIgnoreCase(b.getNombre()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Edita SOLO el nivel de una habilidad ya declarada por el propio
+     * colaborador (completa el CRUD de "Mi perfil": crear ya existía,
+     * faltaba editar y eliminar). Si esa habilidad ya estaba validada por
+     * un Resource Manager, la validación queda sin efecto: el RM aprobó un
+     * nivel puntual, y ese nivel ya no es el que el colaborador declara -
+     * debe volver a revisarla.
+     */
+    @Transactional
+    public void editarNivelDePerfil(Long perfilId, Long habilidadId, String nivelTexto, Long actorUsuarioId) {
+        PerfilHabilidadId id = new PerfilHabilidadId(perfilId, habilidadId);
+        PerfilHabilidad ph = perfilHabilidadRepository.findById(id)
+                .orElseThrow(() -> new OperacionInvalidaException("Esa habilidad ya no está declarada en tu perfil."));
+        int nivelAnterior = ph.getNivel() != null ? ph.getNivel() : 0;
+        int nivel = nivelDesdeTexto(nivelTexto);
+        ph.setNivel(nivel);
+        if (nivel != nivelAnterior) {
+            ph.setValidadoPorId(null);
+        }
+        perfilHabilidadRepository.save(ph);
+
+        String nombreHabilidad = habilidadRepository.findById(habilidadId).map(Habilidad::getNombre).orElse("habilidad " + habilidadId);
+        auditoriaService.registrar(actorUsuarioId, "PERFIL_HABILIDAD_NIVEL_EDITADO", "perfil_habilidad", perfilId, null, null,
+                nombreHabilidad + " · nuevo nivel " + nivelTexto);
+    }
+
+    /**
+     * Quita una habilidad declarada del perfil del colaborador. El
+     * certificado que tuviera se borra en cascada (FK ON DELETE CASCADE
+     * de certificados_habilidad hacia perfil_habilidad), sin necesidad de
+     * borrarlo aparte aquí.
+     */
+    @Transactional
+    public void eliminarDePerfil(Long perfilId, Long habilidadId, Long actorUsuarioId) {
+        PerfilHabilidadId id = new PerfilHabilidadId(perfilId, habilidadId);
+        PerfilHabilidad ph = perfilHabilidadRepository.findById(id)
+                .orElseThrow(() -> new OperacionInvalidaException("Esa habilidad ya no está declarada en tu perfil."));
+        String nombreHabilidad = habilidadRepository.findById(habilidadId).map(Habilidad::getNombre).orElse("habilidad " + habilidadId);
+        perfilHabilidadRepository.delete(ph);
+        auditoriaService.registrar(actorUsuarioId, "PERFIL_HABILIDAD_ELIMINADA", "perfil_habilidad", perfilId, null, null,
+                nombreHabilidad + " eliminada del perfil.");
     }
 
     /**
