@@ -92,6 +92,7 @@ public class ShellModelBuilder {
         );
 
         model.addAttribute("roleLabel", Roles.etiqueta(sesion.getRolEfectivo()));
+        model.addAttribute("rolSlug", slug);
         model.addAttribute("navItems", navItems);
         model.addAttribute("activeHref", activeHref);
         model.addAttribute("user", user);

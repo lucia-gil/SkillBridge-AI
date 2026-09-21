@@ -49,7 +49,10 @@
                 <td th:text="${p.equipo.size()}">0</td>
                 <td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div><span class="progress-value" th:text="${p.avance} + '%'">0%</span></div></td>
                 <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
-                <td class="cell-actions"><button type="button" th:attr="data-view-project=${p.id}">Ver detalle</button></td>
+                <td class="cell-actions">
+                  <button type="button" th:attr="data-view-project=${p.id}">Ver detalle</button>
+                  <button type="button" class="danger" th:attr="data-eliminar-proyecto=${p.id},data-nombre-proyecto=${p.nombre}">Eliminar</button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -143,6 +146,15 @@ window.SBAI_DISPONIBLES = /*[[${colaboradoresDisponibles}]]*/ 0;
 document.addEventListener("DOMContentLoaded", function () {
   if (window.SBAI.tableFilter) window.SBAI.tableFilter.init(document);
   var submitForm = window.SBAI.submitForm;
+
+  document.querySelectorAll("[data-eliminar-proyecto]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.eliminarProyecto;
+      var nombre = btn.dataset.nombreProyecto || "este proyecto";
+      if (!window.confirm('¿Eliminar "' + nombre + '"? Esta acción no se puede deshacer y borrará también sus entregables y asignaciones.')) return;
+      submitForm("/project-manager/proyectos/" + id + "/eliminar", {});
+    });
+  });
 
   document.querySelectorAll("[data-view-project]").forEach(function (btn) {
     btn.addEventListener("click", function () {

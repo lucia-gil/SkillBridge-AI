@@ -178,6 +178,9 @@ public class ProyectoService {
         if (nombre == null || nombre.isBlank()) {
             throw new OperacionInvalidaException("Ingresa un nombre para el proyecto.");
         }
+        if (proyectoRepository.existsByNombreIgnoreCase(nombre.trim())) {
+            throw new OperacionInvalidaException("Ya existe un proyecto con ese nombre.");
+        }
         if (fechaInicio == null) {
             throw new OperacionInvalidaException("La fecha de inicio es obligatoria.");
         }
@@ -231,6 +234,24 @@ public class ProyectoService {
                 "Se te asignó como Project Manager de \"" + p.getNombre() + "\".", "proyectos.html");
 
         return p;
+    }
+
+    /**
+     * Elimina un proyecto por completo. La mayoria de tablas dependientes
+     * (entregables, fases, salas de chat, recursos IA, eventos) tienen
+     * ON DELETE CASCADE en el esquema, pero "asignaciones" NO (ver
+     * fk_asig_proyecto en db/skillbridge_db_v4.sql) - por eso se borran
+     * primero, en la misma transaccion, antes de borrar el proyecto.
+     */
+    @Transactional
+    public void eliminar(Long proyectoId, Long actorUsuarioId) {
+        Proyecto p = proyectoRepository.findById(proyectoId)
+                .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
+        String nombre = p.getNombre();
+        asignacionRepository.deleteByProyectoId(proyectoId);
+        proyectoRepository.delete(p);
+        auditoriaService.registrar(actorUsuarioId, "PROYECTO_ELIMINADO", "proyecto", proyectoId, null, null,
+                "Proyecto \"" + nombre + "\" eliminado.");
     }
 
     @Transactional

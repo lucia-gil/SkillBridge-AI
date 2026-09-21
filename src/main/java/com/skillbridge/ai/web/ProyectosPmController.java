@@ -116,6 +116,19 @@ public class ProyectosPmController {
         return "redirect:/project-manager/proyectos.html";
     }
 
+    @PostMapping("/proyectos/{id}/eliminar")
+    public String eliminar(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            exigirPropiedad(sesion.getPerfilId(), id);
+            proyectoService.eliminar(id, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Proyecto eliminado.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/project-manager/proyectos.html";
+    }
+
     @PostMapping("/proyectos/{id}/asignar")
     public String asignar(@PathVariable Long id, @RequestParam Long perfilId, @RequestParam String rolEnProyecto,
                           @RequestParam int cargaPorcentaje,

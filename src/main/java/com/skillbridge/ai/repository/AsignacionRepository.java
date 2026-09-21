@@ -65,6 +65,11 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
     @Query("select coalesce(sum(a.cargaPorcentaje), 0) from Asignacion a where a.perfilId = :perfilId and a.estado = 'activa'")
     Integer sumarCargaActivaDePerfil(@Param("perfilId") Long perfilId);
 
+    // Borrado en cascada manual: fk_asig_proyecto NO tiene ON DELETE CASCADE
+    // (ver db/skillbridge_db_v4.sql), asi que ProyectoService.eliminar() debe
+    // vaciar esta tabla para el proyecto ANTES de borrar la fila de proyectos.
+    void deleteByProyectoId(Long proyectoId);
+
     // Ocupación de TODOS los colaboradores con al menos una asignación activa,
     // en una sola consulta (evita golpear la BD una vez por colaborador en
     // Reportes globales / KPI de sobrecarga del dashboard de Administrador).
