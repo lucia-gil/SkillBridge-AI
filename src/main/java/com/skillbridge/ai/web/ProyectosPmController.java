@@ -77,6 +77,11 @@ public class ProyectosPmController {
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("perfiles", perfiles);
         model.addAttribute("colaboradoresDisponibles", colaboradoresDisponibles);
+        // Tarjetas KPI de "Proyectos" por estado (RF03).
+        model.addAttribute("kpiPlanificacion", proyectos.stream().filter(p -> "planificacion".equals(p.getEstadoCrudo())).count());
+        model.addAttribute("kpiActivos", proyectos.stream().filter(p -> "activo".equals(p.getEstadoCrudo())).count());
+        model.addAttribute("kpiEnPausa", proyectos.stream().filter(p -> "en_pausa".equals(p.getEstadoCrudo())).count());
+        model.addAttribute("kpiCancelados", proyectos.stream().filter(p -> "cancelado".equals(p.getEstadoCrudo())).count());
         return "project-manager/proyectos";
     }
 
@@ -110,6 +115,29 @@ public class ProyectosPmController {
             exigirPropiedad(sesion.getPerfilId(), id);
             proyectoService.cambiarEstado(id, estado, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Estado del proyecto actualizado.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/project-manager/proyectos.html";
+    }
+
+    @PostMapping("/proyectos/{id}/editar")
+    public String editar(@PathVariable Long id,
+                         @RequestParam String nombre,
+                         @RequestParam(required = false) String descripcion,
+                         @RequestParam(required = false) String tecnologias,
+                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFinEstimada,
+                         @RequestParam String estado,
+                         HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            exigirPropiedad(sesion.getPerfilId(), id);
+            List<String> lista = tecnologias == null ? List.of() : Arrays.stream(tecnologias.split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+            proyectoService.editarProyecto(id, nombre, descripcion, lista, fechaInicio, fechaFinEstimada, estado,
+                    sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }

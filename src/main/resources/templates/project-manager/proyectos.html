@@ -16,6 +16,37 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
+      <div class="kpi-grid">
+        <div class="kpi-tile accent-blue">
+          <div class="kpi-tile-icon blue">
+            <svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg>
+          </div>
+          <span class="kpi-tile-label">En planificacion</span>
+          <span class="kpi-tile-value" th:text="${kpiPlanificacion}">0</span>
+        </div>
+        <div class="kpi-tile accent-green">
+          <div class="kpi-tile-icon green">
+            <svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Activos</span>
+          <span class="kpi-tile-value" th:text="${kpiActivos}">0</span>
+        </div>
+        <div class="kpi-tile accent-amber">
+          <div class="kpi-tile-icon amber">
+            <svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg>
+          </div>
+          <span class="kpi-tile-label">En pausa</span>
+          <span class="kpi-tile-value" th:text="${kpiEnPausa}">0</span>
+        </div>
+        <div class="kpi-tile accent-red">
+          <div class="kpi-tile-icon red">
+            <svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Cancelados</span>
+          <span class="kpi-tile-value" th:text="${kpiCancelados}">0</span>
+        </div>
+      </div>
+
       <section class="card">
         <div class="table-toolbar">
           <div>
@@ -51,6 +82,7 @@
                 <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
                 <td class="cell-actions">
                   <button type="button" th:attr="data-view-project=${p.id}">Ver detalle</button>
+                  <button type="button" th:attr="data-editar-proyecto=${p.id}">Editar</button>
                   <button type="button" class="danger" th:attr="data-eliminar-proyecto=${p.id},data-nombre-proyecto=${p.nombre}">Eliminar</button>
                 </td>
               </tr>
@@ -130,6 +162,15 @@
         </template>
       </div>
 
+      <!-- Datos crudos por proyecto para precargar el modal de "Editar" -->
+      <div id="project-edit-templates" hidden>
+        <template th:each="d : ${proyectos}"
+                  th:attr="data-project-id=${d.id}, data-nombre=${d.nombre}, data-descripcion=${d.descripcion},
+                           data-tecnologias=${d.tecnologiasCsv},
+                           data-fecha-inicio=${d.fechaInicioIso}, data-fecha-fin=${d.fechaFinIso},
+                           data-estado=${d.estadoCrudo}"></template>
+      </div>
+
     </main>
   </div>
 </div>
@@ -153,6 +194,79 @@ document.addEventListener("DOMContentLoaded", function () {
       var nombre = btn.dataset.nombreProyecto || "este proyecto";
       if (!window.confirm('¿Eliminar "' + nombre + '"? Esta acción no se puede deshacer y borrará también sus entregables y asignaciones.')) return;
       submitForm("/project-manager/proyectos/" + id + "/eliminar", {});
+    });
+  });
+
+  function escHtmlB(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function pad2b(n) { return n < 10 ? "0" + n : "" + n; }
+  function diffDiasIsoB(isoA, isoB) {
+    var a = new Date(isoA + "T00:00:00");
+    var b = new Date(isoB + "T00:00:00");
+    return Math.round((b - a) / 86400000);
+  }
+  function sumarDiasIsoB(iso, dias) {
+    var d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + dias);
+    return d.getFullYear() + "-" + pad2b(d.getMonth() + 1) + "-" + pad2b(d.getDate());
+  }
+
+  document.querySelectorAll("[data-editar-proyecto]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.editarProyecto;
+      var tpl = document.querySelector('#project-edit-templates template[data-project-id="' + id + '"]');
+      if (!tpl) return;
+      var d = tpl.dataset;
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+        '<div class="modal-header"><div><h2>Editar proyecto</h2><p>Actualiza los datos de "' + escHtmlB(d.nombre) + '".</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body">' +
+        '<div class="callout danger" id="ep-error" hidden style="margin-bottom:var(--space-4);">' +
+          '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
+          '<span class="callout-body" id="ep-error-text"></span>' +
+        '</div>' +
+        '<div class="field"><label class="field-label">Nombre</label><input class="input" id="ep-nombre" value="' + escHtmlB(d.nombre) + '"></div>' +
+        '<div class="field"><label class="field-label">Descripcion</label><textarea class="input" id="ep-desc" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);">' + escHtmlB(d.descripcion) + '</textarea></div>' +
+        '<div class="field"><label class="field-label">Tecnologias (separadas por coma)</label><input class="input" id="ep-tech" value="' + escHtmlB(d.tecnologias) + '"></div>' +
+        '<div class="field-row"><div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" id="ep-inicio" value="' + (d.fechaInicio || "") + '"></div>' +
+        '<div class="field"><label class="field-label">Fecha de fin estimada</label><input class="input" type="date" id="ep-fin" value="' + (d.fechaFin || "") + '"></div></div>' +
+        '<div class="field"><label class="field-label">Estado</label><select class="select" id="ep-estado">' +
+          '<option value="planificacion"' + (d.estado === "planificacion" ? " selected" : "") + '>Planificacion</option>' +
+          '<option value="activo"' + (d.estado === "activo" ? " selected" : "") + '>Activo</option>' +
+          '<option value="en_pausa"' + (d.estado === "en_pausa" ? " selected" : "") + '>En pausa</option>' +
+          '<option value="completado"' + (d.estado === "completado" ? " selected" : "") + '>Completado</option>' +
+          '<option value="cancelado"' + (d.estado === "cancelado" ? " selected" : "") + '>Cancelado</option>' +
+        '</select></div>' +
+        '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ep-confirm">Guardar cambios</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+
+      var errorBox = backdrop.querySelector("#ep-error");
+      var errorText = backdrop.querySelector("#ep-error-text");
+      function mostrarErrorEp(msg) { errorText.textContent = msg; errorBox.hidden = false; }
+
+      backdrop.querySelector("#ep-confirm").addEventListener("click", function () {
+        errorBox.hidden = true;
+        var nombre = backdrop.querySelector("#ep-nombre").value.trim();
+        var inicio = backdrop.querySelector("#ep-inicio").value;
+        var fin = backdrop.querySelector("#ep-fin").value;
+
+        if (!nombre) { mostrarErrorEp("Ingresa un nombre para el proyecto."); return; }
+        if (!inicio) { mostrarErrorEp("Selecciona la fecha de inicio."); return; }
+        if (!fin) { mostrarErrorEp("Selecciona la fecha de fin estimada."); return; }
+        if (fin < inicio) { mostrarErrorEp("La fecha de fin no puede ser anterior a la fecha de inicio."); return; }
+        if (diffDiasIsoB(inicio, fin) < 7) { mostrarErrorEp("Debe haber al menos 7 días de diferencia entre la fecha de inicio y la fecha de fin."); return; }
+
+        submitForm("/project-manager/proyectos/" + id + "/editar", {
+          nombre: nombre,
+          descripcion: backdrop.querySelector("#ep-desc").value,
+          tecnologias: backdrop.querySelector("#ep-tech").value,
+          fechaInicio: inicio,
+          fechaFinEstimada: fin,
+          estado: backdrop.querySelector("#ep-estado").value
+        });
+      });
     });
   });
 

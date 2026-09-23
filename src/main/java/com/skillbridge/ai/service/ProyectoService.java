@@ -12,6 +12,8 @@ import com.skillbridge.ai.model.Asignacion;
 import com.skillbridge.ai.model.Perfil;
 import com.skillbridge.ai.model.Proyecto;
 import com.skillbridge.ai.repository.AsignacionRepository;
+import com.skillbridge.ai.repository.EntregableRepository;
+import com.skillbridge.ai.repository.ForoPublicacionRepository;
 import com.skillbridge.ai.repository.PerfilRepository;
 import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
@@ -48,18 +50,23 @@ public class ProyectoService {
     private final ProyectoRepository proyectoRepository;
     private final AsignacionRepository asignacionRepository;
     private final PerfilRepository perfilRepository;
+    private final EntregableRepository entregableRepository;
+    private final ForoPublicacionRepository foroPublicacionRepository;
     private final AuditoriaService auditoriaService;
     private final NotificacionService notificacionService;
     private final ConfiguracionService configuracionService;
     private final ObjectMapper objectMapper;
 
     public ProyectoService(ProyectoRepository proyectoRepository, AsignacionRepository asignacionRepository,
-                            PerfilRepository perfilRepository, AuditoriaService auditoriaService,
+                            PerfilRepository perfilRepository, EntregableRepository entregableRepository,
+                            ForoPublicacionRepository foroPublicacionRepository, AuditoriaService auditoriaService,
                             NotificacionService notificacionService, ConfiguracionService configuracionService,
                             ObjectMapper objectMapper) {
         this.proyectoRepository = proyectoRepository;
         this.asignacionRepository = asignacionRepository;
         this.perfilRepository = perfilRepository;
+        this.entregableRepository = entregableRepository;
+        this.foroPublicacionRepository = foroPublicacionRepository;
         this.auditoriaService = auditoriaService;
         this.notificacionService = notificacionService;
         this.configuracionService = configuracionService;
@@ -92,8 +99,10 @@ public class ProyectoService {
                 .collect(Collectors.toList());
         int avance = avanceHeuristico(p.getFechaInicio(), p.getFechaFinEstimada(), p.getEstado());
         return new ProyectoDetalle(p.getId(), p.getNombre(), p.getDescripcion(), parseTecnologias(p.getTecnologias()),
-                p.getEstado(), formatear(p.getFechaInicio()), formatear(p.getFechaFinEstimada()), avance,
-                p.getColaboradoresRequeridos(), pmNombre, equipo);
+                p.getEstado(), formatear(p.getFechaInicio()), formatear(p.getFechaFinEstimada()),
+                p.getFechaInicio() == null ? null : p.getFechaInicio().toString(),
+                p.getFechaFinEstimada() == null ? null : p.getFechaFinEstimada().toString(),
+                avance, p.getColaboradoresRequeridos(), pmNombre, equipo);
     }
 
     private String nombrePmActivo(Long proyectoId) {
@@ -237,16 +246,28 @@ public class ProyectoService {
     }
 
     /**
-     * Elimina un proyecto por completo. La mayoria de tablas dependientes
-     * (entregables, fases, salas de chat, recursos IA, eventos) tienen
-     * ON DELETE CASCADE en el esquema, pero "asignaciones" NO (ver
-     * fk_asig_proyecto en db/skillbridge_db_v4.sql) - por eso se borran
-     * primero, en la misma transaccion, antes de borrar el proyecto.
+     * Elimina un proyecto por completo. Bloqueado si el proyecto ya tiene
+     * trabajo real encima (colaboradores asignados, entregables o hilos de
+     * foro) - igual que eliminarCategoria() en HabilidadService - porque la
+     * mayoria de tablas dependientes (entregables, fases, salas de chat,
+     * recursos IA, eventos) tienen ON DELETE CASCADE en el esquema y se
+     * perderian sin aviso real. Para un proyecto que ya avanzo, usa
+     * cambiarEstado(..., "cancelado") en vez de borrarlo (ver comentario de
+     * la tabla proyectos en db/skillbridge_db_v4.sql).
      */
     @Transactional
     public void eliminar(Long proyectoId, Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
+        long colaboradores = asignacionRepository.countByProyectoIdAndRolEnProyectoAndEstado(
+                proyectoId, Roles.COLABORADOR, "activa");
+        long entregables = entregableRepository.countByProyectoId(proyectoId);
+        long hilosForo = foroPublicacionRepository.countByProyectoIdAndPublicacionPadreIdIsNull(proyectoId);
+        if (colaboradores > 0 || entregables > 0 || hilosForo > 0) {
+            throw new OperacionInvalidaException("No se puede eliminar \"" + p.getNombre() + "\": tiene "
+                    + colaboradores + " colaborador(es) asignado(s), " + entregables + " entregable(s) y "
+                    + hilosForo + " hilo(s) de foro. Usa \"Cancelado\" en el estado en vez de eliminarlo.");
+        }
         String nombre = p.getNombre();
         asignacionRepository.deleteByProyectoId(proyectoId);
         proyectoRepository.delete(p);
@@ -269,19 +290,47 @@ public class ProyectoService {
                 AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevoEstado), p.getNombre());
     }
 
+    /**
+     * Edita los datos propios del proyecto (nombre, descripcion, tecnologias,
+     * fechas y estado) - antes solo actualizaba nombre/estado y no estaba
+     * conectado a ningun boton del frontend; ahora es el "Editar proyecto"
+     * de la tabla de Proyectos del PM/Admin.
+     */
     @Transactional
-    public void editarProyecto(Long proyectoId, String nombre, String nuevoEstado, Long actorUsuarioId) {
+    public void editarProyecto(Long proyectoId, String nombre, String descripcion, List<String> tecnologias,
+                                LocalDate fechaInicio, LocalDate fechaFinEstimada, String nuevoEstado,
+                                Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         if (nombre == null || nombre.trim().isEmpty()) {
             throw new OperacionInvalidaException("El nombre del proyecto no puede estar vacío.");
         }
+        if (proyectoRepository.existsByNombreIgnoreCase(nombre.trim())
+                && !nombre.trim().equalsIgnoreCase(p.getNombre())) {
+            throw new OperacionInvalidaException("Ya existe un proyecto con ese nombre.");
+        }
         List<String> validos = List.of("planificacion", "activo", "en_pausa", "completado", "cancelado");
         if (!validos.contains(nuevoEstado)) {
             throw new OperacionInvalidaException("Estado de proyecto no reconocido.");
         }
+        if (fechaInicio == null) {
+            throw new OperacionInvalidaException("La fecha de inicio es obligatoria.");
+        }
+        if (fechaFinEstimada == null) {
+            throw new OperacionInvalidaException("La fecha de fin estimada es obligatoria.");
+        }
+        if (fechaFinEstimada.isBefore(fechaInicio)) {
+            throw new OperacionInvalidaException("La fecha de fin estimada no puede ser anterior al inicio.");
+        }
+        if (ChronoUnit.DAYS.between(fechaInicio, fechaFinEstimada) < 7) {
+            throw new OperacionInvalidaException("Debe haber al menos 7 días de diferencia entre la fecha de inicio y la fecha de fin.");
+        }
         String estadoAnterior = p.getEstado();
         p.setNombre(nombre.trim());
+        p.setDescripcion(descripcion != null && !descripcion.isBlank() ? descripcion.trim() : null);
+        p.setTecnologias(serializarTecnologias(tecnologias));
+        p.setFechaInicio(fechaInicio);
+        p.setFechaFinEstimada(fechaFinEstimada);
         p.setEstado(nuevoEstado);
         proyectoRepository.save(p);
         auditoriaService.registrar(actorUsuarioId, "PROYECTO_EDITADO", "proyecto", proyectoId,

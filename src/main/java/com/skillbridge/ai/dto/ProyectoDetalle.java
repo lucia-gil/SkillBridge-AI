@@ -14,14 +14,16 @@ public class ProyectoDetalle {
     private final String estadoBadgeClass;
     private final String fechaInicioLabel;
     private final String fechaFinLabel;
+    private final String fechaInicioIso;
+    private final String fechaFinIso;
     private final int avance;
     private final int colaboradoresRequeridos;
     private final String pmNombre;
     private final List<MiembroEquipoFila> equipo;
 
     public ProyectoDetalle(Long id, String nombre, String descripcion, List<String> tecnologias, String estadoCrudo,
-                            String fechaInicioLabel, String fechaFinLabel, int avance, int colaboradoresRequeridos,
-                            String pmNombre, List<MiembroEquipoFila> equipo) {
+                            String fechaInicioLabel, String fechaFinLabel, String fechaInicioIso, String fechaFinIso,
+                            int avance, int colaboradoresRequeridos, String pmNombre, List<MiembroEquipoFila> equipo) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -31,6 +33,8 @@ public class ProyectoDetalle {
         this.estadoBadgeClass = EstadoProyectoUtil.badgeClass(estadoCrudo);
         this.fechaInicioLabel = fechaInicioLabel;
         this.fechaFinLabel = fechaFinLabel;
+        this.fechaInicioIso = fechaInicioIso;
+        this.fechaFinIso = fechaFinIso;
         this.avance = avance;
         this.colaboradoresRequeridos = colaboradoresRequeridos;
         this.pmNombre = pmNombre != null ? pmNombre : "Sin asignar";
@@ -73,6 +77,14 @@ public class ProyectoDetalle {
         return fechaFinLabel;
     }
 
+    public String getFechaInicioIso() {
+        return fechaInicioIso;
+    }
+
+    public String getFechaFinIso() {
+        return fechaFinIso;
+    }
+
     public int getAvance() {
         return avance;
     }
@@ -87,6 +99,11 @@ public class ProyectoDetalle {
 
     public List<MiembroEquipoFila> getEquipo() {
         return equipo;
+    }
+
+    /** Tecnologias unidas por coma, para precargar el input del modal "Editar" (evitar T() en la plantilla, que es sintaxis SpEL y no OGNL). */
+    public String getTecnologiasCsv() {
+        return String.join(",", tecnologias);
     }
 
     /** El PM forma parte del equipo, pero no consume una vacante de colaborador. */

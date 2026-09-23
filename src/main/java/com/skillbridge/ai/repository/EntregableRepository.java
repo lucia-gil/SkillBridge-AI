@@ -20,4 +20,6 @@ public interface EntregableRepository extends JpaRepository<Entregable, Long> {
     List<Entregable> listarVisiblesParaPerfil(@Param("perfilId") Long perfilId);
 
     long countByProyectoIdAndEstado(Long proyectoId, String estado);
+
+    long countByProyectoId(Long proyectoId);
 }
