@@ -45,6 +45,7 @@ public class UsuariosController {
 
         model.addAttribute("usuarios", usuarios);
         model.addAttribute("kpis", kpis);
+        model.addAttribute("correosAutorizados", usuarioService.listarAutorizados());
         return "administrador/usuarios";
     }
 
@@ -92,6 +93,18 @@ public class UsuariosController {
         try {
             usuarioService.eliminar(id, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Usuario eliminado.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/administrador/usuarios.html";
+    }
+
+    @PostMapping("/usuarios/correos-autorizados/{id}/eliminar")
+    public String revocarAutorizacion(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            usuarioService.revocarAutorizacion(id, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Autorización revocada.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }

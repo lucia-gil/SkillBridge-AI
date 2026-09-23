@@ -16,15 +16,36 @@
         <div th:replace="~{fragments/topbar :: topbar}"></div>
         <main class="page-content" id="page-content">
 
-            <!-- ===================== TIPOS DE NOTIFICACIÓN ===================== -->
-            <section class="card" style="margin-bottom:var(--space-6);">
-                <div class="table-toolbar">
+            <div class="kpi-grid">
+              <div class="kpi-tile accent-blue">
+                <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg></div>
+                <span class="kpi-tile-label">TIPOS DE NOTIFICACIÓN</span><span class="kpi-tile-value" th:text="${tiposNotificacion.size()}">0</span>
+              </div>
+              <div class="kpi-tile accent-amber">
+                <div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-calendar"></use></svg></div>
+                <span class="kpi-tile-label">TIPOS DE EVENTO</span><span class="kpi-tile-value" th:text="${tiposEvento.size()}">0</span>
+              </div>
+              <div class="kpi-tile accent-violet">
+                <div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></div>
+                <span class="kpi-tile-label">TIPOS DE AUDIENCIA</span><span class="kpi-tile-value" th:text="${tiposAudiencia.size()}">0</span>
+              </div>
+            </div>
+
+            <section class="card" style="margin-top:var(--space-6);">
+
+              <!-- ===================== TIPOS DE NOTIFICACIÓN ===================== -->
+              <div class="accordion-item">
+                <div class="accordion-header" data-accordion-toggle style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); padding:var(--space-4) var(--space-5); cursor:pointer;">
                     <div>
                         <strong th:text="${tiposNotificacion.size()} + ' tipos de notificación'">0 tipos</strong>
                         <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Usados al crear cada notificación (ej. "alerta", "solicitud").</p>
                     </div>
-                    <button type="button" class="btn btn-primary btn-sm" id="add-notif-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar tipo</button>
+                    <div style="display:flex; align-items:center; gap:var(--space-3);">
+                        <button type="button" class="btn btn-primary btn-sm accordion-action" id="add-notif-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar tipo</button>
+                        <svg class="icon accordion-chevron"><use href="/img/icons.svg#icon-chevron-down"></use></svg>
+                    </div>
                 </div>
+                <div class="accordion-body" style="padding:0 var(--space-5) var(--space-5);">
                 <div class="table-scroll">
                     <table class="data-table">
                         <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
@@ -41,17 +62,22 @@
                         </tbody>
                     </table>
                 </div>
-            </section>
+                </div>
+              </div>
 
-            <!-- ===================== TIPOS DE EVENTO ===================== -->
-            <section class="card" style="margin-bottom:var(--space-6);">
-                <div class="table-toolbar">
+              <!-- ===================== TIPOS DE EVENTO ===================== -->
+              <div class="accordion-item" style="border-top:1px solid var(--border-subtle);">
+                <div class="accordion-header" data-accordion-toggle style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); padding:var(--space-4) var(--space-5); cursor:pointer;">
                     <div>
                         <strong th:text="${tiposEvento.size()} + ' tipos de evento'">0 tipos</strong>
                         <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Para el futuro calendario de proyectos (entregable, reunión, hito).</p>
                     </div>
-                    <button type="button" class="btn btn-primary btn-sm" id="add-evento-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar tipo</button>
+                    <div style="display:flex; align-items:center; gap:var(--space-3);">
+                        <button type="button" class="btn btn-primary btn-sm accordion-action" id="add-evento-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar tipo</button>
+                        <svg class="icon accordion-chevron"><use href="/img/icons.svg#icon-chevron-down"></use></svg>
+                    </div>
                 </div>
+                <div class="accordion-body" hidden style="padding:0 var(--space-5) var(--space-5);">
                 <div class="table-scroll">
                     <table class="data-table">
                         <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Color</th><th>Acciones</th></tr></thead>
@@ -72,17 +98,22 @@
                         </tbody>
                     </table>
                 </div>
-            </section>
+                </div>
+              </div>
 
-            <!-- ===================== TIPOS DE AUDIENCIA ===================== -->
-            <section class="card">
-                <div class="table-toolbar">
+              <!-- ===================== TIPOS DE AUDIENCIA ===================== -->
+              <div class="accordion-item" style="border-top:1px solid var(--border-subtle);">
+                <div class="accordion-header" data-accordion-toggle style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); padding:var(--space-4) var(--space-5); cursor:pointer;">
                     <div>
                         <strong th:text="${tiposAudiencia.size()} + ' tipos de audiencia'">0 tipos</strong>
                         <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Para "dirigido a" del futuro calendario (todos, solo PM, solo colaboradores).</p>
                     </div>
-                    <button type="button" class="btn btn-primary btn-sm" id="add-audiencia-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar tipo</button>
+                    <div style="display:flex; align-items:center; gap:var(--space-3);">
+                        <button type="button" class="btn btn-primary btn-sm accordion-action" id="add-audiencia-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar tipo</button>
+                        <svg class="icon accordion-chevron"><use href="/img/icons.svg#icon-chevron-down"></use></svg>
+                    </div>
                 </div>
+                <div class="accordion-body" hidden style="padding:0 var(--space-5) var(--space-5);">
                 <div class="table-scroll">
                     <table class="data-table">
                         <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
@@ -99,6 +130,9 @@
                         </tbody>
                     </table>
                 </div>
+                </div>
+              </div>
+
             </section>
 
         </main>
@@ -114,6 +148,22 @@
 <script th:inline="javascript">
     document.addEventListener("DOMContentLoaded", function () {
         window.SBAI.dropdown.init(document);
+
+        // ---------------- Acordeon (una sola tarjeta con las 3 secciones) ----------------
+        document.querySelectorAll("[data-accordion-toggle]").forEach(function (header) {
+            var item = header.closest(".accordion-item");
+            var body = item.querySelector(".accordion-body");
+            var chevron = header.querySelector(".accordion-chevron");
+            function setOpen(open) {
+                body.hidden = !open;
+                if (chevron) chevron.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
+            }
+            setOpen(item.dataset.accordionOpen === "true");
+            header.addEventListener("click", function (e) {
+                if (e.target.closest(".accordion-action")) return;
+                setOpen(body.hidden);
+            });
+        });
 
         var exito = /*[[${exito}]]*/ null;
         var error = /*[[${error}]]*/ null;

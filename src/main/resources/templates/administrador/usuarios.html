@@ -90,6 +90,35 @@
         </div>
       </section>
 
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${correosAutorizados.size()} + ' correos autorizados'">0 correos autorizados</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Lista blanca de registro: solo estos correos pueden completar /registro. "Pendiente" = invitado, aún no se registró.</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Correo</th><th>Autorizado el</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              <tr th:each="c : ${correosAutorizados}">
+                <td class="cell-primary" th:text="${c.correo()}">correo@nexacorp.com</td>
+                <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${c.fechaAutorizacion()}">—</td>
+                <td><span class="badge" th:classappend="${c.estadoBadgeClass()}" th:text="${c.estadoLabel()}">Pendiente</span></td>
+                <td class="cell-actions">
+                  <button type="button" class="danger" th:if="${!c.utilizado()}" data-revoke-invite
+                          th:attr="data-id=${c.id()}, data-correo=${c.correo()}">Revocar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="state-panel" th:if="${correosAutorizados.isEmpty()}">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-mail"></use></svg></span>
+          <span class="state-panel-title">Todavía no se ha invitado a nadie</span>
+        </div>
+      </section>
+
     </main>
   </div>
 </div>
@@ -139,6 +168,18 @@ document.addEventListener("DOMContentLoaded", function () {
       var correo = backdrop.querySelector("#invite-email").value.trim();
       if (!correo) { SBAI.toast.show("Ingresa un correo.", { type: "error" }); return; }
       submitForm("/administrador/usuarios/invitar", { correo: correo });
+    });
+  });
+
+  document.querySelectorAll("[data-revoke-invite]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, correo = btn.dataset.correo;
+      SBAI.modal.confirm({
+        title: "¿Revocar la invitación a \"" + correo + "\"?",
+        desc: "Ese correo ya no podrá completar el registro hasta que se vuelva a invitar.",
+        confirmLabel: "Revocar", variant: "destructive",
+        onConfirm: function () { submitForm("/administrador/usuarios/correos-autorizados/" + id + "/eliminar", {}); }
+      });
     });
   });
 

@@ -21,7 +21,7 @@
       <h1 class="auth-aside-headline">Crea tu perfil y deja que el sistema encuentre tus proyectos.</h1>
       <p class="auth-aside-sub">Tres pasos: datos corporativos, tus habilidades y nivel, y la confirmación final. Tu rol final lo asigna el Administrador.</p>
     </div>
-    <p class="auth-aside-footer">Solo se admiten correos del dominio nexacorp.com, y deben haber sido autorizados antes por un Administrador.</p>
+    <p class="auth-aside-footer"><span th:if="${dominioPermitido != null and !dominioPermitido.isEmpty() and dominioPermitido != '*'}">Solo se admiten correos del dominio <span th:text="${dominioPermitido}">nexacorp.com</span>, y deben haber sido autorizados antes por un Administrador.</span><span th:unless="${dominioPermitido != null and !dominioPermitido.isEmpty() and dominioPermitido != '*'}">Se admite cualquier correo válido, siempre que haya sido autorizado antes por un Administrador.</span></p>
   </aside>
 
   <main class="auth-main">
@@ -54,7 +54,7 @@
 
       <!-- ================= PASO 1 ================= -->
       <section class="wizard-panel active" data-panel="1">
-        <p class="field-hint" style="margin-bottom:var(--space-5);">Solo se admiten correos del dominio nexacorp.com, previamente autorizados por un Administrador.</p>
+        <p class="field-hint" style="margin-bottom:var(--space-5);"><span th:if="${dominioPermitido != null and !dominioPermitido.isEmpty() and dominioPermitido != '*'}">Solo se admiten correos del dominio <span th:text="${dominioPermitido}">nexacorp.com</span>, previamente autorizados por un Administrador.</span><span th:unless="${dominioPermitido != null and !dominioPermitido.isEmpty() and dominioPermitido != '*'}">Se admite cualquier correo válido, previamente autorizado por un Administrador.</span></p>
 
         <div class="field-row">
           <div class="field" th:classappend="${errores != null and errores['nombres'] != null} ? 'has-error'">
@@ -192,9 +192,10 @@
 <script src="/js/toast.js"></script>
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
-<script>
+<script th:inline="javascript">
 document.addEventListener("DOMContentLoaded", function () {
   var addedSkills = [];
+  var DOMINIO_PERMITIDO = /*[[${dominioPermitido}]]*/ "nexacorp.com";
 
   document.querySelectorAll("[data-toggle-password]").forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -208,7 +209,11 @@ document.addEventListener("DOMContentLoaded", function () {
   /* ---- Dominio válido reactivo ---- */
   var emailInput = document.getElementById("reg-email");
   function checkDomain() {
-    var ok = /@nexacorp\.com$/i.test(emailInput.value.trim());
+    var dominioLibre = !DOMINIO_PERMITIDO || DOMINIO_PERMITIDO === "*";
+    var valor = emailInput.value.trim();
+    var ok = dominioLibre
+      ? /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/i.test(valor)
+      : new RegExp("@" + DOMINIO_PERMITIDO.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i").test(valor);
     document.getElementById("reg-domain-check").checked = ok;
     var label = document.getElementById("reg-domain-label");
     label.textContent = ok ? "DOMINIO VÁLIDO" : "DOMINIO NO VÁLIDO";

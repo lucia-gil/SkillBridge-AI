@@ -58,6 +58,7 @@ public class AuthService {
     private final PerfilHabilidadRepository perfilHabilidadRepository;
     private final AuditoriaService auditoriaService;
     private final ConfiguracionService configuracionService;
+    private final NotificacionService notificacionService;
     private final JdbcTemplate jdbcTemplate;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -70,6 +71,7 @@ public class AuthService {
                         PerfilHabilidadRepository perfilHabilidadRepository,
                         AuditoriaService auditoriaService,
                         ConfiguracionService configuracionService,
+                        NotificacionService notificacionService,
                         JdbcTemplate jdbcTemplate) {
         this.usuarioRepository = usuarioRepository;
         this.perfilRepository = perfilRepository;
@@ -78,6 +80,7 @@ public class AuthService {
         this.perfilHabilidadRepository = perfilHabilidadRepository;
         this.auditoriaService = auditoriaService;
         this.configuracionService = configuracionService;
+        this.notificacionService = notificacionService;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -88,9 +91,21 @@ public class AuthService {
      * Configuración del Administrador tenga un efecto real en vez de ser
      * decorativo.
      */
+    private static final Pattern PATRON_CORREO_GENERICO = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Si "Dominio corporativo permitido" (Administrador > Configuración)
+     * queda vacío o en "*", se acepta cualquier correo con formato válido
+     * (útil para el equipo, que prueba con Gmail y @pucp.edu.pe a la vez).
+     * Con un dominio puntual, se exige que el correo termine en ese dominio.
+     */
     private Pattern patronCorreoDominio() {
-        String dominio = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com");
-        return Pattern.compile("^[A-Za-z0-9+_.-]+@" + Pattern.quote(dominio.trim()) + "$", Pattern.CASE_INSENSITIVE);
+        String dominio = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com").trim();
+        if (dominio.isEmpty() || dominio.equals("*")) {
+            return PATRON_CORREO_GENERICO;
+        }
+        return Pattern.compile("^[A-Za-z0-9+_.-]+@" + Pattern.quote(dominio) + "$", Pattern.CASE_INSENSITIVE);
     }
 
     public BCryptPasswordEncoder passwordEncoder() {
@@ -236,11 +251,12 @@ public class AuthService {
             errores.put("apellidos", "Solo letras y espacios (2-50 caracteres).");
         }
 
-        String dominioPermitido = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com");
+        String dominioPermitido = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com").trim();
+        boolean dominioLibre = dominioPermitido.isEmpty() || dominioPermitido.equals("*");
         if (correo == null || correo.isEmpty()) {
             errores.put("correo", "El correo corporativo es obligatorio.");
         } else if (!patronCorreoDominio().matcher(correo).matches()) {
-            errores.put("correo", "Usa un correo @" + dominioPermitido + ".");
+            errores.put("correo", dominioLibre ? "Ingresa un correo válido." : "Usa un correo @" + dominioPermitido + ".");
         }
 
         String contrasena = req.contrasena();
@@ -313,6 +329,12 @@ public class AuthService {
 
         auditoriaService.registrar(usuario.getId(), "REGISTRO_EXITOSO", "usuario", usuario.getId(),
                 null, null, "Cuenta creada por autoregistro (correo pre-autorizado).");
+
+        // Correo de bienvenida real (además de quedar en la campana de notificaciones):
+        // "info" no tiene preferencia configurable en preferencias_notificacion, así que
+        // NotificacionService.crear(...) siempre manda el correo para este tipo.
+        notificacionService.crear(perfil.getId(), "info", "¡Bienvenido a SkillBridge AI!",
+                "Tu cuenta se creó correctamente con el correo " + correoFinal + ". Ya puedes iniciar sesión y explorar tus proyectos.", null);
 
         return ResultadoRegistro.exito();
     }

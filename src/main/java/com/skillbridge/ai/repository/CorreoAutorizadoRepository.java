@@ -10,4 +10,6 @@ public interface CorreoAutorizadoRepository extends JpaRepository<CorreoAutoriza
     Optional<CorreoAutorizado> findByCorreoIgnoreCase(String correo);
 
     boolean existsByCorreoIgnoreCase(String correo);
+
+    java.util.List<CorreoAutorizado> findAllByOrderByFechaAutorizacionDesc();
 }

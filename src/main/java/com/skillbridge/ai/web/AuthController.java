@@ -118,6 +118,8 @@ public class AuthController {
         if (!model.containsAttribute("errores")) {
             model.addAttribute("errores", Collections.emptyMap());
         }
+        model.addAttribute("dominioPermitido",
+                configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com").trim());
         return "auth/registro";
     }
 

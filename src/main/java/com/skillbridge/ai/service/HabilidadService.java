@@ -84,6 +84,65 @@ public class HabilidadService {
         return categoriaHabilidadRepository.findAll();
     }
 
+    // ─────────────── CRUD de Categorías de habilidad (administrador/habilidades.html) ───────────────
+
+    @Transactional
+    public void crearCategoria(String nombre, String descripcion, Long actorId) {
+        String limpio = validarNombreCategoria(nombre);
+        if (categoriaHabilidadRepository.existsByNombreIgnoreCase(limpio)) {
+            throw new OperacionInvalidaException("Ya existe una categoría con ese nombre.");
+        }
+        CategoriaHabilidad c = new CategoriaHabilidad();
+        c.setNombre(limpio);
+        c.setDescripcion(descripcion != null && !descripcion.isBlank() ? descripcion.trim() : null);
+        c = categoriaHabilidadRepository.save(c);
+
+        auditoriaService.registrar(actorId, "CATEGORIA_HABILIDAD_CREADA", "categoria_habilidad", c.getId(), null, null, limpio);
+    }
+
+    @Transactional
+    public void editarCategoria(Long id, String nombre, String descripcion, Long actorId) {
+        String limpio = validarNombreCategoria(nombre);
+        CategoriaHabilidad c = categoriaHabilidadRepository.findById(id)
+                .orElseThrow(() -> new OperacionInvalidaException("La categoría ya no existe."));
+
+        if (!c.getNombre().equalsIgnoreCase(limpio) && categoriaHabilidadRepository.existsByNombreIgnoreCase(limpio)) {
+            throw new OperacionInvalidaException("Ya existe otra categoría con ese nombre.");
+        }
+        String anterior = c.getNombre();
+        c.setNombre(limpio);
+        c.setDescripcion(descripcion != null && !descripcion.isBlank() ? descripcion.trim() : null);
+        categoriaHabilidadRepository.save(c);
+
+        auditoriaService.registrar(actorId, "CATEGORIA_HABILIDAD_EDITADA", "categoria_habilidad", id,
+                AuditoriaService.json("nombre", anterior), AuditoriaService.json("nombre", limpio), null);
+    }
+
+    @Transactional
+    public void eliminarCategoria(Long id, Long actorId) {
+        CategoriaHabilidad c = categoriaHabilidadRepository.findById(id)
+                .orElseThrow(() -> new OperacionInvalidaException("La categoría ya no existe."));
+        long enUso = habilidadRepository.countByCategoriaId(id);
+        if (enUso > 0) {
+            throw new OperacionInvalidaException(
+                    "No se puede eliminar \"" + c.getNombre() + "\": tiene " + enUso + " habilidad(es) asignada(s).");
+        }
+        String nombre = c.getNombre();
+        categoriaHabilidadRepository.delete(c);
+        auditoriaService.registrar(actorId, "CATEGORIA_HABILIDAD_ELIMINADA", "categoria_habilidad", id, null, null, nombre);
+    }
+
+    private String validarNombreCategoria(String nombre) {
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new OperacionInvalidaException("Escribe un nombre para la categoría.");
+        }
+        String limpio = nombre.trim();
+        if (limpio.length() > 60) {
+            throw new OperacionInvalidaException("El nombre no puede superar los 60 caracteres.");
+        }
+        return limpio;
+    }
+
     @Transactional
     public void crear(String nombre, Long categoriaId, Long actorId) {
         String limpio = validarNombre(nombre);

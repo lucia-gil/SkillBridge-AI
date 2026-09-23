@@ -18,11 +18,24 @@
 
       <div class="detail-grid" style="grid-template-columns: 1fr 2.4fr; align-items: stretch;">
         <section class="card card-pad" style="height:100%;">
-          <p class="label-mono" style="margin-bottom:var(--space-3);">Categorías</p>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-3);">
+            <p class="label-mono" style="margin:0;">Categorías</p>
+            <button type="button" class="btn btn-secondary btn-sm" id="add-category-btn" title="Agregar categoría">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>
+            </button>
+          </div>
           <div id="category-list">
-            <div class="info-row" th:each="c : ${categorias}">
+            <div class="info-row" th:each="c : ${categorias}" th:attr="data-id=${c.id()}">
               <span class="info-row-label" th:text="${c.nombre()}">Categoría</span>
-              <span class="info-row-value mono" th:text="${c.cantidad()}">0</span>
+              <span style="display:flex; align-items:center; gap:10px;">
+                <span class="info-row-value mono" th:text="${c.cantidad()}">0</span>
+                <span class="cell-actions">
+                  <button type="button" data-edit-category
+                          th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}">Editar</button>
+                  <button type="button" class="danger" data-delete-category
+                          th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}, data-cantidad=${c.cantidad()}">Eliminar</button>
+                </span>
+              </span>
             </div>
           </div>
         </section>
@@ -134,6 +147,51 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!nombre) { SBAI.toast.show("Escribe un nombre para la habilidad.", { type: "error" }); return; }
       var categoriaId = backdrop.querySelector("#new-skill-cat").value;
       submitForm("/administrador/habilidades", { nombre: nombre, categoriaId: categoriaId });
+    });
+  });
+
+  document.getElementById("add-category-btn").addEventListener("click", function () {
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar categoría</h2></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="new-cat-name" placeholder="Ej. Cloud &amp; DevOps"></div>' +
+      '<div class="field"><label class="field-label">Descripción (opcional)</label><input class="input" id="new-cat-desc" placeholder="Breve descripción"></div></div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="new-cat-confirm">Agregar</button></div></div>';
+    var backdrop = SBAI.modal.open(html);
+    backdrop.querySelector("#new-cat-confirm").addEventListener("click", function () {
+      var nombre = backdrop.querySelector("#new-cat-name").value.trim();
+      if (!nombre) { SBAI.toast.show("Escribe un nombre para la categoría.", { type: "error" }); return; }
+      var descripcion = backdrop.querySelector("#new-cat-desc").value.trim();
+      submitForm("/administrador/categorias", { nombre: nombre, descripcion: descripcion });
+    });
+  });
+
+  document.querySelectorAll("[data-edit-category]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, nombre = btn.dataset.nombre;
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar categoría</h2></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="edit-cat-name" value="' + nombre.replace(/"/g, "&quot;") + '"></div>' +
+        '<div class="field"><label class="field-label">Descripción (opcional)</label><input class="input" id="edit-cat-desc"></div></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="edit-cat-confirm">Guardar</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#edit-cat-confirm").addEventListener("click", function () {
+        var nuevoNombre = backdrop.querySelector("#edit-cat-name").value.trim();
+        if (!nuevoNombre) { SBAI.toast.show("Escribe un nombre para la categoría.", { type: "error" }); return; }
+        var descripcion = backdrop.querySelector("#edit-cat-desc").value.trim();
+        submitForm("/administrador/categorias/" + id + "/editar", { nombre: nuevoNombre, descripcion: descripcion });
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-delete-category]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, nombre = btn.dataset.nombre, cantidad = btn.dataset.cantidad;
+      SBAI.modal.confirm({
+        title: "¿Eliminar \"" + nombre + "\"?",
+        desc: cantidad !== "0" ? "Tiene " + cantidad + " habilidad(es) asignada(s); no se podrá eliminar hasta reasignarlas." : "Esta acción no se puede deshacer.",
+        confirmLabel: "Eliminar", variant: "destructive",
+        onConfirm: function () { submitForm("/administrador/categorias/" + id + "/eliminar", {}); }
+      });
     });
   });
 
