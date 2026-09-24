@@ -7,6 +7,7 @@ import com.skillbridge.ai.repository.NotificacionRepository;
 import com.skillbridge.ai.repository.PerfilRepository;
 import com.skillbridge.ai.repository.PreferenciaNotificacionRepository;
 import com.skillbridge.ai.repository.TipoNotificacionRepository;
+import com.skillbridge.ai.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,15 +45,17 @@ public class NotificacionService {
     private final TipoNotificacionRepository tipoNotificacionRepository;
     private final PreferenciaNotificacionRepository preferenciaNotificacionRepository;
     private final PerfilRepository perfilRepository;
+    private final UsuarioRepository usuarioRepository;
     private final EmailService emailService;
 
     public NotificacionService(NotificacionRepository notificacionRepository, TipoNotificacionRepository tipoNotificacionRepository,
                                 PreferenciaNotificacionRepository preferenciaNotificacionRepository, PerfilRepository perfilRepository,
-                                EmailService emailService) {
+                                UsuarioRepository usuarioRepository, EmailService emailService) {
         this.notificacionRepository = notificacionRepository;
         this.tipoNotificacionRepository = tipoNotificacionRepository;
         this.preferenciaNotificacionRepository = preferenciaNotificacionRepository;
         this.perfilRepository = perfilRepository;
+        this.usuarioRepository = usuarioRepository;
         this.emailService = emailService;
     }
 
@@ -86,10 +89,17 @@ public class NotificacionService {
                     .orElse(true);
             if (!tambienMail) return;
         }
-        perfilRepository.buscarConUsuario(perfilId).ifPresent(perfil -> {
-            String correo = perfil.getUsuario().getCorreo();
-            emailService.enviarNotificacion(correo, "SkillBridge AI: " + titulo, titulo, detalle);
-        });
+        // No usar perfil.getUsuario() aqui: si el Perfil fue creado/guardado en
+        // esta MISMA transaccion (ej. autoregistro), el contexto de persistencia
+        // ya tiene esa instancia administrada con la asociacion "usuario" (de
+        // solo lectura, insertable/updatable=false) todavia sin poblar, y el
+        // "join fetch" de buscarConUsuario() no la rellena retroactivamente -
+        // causaba NullPointerException al registrar un usuario nuevo. Se busca
+        // el Usuario por separado, por su id, que siempre esta seteado.
+        perfilRepository.findById(perfilId).ifPresent(perfil ->
+                usuarioRepository.findById(perfil.getUsuarioId()).ifPresent(usuario -> {
+                    emailService.enviarNotificacion(usuario.getCorreo(), "SkillBridge AI: " + titulo, titulo, detalle);
+                }));
     }
 
     public List<NotificacionFila> listar(Long perfilId) {
