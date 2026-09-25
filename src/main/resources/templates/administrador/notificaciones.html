@@ -53,6 +53,10 @@
               </form>
             </div>
           </div>
+          <div class="table-footer">
+            <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="notif-visible-count">0</span> de <span id="notif-filtered-count">0</span> notificaciones</span>
+            <div class="pagination"><button class="page-btn" id="notif-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="notif-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="notif-next" type="button" aria-label="Página siguiente">›</button></div>
+          </div>
           <div class="state-panel" data-filter-empty="notif" hidden>
             <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg></span>
             <span class="state-panel-title">No hay notificaciones aquí</span>
@@ -91,6 +95,66 @@
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.tableFilter.init(document);
+
+  // Paginación de notificaciones, encima del filtrado de table-filter.js:
+  // no se toca el filtro de pestañas (Todas/Sin leer/tipo, siguen igual),
+  // solo se agrega que de las que coinciden con la pestaña activa se
+  // muestren de a 8. No se modifica table-filter.js (lo usan otras 20
+  // vistas), esto corre en un IIFE aparte, igual que en usuarios.html.
+  (function () {
+    var rows = Array.from(document.querySelectorAll('[data-filter-row="notif"]'));
+    if (!rows.length) return;
+
+    var tabsContainer = document.getElementById("notif-tabs");
+    var emptyPanel = document.querySelector('[data-filter-empty="notif"]');
+    var visibleCount = document.getElementById("notif-visible-count");
+    var filteredCount = document.getElementById("notif-filtered-count");
+    var pageLabel = document.getElementById("notif-page-label");
+    var previous = document.getElementById("notif-prev");
+    var next = document.getElementById("notif-next");
+    if (!previous || !next) return;
+    var pageSize = 8;
+    var page = 1;
+
+    function currentTab() {
+      var active = tabsContainer ? tabsContainer.querySelector(".tab-btn.active") : null;
+      return active ? active.dataset.filterValue : "todas";
+    }
+
+    function matches(row) {
+      var tab = currentTab();
+      if (!tab || tab === "todos" || tab === "todas") return true;
+      return row.dataset.fTab === tab;
+    }
+
+    function render() {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
+      if (visibleCount) visibleCount.textContent = visible.length;
+      if (filteredCount) filteredCount.textContent = matched.length;
+      if (pageLabel) pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
+
+    if (tabsContainer) {
+      tabsContainer.querySelectorAll(".tab-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () { page = 1; render(); });
+      });
+    }
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (page < pages) { page++; render(); }
+    });
+    render();
+  })();
 });
 </script>
 </body>

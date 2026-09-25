@@ -48,6 +48,19 @@ public class EmailService {
      * @param detalle      texto de detalle debajo del titulo (puede ser null/vacio)
      */
     public void enviarNotificacion(String destinatario, String asunto, String titulo, String detalle) {
+        enviarNotificacion(destinatario, asunto, titulo, detalle, null, null);
+    }
+
+    /**
+     * Igual que enviarNotificacion(destinatario, asunto, titulo, detalle),
+     * pero agrega un boton con un link de accion dentro del correo (ej. para
+     * que una invitacion traiga el link directo a la pagina de inicio, con
+     * instruccion de hacer clic en "Crear cuenta"). Si enlace es null o
+     * vacio, no se muestra ningun boton y el correo queda identico al de
+     * siempre.
+     */
+    public void enviarNotificacion(String destinatario, String asunto, String titulo, String detalle,
+                                    String enlace, String textoBoton) {
         if (destinatario == null || destinatario.isBlank()) return;
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
@@ -55,14 +68,14 @@ public class EmailService {
             helper.setFrom("SkillBridge AI <" + remitente + ">");
             helper.setTo(destinatario);
             helper.setSubject(asunto);
-            helper.setText(construirHtml(titulo, detalle), true);
+            helper.setText(construirHtml(titulo, detalle, enlace, textoBoton), true);
             mailSender.send(mensaje);
         } catch (Exception e) {
             log.log(Level.WARNING, "No se pudo enviar el correo de notificacion a " + destinatario, e);
         }
     }
 
-    private String construirHtml(String titulo, String detalle) {
+    private String construirHtml(String titulo, String detalle, String enlace, String textoBoton) {
         String tituloSeguro = escapar(titulo);
         String detalleSeguro = (detalle != null && !detalle.isBlank())
                 ? escapar(detalle)
@@ -83,13 +96,26 @@ public class EmailService {
                 + "</td></tr>"
                 + "<tr><td style=\"padding:20px 28px 26px 28px;\">"
                 + "<div style=\"border-top:1px solid #e5e7eb; padding-top:16px;\">"
-                + "<p style=\"margin:0; font-size:12px; color:#9ca3af;\">Ingresa a SkillBridge AI para ver los detalles y tomar acción.</p>"
+                + botonHtml(enlace, textoBoton)
                 + "</div></td></tr>"
                 + "</table>"
                 + "<p style=\"margin:18px 0 0 0; font-size:11px; color:#9ca3af;\">Este es un mensaje automático de SkillBridge AI, no respondas a este correo.</p>"
                 + "</td></tr>"
                 + "</table>"
                 + "</body></html>";
+    }
+
+    private String botonHtml(String enlace, String textoBoton) {
+        if (enlace == null || enlace.isBlank()) {
+            return "<p style=\"margin:0; font-size:12px; color:#9ca3af;\">Ingresa a SkillBridge AI para ver los detalles y tomar acción.</p>";
+        }
+        String texto = (textoBoton != null && !textoBoton.isBlank()) ? escapar(textoBoton) : "Ir a SkillBridge AI";
+        String enlaceSeguro = escapar(enlace);
+        return "<a href=\"" + enlaceSeguro + "\" target=\"_blank\" "
+                + "style=\"display:inline-block; background:linear-gradient(90deg,#7c3aed,#3b82f6); color:#ffffff; "
+                + "text-decoration:none; font-size:14px; font-weight:600; padding:12px 22px; border-radius:8px;\">"
+                + texto + "</a>"
+                + "<p style=\"margin:12px 0 0 0; font-size:12px; color:#9ca3af;\">Si el botón no funciona, copia y pega este link en tu navegador:<br>" + enlaceSeguro + "</p>";
     }
 
     private String escapar(String texto) {

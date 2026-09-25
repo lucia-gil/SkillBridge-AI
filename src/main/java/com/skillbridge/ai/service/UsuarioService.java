@@ -10,6 +10,7 @@ import com.skillbridge.ai.repository.UsuarioRepository;
 import com.skillbridge.ai.service.ConfiguracionService;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,9 @@ public class UsuarioService {
     private final AuditoriaService auditoriaService;
     private final ConfiguracionService configuracionService;
     private final EmailService emailService;
+
+    @Value("${app.base-url:}")
+    private String baseUrl;
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                            PerfilRepository perfilRepository,
@@ -125,9 +129,14 @@ public class UsuarioService {
         // crea al completar /auth/registro.html), así que se manda directo
         // con EmailService en vez de pasar por NotificacionService (que
         // necesita un perfilId ya existente).
+        String linkInicio = (baseUrl != null && !baseUrl.isBlank())
+                ? baseUrl + "/auth/login.html"
+                : "/auth/login.html";
         emailService.enviarNotificacion(correo, "Fuiste invitado a SkillBridge AI",
                 "¡Ya puedes registrarte en SkillBridge AI!",
-                "Un administrador autorizó tu correo (" + correo + ") para crear tu cuenta. Completa tu registro en /auth/registro.html.");
+                "Un administrador autorizó tu correo (" + correo + ") para crear tu cuenta. "
+                        + "Ingresa a la página de inicio de SkillBridge AI y haz clic en \"Crear cuenta\" para completar tu registro.",
+                linkInicio, "Ir a SkillBridge AI");
     }
 
     // ─────────────── CRUD de Correos autorizados (lista blanca de registro) ───────────────
