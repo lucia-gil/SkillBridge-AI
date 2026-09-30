@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
+<button type="button" id="theme-toggle-btn" class="btn btn-secondary btn-icon-only" aria-label="Cambiar a modo oscuro" style="position:fixed; top:var(--space-4); right:var(--space-4); z-index:var(--z-topbar);"><svg class="icon"><use href="/img/icons.svg#icon-monitor"></use></svg></button>
+
 
 <div class="auth-shell">
   <aside class="auth-aside">
@@ -31,7 +33,7 @@
       <p class="auth-card-sub">Crea tu perfil y deja que el sistema encuentre tus proyectos.</p>
 
       <div th:if="${errores != null and errores['_global'] != null}" th:text="${errores['_global']}"
-           style="background:#fdecea; border:1px solid #d32f2f; color:#b71c1c; padding:10px 14px; border-radius:8px; margin-top:var(--space-5); font-size:var(--fs-sm);"></div>
+           style="background:var(--red-bg); border:1px solid var(--red-border); color:var(--red-fg-strong); padding:10px 14px; border-radius:8px; margin-top:var(--space-5); font-size:var(--fs-sm);"></div>
 
       <div class="wizard-steps" style="margin-top:var(--space-8);">
         <div class="wizard-step active" data-step-indicator="1">
@@ -352,5 +354,6 @@ document.addEventListener("DOMContentLoaded", function () {
   if (ERROR_HABILIDADES) goStep(2);
 });
 </script>
+<script src="/js/theme-toggle.js"></script>
 </body>
 </html>

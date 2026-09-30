@@ -23,6 +23,7 @@
             <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Vista global con datos completos</p>
           </div>
           <div class="table-filters">
+            <input type="text" class="input" data-filter-scope="proyectos-admin" data-filter-key="q" placeholder="Buscar por nombre…" style="width:200px; height:36px; font-size:var(--fs-xs);">
             <select class="select" data-filter-scope="proyectos-admin" data-filter-key="estado">
               <option value="todos">Estado: todos</option>
               <option value="planificacion">Planificación</option><option value="activo">Activo</option>
@@ -33,9 +34,9 @@
         </div>
         <div class="table-scroll">
           <table class="data-table">
-            <thead><tr><th>Proyecto</th><th>PM</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Proyecto</th><th>PM</th><th>Fechas</th><th>&#35; miembros</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              <tr th:each="p, stat : ${proyectos}" data-filter-row="proyectos-admin" th:attr="data-f-estado=${p.estadoCrudo}">
+              <tr th:each="p, stat : ${proyectos}" data-filter-row="proyectos-admin" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre)}">
                 <td class="cell-person">
                   <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
                   <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span></span>
@@ -70,7 +71,7 @@
             <div class="modal-body">
               <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
               <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
-                <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:text="${t}">Tech</span>
+                <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:with="icono=${T(com.skillbridge.ai.util.TecnologiaIconUtil).icono(t)}" style="display:inline-flex; align-items:center; gap:6px;"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${icono}"></use></svg><span th:text="${t}">Tech</span></span>
               </div>
               <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
               <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
@@ -100,7 +101,7 @@
               </div>
               <div class="field-row">
                 <div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" min="1" max="100" value="50" data-field="cargaPorcentaje"></div>
-                <div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" data-field="fechaInicio"></div>
+                <div class="field"><label class="field-label">Periodo de inicio</label><input class="input" type="date" data-field="fechaInicio"></div>
               </div>
               <div class="btn-group" style="justify-content:flex-end; margin-bottom:var(--space-5);">
                 <button type="button" class="btn btn-secondary btn-sm" th:attr="data-asignar-proyecto=${d.id}">Asignar</button>
@@ -185,8 +186,8 @@ document.addEventListener("DOMContentLoaded", function () {
       '<div class="field"><label class="field-label">Nombre</label><input class="input" id="np-nombre"></div>' +
       '<div class="field"><label class="field-label">Descripción</label><textarea class="input" id="np-desc" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
       '<div class="field"><label class="field-label">Tecnologías (separadas por coma)</label><input class="input" id="np-tech" placeholder="React, Node.js, PostgreSQL"></div>' +
-      '<div class="field-row"><div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" id="np-inicio"></div>' +
-      '<div class="field"><label class="field-label">Fecha de fin estimada</label><input class="input" type="date" id="np-fin"></div></div>' +
+      '<div class="field-row"><div class="field"><label class="field-label">Periodo de inicio</label><input class="input" type="date" id="np-inicio"></div>' +
+      '<div class="field"><label class="field-label">Periodo de entrega esperado</label><input class="input" type="date" id="np-fin"></div></div>' +
       '<div class="field-row"><div class="field"><label class="field-label">Colaboradores requeridos</label><input class="input" type="number" min="0" value="3" id="np-colab"></div>' +
       '<div class="field"><label class="field-label">Project Manager</label><select class="select" id="np-pm">' + options + '</select></div></div>' +
       '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
@@ -226,9 +227,18 @@ document.addEventListener("DOMContentLoaded", function () {
     var pageSize = 6;
     var page = 1;
 
+    var searchInput = document.querySelector('[data-filter-scope="proyectos-admin"][data-filter-key="q"]');
+
+    function normalizarTexto(v) {
+      return (v || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    }
+
     function matches(row) {
       var estado = estadoSelect ? estadoSelect.value : "todos";
-      return !estado || estado === "todos" || row.dataset.fEstado === estado;
+      if (estado && estado !== "todos" && row.dataset.fEstado !== estado) return false;
+      var q = searchInput ? normalizarTexto(searchInput.value) : "";
+      if (q && normalizarTexto(row.dataset.fSearch).indexOf(q) === -1) return false;
+      return true;
     }
 
     function render() {
@@ -247,6 +257,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (estadoSelect) estadoSelect.addEventListener("change", function () { page = 1; render(); });
+    if (searchInput) searchInput.addEventListener("input", function () { page = 1; render(); });
     previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
     next.addEventListener("click", function () {
       var matched = rows.filter(matches);

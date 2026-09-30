@@ -75,7 +75,7 @@
           <div class="modal-body">
             <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
             <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
-              <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:text="${t}">Tech</span>
+              <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:with="icono=${T(com.skillbridge.ai.util.TecnologiaIconUtil).icono(t)}" style="display:inline-flex; align-items:center; gap:6px;"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${icono}"></use></svg><span th:text="${t}">Tech</span></span>
             </div>
             <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
             <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>

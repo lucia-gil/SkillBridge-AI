@@ -157,7 +157,7 @@
   font-size: var(--fs-sm); font-weight: var(--fw-semibold);
   cursor: pointer;
 }
-.topbar-ai-btn:hover { background: #DDE5F2; }
+.topbar-ai-btn:hover { background: var(--tint-active); }
 .topbar-ai-btn .icon { color: var(--blue-accent-strong); }
 
 /* =========================================================

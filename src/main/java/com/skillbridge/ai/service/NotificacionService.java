@@ -8,6 +8,9 @@ import com.skillbridge.ai.repository.PerfilRepository;
 import com.skillbridge.ai.repository.PreferenciaNotificacionRepository;
 import com.skillbridge.ai.repository.TipoNotificacionRepository;
 import com.skillbridge.ai.repository.UsuarioRepository;
+import com.skillbridge.ai.util.Roles;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,16 +50,21 @@ public class NotificacionService {
     private final PerfilRepository perfilRepository;
     private final UsuarioRepository usuarioRepository;
     private final EmailService emailService;
+    private final JdbcTemplate jdbcTemplate;
+
+    @Value("${app.base-url:}")
+    private String baseUrl;
 
     public NotificacionService(NotificacionRepository notificacionRepository, TipoNotificacionRepository tipoNotificacionRepository,
                                 PreferenciaNotificacionRepository preferenciaNotificacionRepository, PerfilRepository perfilRepository,
-                                UsuarioRepository usuarioRepository, EmailService emailService) {
+                                UsuarioRepository usuarioRepository, EmailService emailService, JdbcTemplate jdbcTemplate) {
         this.notificacionRepository = notificacionRepository;
         this.tipoNotificacionRepository = tipoNotificacionRepository;
         this.preferenciaNotificacionRepository = preferenciaNotificacionRepository;
         this.perfilRepository = perfilRepository;
         this.usuarioRepository = usuarioRepository;
         this.emailService = emailService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional
@@ -71,7 +79,7 @@ public class NotificacionService {
         n.setDetalle(detalle);
         n.setEnlaceAccion(enlaceAccion);
         notificacionRepository.save(n);
-        enviarCorreoSiCorresponde(perfilId, tipoCodigo, titulo, detalle);
+        enviarCorreoSiCorresponde(perfilId, tipoCodigo, titulo, detalle, enlaceAccion);
     }
 
     /**
@@ -81,7 +89,7 @@ public class NotificacionService {
      * para ese tipo (canal='app_mail' en preferencias_notificacion; sin fila
      * guardada se manda por defecto, igual que PreferenciaNotificacionService.obtener()).
      */
-    private void enviarCorreoSiCorresponde(Long perfilId, String tipoCodigo, String titulo, String detalle) {
+    private void enviarCorreoSiCorresponde(Long perfilId, String tipoCodigo, String titulo, String detalle, String enlaceAccion) {
         String tipoEvento = CODIGO_A_TIPO_EVENTO.get(tipoCodigo);
         if (tipoEvento != null) {
             boolean tambienMail = preferenciaNotificacionRepository.findByPerfilIdAndTipoEvento(perfilId, tipoEvento)
@@ -98,8 +106,56 @@ public class NotificacionService {
         // el Usuario por separado, por su id, que siempre esta seteado.
         perfilRepository.findById(perfilId).ifPresent(perfil ->
                 usuarioRepository.findById(perfil.getUsuarioId()).ifPresent(usuario -> {
-                    emailService.enviarNotificacion(usuario.getCorreo(), "SkillBridge AI: " + titulo, titulo, detalle);
+                    String enlaceCompleto = construirEnlaceCorreo(perfilId, usuario.getRolOrganizacional(), enlaceAccion);
+                    String textoBoton = textoBotonPara(tipoCodigo);
+                    emailService.enviarNotificacion(usuario.getCorreo(), "SkillBridge AI: " + titulo, titulo, detalle,
+                            enlaceCompleto, textoBoton);
                 }));
+    }
+
+    /**
+     * Arma el link absoluto de la notificacion para el correo, a partir del
+     * enlace relativo que ya se guarda con la notificacion (ej. "proyectos.html",
+     * "foro-hilo.html?id=5") - ese mismo enlace ya funciona dentro de la app
+     * porque es relativo a la carpeta del rol del usuario (se resuelve solo en
+     * el navegador). Para el correo hace falta anteponer el dominio y la
+     * carpeta del rol. No se puede reusar AuthService.calcularRolEfectivo(...)
+     * aqui porque AuthService ya depende de NotificacionService (dependencia
+     * circular) - se replica la misma regla (administrador/resource_manager
+     * son puestos fijos; si no, se revisa si tiene una asignacion activa como
+     * project_manager; si no, colaborador), igual que en AuthService.
+     */
+    private String construirEnlaceCorreo(Long perfilId, String rolOrganizacional, String enlaceAccion) {
+        if (baseUrl == null || baseUrl.isBlank() || enlaceAccion == null || enlaceAccion.isBlank()) return null;
+        String rolEfectivo = calcularRolEfectivoParaCorreo(perfilId, rolOrganizacional);
+        return baseUrl + "/" + Roles.slug(rolEfectivo) + "/" + enlaceAccion;
+    }
+
+    private String calcularRolEfectivoParaCorreo(Long perfilId, String rolOrganizacional) {
+        if (Roles.ADMINISTRADOR.equals(rolOrganizacional)) return Roles.ADMINISTRADOR;
+        if (Roles.RESOURCE_MANAGER.equals(rolOrganizacional)) return Roles.RESOURCE_MANAGER;
+        if (perfilId != null) {
+            try {
+                Integer count = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM asignaciones WHERE perfil_id = ? AND rol_en_proyecto = 'project_manager' AND estado = 'activa'",
+                        Integer.class, perfilId);
+                if (count != null && count > 0) return Roles.PROJECT_MANAGER;
+            } catch (Exception ex) {
+                // Igual que en AuthService: si la consulta falla, no se rompe el
+                // envio del correo por esto - se asume colaborador.
+            }
+        }
+        return Roles.COLABORADOR;
+    }
+
+    private String textoBotonPara(String tipoCodigo) {
+        return switch (tipoCodigo) {
+            case "asignacion" -> "Ver proyecto";
+            case "foro_respuesta" -> "Ver respuesta";
+            case "entregable_nuevo", "entregable_revisado" -> "Ver entregable";
+            case "solicitud", "resultado_ia" -> "Ver en SkillBridge AI";
+            default -> "Ir a SkillBridge AI";
+        };
     }
 
     public List<NotificacionFila> listar(Long perfilId) {

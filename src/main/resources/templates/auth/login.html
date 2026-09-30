@@ -118,6 +118,8 @@
   </style>
 </head>
 <body>
+<button type="button" id="theme-toggle-btn" class="btn btn-secondary btn-icon-only" aria-label="Cambiar a modo oscuro" style="position:fixed; top:var(--space-4); right:var(--space-4); z-index:var(--z-topbar);"><svg class="icon"><use href="/img/icons.svg#icon-monitor"></use></svg></button>
+
 <svg style="display:none"><use></use></svg>
 
 <div class="login-page">
@@ -136,9 +138,9 @@
     <p class="auth-card-sub">Ingresa con tu correo y contraseña.</p>
 
     <div th:if="${error}" th:text="${error}"
-         style="background:#fdecea; border:1px solid #d32f2f; color:#b71c1c; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
+         style="background:var(--red-bg); border:1px solid var(--red-border); color:var(--red-fg-strong); padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
     <div th:if="${exito}" th:text="${exito}"
-         style="background:#eaf7ec; border:1px solid #2e7d32; color:#1b5e20; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
+         style="background:var(--green-bg); border:1px solid var(--green-border); color:var(--green-fg); padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
 
     <form class="auth-card-body" id="login-form" th:action="@{/auth/login.html}" method="post" novalidate>
       <div class="field" id="field-email">
@@ -231,5 +233,6 @@
     });
   });
 </script>
+<script src="/js/theme-toggle.js"></script>
 </body>
 </html>
