@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
 <div class="app-shell">
@@ -32,18 +33,19 @@
             <button type="button" class="btn btn-primary btn-sm" id="new-project-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo proyecto</button>
           </div>
         </div>
+        <div data-project-filters="proyectos-admin"></div>
         <div class="table-scroll">
           <table class="data-table">
-            <thead><tr><th>Proyecto</th><th>PM</th><th>Fechas</th><th>&#35; miembros</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Proyecto</th><th>PM</th><th>Periodo / duración</th><th>Miembros</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               <tr th:each="p, stat : ${proyectos}" data-filter-row="proyectos-admin" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre)}">
                 <td class="cell-person">
                   <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
-                  <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span></span>
+                  <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="2"></span></span>
                 </td>
                 <td th:text="${p.pmNombre}">PM</td>
-                <td th:text="${p.fechaInicioLabel} + ' → ' + ${p.fechaFinLabel}">fechas</td>
-                <td th:text="${p.equipoSize}">0</td>
+                <td><span data-periodo th:attr="data-ini=${p.fechaInicioLabel},data-fin=${p.fechaFinLabel}">fechas</span></td>
+                <td><span class="miembros-pill" th:attr="data-n=${p.equipoSize}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg><span th:text="${p.equipoSize} + (${p.equipoSize} == 1 ? ' miembro' : ' miembros')">0 miembros</span></span></td>
                 <td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div><span class="progress-value" th:text="${p.avance} + '%'">0%</span></div></td>
                 <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
                 <td class="cell-actions"><button type="button" th:attr="data-view-project=${p.id}">Ver detalle</button></td>
@@ -91,7 +93,7 @@
               <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Asignar colaborador</h3>
               <div class="field-row">
                 <div class="field"><label class="field-label">Colaborador</label>
-                  <select class="select" data-field="perfilId">
+                  <select class="select" data-field="perfilId" data-combobox data-placeholder="Escribe el nombre o correo…">
                     <option th:each="p : ${perfiles}" th:value="${p.perfilId()}" th:text="${p.nombre()} + ' · ' + ${p.correo()}">Colaborador</option>
                   </select>
                 </div>
@@ -136,7 +138,6 @@
 <script src="/js/dropdown.js"></script>
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
@@ -189,7 +190,7 @@ document.addEventListener("DOMContentLoaded", function () {
       '<div class="field-row"><div class="field"><label class="field-label">Periodo de inicio</label><input class="input" type="date" id="np-inicio"></div>' +
       '<div class="field"><label class="field-label">Periodo de entrega esperado</label><input class="input" type="date" id="np-fin"></div></div>' +
       '<div class="field-row"><div class="field"><label class="field-label">Colaboradores requeridos</label><input class="input" type="number" min="0" value="3" id="np-colab"></div>' +
-      '<div class="field"><label class="field-label">Project Manager</label><select class="select" id="np-pm">' + options + '</select></div></div>' +
+      '<div class="field"><label class="field-label">Project Manager</label><select class="select" id="np-pm" data-combobox data-placeholder="Escribe para buscar al PM…">' + options + '</select></div></div>' +
       '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
     var backdrop = SBAI.modal.open(html);
     backdrop.querySelector("#np-confirm").addEventListener("click", function () {
@@ -238,6 +239,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (estado && estado !== "todos" && row.dataset.fEstado !== estado) return false;
       var q = searchInput ? normalizarTexto(searchInput.value) : "";
       if (q && normalizarTexto(row.dataset.fSearch).indexOf(q) === -1) return false;
+      if (window.SBAI.extraRowFilter && !window.SBAI.extraRowFilter("proyectos-admin", row)) return false;
       return true;
     }
 
@@ -268,5 +270,11 @@ document.addEventListener("DOMContentLoaded", function () {
   })();
 });
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tech-icons.js"></script>
+<script src="/js/project-ui.js"></script>
 </body>
 </html>

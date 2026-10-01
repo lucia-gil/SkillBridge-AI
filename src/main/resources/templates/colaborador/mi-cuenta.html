@@ -26,6 +26,7 @@
   <link
           rel="stylesheet"
           href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 
 </head>
 
@@ -509,7 +510,7 @@
                   <input
                           class="input"
                           type="password"
-                          name="nueva"
+                          id="pwd-nueva" name="nueva"
                           placeholder="••••••••••••">
 
                 </div>
@@ -524,7 +525,7 @@
                   <input
                           class="input"
                           type="password"
-                          name="nueva2"
+                          id="pwd-nueva2" name="nueva2"
                           placeholder="••••••••••••">
 
                 </div>
@@ -542,6 +543,10 @@
               </p>
 
 
+              <div class="pwd-tools">
+                <button type="button" class="btn btn-secondary btn-sm" data-generar-password data-target="#pwd-nueva,#pwd-nueva2">Generar contraseña segura</button>
+              </div>
+
               <div class="btn-group">
 
                 <button
@@ -557,6 +562,40 @@
             </form>
 
           </section>
+
+          <!-- DOBLE FACTOR (TOTP) -->
+          <section class="card card-pad" id="twofa-card">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); flex-wrap:wrap;">
+              <h3 style="font-size:var(--fs-md);">Verificación en dos pasos</h3>
+              <span class="badge badge-neutral" data-2fa-estado>Cargando…</span>
+            </div>
+            <p class="field-hint" style="margin:var(--space-2) 0 var(--space-4);">
+              Además de tu contraseña, se pedirá un código de 6 dígitos de una app autenticadora
+              (Google Authenticator, Microsoft Authenticator, Authy, 1Password).
+            </p>
+            <div class="btn-group" data-2fa-acciones>
+              <button type="button" class="btn btn-primary" data-2fa-activar hidden>Activar verificación en dos pasos</button>
+              <button type="button" class="btn btn-secondary" data-2fa-desactivar hidden>Desactivar</button>
+            </div>
+            <div data-2fa-setup hidden style="margin-top:var(--space-5);">
+              <div class="twofa-card">
+                <div class="twofa-qr" data-2fa-qr aria-label="Código QR para tu app autenticadora"></div>
+                <div>
+                  <p style="font-size:var(--fs-sm); margin-bottom:var(--space-2);"><strong>1.</strong> Escanea el QR con tu app. Si no puedes, escribe esta clave manualmente:</p>
+                  <div class="twofa-secret" data-2fa-secreto></div>
+                  <p style="font-size:var(--fs-sm); margin:var(--space-4) 0 var(--space-2);"><strong>2.</strong> Escribe el código de 6 dígitos que muestra la app:</p>
+                  <input class="input otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+                  <div class="btn-group" style="margin-top:var(--space-3);"><button type="button" class="btn btn-primary" data-2fa-confirmar>Confirmar y activar</button></div>
+                </div>
+              </div>
+            </div>
+            <div data-2fa-off hidden style="margin-top:var(--space-5);">
+              <p style="font-size:var(--fs-sm); margin-bottom:var(--space-2);">Para desactivarlo, escribe un código vigente de tu app:</p>
+              <input class="input otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+              <div class="btn-group" style="margin-top:var(--space-3);"><button type="button" class="btn btn-secondary" data-2fa-confirmar-off>Confirmar desactivación</button></div>
+            </div>
+          </section>
+
 
         </div>
 
@@ -634,8 +673,6 @@
 
 <script src="/js/dropdown.js"></script>
 
-<script src="/js/command-palette.js"></script>
-
 <script src="/js/topbar-actions.js"></script>
 
 
@@ -648,6 +685,13 @@
 
 </script>
 
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/password-generator.js"></script>
+<script src="/js/vendor-qrcode.js"></script>
+<script src="/js/twofa.js"></script>
 </body>
 
 </html>

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
   <style>
     .agenda-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-5)}
     .calendar-event-card{--event-accent:#4778dc;--event-soft:#edf3ff;position:relative;display:flex;align-items:flex-start;gap:var(--space-4);overflow:hidden;cursor:pointer;background:linear-gradient(135deg,#fff 60%,var(--event-soft));box-shadow:0 4px 14px rgba(15,31,66,.05);padding:var(--space-4) var(--space-4) var(--space-4) calc(var(--space-4) + 4px);transition:box-shadow .15s,transform .15s}
@@ -139,7 +140,6 @@
 
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
@@ -466,5 +466,9 @@
     aplicar();
   });
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
 </body>
 </html>

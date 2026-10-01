@@ -119,3 +119,21 @@ y los dos compartidos entre ambos roles: `CuentaController` y
 `NotificacionesController`. `SitioController` solo sirve ya lo que sigue
 siendo mock: Resource Manager, Project Manager, y el Asistente IA de
 Administrador/Colaborador.
+
+---
+
+## Iteración de pulido (buscador predictivo, proyectos, 2FA)
+
+**Front / UX**
+- `static/css/polish.css`: capa final de estilos (Inter + JetBrains Mono autohospedadas en `static/fonts/`, tablas corregidas, contenedor fluido, responsive con menú hamburguesa, tablas con primera columna fija en celular).
+- Buscador global del topbar (`js/global-search.js` → `GET /cuenta/buscar?q=`): predictivo desde 2 letras, resaltado, teclado (↑ ↓ Enter Esc, `Ctrl+K` o `/`). Alcance por rol en `BuscadorService` (el colaborador no ve a otras personas).
+- `js/predictive.js`: sugerencias en buscadores de tabla, `?buscar=` desde el buscador global y **selector de colaboradores tipo buscador** (cualquier `<select data-combobox>`).
+- `js/battery-progress.js`: barras de progreso tipo batería con el % dentro (se aplica solo a `.progress-inline` / `.progress-bar`).
+- Proyectos (admin, PM, colaborador): logos de tecnología (`js/tech-icons.js`, sin CDN), periodo/duración, "N miembros" y filtros por tecnología / duración / avance / miembros (`js/project-ui.js`).
+
+**Seguridad**
+- **Doble factor TOTP (RFC 6238)**: `util/Totp.java` (probado con los vectores oficiales del RFC), `DobleFactorService`, `DobleFactorController` (`/cuenta/2fa/*`), paso extra en `AuthController` (`/auth/verificar-2fa.html`: 5 intentos, 5 min) y tarjeta con QR en *Mi cuenta*. La tabla `usuarios_2fa` la crea `Inicializador2fa` al arrancar (o aplica `db/migracion_v5_doble_factor.sql`). Nota: el secreto se guarda sin cifrar en BD; para producción conviene cifrarlo.
+- **Contraseña generativa** (`js/password-generator.js`, `crypto.getRandomValues`): botón en Mi cuenta (4 roles), registro y restablecer; cumple la política (12+, mayúscula, minúscula, número, símbolo).
+- **Restricción de foros** (`ForoService`): responder exige tener asignación en el proyecto (antes solo lo exigía crear hilo) y los foros de proyectos completados/cancelados quedan en solo lectura.
+
+**Pendiente de verificar en tu máquina**: `mvn clean package` (el entorno de trabajo no tiene Maven Central) y probar el flujo 2FA y `/cuenta/buscar` contra tu MySQL.

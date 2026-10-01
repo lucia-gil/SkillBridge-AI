@@ -8,6 +8,7 @@ import com.skillbridge.ai.dto.RespuestaFila;
 import com.skillbridge.ai.model.Asignacion;
 import com.skillbridge.ai.model.ForoPublicacion;
 import com.skillbridge.ai.model.Proyecto;
+import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.repository.AsignacionRepository;
 import com.skillbridge.ai.repository.ForoPublicacionRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
@@ -44,13 +45,26 @@ public class ForoService {
     private final AsignacionRepository asignacionRepository;
     private final NotificacionService notificacionService;
     private final AuditoriaService auditoriaService;
+    private final ProyectoRepository proyectoRepository;
 
     public ForoService(ForoPublicacionRepository foroPublicacionRepository, AsignacionRepository asignacionRepository,
-                        NotificacionService notificacionService, AuditoriaService auditoriaService) {
+                        NotificacionService notificacionService, AuditoriaService auditoriaService,
+                        ProyectoRepository proyectoRepository) {
+        this.proyectoRepository = proyectoRepository;
         this.foroPublicacionRepository = foroPublicacionRepository;
         this.asignacionRepository = asignacionRepository;
         this.notificacionService = notificacionService;
         this.auditoriaService = auditoriaService;
+    }
+
+    /** Restriccion de foros: un proyecto completado o cancelado queda en solo lectura. */
+    private void exigirForoAbierto(Long proyectoId) {
+        proyectoRepository.findById(proyectoId).ifPresent(p -> {
+            String e = p.getEstado();
+            if ("completado".equals(e) || "cancelado".equals(e)) {
+                throw new OperacionInvalidaException("El foro de este proyecto esta cerrado (proyecto " + e + "). Solo puedes leerlo.");
+            }
+        });
     }
 
     private List<Long> proyectosDelPerfil(Long perfilId) {
@@ -102,6 +116,7 @@ public class ForoService {
         if (!proyectosDelPerfil(perfilId).contains(proyectoId)) {
             throw new OperacionInvalidaException("Solo puedes publicar en proyectos donde tienes una asignación.");
         }
+        exigirForoAbierto(proyectoId);
         ForoPublicacion f = new ForoPublicacion();
         f.setProyectoId(proyectoId);
         f.setAutorId(perfilId);
@@ -156,6 +171,10 @@ public class ForoService {
         }
         ForoPublicacion hilo = foroPublicacionRepository.buscarHiloConDetalle(hiloId)
                 .orElseThrow(() -> new OperacionInvalidaException("El hilo ya no existe."));
+        if (!proyectosDelPerfil(perfilId).contains(hilo.getProyectoId())) {
+            throw new OperacionInvalidaException("Solo puedes responder en foros de proyectos donde tienes una asignación.");
+        }
+        exigirForoAbierto(hilo.getProyectoId());
 
         ForoPublicacion respuesta = new ForoPublicacion();
         respuesta.setProyectoId(hilo.getProyectoId());

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
   <style>
     .assignment-summary{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:var(--space-4);margin-bottom:var(--space-5)}
     .assignment-summary-item{position:relative;display:flex;align-items:center;gap:var(--space-4);min-height:116px;padding:var(--space-5);overflow:hidden;border:1px solid var(--summary-border);border-radius:16px;background:linear-gradient(135deg,#fff 10%,var(--summary-bg) 100%);box-shadow:0 7px 20px rgba(15,31,66,.06);transition:transform .2s ease,box-shadow .2s ease}
@@ -97,7 +98,7 @@
 
             <div class="assign-panel" data-assignment-form hidden th:unless="${p.cupoCompleto}">
               <h3 style="font-size:var(--fs-sm);margin-bottom:var(--space-4)">Nueva asignación</h3>
-              <div class="field"><label class="field-label">Colaborador</label><select class="select" data-field="perfilId"><option value="">Selecciona una persona</option><option th:each="perfil : ${perfiles}" th:value="${perfil.perfilId()}" th:text="${perfil.nombre()} + ' · ' + ${perfil.correo()}">Persona</option></select></div>
+              <div class="field"><label class="field-label">Colaborador</label><select class="select" data-field="perfilId" data-combobox data-placeholder="Escribe el nombre o correo…"><option value="">Selecciona una persona</option><option th:each="perfil : ${perfiles}" th:value="${perfil.perfilId()}" th:text="${perfil.nombre()} + ' · ' + ${perfil.correo()}">Persona</option></select></div>
               <input type="hidden" value="colaborador" data-field="rolEnProyecto">
               <div class="field-row"><div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" min="1" max="100" value="50" data-field="cargaPorcentaje"></div><div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" data-field="fechaInicio"></div></div>
               <div class="btn-group" style="justify-content:flex-end"><button type="button" class="btn btn-secondary btn-sm" data-hide-assignment-form>Cancelar</button><button type="button" class="btn btn-primary btn-sm" th:attr="data-assign-project=${p.id}">Confirmar asignación</button></div>
@@ -112,9 +113,12 @@
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/modal.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">window.SBAI_FLASH={exito:/*[[${exito}]]*/null,error:/*[[${error}]]*/null};</script>
 <script src="/js/pm-asignaciones.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
 </body>
 </html>

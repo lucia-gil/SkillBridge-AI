@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
 <button type="button" id="theme-toggle-btn" class="btn btn-secondary btn-icon-only" aria-label="Cambiar a modo oscuro" style="position:fixed; top:var(--space-4); right:var(--space-4); z-index:var(--z-topbar);"><svg class="icon"><use href="/img/icons.svg#icon-monitor"></use></svg></button>
@@ -106,6 +107,7 @@
             <div class="input-wrap"><input class="input" type="password" id="reg-pass2" name="contrasena2" placeholder="••••••••••••">
               <button type="button" class="input-action" data-toggle-password="reg-pass2">Mostrar</button></div>
             <div class="field-error" th:if="${errores != null and errores['contrasena2'] != null}" style="display:flex;" th:text="${errores['contrasena2']}">Las contraseñas no coinciden.</div>
+          <div class="pwd-tools"><button type="button" class="btn btn-secondary btn-sm" data-generar-password data-target="#reg-pass,#reg-pass2">Generar contraseña segura</button></div>
           </div>
         </div>
 
@@ -355,5 +357,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <script src="/js/theme-toggle.js"></script>
+<script src="/js/password-generator.js"></script>
 </body>
 </html>

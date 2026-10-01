@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillbridge.ai.dto.*;
 import com.skillbridge.ai.service.AuthService;
 import com.skillbridge.ai.service.ConfiguracionService;
+import com.skillbridge.ai.service.DobleFactorService;
 import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,7 +35,12 @@ public class AuthController {
     private final ConfiguracionService configuracionService;
     private final ObjectMapper objectMapper;
 
-    public AuthController(AuthService authService, ConfiguracionService configuracionService, ObjectMapper objectMapper) {
+    private final DobleFactorService dobleFactorService;
+    private static final String PENDIENTE_2FA = "PENDIENTE_2FA";
+    private static final String INTENTOS_2FA = "INTENTOS_2FA";
+
+    public AuthController(AuthService authService, ConfiguracionService configuracionService, ObjectMapper objectMapper, DobleFactorService dobleFactorService) {
+        this.dobleFactorService = dobleFactorService;
         this.authService = authService;
         this.configuracionService = configuracionService;
         this.objectMapper = objectMapper;
@@ -82,16 +88,29 @@ public class AuthController {
             return "redirect:/auth/login.html";
         }
 
-        // Prevencion de session fixation: se invalida cualquier sesion previa
-        // y se emite una nueva antes de guardar al usuario autenticado.
+        if (dobleFactorService.estaActivo(resultado.getUsuarioSesion().getUsuarioId())) {
+            // Contraseña correcta pero falta el segundo factor: sesion nueva SIN SesionKeys.USUARIO.
+            HttpSession previa = request.getSession(false);
+            if (previa != null) {
+                previa.invalidate();
+            }
+            HttpSession pendiente = request.getSession(true);
+            pendiente.setMaxInactiveInterval(5 * 60);
+            pendiente.setAttribute(PENDIENTE_2FA, resultado.getUsuarioSesion());
+            pendiente.setAttribute(INTENTOS_2FA, 0);
+            return "redirect:/auth/verificar-2fa.html";
+        }
+        iniciarSesion(request, resultado.getUsuarioSesion());
+        return "redirect:" + homeDe(resultado.getUsuarioSesion());
+    }
+
+    /** Prevencion de session fixation + duracion configurable (RF08). */
+    private void iniciarSesion(HttpServletRequest request, UsuarioSesion usuario) {
         HttpSession vieja = request.getSession(false);
         if (vieja != null) {
             vieja.invalidate();
         }
         HttpSession nueva = request.getSession(true);
-        // Duración de sesión configurable (RF08): antes 30 min fijos; ahora lee
-        // configuracion_global.expiracion_sesion_minutos, para que el valor que
-        // el Administrador ajusta en Configuración tenga efecto real.
         String minutosTexto = configuracionService.valor(configuracionService.obtenerMapa(), "expiracion_sesion_minutos", "30");
         int minutos;
         try {
@@ -100,9 +119,40 @@ public class AuthController {
             minutos = 30;
         }
         nueva.setMaxInactiveInterval(minutos * 60);
-        nueva.setAttribute(SesionKeys.USUARIO, resultado.getUsuarioSesion());
+        nueva.setAttribute(SesionKeys.USUARIO, usuario);
+    }
 
-        return "redirect:" + homeDe(resultado.getUsuarioSesion());
+    // ───────────────────────── Segundo factor ─────────────────────────
+
+    @GetMapping("/auth/verificar-2fa.html")
+    public String verificar2faForm(HttpSession session, Model model) {
+        if (session.getAttribute(PENDIENTE_2FA) == null) {
+            return "redirect:/auth/login.html";
+        }
+        return "auth/verificar-2fa";
+    }
+
+    @PostMapping("/auth/verificar-2fa.html")
+    public String verificar2fa(@RequestParam String codigo, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+        HttpSession session = request.getSession(false);
+        UsuarioSesion pendiente = session == null ? null : (UsuarioSesion) session.getAttribute(PENDIENTE_2FA);
+        if (pendiente == null) {
+            return "redirect:/auth/login.html";
+        }
+        if (dobleFactorService.verificar(pendiente.getUsuarioId(), codigo)) {
+            iniciarSesion(request, pendiente);
+            return "redirect:" + homeDe(pendiente);
+        }
+        Object n = session.getAttribute(INTENTOS_2FA);
+        int intentos = (n instanceof Integer ? (Integer) n : 0) + 1;
+        if (intentos >= 5) {
+            session.invalidate();
+            redirectAttributes.addFlashAttribute("error", "Demasiados codigos incorrectos. Inicia sesion de nuevo.");
+            return "redirect:/auth/login.html";
+        }
+        session.setAttribute(INTENTOS_2FA, intentos);
+        redirectAttributes.addFlashAttribute("error", "Codigo incorrecto. Te quedan " + (5 - intentos) + " intentos.");
+        return "redirect:/auth/verificar-2fa.html";
     }
 
     @GetMapping("/auth/logout")
