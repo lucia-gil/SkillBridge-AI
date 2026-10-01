@@ -268,26 +268,43 @@ public class ProyectoService {
                     + colaboradores + " colaborador(es) asignado(s), " + entregables + " entregable(s) y "
                     + hilosForo + " hilo(s) de foro. Usa \"Cancelado\" en el estado en vez de eliminarlo.");
         }
+        if (!"cancelado".equals(p.getEstado())) {
+            throw new OperacionInvalidaException("No se puede eliminar \"" + p.getNombre()
+                    + "\": el proyecto debe estar en estado \"Cancelado\" antes de poder eliminarlo.");
+        }
         String nombre = p.getNombre();
+        String razon = p.getRazonCancelacion();
         asignacionRepository.deleteByProyectoId(proyectoId);
         proyectoRepository.delete(p);
         auditoriaService.registrar(actorUsuarioId, "PROYECTO_ELIMINADO", "proyecto", proyectoId, null, null,
-                "Proyecto \"" + nombre + "\" eliminado.");
+                "Proyecto \"" + nombre + "\" eliminado (estaba cancelado"
+                        + (razon != null && !razon.isBlank() ? " por: " + razon : "") + ").");
     }
 
     @Transactional
-    public void cambiarEstado(Long proyectoId, String nuevoEstado, Long actorUsuarioId) {
+    public void cambiarEstado(Long proyectoId, String nuevoEstado, String razonCancelacion, Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         List<String> validos = List.of("planificacion", "activo", "en_pausa", "completado", "cancelado");
         if (!validos.contains(nuevoEstado)) {
             throw new OperacionInvalidaException("Estado de proyecto no reconocido.");
         }
+        if ("cancelado".equals(nuevoEstado) && (razonCancelacion == null || razonCancelacion.isBlank())) {
+            throw new OperacionInvalidaException("Para cancelar el proyecto debes indicar una razón.");
+        }
         String anterior = p.getEstado();
         p.setEstado(nuevoEstado);
+        if ("cancelado".equals(nuevoEstado)) {
+            p.setRazonCancelacion(razonCancelacion.trim());
+        } else {
+            p.setRazonCancelacion(null);
+        }
         proyectoRepository.save(p);
+        String detalle = "cancelado".equals(nuevoEstado)
+                ? p.getNombre() + " (razón: " + p.getRazonCancelacion() + ")"
+                : p.getNombre();
         auditoriaService.registrar(actorUsuarioId, "PROYECTO_ESTADO_CAMBIADO", "proyecto", proyectoId,
-                AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevoEstado), p.getNombre());
+                AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevoEstado), detalle);
     }
 
     /**
@@ -299,7 +316,7 @@ public class ProyectoService {
     @Transactional
     public void editarProyecto(Long proyectoId, String nombre, String descripcion, List<String> tecnologias,
                                 LocalDate fechaInicio, LocalDate fechaFinEstimada, String nuevoEstado,
-                                Long actorUsuarioId) {
+                                String razonCancelacion, Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         if (nombre == null || nombre.trim().isEmpty()) {
@@ -312,6 +329,9 @@ public class ProyectoService {
         List<String> validos = List.of("planificacion", "activo", "en_pausa", "completado", "cancelado");
         if (!validos.contains(nuevoEstado)) {
             throw new OperacionInvalidaException("Estado de proyecto no reconocido.");
+        }
+        if ("cancelado".equals(nuevoEstado) && (razonCancelacion == null || razonCancelacion.isBlank())) {
+            throw new OperacionInvalidaException("Para cancelar el proyecto debes indicar una razón.");
         }
         if (fechaInicio == null) {
             throw new OperacionInvalidaException("La fecha de inicio es obligatoria.");
@@ -332,9 +352,17 @@ public class ProyectoService {
         p.setFechaInicio(fechaInicio);
         p.setFechaFinEstimada(fechaFinEstimada);
         p.setEstado(nuevoEstado);
+        if ("cancelado".equals(nuevoEstado)) {
+            p.setRazonCancelacion(razonCancelacion.trim());
+        } else {
+            p.setRazonCancelacion(null);
+        }
         proyectoRepository.save(p);
+        String detalle = "cancelado".equals(nuevoEstado)
+                ? p.getNombre() + " (razón: " + p.getRazonCancelacion() + ")"
+                : p.getNombre();
         auditoriaService.registrar(actorUsuarioId, "PROYECTO_EDITADO", "proyecto", proyectoId,
-                AuditoriaService.json("estado", estadoAnterior), AuditoriaService.json("estado", nuevoEstado), p.getNombre());
+                AuditoriaService.json("estado", estadoAnterior), AuditoriaService.json("estado", nuevoEstado), detalle);
     }
 
     @Transactional

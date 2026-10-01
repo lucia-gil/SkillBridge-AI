@@ -161,6 +161,10 @@
                 </div>
                 <button type="button" class="btn btn-primary btn-sm" th:attr="data-cambiar-estado=${d.id}" style="align-self:flex-start;">Guardar estado</button>
               </div>
+              <div class="field" data-razon-cancelacion-wrap hidden style="margin-top:var(--space-3);">
+                <label class="field-label">Razón de la cancelación (obligatoria)</label>
+                <textarea class="input" data-field="razonCancelacion" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea>
+              </div>
             </div>
             <div class="modal-footer">
               <a class="btn btn-secondary" th:href="@{'/project-manager/proyectos/' + ${d.id} + '/entregables.html'}" style="text-decoration:none;">Ver entregables</a>
@@ -245,6 +249,8 @@ document.addEventListener("DOMContentLoaded", function () {
           '<option value="completado"' + (d.estado === "completado" ? " selected" : "") + '>Completado</option>' +
           '<option value="cancelado"' + (d.estado === "cancelado" ? " selected" : "") + '>Cancelado</option>' +
         '</select></div>' +
+        '<div class="field" id="ep-razon-wrap" hidden><label class="field-label">Razón de la cancelación (obligatoria)</label>' +
+        '<textarea class="input" id="ep-razon" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
         '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ep-confirm">Guardar cambios</button></div></div>';
       var backdrop = SBAI.modal.open(html);
 
@@ -252,17 +258,31 @@ document.addEventListener("DOMContentLoaded", function () {
       var errorText = backdrop.querySelector("#ep-error-text");
       function mostrarErrorEp(msg) { errorText.textContent = msg; errorBox.hidden = false; }
 
+      var epEstadoSelect = backdrop.querySelector("#ep-estado");
+      var epRazonWrap = backdrop.querySelector("#ep-razon-wrap");
+      function actualizarEpRazonWrap() {
+        if (!epEstadoSelect || !epRazonWrap) return;
+        epRazonWrap.hidden = epEstadoSelect.value !== "cancelado";
+      }
+      if (epEstadoSelect) {
+        actualizarEpRazonWrap();
+        epEstadoSelect.addEventListener("change", actualizarEpRazonWrap);
+      }
+
       backdrop.querySelector("#ep-confirm").addEventListener("click", function () {
         errorBox.hidden = true;
         var nombre = backdrop.querySelector("#ep-nombre").value.trim();
         var inicio = backdrop.querySelector("#ep-inicio").value;
         var fin = backdrop.querySelector("#ep-fin").value;
+        var estadoNuevo = backdrop.querySelector("#ep-estado").value;
+        var razon = backdrop.querySelector("#ep-razon").value.trim();
 
         if (!nombre) { mostrarErrorEp("Ingresa un nombre para el proyecto."); return; }
         if (!inicio) { mostrarErrorEp("Selecciona la fecha de inicio."); return; }
         if (!fin) { mostrarErrorEp("Selecciona la fecha de fin estimada."); return; }
         if (fin < inicio) { mostrarErrorEp("La fecha de fin no puede ser anterior a la fecha de inicio."); return; }
         if (diffDiasIsoB(inicio, fin) < 7) { mostrarErrorEp("Debe haber al menos 7 días de diferencia entre la fecha de inicio y la fecha de fin."); return; }
+        if (estadoNuevo === "cancelado" && !razon) { mostrarErrorEp("Para cancelar el proyecto debes indicar una razón."); return; }
 
         submitForm("/project-manager/proyectos/" + id + "/editar", {
           nombre: nombre,
@@ -270,7 +290,8 @@ document.addEventListener("DOMContentLoaded", function () {
           tecnologias: backdrop.querySelector("#ep-tech").value,
           fechaInicio: inicio,
           fechaFinEstimada: fin,
-          estado: backdrop.querySelector("#ep-estado").value
+          estado: estadoNuevo,
+          razonCancelacion: razon
         });
       });
     });
@@ -298,11 +319,27 @@ document.addEventListener("DOMContentLoaded", function () {
           });
         });
       }
+      var estadoSelect = backdrop.querySelector('[data-field="estado"]');
+      var razonWrap = backdrop.querySelector("[data-razon-cancelacion-wrap]");
+      function actualizarRazonWrap() {
+        if (!estadoSelect || !razonWrap) return;
+        razonWrap.hidden = estadoSelect.value !== "cancelado";
+      }
+      if (estadoSelect) {
+        actualizarRazonWrap();
+        estadoSelect.addEventListener("change", actualizarRazonWrap);
+      }
       var estadoBtn = backdrop.querySelector("[data-cambiar-estado]");
       if (estadoBtn) {
         estadoBtn.addEventListener("click", function () {
           var proyectoId = estadoBtn.dataset.cambiarEstado;
-          submitForm("/project-manager/proyectos/" + proyectoId + "/estado", { estado: backdrop.querySelector('[data-field="estado"]').value });
+          var nuevoEstado = estadoSelect.value;
+          var razon = backdrop.querySelector('[data-field="razonCancelacion"]').value.trim();
+          if (nuevoEstado === "cancelado" && !razon) {
+            SBAI.toast.show("Para cancelar el proyecto debes indicar una razón.", { type: "error" });
+            return;
+          }
+          submitForm("/project-manager/proyectos/" + proyectoId + "/estado", { estado: nuevoEstado, razonCancelacion: razon });
         });
       }
     });

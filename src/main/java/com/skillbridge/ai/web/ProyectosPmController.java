@@ -109,11 +109,12 @@ public class ProyectosPmController {
 
     @PostMapping("/proyectos/{id}/estado")
     public String cambiarEstado(@PathVariable Long id, @RequestParam String estado,
+                                @RequestParam(required = false) String razonCancelacion,
                                 HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             exigirPropiedad(sesion.getPerfilId(), id);
-            proyectoService.cambiarEstado(id, estado, sesion.getUsuarioId());
+            proyectoService.cambiarEstado(id, estado, razonCancelacion, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Estado del proyecto actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -129,6 +130,7 @@ public class ProyectosPmController {
                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFinEstimada,
                          @RequestParam String estado,
+                         @RequestParam(required = false) String razonCancelacion,
                          HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
@@ -136,7 +138,7 @@ public class ProyectosPmController {
             List<String> lista = tecnologias == null ? List.of() : Arrays.stream(tecnologias.split(","))
                     .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
             proyectoService.editarProyecto(id, nombre, descripcion, lista, fechaInicio, fechaFinEstimada, estado,
-                    sesion.getUsuarioId());
+                    razonCancelacion, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

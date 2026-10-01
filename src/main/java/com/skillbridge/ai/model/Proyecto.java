@@ -47,6 +47,9 @@ public class Proyecto {
     @Column(name = "fecha_creacion", insertable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
+    @Column(name = "razon_cancelacion", columnDefinition = "TEXT")
+    private String razonCancelacion;
+
     public Long getId() {
         return id;
     }
@@ -113,5 +116,13 @@ public class Proyecto {
 
     public LocalDateTime getFechaCreacion() {
         return fechaCreacion;
+    }
+
+    public String getRazonCancelacion() {
+        return razonCancelacion;
+    }
+
+    public void setRazonCancelacion(String razonCancelacion) {
+        this.razonCancelacion = razonCancelacion;
     }
 }

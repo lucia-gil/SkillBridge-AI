@@ -84,10 +84,11 @@ public class AdminProyectosController {
 
     @PostMapping("/proyectos/{id}/estado")
     public String cambiarEstado(@PathVariable Long id, @RequestParam String estado,
+                                 @RequestParam(required = false) String razonCancelacion,
                                  HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            proyectoService.cambiarEstado(id, estado, sesion.getUsuarioId());
+            proyectoService.cambiarEstado(id, estado, razonCancelacion, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Estado del proyecto actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

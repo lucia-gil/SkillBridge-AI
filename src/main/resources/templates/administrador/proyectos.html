@@ -122,6 +122,10 @@
                 </div>
                 <button type="button" class="btn btn-primary btn-sm" th:attr="data-cambiar-estado=${d.id}" style="align-self:flex-start;">Guardar estado</button>
               </div>
+              <div class="field" data-razon-cancelacion-wrap hidden style="margin-top:var(--space-3);">
+                <label class="field-label">Razón de la cancelación (obligatoria)</label>
+                <textarea class="input" data-field="razonCancelacion" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea>
+              </div>
             </div>
             <div class="modal-footer">
               <a class="btn btn-secondary" th:href="@{'/administrador/proyectos/' + ${d.id} + '/entregables.html'}" style="text-decoration:none;">Ver entregables</a>
@@ -167,11 +171,27 @@ document.addEventListener("DOMContentLoaded", function () {
           });
         });
       }
+      var estadoSelect = backdrop.querySelector('[data-field="estado"]');
+      var razonWrap = backdrop.querySelector("[data-razon-cancelacion-wrap]");
+      function actualizarRazonWrap() {
+        if (!estadoSelect || !razonWrap) return;
+        razonWrap.hidden = estadoSelect.value !== "cancelado";
+      }
+      if (estadoSelect) {
+        actualizarRazonWrap();
+        estadoSelect.addEventListener("change", actualizarRazonWrap);
+      }
       var estadoBtn = backdrop.querySelector("[data-cambiar-estado]");
       if (estadoBtn) {
         estadoBtn.addEventListener("click", function () {
           var proyectoId = estadoBtn.dataset.cambiarEstado;
-          submitForm("/administrador/proyectos/" + proyectoId + "/estado", { estado: backdrop.querySelector('[data-field="estado"]').value });
+          var nuevoEstado = estadoSelect.value;
+          var razon = backdrop.querySelector('[data-field="razonCancelacion"]').value.trim();
+          if (nuevoEstado === "cancelado" && !razon) {
+            SBAI.toast.show("Para cancelar el proyecto debes indicar una razón.", { type: "error" });
+            return;
+          }
+          submitForm("/administrador/proyectos/" + proyectoId + "/estado", { estado: nuevoEstado, razonCancelacion: razon });
         });
       }
     });
