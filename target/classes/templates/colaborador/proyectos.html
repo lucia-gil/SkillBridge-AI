@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
 <div class="app-shell">
@@ -21,9 +22,31 @@
         <button type="button" class="tab-btn" data-tab="historial">Historial completo</button>
       </div>
 
+      <section class="card" id="filtros-actuales">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${proyectosActivos.size()} + (${proyectosActivos.size()} == 1 ? ' proyecto actual' : ' proyectos actuales')">0 proyectos</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Filtra por nombre, estado, tecnología, duración o avance</p>
+          </div>
+          <div class="table-filters">
+            <input type="text" class="input" data-filter-scope="proyectos-colab" data-filter-key="q" placeholder="Buscar proyecto…" style="width:220px; height:36px; font-size:var(--fs-xs);">
+            <select class="select" data-filter-scope="proyectos-colab" data-filter-key="estado">
+              <option value="todos">Estado: todos</option>
+              <option value="planificacion">Planificación</option><option value="activo">Activo</option>
+              <option value="en_pausa">En pausa</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+        </div>
+        <div data-project-filters="proyectos-colab" data-hide="miembros" data-rows="[data-project-card=&quot;proyectos-colab&quot;]"></div>
+      </section>
+      <div class="state-panel" data-cards-empty="proyectos-colab" hidden>
+        <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+        <span class="state-panel-title">Sin proyectos con estos filtros</span>
+      </div>
+
       <div id="tab-actuales" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:var(--space-5);">
         <div th:if="${proyectosActivos.isEmpty()}" class="text-tertiary" style="grid-column:1/-1; text-align:center; padding:var(--space-6);">No tienes proyectos activos por ahora.</div>
-        <div class="card card-pad" th:each="p : ${proyectosActivos}">
+        <div class="card card-pad" th:each="p : ${proyectosActivos}" data-project-card="proyectos-colab" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre)}">
           <div style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">
             <span class="avatar" style="border-radius:var(--radius-md); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
             <div style="flex:1; min-width:0;">
@@ -34,6 +57,8 @@
           </div>
           <p class="text-secondary" style="font-size:var(--fs-sm); line-height:1.5; margin-bottom:var(--space-4);"
              th:text="${#strings.abbreviate(p.descripcion ?: 'Sin descripción.', 130)}">Descripción</p>
+          <span data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="4" style="margin-bottom:var(--space-4);"></span>
+          <div data-periodo th:attr="data-periodo=${p.periodoLabel}" style="margin:var(--space-3) 0 var(--space-4);"></div>
           <div class="progress-inline" style="margin-bottom:var(--space-4);">
             <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div>
             <span class="progress-value" th:text="${p.avance} + '%'">0%</span>
@@ -54,7 +79,7 @@
             <tr th:each="h : ${historial}">
               <td class="cell-primary" th:text="${h.nombre}">Proyecto</td>
               <td th:text="${h.rolLabel}">Rol</td>
-              <td th:text="${h.periodoLabel}">Periodo</td>
+              <td><span data-periodo th:attr="data-periodo=${h.periodoLabel}">Periodo</span></td>
               <td class="mono" th:text="${h.cargaPorcentaje} + '%'">0%</td>
               <td><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></td>
               <td class="cell-actions"><button type="button" th:attr="data-view-project=${h.proyectoId}">Ver detalle</button></td>
@@ -75,7 +100,7 @@
           <div class="modal-body">
             <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
             <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
-              <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:text="${t}">Tech</span>
+              <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:with="icono=${T(com.skillbridge.ai.util.TecnologiaIconUtil).icono(t)}" style="display:inline-flex; align-items:center; gap:6px;"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${icono}"></use></svg><span th:text="${t}">Tech</span></span>
             </div>
             <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
             <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
@@ -100,7 +125,6 @@
 
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
@@ -120,10 +144,18 @@
         document.querySelectorAll("[data-tab]").forEach(function (b) { b.classList.remove("active"); });
         btn.classList.add("active");
         document.getElementById("tab-actuales").hidden = btn.dataset.tab !== "actuales";
+        var fa = document.getElementById("filtros-actuales"); if (fa) fa.hidden = btn.dataset.tab !== "actuales";
+        var ce = document.querySelector("[data-cards-empty]"); if (ce && btn.dataset.tab !== "actuales") ce.hidden = true;
         document.getElementById("tab-historial").hidden = btn.dataset.tab !== "historial";
       });
     });
   });
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tech-icons.js"></script>
+<script src="/js/project-ui.js"></script>
 </body>
 </html>

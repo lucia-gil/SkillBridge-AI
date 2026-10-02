@@ -27,7 +27,7 @@
         <a
                 class="sidebar-nav-item"
                 th:classappend="${item.href == activeHref} ? 'active'"
-                th:href="${item.href}"
+                th:href="@{'/' + ${rolSlug} + '/' + ${item.href}}"
                 th:each="item : ${navItems}"
         >
             <svg class="icon">

@@ -157,8 +157,12 @@
   font-size: var(--fs-sm); font-weight: var(--fw-semibold);
   cursor: pointer;
 }
-.topbar-ai-btn:hover { background: #DDE5F2; }
+.topbar-ai-btn:hover { background: var(--tint-active); }
 .topbar-ai-btn .icon { color: var(--blue-accent-strong); }
+
+:root[data-theme="dark"] .topbar-ai-btn { background: color-mix(in srgb, var(--blue-accent-strong) 22%, var(--surface)); color: color-mix(in srgb, var(--blue-accent-strong) 70%, white); }
+:root[data-theme="dark"] .topbar-ai-btn:hover { background: color-mix(in srgb, var(--blue-accent-strong) 32%, var(--surface)); }
+:root[data-theme="dark"] .topbar-ai-btn .icon { color: color-mix(in srgb, var(--blue-accent-strong) 70%, white); }
 
 /* =========================================================
    Usuario del topbar

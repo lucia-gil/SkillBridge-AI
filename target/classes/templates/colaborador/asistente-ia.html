@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
 <script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
@@ -72,6 +73,7 @@
 <script src="/js/modal.js"></script>
 <script src="/js/ai-assistant.js"></script>
 <script src="/js/shell.js"></script>
+<script src="/js/theme-toggle.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   var cfg = SBAI.shell.init({ role: "colaborador", active: "asistente-ia.html", title: "Asistente IA", subtitle: "Contexto: tus proyectos, tu perfil y los foros" });

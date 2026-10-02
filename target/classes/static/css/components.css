@@ -46,7 +46,7 @@
   border-color: var(--border-default);
 }
 .btn-secondary:hover:not(:disabled) { background: var(--navy-100); border-color: var(--border-strong); }
-.btn-secondary:active:not(:disabled) { background: #DDE5F2; }
+.btn-secondary:active:not(:disabled) { background: var(--tint-active); }
 
 .btn-tertiary {
   background: transparent;
@@ -56,7 +56,7 @@
   height: 36px;
 }
 .btn-tertiary:hover:not(:disabled) { background: var(--navy-100); text-decoration: none; }
-.btn-tertiary:active:not(:disabled) { background: #DDE5F2; }
+.btn-tertiary:active:not(:disabled) { background: var(--tint-active); }
 
 .btn-destructive {
   background: var(--surface);
@@ -64,7 +64,7 @@
   border-color: var(--red-border);
 }
 .btn-destructive:hover:not(:disabled) { background: var(--red-bg); }
-.btn-destructive:active:not(:disabled) { background: #F6D9D3; }
+.btn-destructive:active:not(:disabled) { background: var(--tint-destructive-active); }
 .btn-destructive-solid {
   background: var(--red-fg);
   color: var(--text-inverse);
@@ -256,7 +256,7 @@
 .kpi-tile.accent-violet { --tile-bg: var(--violet-bg); --tile-border: var(--violet-border); --tile-glow: rgba(110,78,190,.11); }
 .kpi-tile.accent-red { --tile-bg: var(--red-bg); --tile-border: var(--red-border); --tile-glow: rgba(196,60,40,.11); }
 .kpi-tile.accent-blue, .kpi-tile.accent-green, .kpi-tile.accent-amber, .kpi-tile.accent-violet, .kpi-tile.accent-red {
-  background: linear-gradient(135deg, #fff 10%, var(--tile-bg) 100%);
+  background: linear-gradient(135deg, var(--surface) 10%, var(--tile-bg) 100%);
   border-color: var(--tile-border);
 }
 .kpi-tile.accent-blue::after, .kpi-tile.accent-green::after, .kpi-tile.accent-amber::after, .kpi-tile.accent-violet::after, .kpi-tile.accent-red::after {
@@ -563,7 +563,7 @@
 .notif-panel-list { overflow-y: auto; }
 .notif-item { display: flex; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--border-subtle); position: relative; }
 .notif-item:last-child { border-bottom: none; }
-.notif-item.unread { background: #F5F8FF; }
+.notif-item.unread { background: var(--notif-unread-bg); }
 .notif-item-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .notif-item-icon.alert { background: var(--red-bg); color: var(--red-fg); }
 .notif-item-icon.ai { background: var(--violet-bg); color: var(--violet-fg); }
@@ -743,7 +743,7 @@
   transition: transform var(--dur-fast) var(--ease-standard);
 }
 .heatmap-cell:hover { transform: scale(1.06); border-color: rgba(0,0,0,0.12); }
-.heatmap-cell.level-low { background: #EAF1FC; color: #2C5BB0; }
+.heatmap-cell.level-low { background: var(--blue-bg); color: var(--blue-fg); }
 .heatmap-cell.level-optimal { background: var(--green-bg); color: var(--green-fg); }
 .heatmap-cell.level-high { background: var(--amber-bg); color: var(--amber-fg); }
 .heatmap-cell.level-over { background: var(--red-bg); color: var(--red-fg); }
@@ -830,13 +830,13 @@
 .callout-body { flex: 1; font-size: var(--fs-sm); line-height: var(--lh-normal); }
 .callout-title { font-weight: var(--fw-semibold); margin-bottom: 2px; }
 .callout-actions { display: flex; gap: var(--space-3); margin-top: var(--space-3); }
-.callout.warn { background: var(--amber-bg); border-color: var(--amber-border); color: #7A5313; }
+.callout.warn { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-fg-strong); }
 .callout.warn .callout-icon { color: var(--amber-fg); }
-.callout.danger { background: var(--red-bg); border-color: var(--red-border); color: #8C2A1F; }
+.callout.danger { background: var(--red-bg); border-color: var(--red-border); color: var(--red-fg-strong); }
 .callout.danger .callout-icon { color: var(--red-fg); }
-.callout.info { background: var(--blue-bg); border-color: var(--blue-border); color: #1F3E7A; }
+.callout.info { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue-fg-strong); }
 .callout.info .callout-icon { color: var(--blue-fg); }
-.callout.ai { background: var(--violet-bg); border-color: var(--violet-border); color: #4A3480; }
+.callout.ai { background: var(--violet-bg); border-color: var(--violet-border); color: var(--violet-fg-strong); }
 .callout.ai .callout-icon { color: var(--violet-fg); }
 
 /* Skill pill (niveles) */

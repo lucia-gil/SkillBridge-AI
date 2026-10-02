@@ -5,13 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Iniciar sesión · SkillBridge AI</title>
   <link rel="icon" type="image/png" href="/img/logo-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 
   <!--
     Login rediseñado: sin panel lateral azul. Solo la card centrada sobre
@@ -118,6 +116,8 @@
   </style>
 </head>
 <body>
+<button type="button" id="theme-toggle-btn" class="btn btn-secondary btn-icon-only" aria-label="Cambiar a modo oscuro" style="position:fixed; top:var(--space-4); right:var(--space-4); z-index:var(--z-topbar);"><svg class="icon"><use href="/img/icons.svg#icon-monitor"></use></svg></button>
+
 <svg style="display:none"><use></use></svg>
 
 <div class="login-page">
@@ -136,9 +136,9 @@
     <p class="auth-card-sub">Ingresa con tu correo y contraseña.</p>
 
     <div th:if="${error}" th:text="${error}"
-         style="background:#fdecea; border:1px solid #d32f2f; color:#b71c1c; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
+         style="background:var(--red-bg); border:1px solid var(--red-border); color:var(--red-fg-strong); padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
     <div th:if="${exito}" th:text="${exito}"
-         style="background:#eaf7ec; border:1px solid #2e7d32; color:#1b5e20; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
+         style="background:var(--green-bg); border:1px solid var(--green-border); color:var(--green-fg); padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
 
     <form class="auth-card-body" id="login-form" th:action="@{/auth/login.html}" method="post" novalidate>
       <div class="field" id="field-email">
@@ -180,6 +180,10 @@
         Continuar con SSO corporativo
         <svg class="icon icon-sm"><use href="/img/icons.svg#icon-external-link"></use></svg>
       </button>
+
+      <p style="text-align:center; margin-top:var(--space-5); font-size:var(--fs-sm); color:var(--text-tertiary);">
+        ¿No tienes cuenta? <a href="registro.html" style="font-weight:500;">Crear cuenta</a>
+      </p>
     </form>
   </div>
 </div>
@@ -227,5 +231,6 @@
     });
   });
 </script>
+<script src="/js/theme-toggle.js"></script>
 </body>
 </html>

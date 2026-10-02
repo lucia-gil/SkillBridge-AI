@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
 <div class="app-shell">
@@ -23,6 +24,7 @@
             <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Vista global con datos completos</p>
           </div>
           <div class="table-filters">
+            <input type="text" class="input" data-filter-scope="proyectos-admin" data-filter-key="q" placeholder="Buscar por nombre…" style="width:200px; height:36px; font-size:var(--fs-xs);">
             <select class="select" data-filter-scope="proyectos-admin" data-filter-key="estado">
               <option value="todos">Estado: todos</option>
               <option value="planificacion">Planificación</option><option value="activo">Activo</option>
@@ -31,18 +33,19 @@
             <button type="button" class="btn btn-primary btn-sm" id="new-project-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo proyecto</button>
           </div>
         </div>
+        <div data-project-filters="proyectos-admin"></div>
         <div class="table-scroll">
           <table class="data-table">
-            <thead><tr><th>Proyecto</th><th>PM</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Proyecto</th><th>PM</th><th>Periodo / duración</th><th>Miembros</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              <tr th:each="p, stat : ${proyectos}" data-filter-row="proyectos-admin" th:attr="data-f-estado=${p.estadoCrudo}">
+              <tr th:each="p, stat : ${proyectos}" data-filter-row="proyectos-admin" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre)}">
                 <td class="cell-person">
                   <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
-                  <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span></span>
+                  <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="2"></span></span>
                 </td>
                 <td th:text="${p.pmNombre}">PM</td>
-                <td th:text="${p.fechaInicioLabel} + ' → ' + ${p.fechaFinLabel}">fechas</td>
-                <td th:text="${p.equipoSize}">0</td>
+                <td><span data-periodo th:attr="data-ini=${p.fechaInicioLabel},data-fin=${p.fechaFinLabel}">fechas</span></td>
+                <td><span class="miembros-pill" th:attr="data-n=${p.equipoSize}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg><span th:text="${p.equipoSize} + (${p.equipoSize} == 1 ? ' miembro' : ' miembros')">0 miembros</span></span></td>
                 <td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div><span class="progress-value" th:text="${p.avance} + '%'">0%</span></div></td>
                 <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
                 <td class="cell-actions"><button type="button" th:attr="data-view-project=${p.id}">Ver detalle</button></td>
@@ -70,7 +73,7 @@
             <div class="modal-body">
               <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
               <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
-                <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:text="${t}">Tech</span>
+                <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:with="icono=${T(com.skillbridge.ai.util.TecnologiaIconUtil).icono(t)}" style="display:inline-flex; align-items:center; gap:6px;"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${icono}"></use></svg><span th:text="${t}">Tech</span></span>
               </div>
               <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
               <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
@@ -90,7 +93,7 @@
               <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Asignar colaborador</h3>
               <div class="field-row">
                 <div class="field"><label class="field-label">Colaborador</label>
-                  <select class="select" data-field="perfilId">
+                  <select class="select" data-field="perfilId" data-combobox data-placeholder="Escribe el nombre o correo…">
                     <option th:each="p : ${perfiles}" th:value="${p.perfilId()}" th:text="${p.nombre()} + ' · ' + ${p.correo()}">Colaborador</option>
                   </select>
                 </div>
@@ -100,7 +103,7 @@
               </div>
               <div class="field-row">
                 <div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" min="1" max="100" value="50" data-field="cargaPorcentaje"></div>
-                <div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" data-field="fechaInicio"></div>
+                <div class="field"><label class="field-label">Periodo de inicio</label><input class="input" type="date" data-field="fechaInicio"></div>
               </div>
               <div class="btn-group" style="justify-content:flex-end; margin-bottom:var(--space-5);">
                 <button type="button" class="btn btn-secondary btn-sm" th:attr="data-asignar-proyecto=${d.id}">Asignar</button>
@@ -119,6 +122,10 @@
                 </div>
                 <button type="button" class="btn btn-primary btn-sm" th:attr="data-cambiar-estado=${d.id}" style="align-self:flex-start;">Guardar estado</button>
               </div>
+              <div class="field" data-razon-cancelacion-wrap hidden style="margin-top:var(--space-3);">
+                <label class="field-label">Razón de la cancelación (obligatoria)</label>
+                <textarea class="input" data-field="razonCancelacion" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea>
+              </div>
             </div>
             <div class="modal-footer">
               <a class="btn btn-secondary" th:href="@{'/administrador/proyectos/' + ${d.id} + '/entregables.html'}" style="text-decoration:none;">Ver entregables</a>
@@ -135,7 +142,6 @@
 <script src="/js/dropdown.js"></script>
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
-<script src="/js/command-palette.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
@@ -165,11 +171,27 @@ document.addEventListener("DOMContentLoaded", function () {
           });
         });
       }
+      var estadoSelect = backdrop.querySelector('[data-field="estado"]');
+      var razonWrap = backdrop.querySelector("[data-razon-cancelacion-wrap]");
+      function actualizarRazonWrap() {
+        if (!estadoSelect || !razonWrap) return;
+        razonWrap.hidden = estadoSelect.value !== "cancelado";
+      }
+      if (estadoSelect) {
+        actualizarRazonWrap();
+        estadoSelect.addEventListener("change", actualizarRazonWrap);
+      }
       var estadoBtn = backdrop.querySelector("[data-cambiar-estado]");
       if (estadoBtn) {
         estadoBtn.addEventListener("click", function () {
           var proyectoId = estadoBtn.dataset.cambiarEstado;
-          submitForm("/administrador/proyectos/" + proyectoId + "/estado", { estado: backdrop.querySelector('[data-field="estado"]').value });
+          var nuevoEstado = estadoSelect.value;
+          var razon = backdrop.querySelector('[data-field="razonCancelacion"]').value.trim();
+          if (nuevoEstado === "cancelado" && !razon) {
+            SBAI.toast.show("Para cancelar el proyecto debes indicar una razón.", { type: "error" });
+            return;
+          }
+          submitForm("/administrador/proyectos/" + proyectoId + "/estado", { estado: nuevoEstado, razonCancelacion: razon });
         });
       }
     });
@@ -185,10 +207,10 @@ document.addEventListener("DOMContentLoaded", function () {
       '<div class="field"><label class="field-label">Nombre</label><input class="input" id="np-nombre"></div>' +
       '<div class="field"><label class="field-label">Descripción</label><textarea class="input" id="np-desc" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
       '<div class="field"><label class="field-label">Tecnologías (separadas por coma)</label><input class="input" id="np-tech" placeholder="React, Node.js, PostgreSQL"></div>' +
-      '<div class="field-row"><div class="field"><label class="field-label">Fecha de inicio</label><input class="input" type="date" id="np-inicio"></div>' +
-      '<div class="field"><label class="field-label">Fecha de fin estimada</label><input class="input" type="date" id="np-fin"></div></div>' +
+      '<div class="field-row"><div class="field"><label class="field-label">Periodo de inicio</label><input class="input" type="date" id="np-inicio"></div>' +
+      '<div class="field"><label class="field-label">Periodo de entrega esperado</label><input class="input" type="date" id="np-fin"></div></div>' +
       '<div class="field-row"><div class="field"><label class="field-label">Colaboradores requeridos</label><input class="input" type="number" min="0" value="3" id="np-colab"></div>' +
-      '<div class="field"><label class="field-label">Project Manager</label><select class="select" id="np-pm">' + options + '</select></div></div>' +
+      '<div class="field"><label class="field-label">Project Manager</label><select class="select" id="np-pm" data-combobox data-placeholder="Escribe para buscar al PM…">' + options + '</select></div></div>' +
       '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
     var backdrop = SBAI.modal.open(html);
     backdrop.querySelector("#np-confirm").addEventListener("click", function () {
@@ -226,9 +248,19 @@ document.addEventListener("DOMContentLoaded", function () {
     var pageSize = 6;
     var page = 1;
 
+    var searchInput = document.querySelector('[data-filter-scope="proyectos-admin"][data-filter-key="q"]');
+
+    function normalizarTexto(v) {
+      return (v || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    }
+
     function matches(row) {
       var estado = estadoSelect ? estadoSelect.value : "todos";
-      return !estado || estado === "todos" || row.dataset.fEstado === estado;
+      if (estado && estado !== "todos" && row.dataset.fEstado !== estado) return false;
+      var q = searchInput ? normalizarTexto(searchInput.value) : "";
+      if (q && normalizarTexto(row.dataset.fSearch).indexOf(q) === -1) return false;
+      if (window.SBAI.extraRowFilter && !window.SBAI.extraRowFilter("proyectos-admin", row)) return false;
+      return true;
     }
 
     function render() {
@@ -247,6 +279,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (estadoSelect) estadoSelect.addEventListener("change", function () { page = 1; render(); });
+    if (searchInput) searchInput.addEventListener("input", function () { page = 1; render(); });
     previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
     next.addEventListener("click", function () {
       var matched = rows.filter(matches);
@@ -257,5 +290,11 @@ document.addEventListener("DOMContentLoaded", function () {
   })();
 });
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tech-icons.js"></script>
+<script src="/js/project-ui.js"></script>
 </body>
 </html>

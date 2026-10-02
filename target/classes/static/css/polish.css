@@ -1,0 +1,201 @@
+/*
+  polish.css — Capa final de pulido visual de SkillBridge AI.
+  Se carga DESPUES de tokens/base/components/layout en todas las pantallas
+  con shell (los 4 roles) y solo usa variables de tokens.css, asi que
+  respeta el tema claro/oscuro. Contiene:
+   1. Tipografia autohospedada (Inter + JetBrains Mono, sin CDN)
+   2. Correccion de tablas (td con display:flex rompia las filas)
+   3. Buscador global predictivo (topbar)
+   4. Buscadores de tabla con sugerencias + combobox de colaboradores
+   5. Barras de progreso tipo bateria (porcentaje dentro)
+   6. Chips de tecnologia, periodo/duracion y filtros de proyectos
+   7. Aprovechamiento del espacio (contenedor fluido, grillas auto-fit)
+   8. Responsive real: menu hamburguesa + drawer en celular
+   9. Generador de contraseñas y seccion de doble factor
+*/
+
+/* ============ 1. Tipografia ============ */
+@font-face { font-family: "Inter"; font-weight: 400; font-style: normal; font-display: swap; src: url("/fonts/inter-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: swap; src: url("/fonts/inter-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: swap; src: url("/fonts/inter-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 700; font-style: normal; font-display: swap; src: url("/fonts/inter-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 400; font-style: normal; font-display: swap; src: url("/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 500; font-style: normal; font-display: swap; src: url("/fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2"); }
+:root {
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --content-max: 1680px;
+}
+body { font-feature-settings: "cv11", "ss01"; }
+h1, h2, h3 { letter-spacing: -0.015em; }
+
+/* ============ 2. Tablas ============ */
+td.cell-person { display: table-cell; vertical-align: middle; white-space: nowrap; }
+td.cell-person > .avatar, td.cell-person > .cell-person-text { display: inline-flex; vertical-align: middle; }
+td.cell-person > .avatar { margin-right: var(--space-3); }
+td.cell-person > .cell-person-text { max-width: 260px; }
+td.cell-actions { display: table-cell; vertical-align: middle; }
+td.cell-actions > * + * { margin-left: var(--space-3); }
+.data-table { min-width: 0; }
+.data-table thead th { position: sticky; top: 0; background: var(--surface-sunken); z-index: 1; white-space: nowrap; }
+.data-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); }
+.data-table tbody tr:hover { background: var(--navy-100); }
+[data-theme="dark"] .data-table tbody tr:hover { background: rgba(255,255,255,0.05); }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.card { transition: box-shadow var(--dur-base) var(--ease-standard); }
+
+/* ============ 3. Buscador global predictivo ============ */
+.gs { position: relative; flex: 1 1 320px; max-width: 460px; min-width: 0; }
+.gs-field {
+  display: flex; align-items: center; gap: var(--space-2); height: 42px; padding: 0 var(--space-3);
+  background: var(--surface-sunken); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+  color: var(--text-tertiary); transition: border-color var(--dur-fast), box-shadow var(--dur-fast), background var(--dur-fast);
+}
+.gs-field:hover { border-color: var(--border-strong); }
+.gs.open .gs-field, .gs-field:focus-within { background: var(--surface); border-color: var(--blue-accent); box-shadow: var(--shadow-focus); }
+.gs-input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: var(--fs-sm); color: var(--text-primary); }
+.gs-input::placeholder { color: var(--text-tertiary); }
+.gs-clear { border: 0; background: none; color: var(--text-tertiary); cursor: pointer; padding: 4px; border-radius: 50%; display: inline-flex; }
+.gs-clear:hover { background: var(--border-subtle); color: var(--text-primary); }
+.gs-field kbd { font-family: var(--font-mono); font-size: 10px; border: 1px solid var(--border-default); border-radius: 4px; padding: 2px 6px; background: var(--surface); }
+.gs-panel {
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 400; max-height: min(70vh, 460px); overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); box-shadow: var(--shadow-3); padding: var(--space-2);
+}
+.gs-panel[hidden] { display: none; }
+.gs-group { font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-tertiary); padding: var(--space-3) var(--space-3) var(--space-1); }
+.gs-item { display: flex; align-items: center; gap: var(--space-3); padding: 9px var(--space-3); border-radius: var(--radius-md); color: var(--text-primary); text-decoration: none; }
+.gs-item.active { background: var(--navy-100); }
+[data-theme="dark"] .gs-item.active { background: rgba(255,255,255,0.08); }
+.gs-item-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--navy-100); color: var(--navy-700); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gs-item-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gs-item-title { font-size: var(--fs-sm); font-weight: var(--fw-medium); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-item-sub { font-size: var(--fs-xs); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-item-go { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); opacity: 0; }
+.gs-item.active .gs-item-go { opacity: 1; }
+.gs mark, .pred-list mark, .cb-list mark { background: color-mix(in srgb, var(--blue-accent) 28%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.gs-empty, .gs-hint, .gs-loading { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-5) var(--space-4); font-size: var(--fs-sm); color: var(--text-tertiary); justify-content: center; text-align: center; }
+.gs-spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border-default); border-top-color: var(--blue-accent); animation: gs-spin .7s linear infinite; }
+@keyframes gs-spin { to { transform: rotate(360deg); } }
+
+/* ============ 4. Sugerencias en buscadores de tabla + combobox ============ */
+.pred-wrap, .cb-wrap { position: relative; display: inline-block; }
+.pred-wrap .input { width: 100%; }
+.pred-list, .cb-list {
+  position: absolute; top: calc(100% + 4px); left: 0; min-width: 100%; z-index: 300; max-height: 260px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); box-shadow: var(--shadow-2); padding: 4px;
+}
+.pred-list[hidden], .cb-list[hidden] { display: none; }
+.pred-item, .cb-item { display: block; width: 100%; text-align: left; border: 0; background: none; font: inherit; font-size: var(--fs-sm); color: var(--text-primary); padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pred-item:hover, .pred-item.active, .cb-item:hover, .cb-item.active { background: var(--navy-100); }
+[data-theme="dark"] .pred-item.active, [data-theme="dark"] .cb-item.active, [data-theme="dark"] .pred-item:hover, [data-theme="dark"] .cb-item:hover { background: rgba(255,255,255,0.08); }
+.cb-item.selected { font-weight: var(--fw-semibold); }
+.cb-empty { padding: 10px; font-size: var(--fs-xs); color: var(--text-tertiary); }
+.cb-wrap { display: block; width: 100%; }
+.cb-native { position: absolute; opacity: 0; pointer-events: none; height: 0; width: 0; }
+.cb-input { width: 100%; padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%237C8496' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m14 14-3-3'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+
+/* ============ 5. Barras de progreso tipo bateria ============ */
+.progress-bar.battery {
+  position: relative; height: 24px; min-width: 96px; border-radius: 7px; overflow: hidden;
+  background: var(--surface-sunken); border: 1.5px solid var(--border-strong);
+  box-shadow: inset 0 1px 2px rgba(15,23,42,0.06);
+}
+.progress-bar.battery .progress-bar-fill { border-radius: 0; height: 100%; background: linear-gradient(180deg, color-mix(in srgb, var(--navy-600) 92%, white), var(--navy-700)); }
+.progress-bar.battery .progress-bar-fill.green { background: linear-gradient(180deg, color-mix(in srgb, var(--green-fg) 88%, white), var(--green-fg)); }
+.progress-bar.battery .progress-bar-fill.amber { background: linear-gradient(180deg, color-mix(in srgb, var(--amber-fg) 88%, white), var(--amber-fg)); }
+.progress-bar.battery .progress-bar-fill.red { background: linear-gradient(180deg, color-mix(in srgb, var(--red-fg) 88%, white), var(--red-fg)); }
+.progress-bar.battery .battery-label {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: var(--fw-medium); letter-spacing: 0.01em; line-height: 1;
+}
+.progress-bar.battery .battery-label-base { color: var(--text-primary); }
+.progress-bar.battery .battery-label-top { color: #fff; clip-path: inset(0 var(--pb-rest, 100%) 0 0); text-shadow: 0 1px 1px rgba(0,0,0,0.25); }
+/* punta de bateria */
+.progress-inline:has(.battery) { position: relative; gap: 0; }
+.progress-inline:has(.battery)::after { content: ""; width: 4px; height: 10px; margin-left: 2px; border-radius: 0 3px 3px 0; background: var(--border-strong); flex-shrink: 0; }
+.progress-inline .progress-bar.battery { flex: 1; }
+[data-theme="dark"] .progress-bar.battery .battery-label-base { color: var(--text-inverse); }
+
+/* ============ 6. Proyectos: chips de tecnologia, periodo, filtros ============ */
+.tech-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tech-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 5px; border-radius: var(--radius-full); background: var(--surface-sunken); border: 1px solid var(--border-default); font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-primary); white-space: nowrap; }
+.tech-chip-logo { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 9px; font-weight: var(--fw-bold); color: #fff; background: var(--navy-700); flex-shrink: 0; letter-spacing: -0.02em; }
+.tech-chip-logo svg { width: 12px; height: 12px; }
+.tech-chip-more { background: var(--navy-100); color: var(--navy-700); padding: 3px 9px; }
+.periodo-cell { display: flex; flex-direction: column; gap: 2px; }
+.periodo-cell strong { font-size: var(--fs-sm); font-weight: var(--fw-semibold); }
+.periodo-cell span { font-size: var(--fs-xs); color: var(--text-tertiary); white-space: nowrap; }
+.miembros-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-full); background: var(--blue-bg); color: var(--blue-fg); font-size: var(--fs-xs); font-weight: var(--fw-semibold); }
+.miembros-pill svg { width: 13px; height: 13px; }
+.filter-bar { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); background: var(--surface-sunken); }
+.filter-bar .field { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
+.filter-bar .field label { font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-tertiary); }
+.filter-bar .select, .filter-bar .input { height: 36px; font-size: var(--fs-xs); }
+.filter-bar .filter-reset { margin-left: auto; }
+
+/* ============ 7. Aprovechar el espacio ============ */
+.page-content { max-width: var(--content-max); padding: var(--space-6) clamp(16px, 2.2vw, 40px); }
+.kpi-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.page-content > .grid-2, .page-content > .two-col, .page-content > [class*="split"] { align-items: start; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-5); }
+@media (min-width: 1500px) {
+  .page-content > div[style*="grid-template-columns"] { gap: var(--space-6) !important; }
+}
+
+/* ============ 8. Responsive ============ */
+.topbar-menu-btn { display: none; }
+.sidebar-backdrop { display: none; }
+@media (max-width: 860px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .topbar-menu-btn { display: inline-flex; flex-shrink: 0; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: min(84vw, 300px); z-index: 900;
+    transform: translateX(-102%); transition: transform var(--dur-slow) var(--ease-standard); box-shadow: var(--shadow-3);
+  }
+  .sidebar-brand-text, .sidebar-nav-item-label, .sidebar-role-badge, .sidebar-user-text { display: revert; }
+  .sidebar-nav-item { justify-content: flex-start; }
+  body.sidebar-open .sidebar { transform: none; }
+  body.sidebar-open { overflow: hidden; }
+  body.sidebar-open .sidebar-backdrop { display: block; position: fixed; inset: 0; background: rgba(8,16,32,0.55); z-index: 850; backdrop-filter: blur(2px); }
+  .topbar { padding: 0 var(--space-3); gap: var(--space-2); }
+  .topbar-heading { display: none; }
+  .gs { flex: 1 1 auto; max-width: none; }
+  .gs-field kbd { display: none; }
+  .topbar-ai-btn span, .topbar-user-name, .topbar-user-btn > .icon { display: none; }
+  .page-content { padding: var(--space-4) var(--space-3); gap: var(--space-4); }
+  .table-toolbar { padding: var(--space-4); }
+  .table-filters { width: 100%; }
+  .table-filters > * { flex: 1 1 140px; }
+  .pred-wrap { display: block; flex: 1 1 140px; }
+  .filter-bar { padding: var(--space-3) var(--space-4); }
+  .filter-bar .field { flex: 1 1 140px; }
+  .modal, .modal-dialog { max-width: 96vw !important; }
+}
+@media (max-width: 560px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  .kpi-tile-value { font-size: var(--fs-xl); }
+  .page-content div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+  .field-row { grid-template-columns: 1fr !important; flex-direction: column; }
+}
+
+/* ============ 9. Generador de contraseñas + 2FA ============ */
+.pwd-tools { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-2); }
+.pwd-generated { display: inline-flex; align-items: center; gap: var(--space-2); padding: 4px 6px 4px 12px; border-radius: var(--radius-md); background: var(--surface-sunken); border: 1px dashed var(--border-strong); }
+.pwd-generated code { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: 0.04em; user-select: all; word-break: break-all; }
+.twofa-card { display: grid; grid-template-columns: auto 1fr; gap: var(--space-5); align-items: start; }
+.twofa-qr { width: 176px; height: 176px; border-radius: var(--radius-md); border: 1px solid var(--border-default); padding: 8px; background: #fff; }
+.twofa-secret { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: 0.12em; padding: 6px 10px; background: var(--surface-sunken); border-radius: var(--radius-sm); border: 1px dashed var(--border-strong); user-select: all; word-break: break-all; }
+.otp-input { font-family: var(--font-mono); font-size: var(--fs-lg); letter-spacing: 0.5em; text-align: center; max-width: 220px; }
+@media (max-width: 560px) { .twofa-card { grid-template-columns: 1fr; justify-items: center; } }
+.filter-bar .filter-reset { margin-left: auto; width: auto; flex: 0 0 auto; align-self: flex-end; }
+
+/* ---- Tablas en celular: ancho minimo + primera columna fija + sombra de scroll ---- */
+@media (max-width: 860px) {
+  .table-scroll { position: relative; }
+  .data-table { min-width: 720px; }
+  .data-table th:first-child, .data-table td:first-child { position: sticky; left: 0; z-index: 2; background: var(--surface); box-shadow: 2px 0 0 var(--border-subtle); }
+  .data-table thead th:first-child { background: var(--surface-sunken); z-index: 3; }
+  .data-table tbody tr:nth-child(even) td:first-child { background: color-mix(in srgb, var(--surface-sunken) 55%, var(--surface)); }
+}
+.pwd-tools + .btn-group { margin-top: var(--space-4); }
