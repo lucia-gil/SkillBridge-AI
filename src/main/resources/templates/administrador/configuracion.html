@@ -60,6 +60,11 @@
               <label class="toggle"><input type="checkbox" name="asistente_ia_habilitado" th:checked="${cfg.get('asistente_ia_habilitado')?.valor == 'true'}"><span class="toggle-track"></span></label></div>
             <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Generar resúmenes con IA en hilos de foro</span></div>
               <label class="toggle"><input type="checkbox" name="resumenes_ia_foros_activos" th:checked="${cfg.get('resumenes_ia_foros_activos')?.valor == 'true'}"><span class="toggle-track"></span></label></div>
+            <div class="field" style="margin-top:var(--space-3);" th:if="${cfg.get('foro_max_ediciones') != null}">
+              <label class="field-label" for="cfg-foro-ediciones">Ediciones permitidas por mensaje del foro</label>
+              <input class="input" id="cfg-foro-ediciones" type="number" min="0" max="20" name="foro_max_ediciones" th:value="${cfg.get('foro_max_ediciones')?.valor}" style="max-width:160px;">
+              <span class="field-hint">Cuántas veces el autor puede editar un mismo mensaje. 0 = sin límite. Cada edición queda marcada como "editado" y en Auditoría.</span>
+            </div>
             <div class="field-row" style="margin-top:var(--space-3);">
               <div class="field"><label class="field-label">Peso habilidades (%)</label><input class="input" type="number" min="0" max="100" name="peso_matching_habilidades" th:value="${cfg.get('peso_matching_habilidades')?.valor}"></div>
               <div class="field"><label class="field-label">Peso experiencia (%)</label><input class="input" type="number" min="0" max="100" name="peso_matching_experiencia" th:value="${cfg.get('peso_matching_experiencia')?.valor}"></div>

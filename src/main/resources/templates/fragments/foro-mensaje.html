@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!--
+  fragments/foro-mensaje.html — Un mensaje del foro (mensaje inicial o
+  respuesta) en foro-hilo.html de project-manager y colaborador.
+  Uso: th:replace="~{fragments/foro-mensaje :: mensaje(${m}, ${hilo})}"
+  m    = RespuestaFila (cita, editado, destacados, adjuntos, permisos)
+  hilo = HiloDetalle (para saber si el foro está abierto)
+  Las acciones (responder, destacar, editar...) las conecta js/foro-hilo.js
+  por sus atributos data-*.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<article class="fr-msg" th:fragment="mensaje(m, hilo)" th:id="'m-' + ${m.id}"
+         th:classappend="${m.esSolucion} ? 'is-solution'"
+         th:attr="data-msg-id=${m.id}, data-autor=${m.autorNombre}, data-inicial=${m.esMensajeInicial},
+                  data-restantes=${m.edicionesRestantes}">
+  <span class="avatar" th:text="${m.iniciales}" aria-hidden="true">AA</span>
+  <div style="min-width:0">
+    <div class="fr-msg-head">
+      <span class="fr-msg-author" th:text="${m.autorNombre}">Autor</span>
+      <span class="fr-msg-role" th:if="${!#strings.isEmpty(m.autorCargo)}" th:text="${m.autorCargo}">Cargo</span>
+      <span class="fr-role-chip" th:if="${m.esMensajeInicial}">Pregunta</span>
+      <span class="fr-role-chip" th:if="${m.esAutorDelHilo and !m.esMensajeInicial}">Autor del hilo</span>
+      <span class="fr-role-chip is-solution" th:if="${m.esSolucion}">Solución aceptada</span>
+      <span class="fr-msg-time">
+        <time th:attr="data-relativo=${m.fechaIso}, datetime=${m.fechaIso}" th:text="${m.fechaLabel}">fecha</time><span
+              class="fr-edited" th:if="${m.editado}" tabindex="0"
+              th:title="'Editado ' + ${m.numEdiciones} + (${m.numEdiciones == 1} ? ' vez' : ' veces') + ' · última edición: ' + ${m.fechaEdicionLabel}"> · editado</span>
+      </span>
+    </div>
+
+    <button type="button" class="fr-quote" th:if="${m.cita != null and !m.cita.eliminado}" th:attr="data-ir-a=${m.cita.id}"
+            th:title="'Ir al mensaje de ' + ${m.cita.autorNombre}">
+      <span class="fr-quote-author">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+        <span>En respuesta a <span th:text="${m.cita.autorNombre}">Autor</span></span>
+      </span>
+      <span class="fr-quote-text" th:text="${m.cita.extracto}">Extracto</span>
+    </button>
+    <div class="fr-quote is-deleted" th:if="${m.cita != null and m.cita.eliminado}">
+      <span class="fr-quote-text">Respondía a un mensaje que ya fue eliminado.</span>
+    </div>
+
+    <p class="fr-msg-text" data-texto th:unless="${#strings.isEmpty(m.contenido)}" th:text="${m.contenido}">Contenido</p>
+
+    <div class="fr-images" th:unless="${m.imagenes.isEmpty()}">
+      <a class="fr-image" th:each="a : ${m.imagenes}" th:href="@{/foros/adjuntos/{id}(id=${a.id})}" target="_blank" rel="noopener"
+         th:title="${a.nombre} + ' · ' + ${a.tamanoLabel}">
+        <img th:src="@{/foros/adjuntos/{id}(id=${a.id})}" th:alt="${a.nombre}" loading="lazy">
+      </a>
+    </div>
+
+    <div class="fr-files" th:unless="${m.otrosAdjuntos.isEmpty()}">
+      <a class="fr-file" th:each="a : ${m.otrosAdjuntos}" th:classappend="'tone-' + ${a.tono}"
+         th:href="${a.esEnlace} ? ${a.url} : @{/foros/adjuntos/{id}(id=${a.id})}" target="_blank" rel="noopener noreferrer"
+         th:title="${a.esEnlace} ? ${a.url} : ('Abrir ' + ${a.nombre})">
+        <span class="fr-file-ext" th:if="${a.esEnlace}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+        </span>
+        <span class="fr-file-ext" th:unless="${a.esEnlace}" th:text="${a.extension}">PDF</span>
+        <span class="fr-file-info">
+          <span class="fr-file-name" th:text="${a.nombre}">archivo.pdf</span>
+          <span class="fr-file-size" th:text="${a.esEnlace} ? ${a.dominio} : ${a.tamanoLabel}">1 MB</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="fr-msg-actions">
+      <button type="button" class="fr-act fr-star" th:if="${m.puedeDestacar}" th:classappend="${m.destacadoPorMi} ? 'is-on'"
+              th:attr="data-destacar=${m.id}, aria-pressed=${m.destacadoPorMi}"
+              th:title="${m.destacadoPorMi} ? 'Quitar de útiles' : 'Marcar como útil'">
+        <svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg>
+        <span>Útil</span><span data-total th:text="${m.numDestacados > 0} ? ${m.numDestacados} : ''"></span>
+      </button>
+      <span class="fr-act fr-star is-readonly" th:if="${!m.puedeDestacar and m.numDestacados > 0}"
+            th:title="${m.numDestacados} + (${m.numDestacados == 1} ? ' persona lo encontró útil' : ' personas lo encontraron útil')">
+        <svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg><span th:text="${m.numDestacados}">0</span>
+      </span>
+
+      <button type="button" class="fr-act" th:if="${hilo.foroAbierto}" th:attr="data-responder=${m.id}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Responder
+      </button>
+
+      <button type="button" class="fr-act is-success" th:if="${m.permiteMarcarSolucion}" th:attr="data-solucion=${m.id}">
+        <svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg>Marcar como solución
+      </button>
+
+      <span class="fr-act-sep" th:if="${m.permiteEditar or m.permiteEliminar or m.limiteEdicionAlcanzado}"></span>
+
+      <button type="button" class="fr-act" th:if="${m.permiteEditar}" th:attr="data-editar=${m.id}"
+              th:title="${m.edicionesRestantes < 0} ? 'Editar' : ('Te ' + (${m.edicionesRestantes == 1} ? 'queda 1 edición' : 'quedan ' + ${m.edicionesRestantes} + ' ediciones'))">
+        <svg class="icon"><use href="/img/icons.svg#icon-edit"></use></svg>Editar
+      </button>
+      <button type="button" class="fr-act" th:if="${m.limiteEdicionAlcanzado and hilo.foroAbierto}" disabled
+              title="Ya usaste todas las ediciones permitidas para este mensaje">
+        <svg class="icon"><use href="/img/icons.svg#icon-lock"></use></svg>Sin ediciones
+      </button>
+      <button type="button" class="fr-act is-danger" th:if="${m.permiteEliminar}" th:attr="data-eliminar=${m.id}">
+        <svg class="icon"><use href="/img/icons.svg#icon-trash"></use></svg>Eliminar
+      </button>
+    </div>
+  </div>
+</article>
+
+</body>
+</html>

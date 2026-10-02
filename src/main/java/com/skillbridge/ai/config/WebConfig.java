@@ -30,7 +30,9 @@ public class WebConfig implements WebMvcConfigurer {
                         // revienta con NullPointerException (ver SesionInterceptor).
                         "/cuenta/**",
                         "/notificaciones/**",
-                        "/certificados/**"
+                        "/certificados/**",
+                        // Descarga de adjuntos del foro (ForoAdjuntoController)
+                        "/foros/**"
                 );
     }
 }

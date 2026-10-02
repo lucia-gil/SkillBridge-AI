@@ -53,7 +53,10 @@ public class SesionInterceptor implements HandlerInterceptor {
 
         String ruta = request.getRequestURI().substring(request.getContextPath().length());
         boolean rutaCompartidaEntreRoles = ruta.startsWith("/cuenta/") || ruta.startsWith("/notificaciones/")
-                || ruta.startsWith("/certificados/");
+                || ruta.startsWith("/certificados/")
+                // Adjuntos del foro (ForoAdjuntoController): los ven PM y Colaborador;
+                // ForoService.obtenerAdjunto verifica que sea miembro del proyecto.
+                || ruta.startsWith("/foros/");
         String rolRequerido = rolRequeridoPara(ruta);
         if (rolRequerido == null && !rutaCompartidaEntreRoles) {
             return true; // ruta no protegida

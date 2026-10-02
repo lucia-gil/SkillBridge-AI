@@ -56,6 +56,33 @@ public class ForoPublicacion {
     @Column(name = "fecha_publicacion", insertable = false, updatable = false)
     private LocalDateTime fechaPublicacion;
 
+    // ── v6 (migracion_v6_foros.sql) ──
+
+    /** Tópico del hilo (solo en hilos raíz; en respuestas queda NULL). */
+    @Column(name = "topico_id")
+    private Long topicoId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "topico_id", insertable = false, updatable = false)
+    private ForoTopico topico;
+
+    /**
+     * Mensaje del mismo hilo al que responde puntualmente (cita, estilo
+     * Slack/Zoom). El hilo sigue siendo plano: publicacionPadreId sigue
+     * apuntando SIEMPRE al hilo raíz.
+     */
+    @Column(name = "respuesta_a_id")
+    private Long respuestaAId;
+
+    @Column(name = "editado", nullable = false)
+    private Boolean editado = false;
+
+    @Column(name = "num_ediciones", nullable = false)
+    private Integer numEdiciones = 0;
+
+    @Column(name = "fecha_edicion")
+    private LocalDateTime fechaEdicion;
+
     public Long getId() {
         return id;
     }
@@ -146,5 +173,49 @@ public class ForoPublicacion {
 
     public LocalDateTime getFechaPublicacion() {
         return fechaPublicacion;
+    }
+
+    public Long getTopicoId() {
+        return topicoId;
+    }
+
+    public void setTopicoId(Long topicoId) {
+        this.topicoId = topicoId;
+    }
+
+    public ForoTopico getTopico() {
+        return topico;
+    }
+
+    public Long getRespuestaAId() {
+        return respuestaAId;
+    }
+
+    public void setRespuestaAId(Long respuestaAId) {
+        this.respuestaAId = respuestaAId;
+    }
+
+    public Boolean getEditado() {
+        return editado;
+    }
+
+    public void setEditado(Boolean editado) {
+        this.editado = editado;
+    }
+
+    public Integer getNumEdiciones() {
+        return numEdiciones;
+    }
+
+    public void setNumEdiciones(Integer numEdiciones) {
+        this.numEdiciones = numEdiciones;
+    }
+
+    public LocalDateTime getFechaEdicion() {
+        return fechaEdicion;
+    }
+
+    public void setFechaEdicion(LocalDateTime fechaEdicion) {
+        this.fechaEdicion = fechaEdicion;
     }
 }

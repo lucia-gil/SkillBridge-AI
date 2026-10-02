@@ -41,7 +41,9 @@ public class AdminConfiguracionController {
     private static final List<String> CLAVES_TEXTO = List.of(
             "dominio_correo_permitido", "expiracion_sesion_minutos", "limite_carga_colaborador",
             "maximo_proyectos_simultaneos", "auto_aprobar_asignaciones_menores_a", "peso_matching_habilidades",
-            "peso_matching_experiencia", "peso_matching_disponibilidad", "idioma_por_defecto", "zona_horaria_defecto");
+            "peso_matching_experiencia", "peso_matching_disponibilidad", "idioma_por_defecto", "zona_horaria_defecto",
+            // Foros v6 (migracion_v6_foros.sql): ediciones permitidas por mensaje (0 = sin límite).
+            "foro_max_ediciones");
 
     private final ConfiguracionService configuracionService;
     private final ShellModelBuilder shellModelBuilder;
@@ -69,7 +71,9 @@ public class AdminConfiguracionController {
         try {
             for (String clave : CLAVES_TEXTO) {
                 String nuevo = params.get(clave);
-                if (nuevo == null) continue;
+                // Si la clave todavía no existe en la BD (p. ej. no se corrió una migración), se omite
+                // en vez de hacer fallar el guardado de todo el formulario.
+                if (nuevo == null || !actual.containsKey(clave)) continue;
                 nuevo = nuevo.trim();
                 String anterior = configuracionService.valor(actual, clave, "");
                 if (!nuevo.equals(anterior)) {
