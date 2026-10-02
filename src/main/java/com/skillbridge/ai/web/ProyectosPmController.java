@@ -7,6 +7,7 @@ import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.model.Asignacion;
 import com.skillbridge.ai.repository.AsignacionRepository;
 import com.skillbridge.ai.service.ProyectoService;
+import com.skillbridge.ai.service.TecnologiaCatalogoService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
@@ -41,12 +42,20 @@ public class ProyectosPmController {
     private final ProyectoService proyectoService;
     private final AsignacionRepository asignacionRepository;
     private final ShellModelBuilder shellModelBuilder;
+    private final TecnologiaCatalogoService tecnologiaCatalogoService;
 
     public ProyectosPmController(ProyectoService proyectoService, AsignacionRepository asignacionRepository,
-                                 ShellModelBuilder shellModelBuilder) {
+                                 ShellModelBuilder shellModelBuilder, TecnologiaCatalogoService tecnologiaCatalogoService) {
         this.proyectoService = proyectoService;
         this.asignacionRepository = asignacionRepository;
         this.shellModelBuilder = shellModelBuilder;
+        this.tecnologiaCatalogoService = tecnologiaCatalogoService;
+    }
+
+    /** "React, MySQL" -> ["React", "MySQL"] (el formulario manda los chips unidos por coma). */
+    static List<String> separarTecnologias(String tecnologias) {
+        return tecnologias == null ? List.of() : Arrays.stream(tecnologias.split(","))
+                .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
     }
 
     /** IDs de los proyectos donde este perfil es Project Manager activo. */
@@ -77,6 +86,9 @@ public class ProyectosPmController {
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("perfiles", perfiles);
         model.addAttribute("colaboradoresDisponibles", colaboradoresDisponibles);
+        // Catálogo del Admin para el autocompletado de tecnologías (chips).
+        model.addAttribute("catalogoTecnologias", tecnologiaCatalogoService.catalogo());
+        model.addAttribute("maxTecnologias", TecnologiaCatalogoService.MAX_TECNOLOGIAS);
         // Tarjetas KPI de "Proyectos" por estado (RF03).
         model.addAttribute("kpiPlanificacion", proyectos.stream().filter(p -> "planificacion".equals(p.getEstadoCrudo())).count());
         model.addAttribute("kpiActivos", proyectos.stream().filter(p -> "activo".equals(p.getEstadoCrudo())).count());
@@ -95,8 +107,7 @@ public class ProyectosPmController {
                         HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            List<String> lista = tecnologias == null ? List.of() : Arrays.stream(tecnologias.split(","))
-                    .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+            List<String> lista = tecnologiaCatalogoService.normalizar(separarTecnologias(tecnologias), List.of());
             // El Project Manager del proyecto es el propio usuario que lo crea.
             proyectoService.crear(nombre, descripcion, lista, fechaInicio, fechaFinEstimada,
                     colaboradoresRequeridos, sesion.getPerfilId(), sesion.getUsuarioId());
@@ -135,8 +146,9 @@ public class ProyectosPmController {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             exigirPropiedad(sesion.getPerfilId(), id);
-            List<String> lista = tecnologias == null ? List.of() : Arrays.stream(tecnologias.split(","))
-                    .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+            // Se conservan las tecnologías que el proyecto ya tenía aunque no estén en el catálogo.
+            List<String> actuales = proyectoService.obtenerDetalle(id).getTecnologias();
+            List<String> lista = tecnologiaCatalogoService.normalizar(separarTecnologias(tecnologias), actuales);
             proyectoService.editarProyecto(id, nombre, descripcion, lista, fechaInicio, fechaFinEstimada, estado,
                     razonCancelacion, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" actualizado.");

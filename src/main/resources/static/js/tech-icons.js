@@ -58,5 +58,5 @@
     new MutationObserver(function (m) { m.forEach(function (r) { r.addedNodes.forEach(function (n) { if (n.nodeType === 1) { if (n.matches && n.matches("[data-tech-list]")) render(n); scan(n); } }); }); })
       .observe(document.body, { childList: true, subtree: true });
   });
-  window.SBAI = window.SBAI || {}; window.SBAI.techIcons = { render: render, scan: scan };
+  window.SBAI = window.SBAI || {}; window.SBAI.techIcons = { render: render, scan: scan, logo: logo };
 })();

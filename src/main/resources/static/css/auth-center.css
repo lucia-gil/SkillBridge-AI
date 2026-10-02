@@ -1,0 +1,220 @@
+/*
+  auth-center.css — Layout centrado para vistas de acceso "simples"
+  (login, recuperar-password): sin panel lateral, solo la card sobre un
+  fondo gris claro con textura de puntos sutil.
+
+  Comparten esto: auth/login.html, auth/recuperar-password.html,
+  auth/restablecer-password.html y auth/registro.html (este último con
+  la card más ancha del asistente de 3 pasos, ver el final del archivo).
+*/
+
+.auth-center-page {
+    min-height: 100vh;
+    background: var(--canvas);
+    background-image:
+            radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 60%),
+            radial-gradient(circle at 1px 1px, rgba(22,33,58,0.06) 1px, transparent 0);
+    background-size: 100% 100%, 22px 22px;
+    background-position: center -10%, 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+    position: relative;
+}
+
+/* Enlace fijo en la esquina, fuera de la card (distinto de .auth-back-link,
+   que ya existe en layout.css para el enlace "Volver a iniciar sesión"
+   dentro de la card de recuperar-password). */
+.auth-corner-back {
+    position: fixed;
+    top: var(--space-6);
+    left: var(--space-6);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-secondary);
+    z-index: 5;
+}
+.auth-corner-back:hover { color: var(--text-primary); }
+.auth-corner-back .icon { width: 16px; height: 16px; }
+
+.auth-center-page .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-3);
+    padding: var(--space-8);
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+    z-index: 1;
+}
+
+.auth-center-page .input-wrap .input,
+.auth-center-page .input {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+    padding: var(--space-3) var(--space-4);
+    transition: box-shadow var(--dur-fast), border-color var(--dur-fast);
+}
+
+.auth-center-page .input-wrap .input:focus,
+.auth-center-page .input:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 4px rgba(139,92,246,0.16);
+    outline: none;
+}
+
+.auth-center-page .auth-card-header {
+    text-align: center;
+    margin-bottom: var(--space-6);
+}
+.auth-center-page .auth-card-header img {
+    height: 34px;
+    width: auto;
+    object-fit: contain;
+    margin: 0 auto;
+    display: block;
+}
+
+.auth-center-page .auth-card-title,
+.auth-center-page .auth-card-sub {
+    text-align: center;
+}
+.auth-center-page .auth-card-sub { margin-bottom: var(--space-6); }
+
+.auth-center-page .auth-card-body .field-row a {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.auth-center-page .btn-primary {
+    background: linear-gradient(135deg, #8B5CF6 0%, #22D3EE 100%);
+    border: none;
+    box-shadow: 0 4px 14px rgba(139,92,246,0.28);
+}
+.auth-center-page .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+.auth-center-page .btn-primary:active:not(:disabled) { filter: brightness(0.96); }
+
+.auth-center-page .auth-divider { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-6) 0; }
+.auth-center-page .auth-divider::before,
+.auth-center-page .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
+.auth-center-page .auth-divider span { font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); color: var(--text-tertiary); text-transform: uppercase; }
+
+/* El link interno "Volver a iniciar sesión" (.auth-back-link, definido en
+   layout.css) queda arriba del título dentro de la card; solo ajustamos
+   que no choque con el corner-back de la página en mobile. */
+@media (max-width: 480px) {
+    .auth-corner-back { position: absolute; top: var(--space-4); left: var(--space-4); }
+    .auth-center-page .auth-card { padding: var(--space-6); }
+}
+/* =========================================================
+   Registro (asistente de 3 pasos) con el mismo lenguaje visual
+   ========================================================= */
+.auth-center-page-tall { align-items: flex-start; padding: var(--space-16) var(--space-6) var(--space-12); }
+.auth-center-page .auth-card.auth-card-wizard { max-width: 680px; margin: 0 auto; }
+
+/* Mensaje de error global (ej. correo no autorizado) separado de los pasos. */
+.auth-center-page .auth-card-sub + div:not([class]) { margin: 0 0 var(--space-5) !important; }
+
+/* Logo blanco en tema oscuro (la versión normal es oscura y no se lee). */
+:root[data-theme="dark"] .auth-center-page .auth-card-header img { content: url("/img/logo_blanco-tight.png"); }
+
+/* Selects y textareas con el mismo foco violeta que los inputs del login. */
+.auth-center-page .select { border-radius: var(--radius-md); }
+.auth-center-page .select:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 4px rgba(139,92,246,0.16);
+    outline: none;
+}
+
+/* Pasos del asistente: el paso activo toma el degradado de la marca. */
+.auth-center-page .wizard-steps {
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--surface-sunken);
+}
+.auth-center-page .wizard-step.active .wizard-step-dot {
+    background: linear-gradient(135deg, #8B5CF6 0%, #22D3EE 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(139,92,246,0.3);
+}
+.auth-center-page .wizard-step.active .wizard-step-label { color: var(--text-primary); }
+.auth-center-page .wizard-step-line { min-width: 12px; }
+.auth-center-page #step-label { text-align: center; }
+
+/* Los botones de navegación entre pasos comparten el alto del login. */
+.auth-center-page .wizard-panel .btn-group .btn { height: 44px; padding: 0 var(--space-5); }
+.auth-center-page .wizard-panel .btn-group {
+    display: flex;
+    width: 100%;
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--border-subtle);
+}
+
+/* Resumen del paso 3 y pastillas de habilidades, más suaves dentro de la card. */
+.auth-center-page .auth-card .card { box-shadow: none; background: var(--surface-sunken); }
+
+@media (max-width: 640px) {
+    .auth-center-page-tall { padding: var(--space-16) var(--space-4) var(--space-8); }
+    .auth-center-page .auth-card.auth-card-wizard .field-row { flex-direction: column; gap: 0; }
+    .auth-center-page .wizard-steps { padding: var(--space-3); }
+}
+
+/* Estado del correo en el registro (verificado contra correos_autorizados). */
+.reg-email-status {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    font-size: var(--fs-xs);
+    line-height: 1.45;
+    color: var(--text-tertiary);
+}
+.reg-email-status a { font-weight: var(--fw-semibold); }
+.reg-email-status-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-strong);
+    background: var(--surface);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 10px;
+}
+.reg-email-status[data-estado="verificando"] .reg-email-status-icon {
+    border-color: var(--border-default);
+    border-top-color: #8B5CF6;
+    animation: reg-spin 0.8s linear infinite;
+}
+.reg-email-status[data-estado="autorizado"] { color: var(--green-fg); font-weight: var(--fw-medium); }
+.reg-email-status[data-estado="autorizado"] .reg-email-status-icon {
+    border-color: var(--green-fg);
+    background-color: var(--green-fg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+}
+.reg-email-status[data-estado="formato"],
+.reg-email-status[data-estado="no_autorizado"],
+.reg-email-status[data-estado="registrado"] { color: var(--red-fg); }
+.reg-email-status[data-estado="formato"] .reg-email-status-icon,
+.reg-email-status[data-estado="no_autorizado"] .reg-email-status-icon,
+.reg-email-status[data-estado="registrado"] .reg-email-status-icon {
+    border-color: var(--red-fg);
+    background-color: var(--red-fg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M7 7l10 10M17 7L7 17'/%3E%3C/svg%3E");
+}
+.reg-email-status[data-estado="error"],
+.reg-email-status[data-estado="limite"] { color: var(--amber-fg); }
+.reg-email-status[data-estado="error"] .reg-email-status-icon,
+.reg-email-status[data-estado="limite"] .reg-email-status-icon { border-color: var(--amber-fg); }
+@keyframes reg-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .reg-email-status[data-estado="verificando"] .reg-email-status-icon { animation: none; }
+}

@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/proyecto-form.css">
 </head>
 <body>
 <div class="app-shell">
@@ -73,7 +74,7 @@
             <div class="modal-body">
               <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
               <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
-                <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:with="icono=${T(com.skillbridge.ai.util.TecnologiaIconUtil).icono(t)}" style="display:inline-flex; align-items:center; gap:6px;"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${icono}"></use></svg><span th:text="${t}">Tech</span></span>
+                <span data-tech-list th:attr="data-tech-list=${d.tecnologiasCsv}"></span>
               </div>
               <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
               <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
@@ -145,6 +146,8 @@
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+window.SBAI_CATALOGO_TEC = /*[[${catalogoTecnologias}]]*/ [];
+window.SBAI_MAX_TEC = /*[[${maxTecnologias}]]*/ 12;
 document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.tableFilter.init(document);
   var submitForm = window.SBAI.submitForm;
@@ -197,35 +200,72 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  // Nuevo proyecto: stack con chips del catálogo de habilidades
+  // (SBAI.techInput) y rango de fechas con mínimo de 7 días, atajos y
+  // resumen en vivo (SBAI.dateRange). Ambos en /js/proyecto-form.js.
+  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+  function isoHoy() { var d = new Date(); return SBAI.dateRange.aIso(d); }
+
   document.getElementById("new-project-btn").addEventListener("click", function () {
     var opts = /*[[${perfiles}]]*/ [];
-    var options = opts.map(function (p) { return '<option value="' + p.perfilId + '">' + p.nombre + ' · ' + p.correo + '</option>'; }).join("");
-    var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-      '<div class="modal-header"><div><h2>Nuevo proyecto</h2></div>' +
+    var options = opts.map(function (p) { return '<option value="' + p.perfilId + '">' + esc(p.nombre) + ' · ' + esc(p.correo) + '</option>'; }).join("");
+    var hoy = isoHoy();
+    var html = '<div class="modal modal-wide pf-modal" role="dialog" aria-modal="true" aria-labelledby="np-titulo">' +
+      '<div class="modal-header"><div><h2 id="np-titulo">Nuevo proyecto</h2><p>Asigna un Project Manager responsable.</p></div>' +
       '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
       '<div class="modal-body">' +
-      '<div class="field"><label class="field-label">Nombre</label><input class="input" id="np-nombre"></div>' +
-      '<div class="field"><label class="field-label">Descripción</label><textarea class="input" id="np-desc" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
-      '<div class="field"><label class="field-label">Tecnologías (separadas por coma)</label><input class="input" id="np-tech" placeholder="React, Node.js, PostgreSQL"></div>' +
-      '<div class="field-row"><div class="field"><label class="field-label">Periodo de inicio</label><input class="input" type="date" id="np-inicio"></div>' +
-      '<div class="field"><label class="field-label">Periodo de entrega esperado</label><input class="input" type="date" id="np-fin"></div></div>' +
-      '<div class="field-row"><div class="field"><label class="field-label">Colaboradores requeridos</label><input class="input" type="number" min="0" value="3" id="np-colab"></div>' +
-      '<div class="field"><label class="field-label">Project Manager</label><select class="select" id="np-pm" data-combobox data-placeholder="Escribe para buscar al PM…">' + options + '</select></div></div>' +
+      '<div class="callout danger" id="np-error" hidden style="margin-bottom:var(--space-4);">' +
+        '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
+        '<span class="callout-body" id="np-error-text"></span></div>' +
+      '<div class="field"><label class="field-label" for="np-nombre">Nombre</label><input class="input" id="np-nombre" maxlength="150" placeholder="Ej.: Portal de clientes"><div class="field-error"></div></div>' +
+      '<div class="field"><label class="field-label" for="np-desc">Descripción</label><textarea class="input" id="np-desc" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="¿Qué se va a construir y para quién?"></textarea></div>' +
+      '<div class="field"><div class="pf-label-row"><label class="field-label" for="np-tech-input">Stack tecnológico</label>' +
+        '<span class="field-hint">Del catálogo de habilidades</span></div><div id="np-tech"></div></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label class="field-label" for="np-inicio">Inicio</label><input class="input" type="date" id="np-inicio" min="' + hoy + '"><div class="field-error"></div></div>' +
+        '<div class="field"><label class="field-label" for="np-fin">Entrega esperada</label><input class="input" type="date" id="np-fin"><div class="field-error"></div></div>' +
+      '</div>' +
+      '<div class="dr-presets" id="np-atajos"></div>' +
+      '<div class="dr-summary" id="np-resumen" aria-live="polite"></div>' +
+      '<div class="field-row"><div class="field"><label class="field-label" for="np-colab">Colaboradores requeridos</label><input class="input" type="number" min="0" value="3" id="np-colab"><div class="field-error"></div></div>' +
+      '<div class="field"><label class="field-label" for="np-pm">Project Manager</label><select class="select" id="np-pm" data-combobox data-placeholder="Escribe para buscar al PM…">' + options + '</select></div></div>' +
       '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
     var backdrop = SBAI.modal.open(html);
+    var tech = SBAI.techInput.create(backdrop.querySelector("#np-tech"), {
+      catalogo: window.SBAI_CATALOGO_TEC || [], valores: [], max: window.SBAI_MAX_TEC || 12, inputId: "np-tech-input"
+    });
+    var fechas = SBAI.dateRange.create({
+      inicio: backdrop.querySelector("#np-inicio"), fin: backdrop.querySelector("#np-fin"),
+      resumen: backdrop.querySelector("#np-resumen"), atajos: backdrop.querySelector("#np-atajos"),
+      minInicio: hoy, diasMinimos: 7
+    });
+    var nombreInput = backdrop.querySelector("#np-nombre");
+    var colabInput = backdrop.querySelector("#np-colab");
+    var errorBox = backdrop.querySelector("#np-error");
+    nombreInput.addEventListener("input", function () { fechas.limpiar(nombreInput); });
+    colabInput.addEventListener("input", function () { fechas.limpiar(colabInput); });
+    setTimeout(function () { nombreInput.focus(); }, 50);
+
     backdrop.querySelector("#np-confirm").addEventListener("click", function () {
-      var nombre = backdrop.querySelector("#np-nombre").value.trim();
-      var inicio = backdrop.querySelector("#np-inicio").value;
-      if (!nombre) { SBAI.toast.show("Ingresa un nombre para el proyecto.", { type: "error" }); return; }
-      if (!inicio) { SBAI.toast.show("Selecciona la fecha de inicio.", { type: "error" }); return; }
+      errorBox.hidden = true;
+      if (!nombreInput.value.trim()) { fechas.marcar(nombreInput, "Ingresa un nombre para el proyecto."); nombreInput.focus(); return; }
+      var f = fechas.validar();
+      if (f) { f.campo.focus(); return; }
+      var colab = colabInput.value === "" ? 0 : Number(colabInput.value);
+      if (!(colab >= 0) || Math.floor(colab) !== colab) { fechas.marcar(colabInput, "Ingresa un número entero desde 0."); colabInput.focus(); return; }
+      var pm = backdrop.querySelector("#np-pm").value;
+      if (!pm) {
+        backdrop.querySelector("#np-error-text").textContent = "Elige al Project Manager responsable del proyecto.";
+        errorBox.hidden = false; return;
+      }
       submitForm("/administrador/proyectos", {
-        nombre: nombre,
+        nombre: nombreInput.value.trim(),
         descripcion: backdrop.querySelector("#np-desc").value,
-        tecnologias: backdrop.querySelector("#np-tech").value,
-        fechaInicio: inicio,
+        tecnologias: tech.getValues().join(","),
+        fechaInicio: backdrop.querySelector("#np-inicio").value,
         fechaFinEstimada: backdrop.querySelector("#np-fin").value,
-        colaboradoresRequeridos: backdrop.querySelector("#np-colab").value,
-        pmPerfilId: backdrop.querySelector("#np-pm").value
+        colaboradoresRequeridos: String(colab),
+        pmPerfilId: pm
       });
     });
   });
@@ -295,6 +335,7 @@ document.addEventListener("DOMContentLoaded", function () {
 <script src="/js/battery-progress.js"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/tech-icons.js"></script>
+<script src="/js/proyecto-form.js"></script>
 <script src="/js/project-ui.js"></script>
 </body>
 </html>

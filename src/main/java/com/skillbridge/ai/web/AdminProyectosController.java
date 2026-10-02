@@ -5,6 +5,7 @@ import com.skillbridge.ai.dto.ProyectoDetalle;
 import com.skillbridge.ai.dto.ProyectoFila;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.ProyectoService;
+import com.skillbridge.ai.service.TecnologiaCatalogoService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
@@ -35,10 +36,12 @@ public class AdminProyectosController {
 
     private final ProyectoService proyectoService;
     private final ShellModelBuilder shellModelBuilder;
+    private final TecnologiaCatalogoService tecnologiaCatalogoService;
 
-    public AdminProyectosController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder) {
+    public AdminProyectosController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder, TecnologiaCatalogoService tecnologiaCatalogoService) {
         this.proyectoService = proyectoService;
         this.shellModelBuilder = shellModelBuilder;
+        this.tecnologiaCatalogoService = tecnologiaCatalogoService;
     }
 
     @GetMapping("/proyectos.html")
@@ -57,6 +60,8 @@ public class AdminProyectosController {
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("detalles", detalles);
         model.addAttribute("perfiles", perfiles);
+        model.addAttribute("catalogoTecnologias", tecnologiaCatalogoService.catalogo());
+        model.addAttribute("maxTecnologias", TecnologiaCatalogoService.MAX_TECNOLOGIAS);
         return "administrador/proyectos";
     }
 
@@ -71,8 +76,7 @@ public class AdminProyectosController {
                          HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            List<String> lista = tecnologias == null ? List.of() : Arrays.stream(tecnologias.split(","))
-                    .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+            List<String> lista = tecnologiaCatalogoService.normalizar(ProyectosPmController.separarTecnologias(tecnologias), List.of());
             proyectoService.crear(nombre, descripcion, lista, fechaInicio, fechaFinEstimada,
                     colaboradoresRequeridos, pmPerfilId, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" creado.");
