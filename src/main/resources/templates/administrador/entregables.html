@@ -153,10 +153,17 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("[data-cancelar]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var id = btn.dataset.cancelar;
+      var tarjeta = btn.closest("tr, .card, li, article");
+      var tituloEl = tarjeta && tarjeta.querySelector("[data-entregable-titulo], .cell-person-name, h3, strong");
       SBAI.modal.confirm({
-        title: "¿Cancelar este entregable?", desc: "Ya no aceptará entregas nuevas. Las que ya existan se conservan.",
-        confirmLabel: "Cancelar entregable", variant: "destructive",
-        onConfirm: function () { submitForm("/administrador/entregables/" + id + "/cancelar", { proyectoId: PROYECTO_ID }); }
+        title: "¿Cancelar este entregable?",
+        desc: "Ya no aceptará entregas nuevas. Las que ya existan se conservan.",
+        variant: "destructive",
+        subject: tituloEl ? { nombre: tituloEl.textContent.trim() } : null,
+        reason: { label: "Motivo de la cancelación", required: true, placeholder: "Ej.: el alcance cambió.",
+          presets: ["El alcance cambió", "Creado por error", "Reemplazado por otro entregable"] },
+        confirmLabel: "Cancelar entregable", cancelLabel: "Volver",
+        onConfirm: function (d) { submitForm("/administrador/entregables/" + id + "/cancelar", { proyectoId: PROYECTO_ID, motivo: d.motivo }); }
       });
     });
   });

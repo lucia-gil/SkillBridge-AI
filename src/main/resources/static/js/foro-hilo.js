@@ -232,13 +232,19 @@
       } else if ((b = e.target.closest("[data-eliminar]"))) {
         var msg = b.closest(".fr-msg");
         var esHilo = msg.getAttribute("data-inicial") === "true";
+        // Si es del propio usuario no se pide motivo; si modera un mensaje ajeno, sí (queda en Auditoría).
+        var esPropio = msg.getAttribute("data-mio") === "true";
         SBAI.modal.confirm({
           title: esHilo ? "¿Eliminar este hilo?" : "¿Eliminar esta respuesta?",
           desc: esHilo ? "Se eliminará el hilo con todas sus respuestas y adjuntos. Esta acción no se puede deshacer."
                        : "Se eliminará la respuesta y sus adjuntos. Esta acción no se puede deshacer.",
-          confirmLabel: "Eliminar", variant: "destructive",
-          onConfirm: function () {
-            submitForm(esHilo ? base + "/eliminar" : base + "/respuestas/" + b.getAttribute("data-eliminar") + "/eliminar", {});
+          subject: esPropio ? null : { nombre: "Mensaje de " + msg.getAttribute("data-autor"), meta: "Moderación" },
+          reason: esPropio ? null : { label: "Motivo de la moderación", required: true, placeholder: "Ej.: contenido fuera de lugar.",
+            presets: ["Contenido fuera de tema", "Lenguaje inapropiado", "Información duplicada", "Datos sensibles"] },
+          confirmLabel: "Eliminar", variant: "destructive", cancelLabel: "Volver",
+          onConfirm: function (d) {
+            var datos = d.motivo ? { motivo: d.motivo } : {};
+            submitForm(esHilo ? base + "/eliminar" : base + "/respuestas/" + b.getAttribute("data-eliminar") + "/eliminar", datos);
           }
         });
       } else if ((b = e.target.closest("[data-fijar]"))) {

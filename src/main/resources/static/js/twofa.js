@@ -11,7 +11,7 @@
     return fetch(url, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" }, body: body })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || "No se pudo completar la operacion."); return j; }); });
   }
-  function toast(msg, type) { if (window.SBAI && SBAI.toast) SBAI.toast.show(msg, { type: type || "success" }); else window.alert(msg); }
+  function toast(msg, type) { if (window.SBAI && SBAI.toast) SBAI.toast.show(msg, { type: type || "success" }); else if (window.console) console.warn(msg); }
 
   document.addEventListener("DOMContentLoaded", function () {
     var root = document.getElementById("twofa-card"); if (!root) return;

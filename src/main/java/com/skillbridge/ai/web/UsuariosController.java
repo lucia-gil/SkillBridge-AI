@@ -76,10 +76,11 @@ public class UsuariosController {
 
     @PostMapping("/usuarios/{id}/estado")
     public String cambiarEstado(@PathVariable Long id, @RequestParam boolean activar,
+                                 @RequestParam(required = false) String motivo,
                                  HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            usuarioService.cambiarEstado(id, activar, sesion.getUsuarioId());
+            usuarioService.cambiarEstado(id, activar, motivo, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", activar ? "Usuario reactivado." : "Usuario suspendido.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -88,10 +89,11 @@ public class UsuariosController {
     }
 
     @PostMapping("/usuarios/{id}/eliminar")
-    public String eliminar(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+    public String eliminar(@PathVariable Long id, @RequestParam(required = false) String motivo,
+                           HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            usuarioService.eliminar(id, sesion.getUsuarioId());
+            usuarioService.eliminar(id, motivo, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Usuario eliminado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

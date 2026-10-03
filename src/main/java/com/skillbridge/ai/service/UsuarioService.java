@@ -199,13 +199,16 @@ public class UsuarioService {
     }
 
     @Transactional
-    public void cambiarEstado(Long usuarioId, boolean activar, Long actorId) {
+    public void cambiarEstado(Long usuarioId, boolean activar, String motivo, Long actorId) {
         if (usuarioId.equals(actorId)) {
             throw new OperacionInvalidaException("No puedes suspender o reactivar tu propia cuenta.");
         }
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new OperacionInvalidaException("El usuario ya no existe."));
 
+        if (!activar && AuditoriaService.limpiarMotivo(motivo) == null) {
+            throw new OperacionInvalidaException("Indica el motivo de la suspensión: queda registrado en Auditoría.");
+        }
         String anterior = usuario.getEstado();
         String nuevo = activar ? "activo" : "inactivo";
         usuario.setEstado(nuevo);
@@ -213,16 +216,19 @@ public class UsuarioService {
 
         auditoriaService.registrar(actorId, activar ? "USUARIO_REACTIVADO" : "USUARIO_SUSPENDIDO",
                 "usuario", usuarioId, AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevo),
-                usuario.getCorreo());
+                AuditoriaService.conMotivo(usuario.getCorreo(), motivo));
     }
 
     @Transactional
-    public void eliminar(Long usuarioId, Long actorId) {
+    public void eliminar(Long usuarioId, String motivo, Long actorId) {
         if (usuarioId.equals(actorId)) {
             throw new OperacionInvalidaException("No puedes eliminar tu propia cuenta.");
         }
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new OperacionInvalidaException("El usuario ya no existe."));
+        if (AuditoriaService.limpiarMotivo(motivo) == null) {
+            throw new OperacionInvalidaException("Indica el motivo de la eliminación: queda registrado en Auditoría.");
+        }
         String correo = usuario.getCorreo();
         try {
             usuarioRepository.delete(usuario);
@@ -231,6 +237,7 @@ public class UsuarioService {
             throw new OperacionInvalidaException(
                     "No se puede eliminar: " + correo + " tiene asignaciones, publicaciones u otros registros asociados. Suspende la cuenta en su lugar.");
         }
-        auditoriaService.registrar(actorId, "USUARIO_ELIMINADO", "usuario", usuarioId, null, null, correo);
+        auditoriaService.registrar(actorId, "USUARIO_ELIMINADO", "usuario", usuarioId, null, null,
+                AuditoriaService.conMotivo(correo, motivo));
     }
 }

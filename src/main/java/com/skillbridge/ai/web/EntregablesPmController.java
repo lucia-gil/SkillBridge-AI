@@ -89,10 +89,11 @@ public class EntregablesPmController {
     }
 
     @PostMapping("/entregables/{id}/cancelar")
-    public String cancelar(@PathVariable Long id, @RequestParam Long proyectoId, HttpSession session, RedirectAttributes ra) {
+    public String cancelar(@PathVariable Long id, @RequestParam Long proyectoId,
+                           @RequestParam(required = false) String motivo, HttpSession session, RedirectAttributes ra) {
         UsuarioSesion sesion = sesion(session);
         try {
-            entregableService.cancelar(id, sesion.getPerfilId(), sesion.getRolEfectivo(), sesion.getUsuarioId());
+            entregableService.cancelar(id, sesion.getPerfilId(), sesion.getRolEfectivo(), motivo, sesion.getUsuarioId());
             ra.addFlashAttribute("exito", "Entregable cancelado.");
         } catch (OperacionInvalidaException ex) { ra.addFlashAttribute("error", ex.getMessage()); }
         return "redirect:/project-manager/proyectos/" + proyectoId + "/entregables.html";

@@ -110,10 +110,13 @@
         SBAI.modal.confirm({
           title: "¿Suspender a " + btn.dataset.nombre + "?",
           desc: "Perderá acceso a la plataforma hasta que se reactive su cuenta. No afecta sus asignaciones históricas.",
-          confirmLabel: "Suspender",
-          variant: "destructive",
-          onConfirm: function () {
-            submitForm("/resource-manager/colaboradores/" + btn.dataset.suspender + "/estado", { nuevoEstado: "inactivo" });
+          variant: "warning", icon: "icon-user-x",
+          subject: { nombre: btn.dataset.nombre },
+          reason: { label: "Motivo de la suspensión", required: true, placeholder: "Ej.: licencia prolongada.",
+            presets: ["Licencia prolongada", "Terminó su contrato", "Solicitud del área"] },
+          confirmLabel: "Suspender cuenta", cancelLabel: "Volver",
+          onConfirm: function (d) {
+            submitForm("/resource-manager/colaboradores/" + btn.dataset.suspender + "/estado", { nuevoEstado: "inactivo", motivo: d.motivo });
           }
         });
       });

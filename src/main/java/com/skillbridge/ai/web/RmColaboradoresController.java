@@ -8,6 +8,7 @@ import com.skillbridge.ai.model.Perfil;
 import com.skillbridge.ai.repository.AsignacionRepository;
 import com.skillbridge.ai.repository.HabilidadRepository;
 import com.skillbridge.ai.repository.PerfilRepository;
+import com.skillbridge.ai.service.AuditoriaService;
 import com.skillbridge.ai.service.HabilidadService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
@@ -58,10 +59,12 @@ public class RmColaboradoresController {
     private final HabilidadRepository habilidadRepository;
     private final HabilidadService habilidadService;
     private final ShellModelBuilder shellModelBuilder;
+    private final AuditoriaService auditoriaService;
 
     public RmColaboradoresController(PerfilRepository perfilRepository, AsignacionRepository asignacionRepository,
                                      HabilidadRepository habilidadRepository, HabilidadService habilidadService,
-                                     ShellModelBuilder shellModelBuilder) {
+                                     ShellModelBuilder shellModelBuilder, AuditoriaService auditoriaService) {
+        this.auditoriaService = auditoriaService;
         this.perfilRepository = perfilRepository;
         this.asignacionRepository = asignacionRepository;
         this.habilidadRepository = habilidadRepository;
@@ -165,6 +168,7 @@ public class RmColaboradoresController {
     /** Update real: activar/desactivar cuenta (soft delete, igual que el resto del sistema). */
     @PostMapping("/colaboradores/{perfilId}/estado")
     public String cambiarEstado(@PathVariable Long perfilId, @RequestParam String nuevoEstado,
+                                @RequestParam(required = false) String motivo,
                                 HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
 
@@ -176,10 +180,20 @@ public class RmColaboradoresController {
             return "redirect:/resource-manager/colaboradores.html";
         }
 
+        if ("inactivo".equals(nuevoEstado) && AuditoriaService.limpiarMotivo(motivo) == null) {
+            redirectAttributes.addFlashAttribute("error", "Indica el motivo de la suspensión: queda registrado en Auditoría.");
+            return "redirect:/resource-manager/colaboradores.html";
+        }
         Perfil p = perfilRepository.findById(perfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("El colaborador ya no existe."));
+        String anterior = p.getEstado();
         p.setEstado(nuevoEstado);
         perfilRepository.save(p);
+        // Antes esta acción no dejaba rastro en Auditoría.
+        auditoriaService.registrar(sesion.getUsuarioId(),
+                "activo".equals(nuevoEstado) ? "COLABORADOR_REACTIVADO" : "COLABORADOR_SUSPENDIDO",
+                "perfil", perfilId, AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevoEstado),
+                AuditoriaService.conMotivo(p.getUsuario() != null ? p.getUsuario().getCorreo() : "Perfil " + perfilId, motivo));
         redirectAttributes.addFlashAttribute("exito",
                 "activo".equals(nuevoEstado) ? "Colaborador reactivado." : "Colaborador suspendido.");
         return "redirect:/resource-manager/colaboradores.html";

@@ -13,7 +13,7 @@
 
 <article class="fr-msg" th:fragment="mensaje(m, hilo)" th:id="'m-' + ${m.id}"
          th:classappend="${m.esSolucion} ? 'is-solution'"
-         th:attr="data-msg-id=${m.id}, data-autor=${m.autorNombre}, data-inicial=${m.esMensajeInicial},
+         th:attr="data-msg-id=${m.id}, data-autor=${m.autorNombre}, data-inicial=${m.esMensajeInicial}, data-mio=${m.esMio},
                   data-restantes=${m.edicionesRestantes}">
   <span class="avatar" th:text="${m.iniciales}" aria-hidden="true">AA</span>
   <div style="min-width:0">

@@ -39,7 +39,23 @@
     var pwd = c.parentNode.dataset.pwd;
     (navigator.clipboard ? navigator.clipboard.writeText(pwd) : Promise.reject()).then(function () {
       c.textContent = "Copiada";
-    }).catch(function () { window.prompt("Copia la contraseña:", pwd); });
+    }).catch(function () {
+      // Sin permiso de portapapeles: se deja la contraseña lista para copiar, sin cuadros nativos del navegador.
+      var code = c.parentNode.querySelector("code");
+      if (window.SBAI && SBAI.modal && SBAI.modal.notice) {
+        var m = SBAI.modal.notice({
+          title: "Copia tu contraseña",
+          desc: "Tu navegador no permitió copiarla automáticamente. Selecciónala y cópiala con Ctrl + C.",
+          bodyHtml: '<input class="input" readonly value="' + SBAI.modal.esc(pwd) + '" style="font-family:var(--font-mono, monospace);" aria-label="Contraseña generada">',
+          buttonLabel: "Listo"
+        });
+        var inp = m.querySelector("input");
+        if (inp) setTimeout(function () { inp.focus(); inp.select(); }, 80);
+      } else if (code && window.getSelection) {
+        var rango = document.createRange(); rango.selectNodeContents(code);
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rango);
+      }
+    });
     setTimeout(function () { c.textContent = "Copiar"; }, 1600);
   });
 })();

@@ -67,7 +67,15 @@
 
     modal.querySelectorAll('[data-finalizar-asignacion]').forEach(function (button) {
       button.addEventListener('click', function () {
-        submitForm('/project-manager/asignaciones/' + button.dataset.finalizarAsignacion + '/finalizar', { volver: 'asignaciones' });
+        const fila = button.closest('tr');
+        const nombre = fila && fila.querySelector('.cell-person-name') ? fila.querySelector('.cell-person-name').textContent : 'este colaborador';
+        const titulo = modal.querySelector('h2');
+        window.SBAI.proyectoAcciones.finalizarAsignacion({
+          url: '/project-manager/asignaciones/' + button.dataset.finalizarAsignacion + '/finalizar',
+          nombre: nombre,
+          proyecto: titulo ? titulo.textContent : '',
+          extra: { volver: 'asignaciones' }
+        });
       });
     });
 

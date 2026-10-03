@@ -208,6 +208,9 @@
                   th:if="${user.tieneFoto}"
                   method="post"
                   th:action="@{/cuenta/foto/eliminar}"
+                  data-confirm-title="¿Quitar tu foto de perfil?"
+                  data-confirm-desc="Volverás a ver tus iniciales en lugar de la foto. Puedes subir otra cuando quieras."
+                  data-confirm-label="Quitar foto"
                   style="margin-top:var(--space-3);">
 
             <input

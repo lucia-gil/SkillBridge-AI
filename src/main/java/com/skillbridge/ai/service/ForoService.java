@@ -775,7 +775,7 @@ public class ForoService {
 
     /** Eliminar el hilo se lleva sus respuestas (misma tabla autorreferencial). */
     @Transactional
-    public void eliminarHilo(Long hiloId, Long actorPerfilId, boolean actorEsAdmin) {
+    public void eliminarHilo(Long hiloId, Long actorPerfilId, boolean actorEsAdmin, String motivo) {
         ForoPublicacion hilo = foroPublicacionRepository.findById(hiloId)
                 .orElseThrow(() -> new OperacionInvalidaException("El hilo ya no existe."));
         if (hilo.getPublicacionPadreId() != null) {
@@ -786,15 +786,19 @@ public class ForoService {
             throw new OperacionInvalidaException("Solo quien abrió el hilo (o el PM del proyecto) puede eliminarlo.");
         }
         if (!moderador) exigirForoAbierto(hilo.getProyectoId());
+        boolean propio = hilo.getAutorId().equals(actorPerfilId);
+        if (!propio && AuditoriaService.limpiarMotivo(motivo) == null) {
+            throw new OperacionInvalidaException("Indica el motivo de la moderación: queda registrado en Auditoría.");
+        }
         auditoriaService.registrar(usuarioIdDePerfil(actorPerfilId), "FORO_HILO_ELIMINADO", "foro_publicaciones", hiloId,
                 json("titulo", hilo.getTitulo(), "contenido", hilo.getContenido()), null,
-                hilo.getAutorId().equals(actorPerfilId) ? "Eliminado por su autor" : "Eliminado por moderación");
+                AuditoriaService.conMotivo(propio ? "Eliminado por su autor" : "Eliminado por moderación", motivo));
         foroPublicacionRepository.deleteByPublicacionPadreId(hiloId);
         foroPublicacionRepository.delete(hilo);
     }
 
     @Transactional
-    public void eliminarRespuesta(Long respuestaId, Long actorPerfilId, boolean actorEsAdmin) {
+    public void eliminarRespuesta(Long respuestaId, Long actorPerfilId, boolean actorEsAdmin, String motivo) {
         ForoPublicacion respuesta = foroPublicacionRepository.findById(respuestaId)
                 .orElseThrow(() -> new OperacionInvalidaException("La respuesta ya no existe."));
         if (respuesta.getPublicacionPadreId() == null) {
@@ -805,9 +809,13 @@ public class ForoService {
             throw new OperacionInvalidaException("Solo quien escribió la respuesta (o el PM del proyecto) puede eliminarla.");
         }
         if (!moderador) exigirForoAbierto(respuesta.getProyectoId());
+        boolean propia = respuesta.getAutorId().equals(actorPerfilId);
+        if (!propia && AuditoriaService.limpiarMotivo(motivo) == null) {
+            throw new OperacionInvalidaException("Indica el motivo de la moderación: queda registrado en Auditoría.");
+        }
         auditoriaService.registrar(usuarioIdDePerfil(actorPerfilId), "FORO_RESPUESTA_ELIMINADA", "foro_publicaciones", respuestaId,
                 json("contenido", respuesta.getContenido()), null,
-                respuesta.getAutorId().equals(actorPerfilId) ? "Eliminada por su autor" : "Eliminada por moderación");
+                AuditoriaService.conMotivo(propia ? "Eliminada por su autor" : "Eliminada por moderación", motivo));
         foroPublicacionRepository.delete(respuesta);
     }
 

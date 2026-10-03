@@ -124,10 +124,11 @@ public abstract class ForoHiloBaseController {
     }
 
     @PostMapping("/foro-hilo/{id}/eliminar")
-    public String eliminarHilo(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+    public String eliminarHilo(@PathVariable Long id, @RequestParam(required = false) String motivo,
+                               HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = sesion(session);
         try {
-            foroService.eliminarHilo(id, sesion.getPerfilId(), esAdmin(sesion));
+            foroService.eliminarHilo(id, sesion.getPerfilId(), esAdmin(sesion), motivo);
             redirectAttributes.addFlashAttribute("exito", "El hilo se eliminó.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -151,10 +152,11 @@ public abstract class ForoHiloBaseController {
 
     @PostMapping("/foro-hilo/{hiloId}/respuestas/{respuestaId}/eliminar")
     public String eliminarRespuesta(@PathVariable Long hiloId, @PathVariable Long respuestaId,
+                                    @RequestParam(required = false) String motivo,
                                     HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = sesion(session);
         try {
-            foroService.eliminarRespuesta(respuestaId, sesion.getPerfilId(), esAdmin(sesion));
+            foroService.eliminarRespuesta(respuestaId, sesion.getPerfilId(), esAdmin(sesion), motivo);
             redirectAttributes.addFlashAttribute("exito", "La respuesta se eliminó.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

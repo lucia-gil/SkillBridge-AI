@@ -256,7 +256,7 @@ public class ProyectoService {
      * la tabla proyectos en db/skillbridge_db_v4.sql).
      */
     @Transactional
-    public void eliminar(Long proyectoId, Long actorUsuarioId) {
+    public void eliminar(Long proyectoId, String motivo, Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         long colaboradores = asignacionRepository.countByProyectoIdAndRolEnProyectoAndEstado(
@@ -272,13 +272,17 @@ public class ProyectoService {
             throw new OperacionInvalidaException("No se puede eliminar \"" + p.getNombre()
                     + "\": el proyecto debe estar en estado \"Cancelado\" antes de poder eliminarlo.");
         }
+        String motivoLimpio = AuditoriaService.limpiarMotivo(motivo);
+        if (motivoLimpio == null) {
+            throw new OperacionInvalidaException("Indica el motivo por el que eliminas el proyecto: queda registrado en Auditoría.");
+        }
         String nombre = p.getNombre();
         String razon = p.getRazonCancelacion();
         asignacionRepository.deleteByProyectoId(proyectoId);
         proyectoRepository.delete(p);
         auditoriaService.registrar(actorUsuarioId, "PROYECTO_ELIMINADO", "proyecto", proyectoId, null, null,
-                "Proyecto \"" + nombre + "\" eliminado (estaba cancelado"
-                        + (razon != null && !razon.isBlank() ? " por: " + razon : "") + ").");
+                AuditoriaService.conMotivo("Proyecto \"" + nombre + "\" eliminado (estaba cancelado"
+                        + (razon != null && !razon.isBlank() ? " por: " + razon : "") + ")", motivoLimpio));
     }
 
     @Transactional
@@ -292,6 +296,10 @@ public class ProyectoService {
         if ("cancelado".equals(nuevoEstado) && (razonCancelacion == null || razonCancelacion.isBlank())) {
             throw new OperacionInvalidaException("Para cancelar el proyecto debes indicar una razón.");
         }
+        if ("en_pausa".equals(nuevoEstado) && !"en_pausa".equals(p.getEstado())
+                && AuditoriaService.limpiarMotivo(razonCancelacion) == null) {
+            throw new OperacionInvalidaException("Para pausar el proyecto debes indicar el motivo de la pausa.");
+        }
         String anterior = p.getEstado();
         p.setEstado(nuevoEstado);
         if ("cancelado".equals(nuevoEstado)) {
@@ -302,7 +310,7 @@ public class ProyectoService {
         proyectoRepository.save(p);
         String detalle = "cancelado".equals(nuevoEstado)
                 ? p.getNombre() + " (razón: " + p.getRazonCancelacion() + ")"
-                : p.getNombre();
+                : AuditoriaService.conMotivo(p.getNombre(), cambioDeEstado(anterior, nuevoEstado) ? razonCancelacion : null);
         auditoriaService.registrar(actorUsuarioId, "PROYECTO_ESTADO_CAMBIADO", "proyecto", proyectoId,
                 AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevoEstado), detalle);
     }
@@ -333,6 +341,10 @@ public class ProyectoService {
         if ("cancelado".equals(nuevoEstado) && (razonCancelacion == null || razonCancelacion.isBlank())) {
             throw new OperacionInvalidaException("Para cancelar el proyecto debes indicar una razón.");
         }
+        if ("en_pausa".equals(nuevoEstado) && !"en_pausa".equals(p.getEstado())
+                && AuditoriaService.limpiarMotivo(razonCancelacion) == null) {
+            throw new OperacionInvalidaException("Para pausar el proyecto debes indicar el motivo de la pausa.");
+        }
         if (fechaInicio == null) {
             throw new OperacionInvalidaException("La fecha de inicio es obligatoria.");
         }
@@ -360,7 +372,7 @@ public class ProyectoService {
         proyectoRepository.save(p);
         String detalle = "cancelado".equals(nuevoEstado)
                 ? p.getNombre() + " (razón: " + p.getRazonCancelacion() + ")"
-                : p.getNombre();
+                : AuditoriaService.conMotivo(p.getNombre(), cambioDeEstado(estadoAnterior, nuevoEstado) ? razonCancelacion : null);
         auditoriaService.registrar(actorUsuarioId, "PROYECTO_EDITADO", "proyecto", proyectoId,
                 AuditoriaService.json("estado", estadoAnterior), AuditoriaService.json("estado", nuevoEstado), detalle);
     }
@@ -438,8 +450,18 @@ public class ProyectoService {
                         " con " + cargaPorcentaje + "% de dedicación.", "proyectos.html");
     }
 
+    private static boolean cambioDeEstado(String anterior, String nuevo) {
+        return anterior == null || !anterior.equals(nuevo);
+    }
+
     @Transactional
     public void finalizarAsignacion(Long asignacionId, Long actorUsuarioId) {
+        finalizarAsignacion(asignacionId, null, actorUsuarioId);
+    }
+
+    /** El motivo (opcional) queda en el detalle de Auditoría. */
+    @Transactional
+    public void finalizarAsignacion(Long asignacionId, String motivo, Long actorUsuarioId) {
         Asignacion a = asignacionRepository.findById(asignacionId)
                 .orElseThrow(() -> new OperacionInvalidaException("La asignación ya no existe."));
 
@@ -462,7 +484,7 @@ public class ProyectoService {
         a.setFechaFin(LocalDate.now());
         asignacionRepository.save(a);
         auditoriaService.registrar(actorUsuarioId, "ASIGNACION_FINALIZADA", "asignacion", asignacionId, null, null,
-                "Asignación finalizada.");
+                AuditoriaService.conMotivo("Asignación finalizada", motivo) + ".");
         notificacionService.crear(a.getPerfilId(), "asignacion", "Asignación finalizada",
                 "Tu asignación al proyecto fue marcada como finalizada.", "proyectos.html");
     }

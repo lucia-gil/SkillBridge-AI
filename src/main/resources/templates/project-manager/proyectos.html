@@ -87,7 +87,7 @@
                 <td class="cell-actions">
                   <button type="button" th:attr="data-view-project=${p.id}">Ver detalle</button>
                   <button type="button" th:attr="data-editar-proyecto=${p.id}">Editar</button>
-                  <button type="button" class="danger" th:attr="data-eliminar-proyecto=${p.id},data-nombre-proyecto=${p.nombre}">Eliminar</button>
+                  <button type="button" class="danger" th:attr="data-eliminar-proyecto=${p.id},data-nombre-proyecto=${p.nombre},data-estado-proyecto=${p.estadoCrudo},data-estado-label=${p.estadoLabel}">Eliminar</button>
                 </td>
               </tr>
             </tbody>
@@ -127,7 +127,7 @@
                   <div style="font-size:var(--fs-sm); font-weight:500;" th:text="${m.nombre}">Nombre</div>
                   <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${m.rolLabel} + ' · ' + ${m.cargaPorcentaje} + '%'">rol</div>
                 </span>
-                <button type="button" class="danger" th:attr="data-finalizar-asignacion=${m.asignacionId}">Finalizar</button>
+                <button type="button" class="danger" th:attr="data-finalizar-asignacion=${m.asignacionId},data-nombre=${m.nombre}">Finalizar</button>
               </div>
 
               <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Asignar colaborador</h3>
@@ -152,7 +152,7 @@
               <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Cambiar estado</h3>
               <div class="field-row">
                 <div class="field">
-                  <select class="select" data-field="estado">
+                  <select class="select" data-field="estado" th:attr="data-actual=${d.estadoCrudo}">
                     <option value="planificacion" th:selected="${d.estadoCrudo == 'planificacion'}">Planificacion</option>
                     <option value="activo" th:selected="${d.estadoCrudo == 'activo'}">Activo</option>
                     <option value="en_pausa" th:selected="${d.estadoCrudo == 'en_pausa'}">En pausa</option>
@@ -161,10 +161,6 @@
                   </select>
                 </div>
                 <button type="button" class="btn btn-primary btn-sm" th:attr="data-cambiar-estado=${d.id}" style="align-self:flex-start;">Guardar estado</button>
-              </div>
-              <div class="field" data-razon-cancelacion-wrap hidden style="margin-top:var(--space-3);">
-                <label class="field-label">Razón de la cancelación (obligatoria)</label>
-                <textarea class="input" data-field="razonCancelacion" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea>
               </div>
             </div>
             <div class="modal-footer">
@@ -204,9 +200,13 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("[data-eliminar-proyecto]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var id = btn.dataset.eliminarProyecto;
-      var nombre = btn.dataset.nombreProyecto || "este proyecto";
-      if (!window.confirm('¿Eliminar "' + nombre + '"? Esta acción no se puede deshacer y borrará también sus entregables y asignaciones.')) return;
-      submitForm("/project-manager/proyectos/" + id + "/eliminar", {});
+      SBAI.proyectoAcciones.eliminar({
+        url: "/project-manager/proyectos/" + id + "/eliminar",
+        estadoUrl: "/project-manager/proyectos/" + id + "/estado",
+        nombre: btn.dataset.nombreProyecto,
+        estado: btn.dataset.estadoProyecto,
+        estadoLabel: btn.dataset.estadoLabel
+      });
     });
   });
 
@@ -318,7 +318,7 @@ document.addEventListener("DOMContentLoaded", function () {
           '<option value="completado"' + (d.estado === "completado" ? " selected" : "") + '>Completado</option>' +
           '<option value="cancelado"' + (d.estado === "cancelado" ? " selected" : "") + '>Cancelado</option>' +
         '</select></div>' +
-        '<div class="field" id="ep-razon-wrap" hidden><label class="field-label" for="ep-razon">Razón de la cancelación (obligatoria)</label>' +
+        '<div class="field" id="ep-razon-wrap" hidden><label class="field-label" for="ep-razon" id="ep-razon-label">Razón de la cancelación (obligatoria)</label>' +
         '<textarea class="input" id="ep-razon" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea><div class="field-error"></div></div>' +
         '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ep-confirm">Guardar cambios</button></div></div>';
       var backdrop = SBAI.modal.open(html);
@@ -327,7 +327,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
       var epEstadoSelect = backdrop.querySelector("#ep-estado");
       var epRazonWrap = backdrop.querySelector("#ep-razon-wrap");
-      function actualizarEpRazonWrap() { epRazonWrap.hidden = epEstadoSelect.value !== "cancelado"; }
+      // Cancelar siempre pide razón; Pausar pide el motivo solo cuando el estado cambia a "En pausa".
+      function actualizarEpRazonWrap() {
+        var v = epEstadoSelect.value;
+        var pide = v === "cancelado" || (v === "en_pausa" && d.estado !== "en_pausa");
+        epRazonWrap.hidden = !pide;
+        backdrop.querySelector("#ep-razon-label").textContent = v === "en_pausa" ? "Motivo de la pausa (obligatorio)" : "Razón de la cancelación (obligatoria)";
+      }
       actualizarEpRazonWrap();
       epEstadoSelect.addEventListener("change", actualizarEpRazonWrap);
 
@@ -336,8 +342,9 @@ document.addEventListener("DOMContentLoaded", function () {
         var estadoNuevo = epEstadoSelect.value;
         var razonInput = backdrop.querySelector("#ep-razon");
         var razon = razonInput.value.trim();
-        if (estadoNuevo === "cancelado" && !razon) {
-          form.fechas.marcar(razonInput, "Indica por qué se cancela el proyecto.");
+        var pideMotivo = estadoNuevo === "cancelado" || (estadoNuevo === "en_pausa" && d.estado !== "en_pausa");
+        if (pideMotivo && !razon) {
+          form.fechas.marcar(razonInput, estadoNuevo === "en_pausa" ? "Indica por qué se pausa el proyecto." : "Indica por qué se cancela el proyecto.");
           razonInput.focus();
           return;
         }
@@ -362,7 +369,13 @@ document.addEventListener("DOMContentLoaded", function () {
       var backdrop = SBAI.modal.open('<div class="modal modal-wide" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
 
       backdrop.querySelectorAll("[data-finalizar-asignacion]").forEach(function (b) {
-        b.addEventListener("click", function () { submitForm("/project-manager/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar", {}); });
+        b.addEventListener("click", function () {
+          SBAI.proyectoAcciones.finalizarAsignacion({
+            url: "/project-manager/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar",
+            nombre: b.dataset.nombre,
+            proyecto: (backdrop.querySelector("h2") || {}).textContent
+          });
+        });
       });
       var asignarBtn = backdrop.querySelector("[data-asignar-proyecto]");
       if (asignarBtn) {
@@ -377,26 +390,16 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       }
       var estadoSelect = backdrop.querySelector('[data-field="estado"]');
-      var razonWrap = backdrop.querySelector("[data-razon-cancelacion-wrap]");
-      function actualizarRazonWrap() {
-        if (!estadoSelect || !razonWrap) return;
-        razonWrap.hidden = estadoSelect.value !== "cancelado";
-      }
-      if (estadoSelect) {
-        actualizarRazonWrap();
-        estadoSelect.addEventListener("change", actualizarRazonWrap);
-      }
       var estadoBtn = backdrop.querySelector("[data-cambiar-estado]");
       if (estadoBtn) {
         estadoBtn.addEventListener("click", function () {
           var proyectoId = estadoBtn.dataset.cambiarEstado;
-          var nuevoEstado = estadoSelect.value;
-          var razon = backdrop.querySelector('[data-field="razonCancelacion"]').value.trim();
-          if (nuevoEstado === "cancelado" && !razon) {
-            SBAI.toast.show("Para cancelar el proyecto debes indicar una razón.", { type: "error" });
-            return;
-          }
-          submitForm("/project-manager/proyectos/" + proyectoId + "/estado", { estado: nuevoEstado, razonCancelacion: razon });
+          SBAI.proyectoAcciones.cambiarEstado({
+            url: "/project-manager/proyectos/" + proyectoId + "/estado",
+            nombre: (backdrop.querySelector("h2") || {}).textContent,
+            actual: estadoSelect.getAttribute("data-actual"),
+            nuevo: estadoSelect.value
+          });
         });
       }
     });
@@ -524,6 +527,7 @@ document.addEventListener("DOMContentLoaded", function () {
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/tech-icons.js"></script>
 <script src="/js/proyecto-form.js"></script>
+<script src="/js/proyecto-acciones.js"></script>
 <script src="/js/project-ui.js"></script>
 </body>
 </html>

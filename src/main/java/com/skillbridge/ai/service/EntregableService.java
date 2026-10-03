@@ -151,14 +151,17 @@ public class EntregableService {
 
     /** No se borra físicamente (se perdería la trazabilidad de lo ya entregado/calificado): se cancela. */
     @Transactional
-    public void cancelar(Long entregableId, Long actorPerfilId, String rolEfectivo, Long actorUsuarioId) {
+    public void cancelar(Long entregableId, Long actorPerfilId, String rolEfectivo, String motivo, Long actorUsuarioId) {
         Entregable e = entregableRepository.findById(entregableId)
                 .orElseThrow(() -> new OperacionInvalidaException("El entregable ya no existe."));
         verificarGestion(e.getProyectoId(), actorPerfilId, rolEfectivo);
+        if (AuditoriaService.limpiarMotivo(motivo) == null) {
+            throw new OperacionInvalidaException("Indica el motivo de la cancelación: queda registrado en Auditoría.");
+        }
         e.setEstado("cancelado");
         entregableRepository.save(e);
         auditoriaService.registrar(actorUsuarioId, "ENTREGABLE_CANCELADO", "entregable", e.getId(), null, null,
-                e.getTitulo());
+                AuditoriaService.conMotivo(e.getTitulo(), motivo));
     }
 
     private LocalDateTime parsearFecha(String iso) {

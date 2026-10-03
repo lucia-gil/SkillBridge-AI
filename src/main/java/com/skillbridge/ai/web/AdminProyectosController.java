@@ -116,10 +116,11 @@ public class AdminProyectosController {
     }
 
     @PostMapping("/asignaciones/{asignacionId}/finalizar")
-    public String finalizar(@PathVariable Long asignacionId, HttpSession session, RedirectAttributes redirectAttributes) {
+    public String finalizar(@PathVariable Long asignacionId, @RequestParam(required = false) String motivo,
+                            HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            proyectoService.finalizarAsignacion(asignacionId, sesion.getUsuarioId());
+            proyectoService.finalizarAsignacion(asignacionId, motivo, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Asignación finalizada.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

@@ -71,11 +71,11 @@
                   <button type="button" data-edit-role
                           th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}, data-rol-crudo=${u.rolOrganizacionalCrudo}">Editar rol</button>
                   <button type="button" class="danger" th:if="${u.estado == 'activo'}" data-suspend
-                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}">Suspender</button>
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}">Suspender</button>
                   <button type="button" data-reactivate th:if="${u.estado != 'activo'}"
                           th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}">Reactivar</button>
                   <button type="button" class="danger" data-delete
-                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}">Eliminar</button>
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}">Eliminar</button>
                 </td>
               </tr>
             </tbody>
@@ -212,9 +212,14 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", function () {
       var id = btn.dataset.id, nombre = btn.dataset.nombre;
       SBAI.modal.confirm({
-        title: "¿Suspender a " + nombre + "?", desc: "Perderá acceso a la plataforma de inmediato.",
-        confirmLabel: "Suspender", variant: "destructive",
-        onConfirm: function () { submitForm("/administrador/usuarios/" + id + "/estado", { activar: "false" }); }
+        title: "¿Suspender a " + nombre + "?",
+        desc: "Perderá acceso a la plataforma de inmediato. Puedes reactivarlo cuando quieras.",
+        variant: "warning", icon: "icon-user-x",
+        subject: { nombre: nombre, meta: btn.dataset.correo || "" },
+        reason: { label: "Motivo de la suspensión", required: true, placeholder: "Ej.: terminó su contrato.",
+          presets: ["Terminó su contrato", "Actividad sospechosa", "Solicitud del área", "Cuenta duplicada"] },
+        confirmLabel: "Suspender cuenta", cancelLabel: "Volver",
+        onConfirm: function (d) { submitForm("/administrador/usuarios/" + id + "/estado", { activar: "false", motivo: d.motivo }); }
       });
     });
   });
@@ -231,9 +236,14 @@ document.addEventListener("DOMContentLoaded", function () {
       var id = btn.dataset.id, nombre = btn.dataset.nombre;
       SBAI.modal.confirm({
         title: "¿Eliminar a " + nombre + "?",
-        desc: "Esta acción es permanente. Si tiene asignaciones u otros registros asociados, no se podrá eliminar (usa Suspender en ese caso).",
-        confirmLabel: "Eliminar", variant: "destructive",
-        onConfirm: function () { submitForm("/administrador/usuarios/" + id + "/eliminar", {}); }
+        desc: "Esta acción es permanente.",
+        subject: { nombre: nombre, meta: btn.dataset.correo || "" },
+        consequences: ["Si tiene asignaciones, publicaciones u otros registros asociados no se podrá eliminar: en ese caso usa Suspender."],
+        reason: { label: "Motivo de la eliminación", required: true, placeholder: "Ej.: cuenta creada por error.",
+          presets: ["Cuenta creada por error", "Cuenta duplicada", "Ya no pertenece a la organización"] },
+        typeToConfirm: nombre,
+        confirmLabel: "Eliminar definitivamente", variant: "destructive", cancelLabel: "Volver",
+        onConfirm: function (d) { submitForm("/administrador/usuarios/" + id + "/eliminar", { motivo: d.motivo }); }
       });
     });
   });

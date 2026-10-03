@@ -159,11 +159,12 @@ public class ProyectosPmController {
     }
 
     @PostMapping("/proyectos/{id}/eliminar")
-    public String eliminar(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+    public String eliminar(@PathVariable Long id, @RequestParam(required = false) String motivo,
+                           HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             exigirPropiedad(sesion.getPerfilId(), id);
-            proyectoService.eliminar(id, sesion.getUsuarioId());
+            proyectoService.eliminar(id, motivo, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Proyecto eliminado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -190,13 +191,14 @@ public class ProyectosPmController {
 
     @PostMapping("/asignaciones/{asignacionId}/finalizar")
     public String finalizar(@PathVariable Long asignacionId, @RequestParam(required = false) String volver,
+                            @RequestParam(required = false) String motivo,
                             HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             Asignacion a = asignacionRepository.findById(asignacionId)
                     .orElseThrow(() -> new OperacionInvalidaException("La asignacion ya no existe."));
             exigirPropiedad(sesion.getPerfilId(), a.getProyectoId());
-            proyectoService.finalizarAsignacion(asignacionId, sesion.getUsuarioId());
+            proyectoService.finalizarAsignacion(asignacionId, motivo, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Asignacion finalizada.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

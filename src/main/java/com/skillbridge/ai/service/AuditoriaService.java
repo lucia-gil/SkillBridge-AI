@@ -57,6 +57,23 @@ public class AuditoriaService {
         registrar(usuarioId, accion, null, null, null, null, detalle);
     }
 
+    /** Máximo de caracteres del motivo que se guarda en auditoría. */
+    public static final int MAX_MOTIVO = 300;
+
+    /** Normaliza el motivo que escribe la persona: sin espacios sobrantes y recortado; null si quedó vacío. */
+    public static String limpiarMotivo(String motivo) {
+        if (motivo == null) return null;
+        String m = motivo.trim().replaceAll("\\s+", " ");
+        if (m.isEmpty()) return null;
+        return m.length() > MAX_MOTIVO ? m.substring(0, MAX_MOTIVO) : m;
+    }
+
+    /** Agrega el motivo al detalle de auditoría: "Proyecto X — Motivo: ...". */
+    public static String conMotivo(String detalle, String motivo) {
+        String m = limpiarMotivo(motivo);
+        return m == null ? detalle : detalle + " — Motivo: " + m;
+    }
+
     /** Envuelve un valor simple en JSON valido de una sola propiedad, para valor_anterior/valor_nuevo. */
     public static String json(String campo, Object valor) {
         String v = valor == null ? "null" : "\"" + String.valueOf(valor).replace("\"", "\\\"") + "\"";

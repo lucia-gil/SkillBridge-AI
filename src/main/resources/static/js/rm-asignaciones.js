@@ -65,21 +65,17 @@
     });
     if (hide && panel) hide.addEventListener('click', function () { panel.hidden = true; show.hidden = false; });
 
-    // "Finalizar" pide confirmación antes de ejecutar, igual que en la
-    // version anterior de esta pantalla, para que un clic accidental no
-    // finalice una asignación sin querer.
+    // "Finalizar" pide confirmación (y un motivo opcional para Auditoría) antes de ejecutar,
+    // para que un clic accidental no finalice una asignación sin querer.
     modal.querySelectorAll('[data-finalizar-asignacion]').forEach(function (button) {
       button.addEventListener('click', function () {
         const fila = button.closest('tr');
         const nombre = fila ? fila.querySelector('.cell-person-name').textContent : 'este colaborador';
-        window.SBAI.modal.confirm({
-          title: '¿Finalizar la asignación de ' + nombre + '?',
-          desc: 'Dejará de aparecer como parte activa del equipo de este proyecto. Esto no borra su historial.',
-          confirmLabel: 'Finalizar',
-          variant: 'destructive',
-          onConfirm: function () {
-            submitForm('/resource-manager/asignaciones/' + button.dataset.finalizarAsignacion + '/finalizar', {});
-          }
+        const titulo = modal.querySelector('h2');
+        window.SBAI.proyectoAcciones.finalizarAsignacion({
+          url: '/resource-manager/asignaciones/' + button.dataset.finalizarAsignacion + '/finalizar',
+          nombre: nombre,
+          proyecto: titulo ? titulo.textContent : ''
         });
       });
     });
