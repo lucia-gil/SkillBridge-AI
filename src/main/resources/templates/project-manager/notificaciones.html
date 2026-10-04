@@ -124,6 +124,9 @@
     function matches(row) {
       var tab = currentTab();
       if (!tab || tab === "todos" || tab === "todas") return true;
+      // "Sin leer" no es un tipo de notificación: se filtra por estado
+      // (antes comparaba con el tipo y la pestaña quedaba siempre vacía).
+      if (tab === "sinleer") return row.classList.contains("unread");
       return row.dataset.fTab === tab;
     }
 
@@ -160,6 +163,7 @@
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
 <script src="/js/mobile-nav.js"></script>
 </body>
 </html>

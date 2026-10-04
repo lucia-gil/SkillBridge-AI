@@ -97,12 +97,18 @@
             <strong th:text="${correosAutorizados.size()} + ' correos autorizados'">0 correos autorizados</strong>
             <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Lista blanca de registro: solo estos correos pueden completar /registro. "Pendiente" = invitado, aún no se registró.</p>
           </div>
+          <div class="table-filters" th:unless="${correosAutorizados.isEmpty()}">
+            <input type="search" class="input" id="correos-search" placeholder="Buscar correo…" autocomplete="off" style="width:220px; height:38px; font-size:var(--fs-xs);">
+            <select class="select" id="correos-estado" style="height:38px; font-size:var(--fs-xs);">
+              <option value="todos">Todos</option><option value="pendiente">Pendientes</option><option value="registrado">Registrados</option>
+            </select>
+          </div>
         </div>
         <div class="table-scroll">
           <table class="data-table">
             <thead><tr><th>Correo</th><th>Autorizado el</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              <tr th:each="c : ${correosAutorizados}">
+              <tr th:each="c : ${correosAutorizados}" data-correo-row th:attr="data-correo=${#strings.toLowerCase(c.correo())},data-estado=${c.utilizado()} ? 'registrado' : 'pendiente'">
                 <td class="cell-primary" th:text="${c.correo()}">correo@nexacorp.com</td>
                 <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${c.fechaAutorizacion()}">—</td>
                 <td><span class="badge" th:classappend="${c.estadoBadgeClass()}" th:text="${c.estadoLabel()}">Pendiente</span></td>
@@ -118,6 +124,42 @@
           <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-mail"></use></svg></span>
           <span class="state-panel-title">Todavía no se ha invitado a nadie</span>
         </div>
+        <div class="state-panel" id="correos-empty" hidden><span class="state-panel-title">Ningún correo coincide con el filtro</span></div>
+        <!-- RG-249: paginación de la lista de correos autorizados -->
+        <div class="table-footer" th:unless="${correosAutorizados.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="correos-visible-count">0</span> de <span id="correos-filtered-count">0</span> correos</span>
+          <div class="pagination"><button class="page-btn" id="correos-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="correos-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="correos-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
+        <script>
+        (function () {
+          var rows = Array.prototype.slice.call(document.querySelectorAll("[data-correo-row]"));
+          if (!rows.length) return;
+          var q = document.getElementById("correos-search"), est = document.getElementById("correos-estado");
+          var prev = document.getElementById("correos-prev"), next = document.getElementById("correos-next");
+          var label = document.getElementById("correos-page-label"), vacio = document.getElementById("correos-empty");
+          var vis = document.getElementById("correos-visible-count"), fil = document.getElementById("correos-filtered-count");
+          var size = 8, page = 1;
+          function norm(t) { return (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
+          function filtradas() {
+            var t = norm(q.value), e = est.value;
+            return rows.filter(function (r) { return (!t || r.dataset.correo.indexOf(t) !== -1) && (e === "todos" || r.dataset.estado === e); });
+          }
+          function render() {
+            var f = filtradas(), pages = Math.max(1, Math.ceil(f.length / size));
+            page = Math.min(page, pages);
+            var v = f.slice((page - 1) * size, page * size);
+            rows.forEach(function (r) { r.hidden = true; }); v.forEach(function (r) { r.hidden = false; });
+            vis.textContent = v.length; fil.textContent = f.length; vacio.hidden = f.length !== 0;
+            label.textContent = "Página " + page + " de " + pages;
+            prev.disabled = page === 1; next.disabled = page === pages;
+          }
+          q.addEventListener("input", function () { page = 1; render(); });
+          est.addEventListener("change", function () { page = 1; render(); });
+          prev.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+          next.addEventListener("click", function () { page++; render(); });
+          render();
+        })();
+        </script>
       </section>
 
     </main>
@@ -335,7 +377,9 @@ document.addEventListener("DOMContentLoaded", function () {
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/password-generator.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
 </html>
