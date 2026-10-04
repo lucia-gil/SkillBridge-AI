@@ -18,26 +18,31 @@
     <main class="page-content" id="page-content">
 
       <div class="detail-grid" style="grid-template-columns: 1fr 2.4fr; align-items: stretch;">
-        <section class="card card-pad" style="height:100%;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-3);">
-            <p class="label-mono" style="margin:0;">Categorías</p>
+        <section class="card" style="height:100%;">
+          <div class="table-toolbar">
+            <div>
+              <strong th:text="${categorias.size()} + ' categorías'">0 categorías</strong>
+            </div>
             <button type="button" class="btn btn-secondary btn-sm" id="add-category-btn" title="Agregar categoría">
               <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>
             </button>
           </div>
-          <div id="category-list">
-            <div class="info-row" th:each="c : ${categorias}" th:attr="data-id=${c.id()}">
-              <span class="info-row-label" th:text="${c.nombre()}">Categoría</span>
-              <span style="display:flex; align-items:center; gap:10px;">
-                <span class="info-row-value mono" th:text="${c.cantidad()}">0</span>
-                <span class="cell-actions">
-                  <button type="button" data-edit-category
-                          th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}">Editar</button>
-                  <button type="button" class="danger" data-delete-category
-                          th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}, data-cantidad=${c.cantidad()}">Eliminar</button>
-                </span>
-              </span>
-            </div>
+          <div class="table-scroll">
+            <table class="data-table" style="min-width:0;">
+              <thead><tr><th>Categoría</th><th>Habilidades</th><th>Acciones</th></tr></thead>
+              <tbody id="category-list">
+                <tr th:each="c : ${categorias}" th:attr="data-id=${c.id()}">
+                  <td class="cell-primary" th:text="${c.nombre()}">Categoría</td>
+                  <td class="mono" th:text="${c.cantidad()}">0</td>
+                  <td class="cell-actions">
+                    <button type="button" data-edit-category
+                            th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}">Editar</button>
+                    <button type="button" class="danger" data-delete-category
+                            th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}, data-cantidad=${c.cantidad()}">Eliminar</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
