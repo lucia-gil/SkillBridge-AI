@@ -127,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("invite-btn").addEventListener("click", function () {
     var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Autoriza un correo corporativo para autoregistro</p></div>' +
       '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" id="invite-email" placeholder="nombre.apellido@nexacorp.com"></div></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" id="invite-email" placeholder="correo@dominio.com"></div></div>' +
       '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="invite-confirm">Enviar invitación</button></div></div>';
     var backdrop = SBAI.modal.open(html);
     backdrop.querySelector("#invite-confirm").addEventListener("click", function () {
