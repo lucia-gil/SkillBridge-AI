@@ -61,7 +61,7 @@
                         </div>
                         <span th:if="${h.validada}" class="badge badge-green">Validada</span>
                         <button type="button" th:unless="${h.validada}" class="btn btn-secondary btn-sm"
-                                th:attr="data-validar-habilidad=${h.habilidadId}">Validar</button>
+                                th:attr="data-validar-habilidad=${h.habilidadId}, data-habilidad-nombre=${h.nombre}">Validar</button>
                     </div>
 
                     <!-- Certificados de respaldo (Opción A: link externo) -->
@@ -84,6 +84,7 @@
 
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
     window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
@@ -93,7 +94,16 @@
         var submitForm = window.SBAI.submitForm;
         document.querySelectorAll("[data-validar-habilidad]").forEach(function (btn) {
             btn.addEventListener("click", function () {
-                submitForm("/resource-manager/colaboradores/" + PERFIL_ID + "/habilidades/" + btn.dataset.validarHabilidad + "/validar", {});
+                var habilidadId = btn.dataset.validarHabilidad;
+                var nombre = btn.dataset.habilidadNombre || "esta habilidad";
+                SBAI.modal.confirm({
+                    title: "¿Validar \"" + nombre + "\"?",
+                    desc: "Quedará marcada como verificada para este colaborador: se usará en Talent Matching y se mostrará en su perfil.",
+                    confirmLabel: "Validar",
+                    onConfirm: function () {
+                        submitForm("/resource-manager/colaboradores/" + PERFIL_ID + "/habilidades/" + habilidadId + "/validar", {});
+                    }
+                });
             });
         });
     });
