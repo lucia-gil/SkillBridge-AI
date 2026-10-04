@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
 
 @Controller
 @RequestMapping("/project-manager")
@@ -37,7 +38,7 @@ public class ReportesPmController {
 
     @GetMapping("/reportes.html")
     public String reportes(HttpSession session, Model model,
-                           @RequestParam(required = false) Long proyectoId,
+                           @RequestParam(name = "proyectoId", required = false) List<Long> proyectoId,
                            @RequestParam(required = false) String estado,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
@@ -57,7 +58,7 @@ public class ReportesPmController {
 
     @GetMapping("/reportes.xlsx")
     public void excel(HttpSession session, HttpServletResponse response,
-                      @RequestParam(required = false) Long proyectoId,
+                      @RequestParam(name = "proyectoId", required = false) List<Long> proyectoId,
                       @RequestParam(required = false) String estado,
                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) throws IOException {
@@ -69,7 +70,7 @@ public class ReportesPmController {
 
     @GetMapping("/reportes.pdf")
     public void pdf(HttpSession session, HttpServletResponse response,
-                    @RequestParam(required = false) Long proyectoId,
+                    @RequestParam(name = "proyectoId", required = false) List<Long> proyectoId,
                     @RequestParam(required = false) String estado,
                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) throws IOException {
@@ -83,9 +84,10 @@ public class ReportesPmController {
         return (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
     }
 
-    private String query(Long proyectoId, String estado, LocalDate desde, LocalDate hasta) {
+    private String query(List<Long> proyectoId, String estado, LocalDate desde, LocalDate hasta) {
         StringBuilder q = new StringBuilder("?");
-        if (proyectoId != null) q.append("proyectoId=").append(proyectoId).append('&');
+        // Selección múltiple (RG-217): se repite el parámetro por cada proyecto.
+        if (proyectoId != null) for (Long id : proyectoId) if (id != null) q.append("proyectoId=").append(id).append('&');
         if (estado != null && !estado.isBlank()) q.append("estado=").append(URLEncoder.encode(estado, StandardCharsets.UTF_8)).append('&');
         if (desde != null) q.append("desde=").append(desde).append('&');
         if (hasta != null) q.append("hasta=").append(hasta).append('&');

@@ -9,6 +9,13 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<style>
+  .report-export{display:flex;gap:var(--space-2);flex-wrap:wrap}
+  .report-filter-bar{display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(200px,1.4fr) minmax(180px,1fr) auto;gap:var(--space-3);padding:0 var(--space-5) var(--space-4);align-items:start}
+  .report-filter-bar .field{margin:0}.report-filter-bar .field-label{font-size:var(--fs-xs)}
+  .range-wrap{display:flex;align-items:center;gap:var(--space-3);height:38px}.range-wrap input{flex:1;accent-color:var(--navy-700)}.range-wrap .mono{min-width:42px;text-align:right;font-size:var(--fs-xs)}
+  @media(max-width:900px){.report-filter-bar{grid-template-columns:1fr 1fr}}@media(max-width:600px){.report-filter-bar{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -39,6 +46,26 @@
             <strong>Ocupación por colaborador</strong>
             <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Suma de dedicaciones activas por colaborador, en todos sus proyectos</p>
           </div>
+          <div class="report-export" th:unless="${ocupacion.isEmpty()}">
+            <button type="button" class="btn btn-secondary btn-sm" id="rm-export-csv"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar CSV</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="rm-export-pdf"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg>Exportar PDF</button>
+          </div>
+        </div>
+        <!-- RG-218: filtros del reporte (se aplican también a lo que se exporta) -->
+        <div class="report-filter-bar" th:unless="${ocupacion.isEmpty()}">
+          <label class="field"><span class="field-label">Buscar</span><input type="search" class="input" id="rm-f-q" placeholder="Nombre o cargo…" autocomplete="off"></label>
+          <div class="field"><span class="field-label">Estado de carga</span>
+            <select class="select" id="rm-f-estado" multiple data-multiselect data-placeholder="Todos los estados" data-noun="estados">
+              <option value="Sobre-asignado">Sobre-asignado (&gt; 100%)</option>
+              <option value="Al límite">Al límite (90–100%)</option>
+              <option value="Óptimo">Óptimo (60–89%)</option>
+              <option value="Subutilizado">Subutilizado (&lt; 60%)</option>
+            </select>
+          </div>
+          <label class="field"><span class="field-label">Ocupación mínima</span>
+            <span class="range-wrap"><input type="range" id="rm-f-min" min="0" max="150" step="5" value="0"><span class="mono" id="rm-f-min-label">0%</span></span>
+          </label>
+          <button type="button" class="btn btn-tertiary btn-sm" id="rm-f-clear" style="align-self:end;">Limpiar filtros</button>
         </div>
 
         <div th:if="${ocupacion.isEmpty()}" class="state-panel">
@@ -51,7 +78,7 @@
           <table class="data-table">
             <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación</th><th>Estado</th></tr></thead>
             <tbody id="reportes-ocupacion-body">
-            <tr th:each="o : ${ocupacion}" data-reportes-ocupacion-row>
+            <tr th:each="o : ${ocupacion}" data-reportes-ocupacion-row th:attr="data-nombre=${o.nombre},data-cargo=${o.cargo},data-carga=${o.promedio},data-estado=${o.estadoLabel}">
               <td class="cell-person">
                 <span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span>
                 <span class="cell-person-name" th:text="${o.nombre}">Nombre</span>
@@ -72,6 +99,7 @@
             </tbody>
           </table>
         </div>
+        <div class="state-panel" id="rm-f-empty" hidden><span class="state-panel-title">Ningún colaborador coincide con los filtros</span><span class="state-panel-desc">Ajusta la búsqueda, el estado o la ocupación mínima.</span></div>
         <div class="table-footer" th:unless="${ocupacion.isEmpty()}">
           <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="reportes-ocupacion-visible-count">0</span> de <span id="reportes-ocupacion-total-count">0</span> colaboradores</span>
           <div class="pagination"><button class="page-btn" id="reportes-ocupacion-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="reportes-ocupacion-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="reportes-ocupacion-next" type="button" aria-label="Página siguiente">›</button></div>
@@ -84,11 +112,13 @@
 
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
+<script src="/js/multiselect.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
   window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
   document.addEventListener("DOMContentLoaded", function () {
-    // Paginación en el cliente: mismo patrón que resource-manager/ocupacion.html.
+    // Paginación + filtros en el cliente (RG-218). Lo exportado (CSV/PDF)
+    // usa exactamente las filas que pasan los filtros.
     var rows = Array.from(document.querySelectorAll("[data-reportes-ocupacion-row]"));
     if (!rows.length) return;
 
@@ -99,15 +129,31 @@
     var pageLabel = document.getElementById("reportes-ocupacion-page-label");
     var previous = document.getElementById("reportes-ocupacion-prev");
     var next = document.getElementById("reportes-ocupacion-next");
+    var fq = document.getElementById("rm-f-q"), fe = document.getElementById("rm-f-estado");
+    var fmin = document.getElementById("rm-f-min"), fminLabel = document.getElementById("rm-f-min-label");
+    var empty = document.getElementById("rm-f-empty");
+
+    function norm(t) { return (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
+    function estados() { return Array.from(fe.selectedOptions).map(function (o) { return o.value; }); }
+    function filtradas() {
+      var q = norm(fq.value), es = estados(), min = Number(fmin.value);
+      return rows.filter(function (r) {
+        return (!q || norm(r.dataset.nombre + " " + r.dataset.cargo).indexOf(q) !== -1)
+          && (!es.length || es.indexOf(r.dataset.estado) !== -1)
+          && Number(r.dataset.carga) >= min;
+      });
+    }
 
     function render() {
-      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+      var f = filtradas();
+      var pages = Math.max(1, Math.ceil(f.length / pageSize));
       page = Math.min(page, pages);
-      var visible = rows.slice((page - 1) * pageSize, page * pageSize);
+      var visible = f.slice((page - 1) * pageSize, page * pageSize);
       rows.forEach(function (row) { row.hidden = true; });
       visible.forEach(function (row) { row.hidden = false; });
       visibleCount.textContent = visible.length;
-      totalCount.textContent = rows.length;
+      totalCount.textContent = f.length;
+      empty.hidden = f.length !== 0;
       pageLabel.textContent = "Página " + page + " de " + pages;
       previous.disabled = page === 1;
       next.disabled = page === pages;
@@ -115,15 +161,79 @@
 
     previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
     next.addEventListener("click", function () {
-      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+      var pages = Math.max(1, Math.ceil(filtradas().length / pageSize));
       if (page < pages) { page++; render(); }
     });
+    fq.addEventListener("input", function () { page = 1; render(); });
+    fe.addEventListener("change", function () { page = 1; render(); });
+    fmin.addEventListener("input", function () { fminLabel.textContent = fmin.value + "%"; page = 1; render(); });
+    document.getElementById("rm-f-clear").addEventListener("click", function () {
+      fq.value = ""; fmin.value = 0; fminLabel.textContent = "0%";
+      Array.from(fe.options).forEach(function (o) { o.selected = false; });
+      var ms = fe.closest(".ms-wrap");
+      if (ms) ms.querySelectorAll(".ms-option input").forEach(function (c) { c.checked = false; });
+      fe.dispatchEvent(new Event("change"));
+      page = 1; render();
+    });
+
+    function descripcionFiltros() {
+      var p = [];
+      if (fq.value.trim()) p.push("búsqueda “" + fq.value.trim() + "”");
+      if (estados().length) p.push("estado: " + estados().join(", "));
+      if (Number(fmin.value) > 0) p.push("ocupación ≥ " + fmin.value + "%");
+      return p.length ? p.join(" · ") : "sin filtros";
+    }
+    var hoy = new Date().toISOString().slice(0, 10);
+
+    // CSV con BOM para que Excel respete las tildes; separador ";" (Excel en español).
+    document.getElementById("rm-export-csv").addEventListener("click", function () {
+      var f = filtradas();
+      if (!f.length) return window.SBAI.toast.show("No hay filas para exportar con estos filtros.", { type: "error" });
+      var cel = function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
+      var lineas = [ ["Colaborador", "Cargo", "Ocupación (%)", "Estado"].map(cel).join(";")];
+      f.forEach(function (r) { lineas.push([r.dataset.nombre, r.dataset.cargo, r.dataset.carga, r.dataset.estado].map(cel).join(";")); });
+      var blob = new Blob(["\uFEFF" + lineas.join("\r\n")], { type: "text/csv;charset=utf-8" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "skillbridge-ocupacion-" + hoy + ".csv";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      window.SBAI.toast.show("CSV exportado (" + f.length + " colaboradores).", { type: "success" });
+    });
+
+    // PDF: documento de impresión limpio (sin menú) con las filas filtradas;
+    // el navegador ofrece "Guardar como PDF".
+    document.getElementById("rm-export-pdf").addEventListener("click", function () {
+      var f = filtradas();
+      if (!f.length) return window.SBAI.toast.show("No hay filas para exportar con estos filtros.", { type: "error" });
+      var esc = function (t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; };
+      var kpis = Array.from(document.querySelectorAll(".kpi-tile")).map(function (k) {
+        return "<div class='k'><span>" + esc(k.querySelector(".kpi-tile-label").textContent) + "</span><b>" + esc(k.querySelector(".kpi-tile-value").textContent) + "</b></div>";
+      }).join("");
+      var filas = f.map(function (r) {
+        var c = Number(r.dataset.carga), col = c > 100 ? "#c0392b" : (c >= 90 ? "#c98a12" : "#1f8a5b");
+        return "<tr><td>" + esc(r.dataset.nombre) + "</td><td>" + esc(r.dataset.cargo) + "</td><td><div class='bar'><i style='width:" + Math.min(100, c) + "%;background:" + col + "'></i></div> " + c + "%</td><td>" + esc(r.dataset.estado) + "</td></tr>";
+      }).join("");
+      var w = window.open("", "_blank");
+      if (!w) return window.SBAI.toast.show("Permite las ventanas emergentes para exportar el PDF.", { type: "error" });
+      w.document.write("<!doctype html><html lang='es'><head><meta charset='utf-8'><title>Reporte de ocupación · SkillBridge AI</title><style>" +
+        "body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f1f42;margin:32px}h1{font-size:20px;margin:0 0 4px}p{color:#5b6b85;font-size:12px;margin:0 0 18px}" +
+        ".ks{display:flex;gap:12px;margin-bottom:18px}.k{flex:1;border:1px solid #dfe6f1;border-radius:12px;padding:10px 14px}.k span{display:block;font-size:10px;color:#5b6b85;letter-spacing:.04em}.k b{font-size:20px}" +
+        "table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5b6b85;border-bottom:2px solid #0f1f42;padding:8px}" +
+        "td{padding:8px;border-bottom:1px solid #e6ebf3}.bar{display:inline-block;width:90px;height:7px;background:#edf1f7;border-radius:9px;overflow:hidden;vertical-align:middle}.bar i{display:block;height:100%}" +
+        "@page{margin:14mm}</style></head><body><h1>Reporte de ocupación del equipo</h1><p>SkillBridge AI · generado el " + hoy + " · " + esc(descripcionFiltros()) + " · " + f.length + " colaborador(es)</p>" +
+        "<div class='ks'>" + kpis + "</div><table><thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación</th><th>Estado</th></tr></thead><tbody>" + filas + "</tbody></table>" +
+        "<script>window.onload=function(){setTimeout(function(){window.print()},150)}<\/script></body></html>");
+      w.document.close();
+    });
+
     render();
   });
 </script>
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
 <script src="/js/mobile-nav.js"></script>
 </body>
 </html>

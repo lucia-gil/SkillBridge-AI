@@ -13,7 +13,7 @@
   .report-hero{background:linear-gradient(135deg,var(--navy-900),var(--navy-700));border-radius:var(--radius-lg);padding:var(--space-6);color:white;display:flex;justify-content:space-between;gap:var(--space-5);align-items:center;box-shadow:var(--shadow-2)}
   .report-hero h1{font-size:var(--fs-xl);margin-bottom:6px}.report-hero p{font-size:var(--fs-sm);color:rgba(255,255,255,.72);max-width:620px}
   .report-actions{display:flex;gap:var(--space-3);flex-wrap:wrap}.report-actions .btn{background:white;border-color:rgba(255,255,255,.25)}
-  .report-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:var(--space-3);align-items:end}.report-filters .field{margin:0}.report-filters .field-label{font-size:var(--fs-xs)}
+  .report-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:var(--space-3);align-items:start}.report-filters>.btn{margin-top:22px}.report-filters .field{margin:0}.report-filters .field-label{font-size:var(--fs-xs)}
   .status-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-3)}.status-item{padding:var(--space-4);border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-sunken)}
   .status-count{display:block;font-size:var(--fs-xl);font-weight:700;color:var(--navy-700)}.status-label{font-size:var(--fs-xs);color:var(--text-tertiary)}
   .report-table .progress-inline{min-width:145px}.report-note{display:flex;gap:var(--space-2);align-items:flex-start;color:var(--text-tertiary);font-size:var(--fs-xs);line-height:1.5}
@@ -41,7 +41,7 @@
 
       <section class="card card-pad">
         <form class="report-filters" method="get" action="reportes.html">
-          <label class="field"><span class="field-label">Proyecto</span><select class="select" name="proyectoId"><option value="">Todos los proyectos</option><option th:each="p : ${proyectosDisponibles}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${p.id == proyectoId}">Proyecto</option></select></label>
+          <div class="field"><span class="field-label">Proyectos</span><select class="select" name="proyectoId" multiple data-multiselect data-placeholder="Todos los proyectos" data-noun="proyectos"><option th:each="p : ${proyectosDisponibles}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${proyectoId != null and proyectoId.contains(p.id)}">Proyecto</option></select></div>
           <label class="field"><span class="field-label">Estado</span><select class="select" name="estado"><option value="">Todos</option><option value="planificacion" th:selected="${estado == 'planificacion'}">Planificación</option><option value="activo" th:selected="${estado == 'activo'}">Activo</option><option value="en_pausa" th:selected="${estado == 'en_pausa'}">En pausa</option><option value="completado" th:selected="${estado == 'completado'}">Completado</option><option value="cancelado" th:selected="${estado == 'cancelado'}">Cancelado</option></select></label>
           <label class="field"><span class="field-label">Inicio desde</span><input class="input" type="date" name="desde" th:value="${desde}"></label>
           <label class="field"><span class="field-label">Inicio hasta</span><input class="input" type="date" name="hasta" th:value="${hasta}"></label>
@@ -85,7 +85,7 @@
     </main>
   </div>
 </div>
-<script src="/js/toast.js"></script><script src="/js/dropdown.js"></script><script src="/js/topbar-actions.js"></script>
+<script src="/js/toast.js"></script><script src="/js/dropdown.js"></script><script src="/js/multiselect.js"></script><script src="/js/topbar-actions.js"></script>
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
