@@ -1,23 +1,34 @@
 package com.skillbridge.ai.web;
 
+import com.skillbridge.ai.dto.AsignacionCargaFila;
 import com.skillbridge.ai.dto.OcupacionColaboradorFila;
 import com.skillbridge.ai.dto.UsuarioSesion;
+import com.skillbridge.ai.service.ProyectoService;
 import com.skillbridge.ai.service.ReporteService;
 import com.skillbridge.ai.service.ShellModelBuilder;
+import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * "Ocupación del equipo" del Resource Manager (resource-manager/ocupacion.html).
  *
- * Es una pantalla de SOLO LECTURA: no crea, edita ni borra nada, por eso no
- * hay operaciones POST aqui. Reutiliza ReporteService.ocupacionPorColaborador(),
+ * La tabla es de lectura, pero cada fila tiene la accion "Rebalancear"
+ * (RG-214): un modal con las asignaciones activas de esa persona donde se
+ * puede bajar la dedicacion (POST .../dedicacion, aqui) o finalizar una
+ * asignacion (reutiliza RmAsignacionesController con volver=ocupacion). Reutiliza ReporteService.ocupacionPorColaborador(),
  * el mismo metodo que ya usa administrador/reportes.html - la ocupacion de
  * un colaborador es un dato global del sistema (suma de sus asignaciones
  * activas en TODOS los proyectos), no algo que cambie segun quien lo mire.
@@ -35,10 +46,13 @@ public class RmOcupacionController {
 
     private final ReporteService reporteService;
     private final ShellModelBuilder shellModelBuilder;
+    private final ProyectoService proyectoService;
 
-    public RmOcupacionController(ReporteService reporteService, ShellModelBuilder shellModelBuilder) {
+    public RmOcupacionController(ReporteService reporteService, ShellModelBuilder shellModelBuilder,
+                                 ProyectoService proyectoService) {
         this.reporteService = reporteService;
         this.shellModelBuilder = shellModelBuilder;
+        this.proyectoService = proyectoService;
     }
 
     @GetMapping("/ocupacion.html")
@@ -67,6 +81,31 @@ public class RmOcupacionController {
         model.addAttribute("alLimite", alLimite);
         model.addAttribute("sobreAsignados", sobreAsignados);
 
+        // Asignaciones activas por persona (perfilId -> lista) para el modal
+        // "Rebalancear". Volumen de curso: una consulta por colaborador.
+        Map<Long, List<AsignacionCargaFila>> asignaciones = new LinkedHashMap<>();
+        for (OcupacionColaboradorFila o : ocupacion) {
+            if (o.getPerfilId() != null) asignaciones.put(o.getPerfilId(), proyectoService.asignacionesActivasDe(o.getPerfilId()));
+        }
+        model.addAttribute("asignacionesPorPerfil", asignaciones);
+        model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
+
         return "resource-manager/ocupacion";
+    }
+
+    /** "Rebalancear" -> cambiar la dedicacion (%) de una asignacion activa. */
+    @PostMapping("/asignaciones/{asignacionId}/dedicacion")
+    public String ajustarDedicacion(@PathVariable Long asignacionId,
+                                    @RequestParam int cargaPorcentaje,
+                                    @RequestParam(required = false) String motivo,
+                                    HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            proyectoService.ajustarDedicacion(asignacionId, cargaPorcentaje, motivo, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Dedicación actualizada a " + cargaPorcentaje + "%.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/resource-manager/ocupacion.html";
     }
 }

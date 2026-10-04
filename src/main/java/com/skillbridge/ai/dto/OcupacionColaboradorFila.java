@@ -3,6 +3,7 @@ package com.skillbridge.ai.dto;
 /** Fila de "Ocupación por colaborador" en Reportes globales. */
 public class OcupacionColaboradorFila {
 
+    private final Long perfilId;
     private final String nombre;
     private final String iniciales;
     private final String cargo;
@@ -11,6 +12,12 @@ public class OcupacionColaboradorFila {
     private final String estadoBadgeClass;
 
     public OcupacionColaboradorFila(String nombre, String cargo, int promedio) {
+        this(null, nombre, cargo, promedio);
+    }
+
+    /** Con perfilId: lo usa Ocupación (RM) para la acción "Rebalancear". */
+    public OcupacionColaboradorFila(Long perfilId, String nombre, String cargo, int promedio) {
+        this.perfilId = perfilId;
         this.nombre = nombre;
         this.iniciales = InicialesUtil.de(nombre);
         this.cargo = cargo != null ? cargo : "—";
@@ -28,6 +35,10 @@ public class OcupacionColaboradorFila {
             this.estadoLabel = "Subutilizado";
             this.estadoBadgeClass = "badge-neutral";
         }
+    }
+
+    public Long getPerfilId() {
+        return perfilId;
     }
 
     public String getNombre() {

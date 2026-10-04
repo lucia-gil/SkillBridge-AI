@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+  <style>.rb-rol{display:block;font-size:11px;color:var(--text-tertiary);font-weight:400}.rb-input{width:96px;text-align:center}.rb-table{border:1px solid var(--border-subtle);border-radius:var(--radius-md)}</style>
 </head>
 <body>
 <div class="app-shell">
@@ -42,7 +43,7 @@
 
         <div class="table-scroll" th:unless="${ocupacion.isEmpty()}">
           <table class="data-table">
-            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación</th><th>Estado</th><th>Acción</th></tr></thead>
             <tbody id="ocupacion-body">
             <tr th:each="o : ${ocupacion}" data-ocupacion-row>
               <td class="cell-person">
@@ -61,10 +62,28 @@
                 </div>
               </td>
               <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
+              <td class="cell-actions">
+                <button type="button" th:attr="data-rebalancear=${o.perfilId},data-nombre=${o.nombre},data-carga=${o.promedio}"
+                        th:classappend="${o.promedio > 100} ? 'action-alert'">
+                  <svg class="icon icon-sm"><use href="/img/icons.svg#icon-sliders"></use></svg>
+                  <span th:text="${o.promedio > 100} ? 'Rebalancear' : 'Ajustar carga'">Ajustar carga</span>
+                </button>
+              </td>
             </tr>
             </tbody>
           </table>
         </div>
+        <!-- Asignaciones activas por persona: se clonan en el modal "Rebalancear" -->
+        <div id="rebalancear-templates" hidden>
+          <template th:each="o : ${ocupacion}" th:attr="data-perfil=${o.perfilId}">
+            <tr th:each="a : ${asignacionesPorPerfil.get(o.perfilId)}" th:attr="data-asignacion=${a.asignacionId()},data-carga=${a.carga()},data-pm=${a.esProjectManager()}">
+              <td class="cell-primary"><span th:text="${a.proyecto()}">Proyecto</span><span class="rb-rol" th:text="${a.rolLabel()}">Rol</span></td>
+              <td><input class="input rb-input" type="number" min="1" th:attr="max=${limiteCarga}" th:value="${a.carga()}" aria-label="Dedicación (%)"></td>
+              <td class="cell-actions"><button type="button" data-rb-guardar>Guardar</button><button type="button" class="danger" data-rb-finalizar th:unless="${a.esProjectManager()}">Finalizar</button></td>
+            </tr>
+          </template>
+        </div>
+
         <div class="table-footer" th:unless="${ocupacion.isEmpty()}">
           <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="ocupacion-visible-count">0</span> de <span id="ocupacion-total-count">0</span> colaboradores</span>
           <div class="pagination"><button class="page-btn" id="ocupacion-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="ocupacion-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="ocupacion-next" type="button" aria-label="Página siguiente">›</button></div>
@@ -77,6 +96,8 @@
 
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/proyecto-acciones.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
   window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
@@ -108,6 +129,71 @@
       next.disabled = page === pages;
     }
 
+    // ---- "Rebalancear" (RG-214): asignaciones activas de la persona en un
+    // modal; se puede bajar la dedicación o finalizar sin salir de aquí.
+    var LIMITE = /*[[${limiteCarga}]]*/ 100;
+    function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; }
+    document.querySelectorAll("[data-rebalancear]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var tpl = document.querySelector('#rebalancear-templates template[data-perfil="' + btn.dataset.rebalancear + '"]');
+        var filas = tpl ? tpl.innerHTML : "";
+        var carga = Number(btn.dataset.carga);
+        var exceso = carga - LIMITE;
+        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+          '<div class="modal-header"><div><h2>Rebalancear carga</h2><p>' + esc(btn.dataset.nombre) + ' · carga total <strong class="rb-total">' + carga + '%</strong> (límite ' + LIMITE + '%)</p></div>' +
+          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+          '<div class="modal-body">' +
+          (exceso > 0 ? '<div class="callout warn" style="margin-bottom:var(--space-4)"><span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span><span class="callout-body">Está ' + exceso + ' punto(s) por encima del límite. Baja la dedicación en algún proyecto o finaliza una asignación.</span></div>' : '') +
+          '<div class="table-scroll rb-table"><table class="data-table"><thead><tr><th>Proyecto</th><th style="width:130px">Dedicación (%)</th><th>Acciones</th></tr></thead><tbody>' +
+          (filas.trim() ? filas : '<tr><td colspan="3" class="text-tertiary" style="text-align:center">Sin asignaciones activas.</td></tr>') +
+          '</tbody></table></div>' +
+          '<p class="text-tertiary rb-preview" style="font-size:var(--fs-xs);margin-top:var(--space-3)"></p>' +
+          '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
+        var backdrop = window.SBAI.modal.open(html);
+        var preview = backdrop.querySelector(".rb-preview");
+        function recalcular() {
+          var total = 0;
+          backdrop.querySelectorAll("tr[data-asignacion]").forEach(function (tr) { total += Number(tr.querySelector(".rb-input").value) || 0; });
+          preview.textContent = "Con los valores escritos, la carga total quedaría en " + total + "%" + (total > LIMITE ? " (sigue por encima del límite)." : ".");
+        }
+        backdrop.querySelectorAll(".rb-input").forEach(function (i) { i.addEventListener("input", recalcular); });
+        recalcular();
+        backdrop.querySelectorAll("[data-rb-guardar]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var tr = b.closest("tr");
+            var nuevo = Number(tr.querySelector(".rb-input").value);
+            var antes = Number(tr.dataset.carga);
+            if (!Number.isInteger(nuevo) || nuevo < 1 || nuevo > LIMITE) return window.SBAI.toast.show("La dedicación debe estar entre 1% y " + LIMITE + "%.", { type: "error" });
+            if (nuevo === antes) return window.SBAI.toast.show("No cambiaste la dedicación.", { type: "info" });
+            var proyecto = tr.querySelector(".cell-primary span").textContent;
+            window.SBAI.modal.confirm({
+              title: "¿Cambiar dedicación a " + nuevo + "%?",
+              desc: btn.dataset.nombre + " en “" + proyecto + "”: " + antes + "% → " + nuevo + "%.",
+              variant: "primary", icon: "icon-sliders",
+              reason: { label: "Motivo", required: false, placeholder: "Opcional: queda registrado en Auditoría.", presets: ["Rebalanceo por sobre-asignación", "Cambio de prioridades", "A solicitud del colaborador"] },
+              confirmLabel: "Guardar cambio", cancelLabel: "Volver",
+              onConfirm: function (d) {
+                var datos = { cargaPorcentaje: nuevo };
+                if (d.motivo) datos.motivo = d.motivo;
+                window.SBAI.submitForm("/resource-manager/asignaciones/" + tr.dataset.asignacion + "/dedicacion", datos);
+              }
+            });
+          });
+        });
+        backdrop.querySelectorAll("[data-rb-finalizar]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var tr = b.closest("tr");
+            window.SBAI.proyectoAcciones.finalizarAsignacion({
+              url: "/resource-manager/asignaciones/" + tr.dataset.asignacion + "/finalizar",
+              nombre: btn.dataset.nombre,
+              proyecto: tr.querySelector(".cell-primary span").textContent,
+              extra: { volver: "ocupacion" }
+            });
+          });
+        });
+      });
+    });
+
     previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
     next.addEventListener("click", function () {
       var pages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -119,6 +205,8 @@
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
 <script src="/js/mobile-nav.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
 </html>

@@ -96,7 +96,7 @@ public class ReporteService {
         List<Perfil> perfiles = perfilRepository.listarActivosConUsuario();
         return perfiles.stream()
                 .filter(p -> cargaPorPerfil.containsKey(p.getId()))
-                .map(p -> new OcupacionColaboradorFila(p.getUsuario().getNombreCompleto(), p.getCargo(), cargaPorPerfil.get(p.getId())))
+                .map(p -> new OcupacionColaboradorFila(p.getId(), p.getUsuario().getNombreCompleto(), p.getCargo(), cargaPorPerfil.get(p.getId())))
                 .sorted((a, b) -> Integer.compare(b.getPromedio(), a.getPromedio()))
                 .collect(Collectors.toList());
     }
