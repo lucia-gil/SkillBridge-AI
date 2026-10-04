@@ -99,7 +99,7 @@
         </div>
         <div class="table-footer">
           <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="proyectos-pm-visible-count">0</span> de <span id="proyectos-pm-filtered-count">0</span> proyectos</span>
-          <div class="pagination"><button class="page-btn" id="proyectos-pm-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="proyectos-pm-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="proyectos-pm-next" type="button" aria-label="Página siguiente">›</button></div>
+          <div class="pagination"><button class="page-btn" id="proyectos-pm-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="proyectos-pm-page-label" style="font-size:var(--fs-xs)">Página 1</span><input type="number" id="proyectos-pm-page-jump" min="1" value="1" aria-label="Ir a la página" class="input" style="width:3.4em; text-align:center; font-size:var(--fs-xs); padding:2px 4px;"><button class="page-btn" id="proyectos-pm-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
       </section>
 
@@ -478,6 +478,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var previous = document.getElementById("proyectos-pm-prev");
     var next = document.getElementById("proyectos-pm-next");
     if (!previous || !next) return;
+    var pageJump = document.getElementById("proyectos-pm-page-jump");
     var pageSize = 6;
     var page = 1;
 
@@ -507,6 +508,10 @@ document.addEventListener("DOMContentLoaded", function () {
       if (pageLabel) pageLabel.textContent = "Página " + page + " de " + pages;
       previous.disabled = page === 1;
       next.disabled = page === pages;
+      if (pageJump) {
+        pageJump.max = pages;
+        if (document.activeElement !== pageJump) pageJump.value = page;
+      }
     }
 
     if (estadoSelect) estadoSelect.addEventListener("change", function () { page = 1; render(); });
@@ -517,6 +522,18 @@ document.addEventListener("DOMContentLoaded", function () {
       var pages = Math.max(1, Math.ceil(matched.length / pageSize));
       if (page < pages) { page++; render(); }
     });
+    if (pageJump) {
+      function irAPagina() {
+        var matched = rows.filter(matches);
+        var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+        var destino = parseInt(pageJump.value, 10);
+        if (isNaN(destino)) return;
+        page = Math.min(Math.max(destino, 1), pages);
+        render();
+      }
+      pageJump.addEventListener("change", irAPagina);
+      pageJump.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); irAPagina(); } });
+    }
     render();
   })();
 });
