@@ -46,6 +46,45 @@ public class HabilidadesController {
         return "administrador/habilidades";
     }
 
+    @PostMapping("/categorias")
+    public String crearCategoria(@RequestParam String nombre, @RequestParam(required = false) String descripcion,
+                                  HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            habilidadService.crearCategoria(nombre, descripcion, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "\"" + nombre.trim() + "\" se agregó a las categorías.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/administrador/habilidades.html";
+    }
+
+    @PostMapping("/categorias/{id}/editar")
+    public String editarCategoria(@PathVariable Long id, @RequestParam String nombre,
+                                   @RequestParam(required = false) String descripcion,
+                                   HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            habilidadService.editarCategoria(id, nombre, descripcion, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Categoría actualizada.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/administrador/habilidades.html";
+    }
+
+    @PostMapping("/categorias/{id}/eliminar")
+    public String eliminarCategoria(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            habilidadService.eliminarCategoria(id, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Categoría eliminada.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/administrador/habilidades.html";
+    }
+
     @PostMapping("/habilidades")
     public String crear(@RequestParam String nombre, @RequestParam Long categoriaId,
                          HttpSession session, RedirectAttributes redirectAttributes) {
