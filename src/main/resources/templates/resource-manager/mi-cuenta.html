@@ -61,7 +61,7 @@
            PERFIL
            ===================================================== -->
 
-      <section class="card card-pad">
+      <section class="card card-pad account-hero">
 
         <div
                 style="
@@ -123,6 +123,11 @@
                     th:text="${resumen.rolLabel}">
                             Rol
                         </span>
+            <div class="account-meta">
+              <span class="account-chip"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-mail"></use></svg><span th:text="${resumen.correo}">correo</span></span>
+              <span class="account-chip"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-calendar"></use></svg><span th:text="'Miembro desde ' + ${resumen.cuentaDesdeLabel}">desde</span></span>
+              <span class="account-chip"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-briefcase"></use></svg><span th:text="${resumen.experienciaAnios} + (${resumen.experienciaAnios} == 1 ? ' año de experiencia' : ' años de experiencia')">exp</span></span>
+            </div>
 
           </div>
 
@@ -238,48 +243,7 @@
            ALCANCE DEL ROL
            ===================================================== -->
 
-      <div
-              class="callout info"
-              style="margin-top:var(--space-6);">
-
-                <span class="callout-icon">
-
-                    <svg class="icon">
-
-                        <use
-                                href="/img/icons.svg#icon-shield-check">
-                        </use>
-
-                    </svg>
-
-                </span>
-
-
-        <span class="callout-body">
-
-                    <span class="callout-title">
-                        Alcance de tu rol
-                    </span>
-
-                    Como Project Manager gestionas tus proyectos, sus equipos y accedes
-                    al AI Talent Matching y a los Reportes de tus proyectos.
-
-                    <br>
-
-                    <span
-                            style="
-                            font-size:var(--fs-xs);
-                            opacity:.85;
-                        ">
-
-                        El rol solo lo cambia un Administrador;
-                        ese cambio queda en Auditoría.
-
-                    </span>
-
-                </span>
-
-      </div>
+      
 
 
       <!-- =====================================================
@@ -606,13 +570,72 @@
              COLUMNA DERECHA
              ================================================= -->
 
-        <div
+        <div class="account-aside"
                 style="
                         display:flex;
                         flex-direction:column;
                         gap:var(--space-6);
                     ">
 
+
+          <!-- RESUMEN (RG-222: la columna derecha ya no queda vacía) -->
+          <section class="card card-pad account-summary">
+            <h3 class="account-aside-title">Resumen de tu cuenta</h3>
+            <div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value account-mail" th:text="${resumen.correo}" th:title="${resumen.correo}">correo</span></div>
+            <div class="info-row"><span class="info-row-label">Experiencia</span><span class="info-row-value" th:text="${resumen.experienciaAnios} + (${resumen.experienciaAnios} == 1 ? ' año' : ' años')">0 años</span></div>
+            <div class="info-row" style="flex-direction:column;align-items:stretch;gap:6px;"><span class="info-row-label">Disponibilidad declarada</span>
+              <div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill green" th:style="'width:' + ${resumen.disponibilidadPorcentaje} + '%;'"></div></div><span class="progress-value" th:text="${resumen.disponibilidadPorcentaje} + '%'">0%</span></div>
+            </div>
+          </section>
+
+          <div
+              class="callout info account-role"
+              >
+
+                <span class="callout-icon">
+
+                    <svg class="icon">
+
+                        <use
+                                href="/img/icons.svg#icon-shield-check">
+                        </use>
+
+                    </svg>
+
+                </span>
+
+
+        <span class="callout-body">
+
+                    <span class="callout-title">
+                        Alcance de tu rol
+                    </span>
+
+                    Como Project Manager gestionas tus proyectos, sus equipos y accedes
+                    al AI Talent Matching y a los Reportes de tus proyectos.
+
+                    <br>
+
+                    <span
+                            style="
+                            font-size:var(--fs-xs);
+                            opacity:.85;
+                        ">
+
+                        El rol solo lo cambia un Administrador;
+                        ese cambio queda en Auditoría.
+
+                    </span>
+
+                </span>
+
+      </div>
+
+          <!-- ACCESOS RÁPIDOS -->
+          <section class="card card-pad">
+            <h3 class="account-aside-title">Accesos rápidos</h3>
+            <nav class="account-links"><a class="account-link" th:href="@{/resource-manager/colaboradores.html}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg><span>Colaboradores</span><svg class="icon icon-sm account-link-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a><a class="account-link" th:href="@{/resource-manager/ocupacion.html}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-layers"></use></svg><span>Ocupación</span><svg class="icon icon-sm account-link-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a><a class="account-link" th:href="@{/resource-manager/asignaciones.html}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-target"></use></svg><span>Asignaciones</span><svg class="icon icon-sm account-link-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a><a class="account-link" th:href="@{/resource-manager/notificaciones.html}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-bell"></use></svg><span>Notificaciones</span><svg class="icon icon-sm account-link-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></nav>
+          </section>
 
           <!-- SESIÓN -->
 
@@ -694,6 +717,7 @@
 <script src="/js/password-generator.js"></script>
 <script src="/js/vendor-qrcode.js"></script>
 <script src="/js/twofa.js"></script>
+<script src="/js/foto-perfil.js"></script>
 </body>
 
 </html>
