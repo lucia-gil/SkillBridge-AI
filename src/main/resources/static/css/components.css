@@ -1113,3 +1113,94 @@
 .topbar-user-btn[aria-expanded="true"] {
   background: var(--surface-hover);
 }
+/* ---------- Asignación en masa (checkboxes) — asignacion-masiva.js ---------- */
+.bulk-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
+.bulk-search { flex: 1 1 220px; max-width: 320px; }
+.bulk-count { font-size: var(--fs-xs); color: var(--text-tertiary); }
+.bulk-count strong { color: var(--text-primary); }
+.bulk-full { color: var(--green-fg); font-weight: 600; }
+.bulk-table { max-height: 300px; overflow: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--surface); margin-bottom: var(--space-4); }
+.bulk-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.bulk-check-col { width: 40px; text-align: center; }
+.bulk-check { width: 17px; height: 17px; accent-color: var(--navy-700); cursor: pointer; vertical-align: middle; }
+.bulk-check:disabled { cursor: not-allowed; }
+.bulk-row { cursor: pointer; }
+.bulk-row.is-selected td { background: color-mix(in srgb, var(--navy-700) 7%, transparent); }
+.bulk-row.is-blocked { cursor: default; opacity: .55; }
+.bulk-load { min-width: 110px; }
+.bulk-sub { display: block; margin-top: 2px; font-size: 11px; color: var(--text-tertiary); }
+.bulk-warn { display: block; margin-top: 2px; font-size: 11px; color: var(--amber-fg); font-weight: 600; }
+.bulk-empty { padding: var(--space-4); text-align: center; font-size: var(--fs-xs); color: var(--text-tertiary); }
+
+/* ---------- Buscador con selección múltiple — multiselect.js (RG-225) ---------- */
+.ms-wrap { position: relative; min-width: 0; }
+.ms-native { position: absolute !important; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.ms-trigger { width: 100%; text-align: left; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ms-placeholder { color: var(--text-tertiary); }
+.ms-wrap.open .ms-trigger { border-color: var(--navy-700); box-shadow: 0 0 0 3px color-mix(in srgb, var(--navy-700) 14%, transparent); }
+.ms-panel { position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; min-width: 100%; width: max-content; max-width: 340px;
+  background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--radius-card); box-shadow: var(--shadow-3, 0 12px 32px rgba(15,31,66,.16)); padding: var(--space-2); }
+.ms-search { display: flex; align-items: center; gap: var(--space-2); padding: 6px 10px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--surface-sunken); }
+.ms-search .icon { color: var(--text-tertiary); flex-shrink: 0; }
+.ms-input { border: 0; outline: 0; background: transparent; width: 100%; font: inherit; font-size: var(--fs-sm); color: var(--text-primary); }
+.ms-tools { display: flex; justify-content: space-between; padding: 6px 4px; }
+.ms-tools button { border: 0; background: none; color: var(--navy-700); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; padding: 2px 4px; border-radius: var(--radius-sm); }
+.ms-tools button:hover { background: var(--surface-sunken); }
+.ms-list { max-height: 240px; overflow-y: auto; }
+.ms-option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-md); cursor: pointer; font-size: var(--fs-sm); color: var(--text-primary); }
+.ms-option:hover { background: var(--surface-sunken); }
+.ms-option input { width: 16px; height: 16px; accent-color: var(--navy-700); flex-shrink: 0; }
+.ms-empty { padding: 12px; text-align: center; font-size: var(--fs-xs); color: var(--text-tertiary); }
+.ms-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ms-chips:empty { display: none; }
+.ms-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; border-radius: var(--radius-full); background: var(--blue-bg); color: var(--blue-fg); font-size: 11px; font-weight: 600; }
+.ms-chip button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 4px; border-radius: 50%; }
+.ms-chip button:hover { background: color-mix(in srgb, var(--blue-fg) 14%, transparent); }
+
+/* ---------- Paginación numerada — paginacion.js (RG-226) ---------- */
+.page-numbers { display: inline-flex; align-items: center; gap: 4px; }
+.page-btn.page-num { min-width: 30px; width: auto; padding: 0 8px; font-size: var(--fs-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
+.page-btn.page-num.active { background: var(--navy-700); border-color: var(--navy-700); color: #fff; box-shadow: 0 2px 6px color-mix(in srgb, var(--navy-700) 30%, transparent); }
+.page-ellipsis { min-width: 18px; text-align: center; color: var(--text-tertiary); font-size: var(--fs-xs); user-select: none; }
+.page-label-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pagination { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+
+/* ---------- Botones de la columna "Acciones" (RG-227) ---------- */
+td.cell-actions { white-space: nowrap; }
+td.cell-actions > * + * { margin-left: 6px !important; }
+.cell-actions button, .cell-actions a {
+  display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-control); background: var(--surface);
+  color: var(--text-secondary); font-size: var(--fs-xs); font-weight: 600; text-decoration: none; cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+.cell-actions button .icon, .cell-actions a .icon { width: 14px; height: 14px; color: var(--blue-link); }
+.cell-actions button:hover, .cell-actions a:hover { text-decoration: none; background: var(--blue-bg); border-color: color-mix(in srgb, var(--blue-link) 35%, transparent); color: var(--blue-fg); }
+.cell-actions button:focus-visible, .cell-actions a:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.cell-actions .danger { color: var(--red-fg); }
+.cell-actions .danger .icon { color: var(--red-fg); }
+.cell-actions .danger:hover { background: var(--red-bg); border-color: color-mix(in srgb, var(--red-fg) 35%, transparent); color: var(--red-fg); }
+.cell-actions .action-alert { background: var(--red-bg); color: var(--red-fg); border-color: color-mix(in srgb, var(--red-fg) 30%, transparent); }
+.cell-actions .action-alert .icon { color: var(--red-fg); }
+.cell-actions button:disabled { opacity: .5; cursor: not-allowed; }
+.cell-actions > span { font-size: var(--fs-xs); }
+
+/* Botón primario "Asignar" (RG-212) */
+.btn-assign { gap: 6px; box-shadow: 0 2px 8px color-mix(in srgb, var(--navy-700) 25%, transparent); }
+.btn-assign:hover { transform: translateY(-1px); }
+
+/* Modal de equipo + asignación en masa más amplio (RG-231) */
+.modal.modal-assign { max-width: 880px; }
+.modal-assign .team-modal-table .data-table { width: 100%; }
+.modal-assign .team-modal-table td, .modal-assign .team-modal-table th { white-space: nowrap; }
+.bulk-row.is-selected td { background: var(--blue-bg) !important; }
+.bulk-row .cell-person-sub { display: block; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bulk-row td:last-child { min-width: 150px; }
+
+/* "Finalizar" suelto dentro de modales de detalle (antes se veía como botón nativo) */
+.modal-body button.danger:not(.btn) {
+  display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--red-fg) 30%, transparent); border-radius: var(--radius-control);
+  background: var(--surface); color: var(--red-fg); font-size: var(--fs-xs); font-weight: 600;
+}
+.modal-body button.danger:not(.btn):hover { background: var(--red-bg); }

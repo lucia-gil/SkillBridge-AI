@@ -84,6 +84,11 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 999px;
+  /* RG-224 — estilo único de esquinas. Úsalos en vez de valores sueltos:
+     --radius-card    tarjetas, paneles, KPI, listados de opciones agrupados
+     --radius-control botones, inputs, filas/opciones dentro de un listado */
+  --radius-card: var(--radius-lg);
+  --radius-control: var(--radius-md);
 
   /* ---------- Sombras ---------- */
   --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.04);
@@ -103,7 +108,10 @@
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
+  --space-14: 56px;
   --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
 
   /* ---------- Layout ---------- */
   --sidebar-w: 264px;

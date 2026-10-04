@@ -263,3 +263,112 @@ td.cell-actions > * + * { margin-left: var(--space-3); }
   .modal-confirm .mc-foot { flex-direction: column-reverse; }
   .modal-confirm .mc-foot .btn { width: 100%; }
 }
+
+/* =====================================================================
+   Mi cuenta (RG-222) — menos espacio vacío: cabecera en dos columnas
+   (identidad | foto) y columna derecha con resumen, rol, accesos y sesión.
+   ===================================================================== */
+.account-hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+  gap: var(--space-6); align-items: center; position: relative; overflow: hidden;
+  background: linear-gradient(120deg, var(--surface) 55%, var(--blue-bg) 140%);
+}
+.account-hero::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: linear-gradient(90deg, var(--navy-700), var(--blue-accent, #315fd6)); }
+.account-hero > div:last-child {
+  margin-top: 0 !important; padding-top: 0 !important; border-top: 0 !important;
+  padding-left: var(--space-6); border-left: 1px solid var(--border-subtle);
+}
+.account-hero > div:last-child .input[type="file"] { max-width: 100% !important; }
+.account-aside { position: sticky; top: calc(var(--topbar-h) + var(--space-4)); align-self: start; gap: var(--space-5) !important; }
+.account-aside-title { font-size: var(--fs-md); margin-bottom: var(--space-3); }
+.account-mail { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono, monospace); font-size: var(--fs-xs); }
+.account-summary .progress-inline { width: 100%; }
+.account-role { margin: 0 !important; }
+.account-links { display: flex; flex-direction: column; gap: 2px; }
+.account-link {
+  display: flex; align-items: center; gap: var(--space-3); padding: 10px 12px; border-radius: var(--radius-control);
+  color: var(--text-primary); text-decoration: none; font-size: var(--fs-sm); font-weight: 500; transition: background .15s, color .15s;
+}
+.account-link > .icon:first-child { color: var(--navy-700); }
+.account-link:hover { background: var(--surface-sunken); color: var(--navy-700); }
+.account-link-go { margin-left: auto; color: var(--text-tertiary); transition: transform .15s; }
+.account-link:hover .account-link-go { transform: translateX(3px); }
+@media (max-width: 1080px) { .account-aside { position: static; } }
+@media (max-width: 860px) {
+  .account-hero { grid-template-columns: 1fr; }
+  .account-hero > div:last-child { padding-left: 0; border-left: 0; padding-top: var(--space-5) !important; border-top: 1px solid var(--border-subtle) !important; }
+}
+
+/* RG-224 — aplica el estilo único de esquinas a contenedores y controles */
+.card, .kpi-tile, .state-panel, .assign-panel, .status-item, .team-modal-table, .bulk-table, .table-scroll.rb-table { border-radius: var(--radius-card); }
+.btn, .input, .select, .callout, .page-btn, .pred-item, .cb-item, .ms-option { border-radius: var(--radius-control); }
+.account-role .callout-title { display: block; margin-bottom: 4px; }
+
+/* =====================================================================
+   RG-228 — En tema oscuro los botones secundarios que son <a> (p. ej.
+   "Ver todos" en Inicio del Admin, "Ver ocupación completa" en Inicio del
+   RM) quedaban como recuadros vacíos: el texto navy no se ve sobre fondo
+   oscuro. Se corrige de forma global en vez de pantalla por pantalla.
+   ===================================================================== */
+:root[data-theme="dark"] .btn-secondary { color: var(--text-primary); }
+:root[data-theme="dark"] .btn-secondary:hover:not(:disabled) { color: var(--text-primary); }
+:root[data-theme="dark"] .account-link > .icon:first-child,
+:root[data-theme="dark"] .account-link:hover,
+:root[data-theme="dark"] .ms-tools button { color: var(--blue-accent); }
+:root[data-theme="dark"] .ms-wrap.open .ms-trigger { border-color: var(--blue-accent); }
+:root[data-theme="dark"] .page-btn.page-num.active { background: var(--blue-accent-strong); border-color: var(--blue-accent-strong); }
+:root[data-theme="dark"] .bulk-check, :root[data-theme="dark"] .ms-option input { accent-color: var(--blue-accent); }
+
+/* =====================================================================
+   Mi cuenta v2 — avatar más grande con cámara, chips de datos y zona para
+   elegir/arrastrar la foto (reemplaza el botón nativo del navegador).
+   ===================================================================== */
+.account-hero .account-photo-large { width: 92px; height: 92px; flex: 0 0 92px; box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px color-mix(in srgb, var(--blue-accent) 55%, transparent), 0 10px 24px rgba(15, 31, 66, .18); }
+.account-hero .account-photo-large img { width: 92px; height: 92px; }
+.account-hero .account-photo-large .avatar-lg { width: 92px; height: 92px; font-size: 30px; }
+.account-hero h2 { font-size: var(--fs-xl) !important; letter-spacing: -.01em; }
+.photo-avatar-wrap { position: relative; display: inline-flex; flex: 0 0 auto; }
+.photo-cam {
+  position: absolute; right: -2px; bottom: -2px; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer; color: #fff; background: var(--navy-700);
+  border: 3px solid var(--surface); box-shadow: 0 4px 10px rgba(15, 31, 66, .25); transition: transform .15s, background .15s;
+}
+.photo-cam:hover { transform: scale(1.08); background: var(--blue-accent-strong); }
+.account-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-3); }
+.account-chip {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 4px 10px; border-radius: var(--radius-full);
+  background: var(--surface-sunken); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: var(--fs-xs);
+}
+.account-chip .icon { color: var(--blue-link); flex-shrink: 0; }
+.account-chip > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-hero .badge { margin-top: var(--space-2) !important; }
+
+.photo-input-native { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0; pointer-events: none; }
+.photo-drop {
+  flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+  padding: 12px 14px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-card);
+  background: var(--surface-sunken); cursor: pointer; transition: border-color .15s, background .15s;
+}
+.photo-drop:hover, .photo-drop.is-drag { border-color: var(--blue-accent); background: var(--blue-bg); }
+.photo-drop-icon { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 10px; display: grid; place-items: center; background: var(--surface); color: var(--blue-link); box-shadow: var(--shadow-1, 0 1px 2px rgba(0,0,0,.06)); }
+.photo-drop-text { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.35; }
+.photo-drop-text strong { color: var(--blue-link); }
+.photo-drop-text small { display: block; font-size: 11px; color: var(--text-tertiary); }
+.photo-drop-file { flex-basis: 100%; display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--green-fg); font-weight: 600; min-width: 0; }
+.photo-drop-file > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.photo-drop-clear { margin-left: auto; border: 0; background: none; color: var(--text-tertiary); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.photo-drop.has-file { border-style: solid; border-color: color-mix(in srgb, var(--green-fg) 45%, transparent); }
+.account-hero form .btn[type="submit"]:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.account-hero > div:last-child form + form .btn { background: transparent; border-color: transparent; color: var(--red-fg); padding-left: 0; }
+.account-hero > div:last-child form + form .btn:hover { text-decoration: underline; }
+
+/* Cualquier otro <input type="file"> del sistema: botón con el estilo de la app */
+input[type="file"].input { padding: 6px; height: auto; cursor: pointer; }
+input[type="file"]::file-selector-button {
+  margin-right: 10px; padding: 7px 14px; border: 1px solid var(--border-default); border-radius: var(--radius-control);
+  background: var(--surface); color: var(--navy-700); font: inherit; font-size: var(--fs-xs); font-weight: 600; cursor: pointer; transition: background .15s;
+}
+input[type="file"]::file-selector-button:hover { background: var(--blue-bg); }
+:root[data-theme="dark"] input[type="file"]::file-selector-button { color: var(--text-primary); }
+:root[data-theme="dark"] .account-hero .account-photo-large { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px color-mix(in srgb, var(--blue-accent) 55%, transparent); }
+.account-hero + .detail-grid { margin-top: 0 !important; }
