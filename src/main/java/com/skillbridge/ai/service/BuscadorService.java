@@ -94,7 +94,7 @@ public class BuscadorService {
             String texto = normalizar(p.getNombre());
             if (texto.contains(q)) {
                 salida.add(item("Proyectos", "icon-folder", p.getNombre(), etiquetaEstado(p.getEstado()),
-                        "/" + slug + "/proyectos.html?buscar=" + codificar(p.getNombre())));
+                        destinoProyecto(slug, p.getNombre())));
                 n++;
             }
         }
@@ -109,7 +109,7 @@ public class BuscadorService {
                 String cargo = p.getCargo() != null ? p.getCargo() : "";
                 if (normalizar(nombre + " " + cargo + " " + correo).contains(q)) {
                     salida.add(item("Colaboradores", "icon-user", nombre,
-                            cargo.isEmpty() ? correo : cargo, destinoColaborador(slug, nombre)));
+                            cargo.isEmpty() ? correo : cargo, destinoColaborador(slug, p.getId(), nombre)));
                     n++;
                 }
             }
@@ -121,26 +121,46 @@ public class BuscadorService {
             if (n >= MAX_POR_GRUPO) break;
             String categoria = h.getCategoria() != null ? h.getCategoria().getNombre() : "";
             if (normalizar(h.getNombre() + " " + categoria).contains(q)) {
-                salida.add(item("Habilidades", "icon-book", h.getNombre(), categoria, destinoHabilidad(slug, h.getNombre())));
+                salida.add(item("Habilidades", "icon-book", h.getNombre(), categoria, destinoHabilidad(slug, h.getId(), h.getNombre())));
                 n++;
             }
         }
         return salida;
     }
 
-    private static String destinoColaborador(String slug, String nombre) {
+    /**
+     * El Resource Manager no tiene una vista "proyectos.html" propia (antes
+     * el enlace daba 404): sus proyectos viven en Asignaciones.
+     */
+    private static String destinoProyecto(String slug, String nombre) {
+        String b = codificar(nombre);
+        if ("resource-manager".equals(slug)) return "/resource-manager/asignaciones.html?buscar=" + b;
+        return "/" + slug + "/proyectos.html?buscar=" + b;
+    }
+
+    /**
+     * Admin: Usuarios filtrado. RM: directo a la ficha tipo CV del
+     * colaborador. PM: Asignaciones filtrado por la persona (la tabla
+     * ahora tambien busca por nombre de integrante).
+     */
+    private static String destinoColaborador(String slug, Long perfilId, String nombre) {
         String b = codificar(nombre);
         switch (slug) {
             case "administrador": return "/administrador/usuarios.html?buscar=" + b;
-            case "resource-manager": return "/resource-manager/colaboradores.html?buscar=" + b;
+            case "resource-manager": return "/resource-manager/colaboradores/" + perfilId;
             default: return "/project-manager/asignaciones.html?buscar=" + b;
         }
     }
 
-    private static String destinoHabilidad(String slug, String nombre) {
+    private static String destinoHabilidad(String slug, Long habilidadId, String nombre) {
         String b = codificar(nombre);
         if ("administrador".equals(slug)) return "/administrador/habilidades.html?buscar=" + b;
         if ("colaborador".equals(slug)) return "/colaborador/perfil.html?buscar=" + b;
+        // El RM ya tiene un filtro por habilidad en su directorio de colaboradores.
+        if ("resource-manager".equals(slug)) return "/resource-manager/colaboradores.html?habilidadId=" + habilidadId;
+        // PM: sus proyectos filtrados por esa tecnologia/habilidad (el buscador
+        // de Proyectos del PM tambien busca dentro de las tecnologias).
+        if ("project-manager".equals(slug)) return "/project-manager/proyectos.html?buscar=" + b;
         return "/" + slug + "/inicio.html";
     }
 
