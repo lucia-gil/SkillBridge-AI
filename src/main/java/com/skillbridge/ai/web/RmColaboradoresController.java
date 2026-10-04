@@ -12,6 +12,7 @@ import com.skillbridge.ai.service.AuditoriaService;
 import com.skillbridge.ai.service.HabilidadService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
+import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
@@ -186,6 +187,17 @@ public class RmColaboradoresController {
         }
         Perfil p = perfilRepository.findById(perfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("El colaborador ya no existe."));
+
+        // El RM no tiene autoridad sobre cuentas Admin: Admin y RM "existen
+        // por encima" de los proyectos (ver comentario de la tabla
+        // asignaciones en el SQL). Igual que la auto-suspension, se valida
+        // aqui en el backend y no solo escondiendo el boton en la plantilla.
+        if ("inactivo".equals(nuevoEstado) && p.getUsuario() != null
+                && Roles.ADMINISTRADOR.equals(p.getUsuario().getRolOrganizacional())) {
+            redirectAttributes.addFlashAttribute("error", "No puedes suspender la cuenta de un Administrador.");
+            return "redirect:/resource-manager/colaboradores.html";
+        }
+
         String anterior = p.getEstado();
         p.setEstado(nuevoEstado);
         perfilRepository.save(p);

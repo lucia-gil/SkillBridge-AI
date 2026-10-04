@@ -113,7 +113,12 @@ public class ProyectoService {
     }
 
     public List<PerfilOpcion> listarPerfilesParaAsignar() {
+        // Admin y Resource Manager "existen por encima" de los proyectos
+        // (ver comentario de la tabla asignaciones en el SQL): no deben
+        // poder ser asignados como colaborador. Decision confirmada con el
+        // equipo (ver PDF de permisos, 2 de octubre).
         return perfilRepository.listarActivosConUsuario().stream()
+                .filter(p -> p.getUsuario().getRolOrganizacional() == null)
                 .map(p -> new PerfilOpcion(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo()))
                 .collect(Collectors.toList());
     }
@@ -386,6 +391,13 @@ public class ProyectoService {
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona un colaborador válido."));
         if (!Roles.PROJECT_MANAGER.equals(rolEnProyecto) && !Roles.COLABORADOR.equals(rolEnProyecto)) {
             throw new OperacionInvalidaException("Rol de proyecto no reconocido.");
+        }
+        // Defensa en el backend (no solo en el selector, que ya los oculta):
+        // un usuario con rol_organizacional (Admin o Resource Manager) no
+        // puede quedar como colaborador de un proyecto.
+        if (Roles.COLABORADOR.equals(rolEnProyecto) && perfil.getUsuario().getRolOrganizacional() != null) {
+            throw new OperacionInvalidaException(
+                    "Un usuario con rol organizacional (Admin o Resource Manager) no puede ser asignado como colaborador.");
         }
         // Regla confirmada con el equipo: solo puede haber UN Project Manager
         // activo por proyecto. Si ya hay uno y se intenta asignar otro, se
