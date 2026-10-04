@@ -21,7 +21,9 @@
   function filteredRows() {
     const term = normalize(search.value);
     return rows.filter(function (row) {
-      return normalize(row.dataset.name).includes(term)
+      // Busca por nombre del proyecto o de cualquiera de sus integrantes
+      // (asi el buscador global puede llevar aqui a una persona).
+      return (normalize(row.dataset.name).includes(term) || normalize(row.dataset.miembros).includes(term))
         && (state.value === 'todos' || row.dataset.state === state.value);
     });
   }
@@ -80,20 +82,17 @@
       });
     });
 
+    // Asignacion en masa: lista con checkboxes (ver asignacion-masiva.js).
     const assign = modal.querySelector('[data-assign-project]');
-    if (assign && panel) assign.addEventListener('click', function () {
-      const profile = panel.querySelector('[data-field="perfilId"]').value;
-      const role = panel.querySelector('[data-field="rolEnProyecto"]').value;
-      const dedication = Number(panel.querySelector('[data-field="cargaPorcentaje"]').value);
-      const startDate = panel.querySelector('[data-field="fechaInicio"]').value;
-      if (!profile) return window.SBAI.toast.show('Selecciona un colaborador.', { type: 'error' });
-      if (!Number.isInteger(dedication) || dedication < 1 || dedication > 100) return window.SBAI.toast.show('La dedicación debe estar entre 1% y 100%.', { type: 'error' });
-      if (!startDate) return window.SBAI.toast.show('Selecciona una fecha de inicio.', { type: 'error' });
-      assign.disabled = true;
-      submitForm('/resource-manager/proyectos/' + assign.dataset.assignProject + '/asignar', {
-        perfilId: profile, rolEnProyecto: role, cargaPorcentaje: dedication, fechaInicio: startDate
+    if (assign && panel && window.SBAI.asignacionMasiva) {
+      window.SBAI.asignacionMasiva.montar(panel, {
+        perfiles: window.SBAI_ASIGNABLES || [],
+        limiteCarga: window.SBAI_LIMITE_CARGA || 100,
+        url: '/resource-manager/proyectos/' + assign.dataset.assignProject + '/asignar-varios',
+        extra: {},
+        proyecto: assign.dataset.proyectoNombre || ''
       });
-    });
+    }
 
     // "(cambiar)" el Project Manager del proyecto — funcionalidad propia
     // del Resource Manager que no existe en la vista del PM.
@@ -124,10 +123,14 @@
     button.addEventListener('click', function () {
       const template = document.querySelector('template[data-team-project="' + button.dataset.viewTeam + '"]');
       if (!template) return;
-      const backdrop = window.SBAI.modal.open('<div class="modal modal-wide" role="dialog" aria-modal="true">' + template.innerHTML + '</div>');
+      const backdrop = window.SBAI.modal.open('<div class="modal modal-wide modal-assign" role="dialog" aria-modal="true">' + template.innerHTML + '</div>');
       bindModal(backdrop);
     });
   });
+
+  // ?buscar= desde el buscador global del topbar (proyecto o persona).
+  const buscarParam = new URLSearchParams(window.location.search).get('buscar');
+  if (buscarParam) search.value = buscarParam;
 
   search.addEventListener('input', function () { page = 1; render(); });
   state.addEventListener('change', function () { page = 1; render(); });

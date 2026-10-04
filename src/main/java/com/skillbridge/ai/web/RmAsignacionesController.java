@@ -4,6 +4,7 @@ import com.skillbridge.ai.dto.PerfilOpcion;
 import com.skillbridge.ai.dto.ProyectoDetalle;
 import com.skillbridge.ai.dto.ProyectoFila;
 import com.skillbridge.ai.dto.UsuarioSesion;
+import com.skillbridge.ai.service.AsignacionMasivaService;
 import com.skillbridge.ai.service.ProyectoService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
@@ -47,14 +48,17 @@ public class RmAsignacionesController {
 
     private final ProyectoService proyectoService;
     private final ShellModelBuilder shellModelBuilder;
+    private final AsignacionMasivaService asignacionMasivaService;
 
     // Inyeccion por constructor (no @Autowired en el campo): es el estilo
     // que ya usa el resto del proyecto (ver AsignacionesPmController) y es
     // la forma recomendada en Spring porque permite que el objeto quede
     // "completo" desde que se crea, sin campos que puedan quedar en null.
-    public RmAsignacionesController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder) {
+    public RmAsignacionesController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder,
+                                    AsignacionMasivaService asignacionMasivaService) {
         this.proyectoService = proyectoService;
         this.shellModelBuilder = shellModelBuilder;
+        this.asignacionMasivaService = asignacionMasivaService;
     }
 
     /**
@@ -101,6 +105,9 @@ public class RmAsignacionesController {
 
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("perfiles", perfiles);
+        // Lista con carga actual para la asignacion en masa (checkboxes).
+        model.addAttribute("perfilesAsignables", proyectoService.listarPerfilesAsignables());
+        model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
         model.addAttribute("totalColaboradores", totalColaboradores);
         model.addAttribute("totalVacantes", totalVacantes);
 
@@ -147,6 +154,32 @@ public class RmAsignacionesController {
     }
 
     /**
+     * CREATE en masa - "Asignar seleccionados" (checkboxes del modal).
+     * Reutiliza la misma regla de negocio que asignar(...): cada persona
+     * pasa por proyectoService.asignarColaborador(...) en su propia
+     * transaccion (ver AsignacionMasivaService). Si alguna no cumple, se
+     * informa su error y las demas quedan asignadas.
+     */
+    @PostMapping("/proyectos/{id}/asignar-varios")
+    public String asignarVarios(@PathVariable Long id,
+                                @RequestParam(name = "perfilIds", required = false) List<Long> perfilIds,
+                                @RequestParam int cargaPorcentaje,
+                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+                                HttpSession session,
+                                RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            AsignacionMasivaService.Resultado r = asignacionMasivaService.asignarVarios(
+                    id, perfilIds, cargaPorcentaje, fechaInicio, sesion.getUsuarioId());
+            if (r.huboAsignados()) redirectAttributes.addFlashAttribute("exito", AsignacionMasivaService.mensajeExito(r));
+            if (r.huboErrores()) redirectAttributes.addFlashAttribute("error", AsignacionMasivaService.mensajeError(r));
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/resource-manager/asignaciones.html";
+    }
+
+    /**
      * UPDATE (soft) - "Finalizar" una asignacion.
      *
      * IMPORTANTE para la sustentacion: esto NO es un DELETE. Nunca se
@@ -160,6 +193,7 @@ public class RmAsignacionesController {
     @PostMapping("/asignaciones/{asignacionId}/finalizar")
     public String finalizar(@PathVariable Long asignacionId,
                             @RequestParam(required = false) String motivo,
+                            @RequestParam(required = false) String volver,
                             HttpSession session,
                             RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
@@ -169,7 +203,10 @@ public class RmAsignacionesController {
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
-        return "redirect:/resource-manager/asignaciones.html";
+        // volver=ocupacion: se finalizo desde "Rebalancear" en Ocupacion.
+        return "ocupacion".equals(volver)
+                ? "redirect:/resource-manager/ocupacion.html"
+                : "redirect:/resource-manager/asignaciones.html";
     }
 
     /**

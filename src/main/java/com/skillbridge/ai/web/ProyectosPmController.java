@@ -6,6 +6,7 @@ import com.skillbridge.ai.dto.ProyectoDetalle;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.model.Asignacion;
 import com.skillbridge.ai.repository.AsignacionRepository;
+import com.skillbridge.ai.service.AsignacionMasivaService;
 import com.skillbridge.ai.service.ProyectoService;
 import com.skillbridge.ai.service.TecnologiaCatalogoService;
 import com.skillbridge.ai.service.ShellModelBuilder;
@@ -43,13 +44,16 @@ public class ProyectosPmController {
     private final AsignacionRepository asignacionRepository;
     private final ShellModelBuilder shellModelBuilder;
     private final TecnologiaCatalogoService tecnologiaCatalogoService;
+    private final AsignacionMasivaService asignacionMasivaService;
 
     public ProyectosPmController(ProyectoService proyectoService, AsignacionRepository asignacionRepository,
-                                 ShellModelBuilder shellModelBuilder, TecnologiaCatalogoService tecnologiaCatalogoService) {
+                                 ShellModelBuilder shellModelBuilder, TecnologiaCatalogoService tecnologiaCatalogoService,
+                                 AsignacionMasivaService asignacionMasivaService) {
         this.proyectoService = proyectoService;
         this.asignacionRepository = asignacionRepository;
         this.shellModelBuilder = shellModelBuilder;
         this.tecnologiaCatalogoService = tecnologiaCatalogoService;
+        this.asignacionMasivaService = asignacionMasivaService;
     }
 
     /** "React, MySQL" -> ["React", "MySQL"] (el formulario manda los chips unidos por coma). */
@@ -183,6 +187,31 @@ public class ProyectosPmController {
             exigirPropiedad(sesion.getPerfilId(), id);
             proyectoService.asignarColaborador(id, perfilId, rolEnProyecto, cargaPorcentaje, fechaInicio, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Colaborador asignado al proyecto.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return destino(volver);
+    }
+
+    /**
+     * Asignación en masa (checkboxes del modal "Asignar colaboradores" en
+     * Asignaciones). Cada persona pasa por las mismas validaciones que la
+     * asignación individual (ver AsignacionMasivaService).
+     */
+    @PostMapping("/proyectos/{id}/asignar-varios")
+    public String asignarVarios(@PathVariable Long id,
+                                @RequestParam(name = "perfilIds", required = false) List<Long> perfilIds,
+                                @RequestParam int cargaPorcentaje,
+                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+                                @RequestParam(required = false) String volver,
+                                HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            exigirPropiedad(sesion.getPerfilId(), id);
+            AsignacionMasivaService.Resultado r = asignacionMasivaService.asignarVarios(
+                    id, perfilIds, cargaPorcentaje, fechaInicio, sesion.getUsuarioId());
+            if (r.huboAsignados()) redirectAttributes.addFlashAttribute("exito", AsignacionMasivaService.mensajeExito(r));
+            if (r.huboErrores()) redirectAttributes.addFlashAttribute("error", AsignacionMasivaService.mensajeError(r));
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }

@@ -54,6 +54,9 @@ public class AsignacionesPmController {
                 totalMiembros + " asignaciones activas en tus " + proyectos.size() + " proyectos");
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("perfiles", perfiles);
+        // Lista con carga actual para la asignacion en masa (checkboxes).
+        model.addAttribute("perfilesAsignables", proyectoService.listarPerfilesAsignables());
+        model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
         model.addAttribute("totalColaboradores", totalColaboradores);
         model.addAttribute("totalVacantes", totalVacantes);
         return "project-manager/asignaciones";

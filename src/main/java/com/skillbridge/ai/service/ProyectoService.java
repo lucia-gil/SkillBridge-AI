@@ -2,9 +2,11 @@ package com.skillbridge.ai.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.skillbridge.ai.dto.AsignacionCargaFila;
 import com.skillbridge.ai.dto.EventoCalendario;
 import com.skillbridge.ai.dto.MiProyectoFila;
 import com.skillbridge.ai.dto.MiembroEquipoFila;
+import com.skillbridge.ai.dto.PerfilAsignable;
 import com.skillbridge.ai.dto.PerfilOpcion;
 import com.skillbridge.ai.dto.ProyectoDetalle;
 import com.skillbridge.ai.dto.ProyectoFila;
@@ -121,6 +123,90 @@ public class ProyectoService {
                 .filter(p -> p.getUsuario().getRolOrganizacional() == null)
                 .map(p -> new PerfilOpcion(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Igual que listarPerfilesParaAsignar() (mismo filtro: sin Admin ni RM),
+     * pero con la carga activa y el número de proyectos activos de cada
+     * persona, para la lista con checkboxes de la asignación en masa.
+     */
+    @Transactional(readOnly = true)
+    public List<PerfilAsignable> listarPerfilesAsignables() {
+        return perfilRepository.listarActivosConUsuario().stream()
+                .filter(p -> p.getUsuario().getRolOrganizacional() == null)
+                .map(p -> new PerfilAsignable(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo(),
+                        p.getCargo() != null ? p.getCargo() : "",
+                        sumarCargaActivaSegura(p.getId()),
+                        asignacionRepository.listarPorPerfilYEstado(p.getId(), "activa").size()))
+                .collect(Collectors.toList());
+    }
+
+    /** Límite de carga (%) configurado en Configuración (por defecto 100). */
+    public int limiteCargaConfigurado() {
+        var configuracion = configuracionService.obtenerMapa();
+        return parseEntero(configuracionService.valor(configuracion, "limite_carga_colaborador", "100"), 100);
+    }
+
+    /**
+     * Asignaciones activas de un colaborador con su dedicación, para el modal
+     * "Rebalancear carga" de Ocupación (RM).
+     */
+    @Transactional(readOnly = true)
+    public List<AsignacionCargaFila> asignacionesActivasDe(Long perfilId) {
+        return asignacionRepository.listarPorPerfilYEstado(perfilId, "activa").stream()
+                .map(a -> new AsignacionCargaFila(a.getId(),
+                        a.getProyecto() != null ? a.getProyecto().getNombre() : "Proyecto",
+                        Roles.PROJECT_MANAGER.equals(a.getRolEnProyecto()) ? "Project Manager" : "Colaborador",
+                        Roles.PROJECT_MANAGER.equals(a.getRolEnProyecto()),
+                        a.getCargaPorcentaje() != null ? a.getCargaPorcentaje() : 0))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Cambia la dedicación (%) de una asignación activa. Pensado para
+     * "Rebalancear carga" en Ocupación: bajar la dedicación de alguien
+     * sobre-asignado sin tener que finalizar y volver a asignar. Si se SUBE,
+     * se respeta el mismo límite de carga configurado que al asignar.
+     */
+    @Transactional
+    public void ajustarDedicacion(Long asignacionId, int nuevaCarga, String motivo, Long actorUsuarioId) {
+        Asignacion a = asignacionRepository.findById(asignacionId)
+                .orElseThrow(() -> new OperacionInvalidaException("La asignación ya no existe."));
+        if (!"activa".equals(a.getEstado())) {
+            throw new OperacionInvalidaException("Solo se puede ajustar una asignación activa.");
+        }
+        int limiteCarga = limiteCargaConfigurado();
+        if (nuevaCarga < 1 || nuevaCarga > limiteCarga) {
+            throw new OperacionInvalidaException("La dedicación debe estar entre 1% y " + limiteCarga + "%.");
+        }
+        int anterior = a.getCargaPorcentaje() != null ? a.getCargaPorcentaje() : 0;
+        if (anterior == nuevaCarga) {
+            throw new OperacionInvalidaException("La dedicación ya es " + nuevaCarga + "%.");
+        }
+        if (nuevaCarga > anterior) {
+            int total = sumarCargaActivaSegura(a.getPerfilId()) - anterior + nuevaCarga;
+            if (total > limiteCarga) {
+                throw new OperacionInvalidaException("Con ese cambio la carga total sería " + total
+                        + "%, por encima del límite de " + limiteCarga + "%.");
+            }
+        }
+        a.setCargaPorcentaje(nuevaCarga);
+        asignacionRepository.save(a);
+        String proyecto = proyectoRepository.findById(a.getProyectoId()).map(Proyecto::getNombre).orElse("el proyecto");
+        auditoriaService.registrar(actorUsuarioId, "ASIGNACION_EDITADA", "asignacion", asignacionId,
+                AuditoriaService.json("carga_porcentaje", String.valueOf(anterior)),
+                AuditoriaService.json("carga_porcentaje", String.valueOf(nuevaCarga)),
+                AuditoriaService.conMotivo("Dedicación en \"" + proyecto + "\": " + anterior + "% → " + nuevaCarga + "%", motivo) + ".");
+        notificacionService.crear(a.getPerfilId(), "asignacion", "Dedicación actualizada",
+                "Tu dedicación en \"" + proyecto + "\" cambió de " + anterior + "% a " + nuevaCarga + "%.", "proyectos.html");
+    }
+
+    /** Nombre completo de un perfil (para los mensajes de la asignación en masa). */
+    @Transactional(readOnly = true)
+    public String nombreDePerfil(Long perfilId) {
+        return perfilRepository.findById(perfilId)
+                .map(p -> p.getUsuario() != null ? p.getUsuario().getNombreCompleto() : "Colaborador")
+                .orElse("Colaborador");
     }
 
     /**

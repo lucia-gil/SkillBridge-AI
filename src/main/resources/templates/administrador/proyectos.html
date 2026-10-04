@@ -95,7 +95,7 @@
               <div class="field-row">
                 <div class="field"><label class="field-label">Colaborador</label>
                   <select class="select" data-field="perfilId" data-combobox data-placeholder="Escribe el nombre o correo…">
-                    <option th:each="p : ${perfiles}" th:value="${p.perfilId()}" th:text="${p.nombre()} + ' · ' + ${p.correo()}">Colaborador</option>
+                    <option th:each="p : ${perfiles}" th:unless="${#lists.contains(d.equipo.![perfilId], p.perfilId())}" th:value="${p.perfilId()}" th:text="${p.nombre()} + ' · ' + ${p.correo()}">Colaborador</option>
                   </select>
                 </div>
                 <div class="field"><label class="field-label">Rol en el proyecto</label>
@@ -107,7 +107,7 @@
                 <div class="field"><label class="field-label">Periodo de inicio</label><input class="input" type="date" data-field="fechaInicio"></div>
               </div>
               <div class="btn-group" style="justify-content:flex-end; margin-bottom:var(--space-5);">
-                <button type="button" class="btn btn-secondary btn-sm" th:attr="data-asignar-proyecto=${d.id}">Asignar</button>
+                <button type="button" class="btn btn-primary btn-sm btn-assign" th:attr="data-asignar-proyecto=${d.id}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-user-check"></use></svg>Asignar al equipo</button>
               </div>
 
               <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Cambiar estado</h3>
@@ -342,10 +342,12 @@ document.addEventListener("DOMContentLoaded", function () {
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/tech-icons.js"></script>
 <script src="/js/proyecto-form.js"></script>
 <script src="/js/proyecto-acciones.js"></script>
 <script src="/js/project-ui.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
 </html>
