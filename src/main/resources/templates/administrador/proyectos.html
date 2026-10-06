@@ -72,33 +72,42 @@
               <button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button>
             </div>
             <div class="modal-body">
-              <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
-              <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
-                <span data-tech-list th:attr="data-tech-list=${d.tecnologiasCsv}"></span>
-              </div>
-              <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
-              <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
-              <div class="info-row"><span class="info-row-label">Colaboradores requeridos</span><span class="info-row-value" th:text="${d.colaboradoresRequeridos}">0</span></div>
-
-              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Equipo activo</h3>
-              <div th:if="${d.equipo.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin colaboradores asignados todavía.</div>
-              <div th:each="m : ${d.equipo}" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-2) 0; border-bottom:1px solid var(--border-subtle);">
-                <span class="avatar avatar-sm" th:text="${m.iniciales}">MR</span>
-                <span style="flex:1; min-width:0;">
-                  <div style="font-size:var(--fs-sm); font-weight:500;" th:text="${m.nombre}">Nombre</div>
-                  <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${m.correo}">correo</div>
-                </span>
-                <span class="badge" th:classappend="${m.rolEnProyectoCrudo == 'project_manager'} ? 'badge-blue' : 'badge-neutral'" th:text="${m.rolLabel}">Rol</span>
-                <span class="mono text-secondary" style="font-size:var(--fs-xs); min-width:3.5em; text-align:right;" th:text="${m.cargaPorcentaje} + '%'">0%</span>
-              </div>
-              <!-- Modelo v7: el Administrador no asigna ni finaliza (lo hace el Resource Manager; el PM propone). -->
-              <div class="readonly-note">
-                <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-info"></use></svg>
-                <span>Vista de solo lectura. Las asignaciones las gestiona el <strong>Resource Manager</strong> (asigna y cambia el Project Manager) y el <strong>Project Manager</strong> propone colaboradores.</span>
+              <!-- Modelo v7, fase 5: pestañas para que proyectos con equipos grandes no obliguen a hacer scroll interminable. -->
+              <div class="tabs pt-tabs" role="tablist" data-tabs>
+                <button type="button" class="tab-btn active" data-tab="resumen">Resumen</button>
+                <button type="button" class="tab-btn" data-tab="equipo">Equipo <span class="counter-badge" th:text="${d.equipo.size()}">0</span></button>
+                <button type="button" class="tab-btn" data-tab="historial">Historial <span class="counter-badge" th:text="${d.historial.size()}">0</span></button>
+                <button type="button" class="tab-btn" data-tab="estado">Estado</button>
               </div>
 
-              <!-- Modelo v7, fase 2: transiciones con efectos (pausa, cierre, reapertura). -->
-              <th:block th:replace="~{fragments/estado-proyecto :: estado(${d})}"></th:block>
+              <div class="pt-panel" data-tab-panel="resumen">
+                <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
+                <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
+                  <span data-tech-list th:attr="data-tech-list=${d.tecnologiasCsv}"></span>
+                </div>
+                <div class="info-row"><span class="info-row-label">Project Manager</span><span class="info-row-value" th:text="${d.pmNombre}">PM</span></div>
+                <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
+                <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
+                <div class="info-row"><span class="info-row-label">Colaboradores</span><span class="info-row-value" th:text="${d.colaboradoresAsignados} + ' de ' + ${d.colaboradoresRequeridos} + ' requeridos'">0</span></div>
+              </div>
+
+              <div class="pt-panel" data-tab-panel="equipo" hidden>
+                <th:block th:replace="~{fragments/equipo-proyecto :: tabla(${d}, false)}"></th:block>
+                <!-- Modelo v7: el Administrador no asigna ni finaliza (lo hace el Resource Manager; el PM propone). -->
+                <div class="readonly-note">
+                  <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-info"></use></svg>
+                  <span>Vista de solo lectura. Las asignaciones las gestiona el <strong>Resource Manager</strong> (asigna y cambia el Project Manager) y el <strong>Project Manager</strong> propone colaboradores.</span>
+                </div>
+              </div>
+
+              <div class="pt-panel" data-tab-panel="historial" hidden>
+                <th:block th:replace="~{fragments/equipo-proyecto :: historial(${d})}"></th:block>
+              </div>
+
+              <div class="pt-panel" data-tab-panel="estado" hidden>
+                <!-- Modelo v7, fase 2: transiciones con efectos (pausa, cierre, reapertura). -->
+                <th:block th:replace="~{fragments/estado-proyecto :: estado(${d})}"></th:block>
+              </div>
             </div>
             <div class="modal-footer">
               <a class="btn btn-secondary" th:href="@{'/administrador/proyectos/' + ${d.id} + '/entregables.html'}" style="text-decoration:none;">Ver entregables</a>
@@ -129,7 +138,8 @@ document.addEventListener("DOMContentLoaded", function () {
       var id = btn.dataset.viewProject;
       var tpl = document.querySelector('#project-detail-templates template[data-project-id="' + id + '"]');
       if (!tpl) return;
-      var backdrop = SBAI.modal.open('<div class="modal modal-wide" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
+      var backdrop = SBAI.modal.open('<div class="modal modal-xwide modal-proyecto" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
+      if (SBAI.uiKit) SBAI.uiKit.init(backdrop);
 
       var estadoSelect = backdrop.querySelector('[data-field="estado"]');
       var estadoBtn = backdrop.querySelector("[data-cambiar-estado]");
@@ -158,8 +168,6 @@ document.addEventListener("DOMContentLoaded", function () {
   function isoHoy() { var d = new Date(); return SBAI.dateRange.aIso(d); }
 
   document.getElementById("new-project-btn").addEventListener("click", function () {
-    var opts = /*[[${perfiles}]]*/ [];
-    var options = opts.map(function (p) { return '<option value="' + p.perfilId + '">' + esc(p.nombre) + ' · ' + esc(p.correo) + '</option>'; }).join("");
     var hoy = isoHoy();
     var html = '<div class="modal modal-wide pf-modal" role="dialog" aria-modal="true" aria-labelledby="np-titulo">' +
       '<div class="modal-header"><div><h2 id="np-titulo">Nuevo proyecto</h2><p>Asigna un Project Manager responsable.</p></div>' +
@@ -179,7 +187,11 @@ document.addEventListener("DOMContentLoaded", function () {
       '<div class="dr-presets" id="np-atajos"></div>' +
       '<div class="dr-summary" id="np-resumen" aria-live="polite"></div>' +
       '<div class="field-row"><div class="field"><label class="field-label" for="np-colab">Colaboradores requeridos</label><input class="input" type="number" min="0" value="3" id="np-colab"><div class="field-error"></div></div>' +
-      '<div class="field"><label class="field-label" for="np-pm">Project Manager</label><select class="select" id="np-pm" data-combobox data-placeholder="Escribe para buscar al PM…">' + options + '</select></div></div>' +
+      '<div class="field"><span class="field-label">Project Manager</span>' +
+        // Modelo v7, fase 5: búsqueda en el servidor (solo Miembros con capacidad).
+        '<div class="pm-picker" id="np-pm-picker"><span class="pm-picker-vacio">Nadie elegido todavía</span>' +
+        '<button type="button" class="btn btn-secondary btn-sm" id="np-pm-btn">Elegir…</button></div>' +
+        '<input type="hidden" id="np-pm"></div></div>' +
       '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
     var backdrop = SBAI.modal.open(html);
     var tech = SBAI.techInput.create(backdrop.querySelector("#np-tech"), {
@@ -190,6 +202,23 @@ document.addEventListener("DOMContentLoaded", function () {
       resumen: backdrop.querySelector("#np-resumen"), atajos: backdrop.querySelector("#np-atajos"),
       minInicio: hoy, diasMinimos: 7
     });
+    var pmPicker = backdrop.querySelector("#np-pm-picker");
+    function abrirSelectorPm() {
+      SBAI.selectorPersonas.abrir({
+        modo: "pm",
+        proyecto: (backdrop.querySelector("#np-nombre").value.trim() || "Nuevo proyecto"),
+        endpoint: "/administrador/candidatos-pm",
+        onElegir: function (c) {
+          backdrop.querySelector("#np-pm").value = c.perfilId;
+          pmPicker.classList.add("has-value");
+          pmPicker.innerHTML = '<span class="avatar avatar-sm">' + esc(c.iniciales) + '</span>' +
+            '<span class="pm-picker-info"><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.cargo) + ' · carga ' + c.cargaActual + '% → ' + (c.cargaActual + 20) + '%</small></span>' +
+            '<button type="button" class="btn btn-secondary btn-sm" data-pm-cambiar>Cambiar</button>';
+          pmPicker.querySelector("[data-pm-cambiar]").addEventListener("click", abrirSelectorPm);
+        }
+      });
+    }
+    backdrop.querySelector("#np-pm-btn").addEventListener("click", abrirSelectorPm);
     var nombreInput = backdrop.querySelector("#np-nombre");
     var colabInput = backdrop.querySelector("#np-colab");
     var errorBox = backdrop.querySelector("#np-error");
@@ -306,6 +335,8 @@ document.addEventListener("DOMContentLoaded", function () {
 <script src="/js/tech-icons.js"></script>
 <script src="/js/proyecto-form.js"></script>
 <script src="/js/proyecto-acciones.js"></script>
+<script src="/js/selector-personas.js"></script>
+<script src="/js/ui-kit.js"></script>
 <script src="/js/project-ui.js"></script>
 <script src="/js/tabla-acciones.js"></script>
 </body>

@@ -31,6 +31,7 @@ public class ProyectoDetalle {
     private boolean reanudacionVencida;
     private String razonCancelacion;
     private List<IntegranteAnterior> equipoAnterior = List.of();
+    private List<HistorialEquipoFila> historial = List.of();
 
     public ProyectoDetalle(Long id, String nombre, String descripcion, List<String> tecnologias, String estadoCrudo,
                             String fechaInicioLabel, String fechaFinLabel, String fechaInicioIso, String fechaFinIso,
@@ -154,4 +155,8 @@ public class ProyectoDetalle {
     public void setEquipoAnterior(List<IntegranteAnterior> v) { this.equipoAnterior = v != null ? v : List.of(); }
     /** Proyecto completado o cancelado: solo lectura salvo "Reabrir". */
     public boolean isCerrado() { return "completado".equals(estadoCrudo) || "cancelado".equals(estadoCrudo); }
+    public List<HistorialEquipoFila> getHistorial() { return historial; }
+    public void setHistorial(List<HistorialEquipoFila> v) { this.historial = v != null ? v : List.of(); }
+    /** "PM 1 · Colaboradores 3/4" para el encabezado de la pestaña Equipo. */
+    public long getPmsActivos() { return equipo.stream().filter(m -> "project_manager".equals(m.getRolEnProyectoCrudo())).count(); }
 }

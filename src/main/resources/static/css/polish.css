@@ -518,56 +518,80 @@ input[type="file"]::file-selector-button:hover { background: var(--blue-bg); }
   .sp-campo { flex: 1; }
 }
 
-/* ============ KPI tiles: misma estructura en todas las vistas ============
-   Toda tarjetita lleva barra superior de color, degradado suave y el
-   circulito decorativo abajo a la derecha, aunque no tenga accent-*. */
-.kpi-tile { --tile-bg: var(--blue-bg); --tile-border: var(--blue-border); --tile-glow: rgba(44,91,176,.10);
-  background: linear-gradient(135deg, var(--surface) 10%, var(--tile-bg) 100%); border-color: var(--tile-border);
-  border-radius: var(--radius-card); min-height: 148px; }
-.kpi-tile::before { background: var(--blue-fg); }
-.kpi-tile.accent-blue::before { background: var(--blue-fg); }
-.kpi-tile.accent-green::before { background: var(--green-fg); }
-.kpi-tile.accent-amber::before { background: var(--amber-fg); }
-.kpi-tile.accent-violet::before { background: var(--violet-fg); }
-.kpi-tile.accent-red::before { background: var(--red-fg); }
-.kpi-tile::after { content: ""; position: absolute; width: 110px; height: 110px; right: -42px; bottom: -58px; border-radius: 50%; background: var(--tile-glow); pointer-events: none; z-index: 0; }
-.kpi-tile-meta { margin-top: auto; }
-.kpi-grid { align-items: stretch; }
+/* ───────── Modelo v7, fase 5: selector en modo "Elegir Project Manager" ───────── */
+.modal-picker.is-pm { max-width: 860px; }
+.modal-picker.is-pm .sp-body { grid-template-columns: minmax(0, 1fr); }
+.modal-picker.is-pm .sp-filtros, .modal-picker.is-pm .sp-toggle-filtros { display: none !important; }
+.sp-switch-inline { white-space: nowrap; }
+.sp-ayuda { font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: var(--space-2); }
+.sp-nota { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--blue-fg); }
 
-/* ============ Color de las barras (battery-progress.js) ============
-   Un solo azul estable para todas; solo la carga > 100% va en mostaza. */
-.progress-bar-fill.lv-azul  { --lv: #2C5BB0; }
-.progress-bar-fill.lv-sobre { --lv: #C99A2E; }
-.progress-bar-fill[class*="lv-"] { background: var(--lv); }
-.progress-bar.battery .progress-bar-fill[class*="lv-"] { background: linear-gradient(180deg, color-mix(in srgb, var(--lv) 82%, white), var(--lv)); }
-[data-theme="dark"] .progress-bar-fill.lv-azul { --lv: #4F7FE0; }
-[data-theme="dark"] .progress-bar-fill.lv-sobre { --lv: #D9AE45; }
+/* Campo "Project Manager" con selector (Nuevo proyecto / Cambiar PM) */
+.pm-picker { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; padding: var(--space-2) var(--space-3); border: 1px dashed var(--border-strong); border-radius: var(--radius-control); background: var(--surface-sunken); }
+.pm-picker.has-value { border-style: solid; border-color: var(--blue-border); background: var(--blue-bg); }
+:root[data-theme="dark"] .pm-picker.has-value { background: color-mix(in srgb, var(--blue-accent) 12%, var(--surface)); }
+.pm-picker-info { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: var(--fs-sm); }
+.pm-picker-info small { font-size: var(--fs-xs); color: var(--text-tertiary); }
+.pm-picker-vacio { flex: 1; font-size: var(--fs-xs); color: var(--text-tertiary); }
 
-/* Leyenda pequeña bajo las tablas con barras */
-.escala-leyenda { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--fs-2xs); color: var(--text-tertiary); }
-.escala-leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+/* ═════════ Modelo v7, fase 5: modal de proyecto con pestañas ═════════ */
+.modal-proyecto { max-width: 880px; }
+.modal-proyecto .modal-body { padding-top: 0; }
+.pt-tabs { position: sticky; top: 0; z-index: 2; background: var(--surface); margin: 0 calc(-1 * var(--space-6)) var(--space-5); padding: 0 var(--space-6); }
+.pt-tabs .tab-btn { display: inline-flex; align-items: center; gap: 6px; }
+.pt-panel { animation: pt-in var(--dur-base, 180ms) var(--ease-standard, ease) both; }
+@keyframes pt-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
-/* Rankings ("Habilidades más demandadas"): columnas fijas para que todas
-   las barras empiecen y terminen en el mismo punto. */
-.rank-row { display: grid !important; grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: var(--space-4); }
-.rank-row > .progress-bar, .rank-row > .progress-inline { width: 100%; max-width: none !important; min-width: 0; justify-self: stretch; }
-.rank-row .rank-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rank-row:last-child { border-bottom: none !important; }
+/* Pestaña Equipo: contadores + tabla compacta paginada */
+.team-head { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.team-stat { font-size: var(--fs-xs); color: var(--text-secondary); padding: 4px 10px; border-radius: var(--radius-full); background: var(--surface-sunken); border: 1px solid var(--border-subtle); }
+.team-stat b { font-family: var(--font-mono); color: var(--text-primary); }
+.team-stat.is-warn { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-fg); }
+.mini-block { margin-bottom: var(--space-4); }
+.mini-search { display: flex; align-items: center; gap: var(--space-2); height: 36px; padding: 0 var(--space-3); margin-bottom: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-control); background: var(--surface); }
+.mini-search:focus-within { border-color: var(--blue-accent-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue-accent) 20%, transparent); }
+.mini-search .icon { color: var(--text-tertiary); }
+.mini-search input, .mini-search input:focus { flex: 1; border: 0 !important; outline: 0 !important; box-shadow: none !important; background: transparent; font: inherit; font-size: var(--fs-xs); color: var(--text-primary); height: auto; padding: 0; min-width: 0; }
+.mini-table { border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
+.mini-table th { font-size: var(--fs-2xs); }
+.mini-table td, .mini-table th { padding-top: var(--space-2) !important; padding-bottom: var(--space-2) !important; }
+.mini-table tr.is-pinned td { background: color-mix(in srgb, var(--blue-bg) 60%, transparent); }
+:root[data-theme="dark"] .mini-table tr.is-pinned td { background: color-mix(in srgb, var(--blue-accent) 10%, transparent); }
+.mini-pag { display: flex; justify-content: center; align-items: center; gap: var(--space-3); font-size: var(--fs-xs); margin-top: var(--space-3); }
+.mini-pag:empty { display: none; }
 
-/* ============ Mi perfil: filas de habilidades alineadas ============
-   habilidad | estado (columna fija y centrada) | acciones */
-#skills-list { container-type: inline-size; }
-.skill-row { display: grid; grid-template-columns: 240px minmax(150px, 1fr) auto; align-items: center; gap: var(--space-4);
-  padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle); }
-.skill-row[hidden] { display: none; }
-.skill-row .skill-pill { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; }
-.skill-row .cell-actions { flex-wrap: nowrap !important; }
-.skill-row-status { display: flex; justify-content: center; }
-.skill-validada { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--green-fg); white-space: nowrap; }
-.skill-validada .icon { width: 16px; height: 16px; }
-/* Tarjeta angosta: estado debajo de la habilidad y acciones en su propia fila */
-@container (max-width: 700px) {
-  .skill-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: var(--space-2); }
-  .skill-row-status { justify-content: flex-end; }
-  .skill-row .cell-actions { grid-column: 1 / -1; justify-content: flex-start !important; }
+/* ═════════ Modelo v7, fase 5: buscadores y filtros homogéneos en TODAS las tablas ═════════
+   Mismo alto, radio, tamaño de letra e ícono de lupa, sin tocar cada plantilla
+   (se sobrescriben los estilos en línea heredados con !important). */
+.table-toolbar > div:first-child strong { font-size: var(--fs-md); letter-spacing: -0.01em; }
+.table-filters { gap: var(--space-2); }
+.table-filters .input,
+.table-filters .select {
+  height: 38px !important;
+  font-size: var(--fs-xs) !important;
+  border-radius: var(--radius-control) !important;
+  border-color: var(--border-default);
+  background-color: var(--surface);
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+}
+.table-filters .input:hover, .table-filters .select:hover { border-color: var(--border-strong); }
+.table-filters .input:focus, .table-filters .select:focus {
+  border-color: var(--blue-accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue-accent) 20%, transparent);
+  outline: none;
+}
+.table-filters input.input[type="search"],
+.table-filters input.input[type="text"] {
+  width: 240px !important;
+  min-width: 0 !important;
+  padding-left: 34px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237C8496' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 11px center;
+  background-size: 15px 15px;
+}
+.table-filters .select { min-width: 150px; }
+.table-filters .btn { height: 38px; }
+@media (max-width: 760px) {
+  .table-filters input.input[type="search"], .table-filters input.input[type="text"] { width: 100% !important; }
 }

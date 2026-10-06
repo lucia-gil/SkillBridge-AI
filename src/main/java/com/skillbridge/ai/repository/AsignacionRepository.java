@@ -46,6 +46,12 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
             "and a.rolEnProyecto = 'colaborador' and a.estado <> 'activa' and a.fechaFin is not null order by a.fechaFin desc")
     List<Asignacion> listarColaboradoresSalientes(@Param("proyectoId") Long proyectoId);
 
+    // Historial completo del equipo de un proyecto (asignaciones que ya no
+    // están activas, cualquier rol), más reciente primero.
+    @Query("select a from Asignacion a join fetch a.perfil p join fetch p.usuario u where a.proyectoId = :proyectoId " +
+            "and a.estado <> 'activa' order by a.fechaFin desc, a.fechaInicio desc")
+    List<Asignacion> listarHistorialDeProyecto(@Param("proyectoId") Long proyectoId);
+
     long countByProyectoIdAndEstado(Long proyectoId, String estado);
 
     // Cuenta cuantos PM activos tiene un proyecto - se usa para bloquear que

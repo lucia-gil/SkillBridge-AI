@@ -88,10 +88,6 @@ public class RmAsignacionesController {
                 .map(f -> proyectoService.obtenerDetalle(f.getId()))
                 .collect(Collectors.toList());
 
-        // Lista de colaboradores para llenar el <select> del modal
-        // "Registrar asignacion" - ya existe en ProyectoService, no hay
-        // que escribir ninguna consulta nueva.
-        List<PerfilOpcion> perfiles = proyectoService.listarPerfilesParaAsignar();
 
         long totalAsignaciones = proyectos.stream().mapToLong(p -> p.getEquipo().size()).sum();
 
@@ -111,9 +107,8 @@ public class RmAsignacionesController {
                 totalAsignaciones + " asignaciones activas en " + proyectos.size() + " proyectos");
 
         model.addAttribute("proyectos", proyectos);
-        model.addAttribute("perfiles", perfiles);
-        // Lista con carga actual para la asignacion en masa (checkboxes).
-        model.addAttribute("perfilesAsignables", proyectoService.listarPerfilesAsignables());
+        // Modelo v7 (fases 4 y 5): las personas se buscan en el servidor desde
+        // el selector (candidatos / candidatos-pm); ya no se incrusta la lista.
         model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
         model.addAttribute("totalColaboradores", totalColaboradores);
         model.addAttribute("totalVacantes", totalVacantes);
@@ -154,6 +149,22 @@ public class RmAsignacionesController {
         try {
             return ResponseEntity.ok(selectorPersonasService.buscar(id, new SelectorPersonasService.Filtros(q, habilidades, cargo, disponibleMin,
                     experienciaMin, soloConCapacidad, dedicacion, orden, pagina)));
+        } catch (OperacionInvalidaException ex) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", ex.getMessage()));
+        }
+    }
+
+    /** Candidatos para "Cambiar PM" (modelo v7, fase 5): selector en modo "pm". */
+    @GetMapping("/proyectos/{id}/candidatos-pm")
+    @ResponseBody
+    public ResponseEntity<?> candidatosPm(@PathVariable Long id,
+                                              @RequestParam(required = false) String q,
+                                              @RequestParam(defaultValue = "match") String orden,
+                                              @RequestParam(defaultValue = "false") boolean soloConCapacidad,
+                                              @RequestParam(defaultValue = "1") int pagina) {
+        try {
+            return ResponseEntity.ok(selectorPersonasService.buscarParaPm(id, new SelectorPersonasService.Filtros(q, null, null, null, null,
+                    soloConCapacidad, ProyectoService.CARGA_PM_POR_DEFECTO, orden, pagina)));
         } catch (OperacionInvalidaException ex) {
             return ResponseEntity.badRequest().body(java.util.Map.of("error", ex.getMessage()));
         }

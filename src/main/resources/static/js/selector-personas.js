@@ -10,6 +10,11 @@
  *    extra:     { volver: "asignaciones" }                       // campos extra del POST
  *  });
  *
+ * Modo "pm" (fase 5): elegir UNA persona como Project Manager (al crear un
+ * proyecto o en "Cambiar PM"). No envía nada: llama a onElegir(candidato).
+ *  SBAI.selectorPersonas.abrir({ modo: "pm", endpoint: ".../candidatos-pm",
+ *    proyecto: "Nombre", onElegir: function (c) { ... } });
+ *
  * La búsqueda, los filtros, el orden y la paginación los resuelve el
  * servidor (SelectorPersonasService): funciona igual con 20 que con miles de
  * personas. La selección se conserva al cambiar de página o de filtro.
@@ -39,10 +44,11 @@
 
   function abrir(opts) {
     var proponer = opts.modo === "proponer";
-    var verbo = proponer ? "Proponer" : "Asignar";
+    var modoPm = opts.modo === "pm";
+    var verbo = modoPm ? "Elegir" : proponer ? "Proponer" : "Asignar";
     var estado = {
       q: "", habilidades: [], cargo: "", disponibleMin: "", experienciaMin: "",
-      soloConCapacidad: false, dedicacion: 50, orden: "match", pagina: 1
+      soloConCapacidad: false, dedicacion: modoPm ? 20 : 50, orden: modoPm ? "disponibilidad" : "match", pagina: 1
     };
     var seleccion = {};          // perfilId -> candidato
     var ultima = null;           // última respuesta del servidor
@@ -51,9 +57,9 @@
     var temporizador = null;
 
     var html =
-      '<div class="modal modal-picker" role="dialog" aria-modal="true" aria-labelledby="sp-titulo">' +
+      '<div class="modal modal-picker' + (modoPm ? " is-pm" : "") + '" role="dialog" aria-modal="true" aria-labelledby="sp-titulo">' +
       '<div class="modal-header"><div>' +
-      '<h2 id="sp-titulo">' + verbo + " colaboradores</h2>" +
+      '<h2 id="sp-titulo">' + (modoPm ? "Elegir Project Manager" : verbo + " colaboradores") + "</h2>" +
       '<p class="sp-sub"><span>' + esc(opts.proyecto || "") + '</span><span class="sp-vacantes" data-sp-vacantes></span></p>' +
       "</div>" +
       '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar">' + icon("icon-x") + "</button></div>" +
@@ -81,7 +87,9 @@
       '<select class="select sp-orden" id="sp-orden" aria-label="Ordenar">' +
       '<option value="match">Mejor coincidencia</option><option value="disponibilidad">Más disponibles</option>' +
       '<option value="experiencia">Más experiencia</option><option value="nombre">Nombre (A–Z)</option></select>' +
+      (modoPm ? '<label class="sp-switch sp-switch-inline"><input type="checkbox" id="sp-cap-pm"><span>Solo con capacidad para el 20%</span></label>' : "") +
       "</div>" +
+      (modoPm ? '<p class="sp-ayuda">Solo Miembros activos (nunca Administradores ni Resource Managers). Quien ya colabora en el proyecto asciende conservando su dedicación; quien viene de fuera entra con 20%.</p>' : "") +
       '<div class="sp-meta" data-sp-meta aria-live="polite"></div>' +
       '<div class="sp-lista" data-sp-lista role="list"></div>' +
       '<div class="sp-paginacion" data-sp-pag></div>' +
@@ -91,8 +99,8 @@
       '<div class="modal-footer sp-footer">' +
       '<div class="sp-bandeja"><span class="sp-label" data-sp-cuenta>0 seleccionados</span><div class="sp-chips" data-sp-sel></div></div>' +
       '<div class="sp-acciones">' +
-      '<label class="sp-campo"><span>Dedicación (%)</span><input class="input" type="number" min="1" max="100" id="sp-ded" value="50"></label>' +
-      (proponer ? "" : '<label class="sp-campo"><span>Inicio</span><input class="input" type="date" id="sp-fecha" value="' + hoyIso() + '"></label>') +
+      (modoPm ? "" : '<label class="sp-campo"><span>Dedicación (%)</span><input class="input" type="number" min="1" max="100" id="sp-ded" value="50"></label>') +
+      (proponer || modoPm ? "" : '<label class="sp-campo"><span>Inicio</span><input class="input" type="date" id="sp-fecha" value="' + hoyIso() + '"></label>') +
       '<button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>' +
       '<button type="button" class="btn btn-primary" data-sp-enviar disabled>' + verbo + "</button>" +
       "</div></div></div>";
@@ -151,7 +159,8 @@
         data.catalogoHabilidades.map(function (h) { return '<option value="' + h.id + '">' + esc(h.nombre) + "</option>"; }).join("");
       $("#sp-cargo").innerHTML = '<option value="">Todos los cargos</option>' +
         data.cargos.map(function (c) { return '<option>' + esc(c) + "</option>"; }).join("");
-      $("#sp-ded").max = data.limiteCarga;
+      if ($("#sp-ded")) $("#sp-ded").max = data.limiteCarga;
+      if (modoPm) $("#sp-orden").value = estado.orden;
     }
     function nombreHabilidad(id) {
       var h = (ultima ? ultima.catalogoHabilidades : []).filter(function (x) { return String(x.id) === String(id); })[0];
@@ -173,7 +182,7 @@
       if (primeraCarga) { pintarFiltrosIniciales(data); primeraCarga = false; }
       pintarPills();
       var vac = data.vacantes;
-      $("[data-sp-vacantes]").textContent = vac === 1 ? "1 vacante" : vac + " vacantes";
+      $("[data-sp-vacantes]").textContent = modoPm ? "Project Manager" : (vac === 1 ? "1 vacante" : vac + " vacantes");
       $("[data-sp-meta]").textContent = data.total === 1 ? "1 persona" : data.total + " personas";
 
       if (!data.items.length) {
@@ -189,7 +198,7 @@
             return '<span class="sp-skill' + (h.requerida ? (h.cumple ? " is-match" : " is-short") : "") + '" title="Nivel ' + h.nivel + '">' +
               esc(h.nombre) + ' <b>' + h.nivel + "</b></span>";
           }).join("");
-          var proyectada = c.cargaActual + estado.dedicacion;
+          var proyectada = c.enEquipo ? c.cargaActual : c.cargaActual + estado.dedicacion;
           return '<label class="sp-card' + (bloqueado ? " is-blocked" : "") + (marcado ? " is-selected" : "") + '" role="listitem">' +
             '<input type="checkbox" class="sp-check" value="' + c.perfilId + '"' + (marcado ? " checked" : "") + (bloqueado && !marcado ? " disabled" : "") + ">" +
             '<span class="avatar avatar-sm">' + esc(c.iniciales) + "</span>" +
@@ -201,10 +210,11 @@
             " · " + c.proyectosVigentes + " proyecto" + (c.proyectosVigentes === 1 ? "" : "s") + "</span>" +
             (chips ? '<span class="sp-skills">' + chips + "</span>" : "") +
             (bloqueado && motivo ? '<span class="sp-motivo">' + icon("icon-alert-circle", "icon-xs") + esc(motivo) + "</span>" : "") +
+            (c.nota ? '<span class="sp-nota">' + icon("icon-info", "icon-xs") + esc(c.nota) + "</span>" : "") +
             "</span>" +
             '<span class="sp-carga tone-' + tono(c.cargaActual) + '" title="Carga actual ' + c.cargaActual + "%; con esta asignación " + proyectada + '%">' +
             '<span class="sp-carga-num">' + c.cargaActual + '%</span><span class="sp-carga-bar"><i style="width:' + Math.min(100, c.cargaActual) + '%"></i>' +
-            '<i class="sp-carga-extra" style="left:' + Math.min(100, c.cargaActual) + "%;width:" + Math.max(0, Math.min(100 - c.cargaActual, estado.dedicacion)) + '%"></i></span>' +
+            '<i class="sp-carga-extra" style="left:' + Math.min(100, c.cargaActual) + "%;width:" + Math.max(0, Math.min(100 - c.cargaActual, proyectada - c.cargaActual)) + '%"></i></span>' +
             '<span class="sp-carga-lbl">' + c.disponible + "% libre · quedaría en <b>" + proyectada + "%</b></span></span>" +
             "</label>";
         }).join("");
@@ -221,7 +231,8 @@
     function pintarSeleccion() {
       var ids = Object.keys(seleccion);
       var vac = ultima ? ultima.vacantes : 0;
-      $("[data-sp-cuenta]").textContent = ids.length + " de " + vac + " vacante" + (vac === 1 ? "" : "s");
+      $("[data-sp-cuenta]").textContent = modoPm ? (ids.length ? "Project Manager elegido" : "Nadie elegido")
+        : ids.length + " de " + vac + " vacante" + (vac === 1 ? "" : "s");
       $("[data-sp-sel]").innerHTML = ids.length
         ? ids.map(function (id) {
             return '<button type="button" class="sp-pill is-on" data-quitar-sel="' + id + '" title="Quitar">' + esc(seleccion[id].nombre) + " " + icon("icon-x", "icon-xs") + "</button>";
@@ -229,7 +240,7 @@
         : '<span class="sp-vacio">Marca personas de la lista.</span>';
       var boton = $("[data-sp-enviar]");
       boton.disabled = ids.length === 0;
-      boton.textContent = ids.length > 1 ? verbo + " " + ids.length : verbo;
+      boton.textContent = !modoPm && ids.length > 1 ? verbo + " " + ids.length : verbo;
     }
 
     // ---------- Eventos
@@ -243,7 +254,8 @@
       estado.disponibleMin = e.target.value === "0" ? "" : e.target.value;
       recargar(true);
     });
-    $("#sp-ded").addEventListener("input", function (e) {
+    if ($("#sp-cap-pm")) $("#sp-cap-pm").addEventListener("change", function (e) { estado.soloConCapacidad = e.target.checked; recargar(); });
+    if ($("#sp-ded")) $("#sp-ded").addEventListener("input", function (e) {
       var v = parseInt(e.target.value, 10);
       if (Number.isInteger(v) && v >= 1) { estado.dedicacion = v; recargar(true); }
     });
@@ -289,7 +301,14 @@
       var cb = e.target.closest(".sp-check");
       if (!cb || !ultima) return;
       var c = ultima.items.filter(function (x) { return String(x.perfilId) === cb.value; })[0];
-      if (cb.checked) {
+      if (cb.checked && modoPm) {
+        // Selección única: desmarca a quien estuviera elegido.
+        Object.keys(seleccion).forEach(function (id) { delete seleccion[id]; });
+        lista.querySelectorAll(".sp-check:checked").forEach(function (otro) {
+          if (otro !== cb) { otro.checked = false; otro.closest(".sp-card").classList.remove("is-selected"); }
+        });
+        seleccion[cb.value] = c;
+      } else if (cb.checked) {
         if (Object.keys(seleccion).length >= ultima.vacantes) {
           cb.checked = false;
           toast("Este proyecto solo tiene " + ultima.vacantes + " vacante(s).");
@@ -305,6 +324,13 @@
 
     $("[data-sp-enviar]").addEventListener("click", function () {
       var ids = Object.keys(seleccion);
+      if (modoPm) {
+        if (!ids.length) return toast("Elige a una persona.");
+        var elegido = seleccion[ids[0]];
+        window.SBAI.modal.close(bd);
+        if (opts.onElegir) opts.onElegir(elegido);
+        return;
+      }
       var d = estado.dedicacion;
       var limite = ultima ? ultima.limiteCarga : 100;
       if (!ids.length) return toast("Marca al menos una persona.");

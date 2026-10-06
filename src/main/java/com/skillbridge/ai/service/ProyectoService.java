@@ -608,6 +608,20 @@ public class ProyectoService {
         pmActivoDe(p.getId()).ifPresent(pm -> notificacionService.crear(pm.getPerfilId(), "asignacion", titulo, detalle, "proyectos.html"));
     }
 
+    /** Historial del equipo de un proyecto (pestaña "Historial", modelo v7 fase 5). */
+    @Transactional(readOnly = true)
+    public List<com.skillbridge.ai.dto.HistorialEquipoFila> historialEquipo(Long proyectoId) {
+        return asignacionRepository.listarHistorialDeProyecto(proyectoId).stream()
+                .map(a -> new com.skillbridge.ai.dto.HistorialEquipoFila(
+                        a.getPerfil().getUsuario().getNombreCompleto(),
+                        com.skillbridge.ai.dto.InicialesUtil.de(a.getPerfil().getUsuario().getNombreCompleto()),
+                        Roles.PROJECT_MANAGER.equals(a.getRolEnProyecto()) ? "Project Manager" : "Colaborador",
+                        valor(a.getCargaPorcentaje()),
+                        formatear(a.getFechaInicio()) + " → " + formatear(a.getFechaFin()),
+                        a.getEstado()))
+                .collect(Collectors.toList());
+    }
+
     /**
      * Equipo que había justo antes de la última pausa o cierre: los
      * colaboradores que salieron en la fecha más reciente (todos salen el

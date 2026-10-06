@@ -10,9 +10,23 @@
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
   <style>
+    .assignment-summary{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:var(--space-4);margin-bottom:var(--space-5)}
+    .assignment-summary-item{position:relative;display:flex;align-items:center;gap:var(--space-4);min-height:116px;padding:var(--space-5);overflow:hidden;border:1px solid var(--summary-border);border-radius:var(--radius-card);background:linear-gradient(135deg,#fff 10%,var(--summary-bg) 100%);box-shadow:0 7px 20px rgba(15,31,66,.06);transition:transform .2s ease,box-shadow .2s ease}
+    .assignment-summary-item::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--summary-accent)}
+    .assignment-summary-item::after{content:"";position:absolute;width:110px;height:110px;right:-42px;bottom:-58px;border-radius:50%;background:var(--summary-glow);pointer-events:none}
+    .assignment-summary-item:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(15,31,66,.11)}
+    .assignment-summary-projects{--summary-accent:#315fd6;--summary-bg:#f0f5ff;--summary-border:#d9e4ff;--summary-glow:rgba(49,95,214,.10)}
+    .assignment-summary-team{--summary-accent:#159978;--summary-bg:#eefbf7;--summary-border:#d2f1e7;--summary-glow:rgba(21,153,120,.11)}
+    .assignment-summary-vacancies{--summary-accent:#d99022;--summary-bg:#fff8e9;--summary-border:#f5e3bb;--summary-glow:rgba(217,144,34,.12)}
+    .assignment-summary-icon{position:relative;z-index:1;display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:var(--radius-card);color:#fff;background:var(--summary-accent);box-shadow:0 7px 16px var(--summary-glow)}
+    .assignment-summary-icon .icon{width:23px;height:23px}
+    .assignment-summary-content{position:relative;z-index:1;min-width:0}
+    .assignment-summary-value{display:block;font-size:30px;line-height:1;font-weight:750;letter-spacing:-.04em;color:var(--navy-800)}
+    .assignment-summary-label{display:block;margin-top:7px;font-size:var(--fs-sm);font-weight:650;color:var(--navy-700)}
+    .assignment-summary-hint{display:block;margin-top:3px;font-size:11px;color:var(--text-tertiary)}
     .coverage-cell{min-width:180px}.vacancy-zero{color:var(--green-fg);font-weight:600}.team-modal-table{max-height:330px;overflow:auto;border:1px solid var(--border-subtle);border-radius:var(--radius-card)}
     .assign-panel{margin-top:var(--space-5);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-subtle);border-radius:var(--radius-md)}
-    @media(max-width:760px){.table-toolbar{align-items:stretch}.table-filters{width:100%}.table-filters .input,.table-filters .select{width:100%}}
+    @media(max-width:760px){.assignment-summary{grid-template-columns:1fr}.table-toolbar{align-items:stretch}.table-filters{width:100%}.table-filters .input,.table-filters .select{width:100%}}
   </style>
 </head>
 <body>
@@ -22,11 +36,19 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" style="margin-bottom:var(--space-5)">
-        <div class="kpi-tile accent-blue"><div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></div><span class="kpi-tile-label">Proyectos en la plataforma</span><span class="kpi-tile-value" th:text="${proyectos.size()}">0</span><span class="kpi-tile-meta">total gestionado</span></div>
-        <div class="kpi-tile accent-green"><div class="kpi-tile-icon green"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div><span class="kpi-tile-label">Colaboradores asignados</span><span class="kpi-tile-value" th:text="${totalColaboradores}">0</span><span class="kpi-tile-meta">personas activas en equipos</span></div>
-        <div class="kpi-tile accent-amber"><div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-user-x"></use></svg></div><span class="kpi-tile-label">Vacantes pendientes</span><span class="kpi-tile-value" th:text="${totalVacantes}">0</span><span class="kpi-tile-meta">cupos aún por cubrir</span></div>
-        <div class="kpi-tile accent-violet"><div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></div><span class="kpi-tile-label">Equipos completos</span><span class="kpi-tile-value" th:text="${#lists.size(proyectos.?[cupoCompleto])}">0</span><span class="kpi-tile-meta" th:text="'de ' + ${proyectos.size()} + ' proyecto(s)'">de 0</span></div>
+      <div class="assignment-summary">
+        <div class="assignment-summary-item assignment-summary-projects">
+          <span class="assignment-summary-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+          <span class="assignment-summary-content"><span class="assignment-summary-value" th:text="${proyectos.size()}">0</span><span class="assignment-summary-label">Proyectos en la plataforma</span><span class="assignment-summary-hint">Total gestionado</span></span>
+        </div>
+        <div class="assignment-summary-item assignment-summary-team">
+          <span class="assignment-summary-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+          <span class="assignment-summary-content"><span class="assignment-summary-value" th:text="${totalColaboradores}">0</span><span class="assignment-summary-label">Colaboradores asignados</span><span class="assignment-summary-hint">Personas activas en equipos</span></span>
+        </div>
+        <div class="assignment-summary-item assignment-summary-vacancies">
+          <span class="assignment-summary-icon"><svg class="icon"><use href="/img/icons.svg#icon-user"></use></svg></span>
+          <span class="assignment-summary-content"><span class="assignment-summary-value" th:text="${totalVacantes}">0</span><span class="assignment-summary-label">Vacantes pendientes</span><span class="assignment-summary-hint">Cupos aún por cubrir</span></span>
+        </div>
       </div>
 
       <!-- Caso "no hay proyectos todavia" -->
@@ -58,7 +80,7 @@
               <td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm);background:var(--navy-700)" th:text="${#strings.substring(p.nombre,0,1)}">P</span><span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span class="cell-person-sub" th:text="'PM: ' + ${p.pmNombre}">PM</span></span></td>
               <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
               <td class="mono" th:text="${p.colaboradoresAsignados} + ' de ' + ${p.colaboradoresRequeridos}">0 de 0</td>
-              <td class="coverage-cell"><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.coberturaPorcentaje} + '%'"></div></div><span class="progress-value" th:text="${p.coberturaPorcentaje} + '%'">0%</span></div></td>
+              <td class="coverage-cell"><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:classappend="${p.cupoCompleto} ? 'green' : 'amber'" th:style="'width:' + ${p.coberturaPorcentaje} + '%'"></div></div><span class="progress-value" th:text="${p.coberturaPorcentaje} + '%'">0%</span></div></td>
               <td><span th:class="${p.vacantes == 0} ? 'vacancy-zero' : 'mono'" th:text="${p.vacantes == 0} ? 'Completo' : ${p.vacantes}">0</span></td>
               <td><button type="button" class="btn btn-secondary btn-sm" th:attr="data-view-team=${p.id}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg>Ver colaboradores</button></td>
             </tr>
@@ -111,8 +133,6 @@
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
   window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
-  var PERFILES = /*[[${perfiles}]]*/ [];
-  window.SBAI_ASIGNABLES = /*[[${perfilesAsignables}]]*/ [];
   window.SBAI_LIMITE_CARGA = /*[[${limiteCarga}]]*/ 100;
 </script>
 <script src="/js/asignacion-masiva.js"></script>

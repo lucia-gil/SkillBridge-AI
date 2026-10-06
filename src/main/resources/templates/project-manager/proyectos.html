@@ -24,28 +24,28 @@
             <svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg>
           </div>
           <span class="kpi-tile-label">En planificacion</span>
-          <span class="kpi-tile-value" th:text="${kpiPlanificacion}">0</span><span class="kpi-tile-meta">aún no inician</span>
+          <span class="kpi-tile-value" th:text="${kpiPlanificacion}">0</span>
         </div>
         <div class="kpi-tile accent-green">
           <div class="kpi-tile-icon green">
             <svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg>
           </div>
           <span class="kpi-tile-label">Activos</span>
-          <span class="kpi-tile-value" th:text="${kpiActivos}">0</span><span class="kpi-tile-meta">en ejecución</span>
+          <span class="kpi-tile-value" th:text="${kpiActivos}">0</span>
         </div>
         <div class="kpi-tile accent-amber">
           <div class="kpi-tile-icon amber">
             <svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg>
           </div>
           <span class="kpi-tile-label">En pausa</span>
-          <span class="kpi-tile-value" th:text="${kpiEnPausa}">0</span><span class="kpi-tile-meta">detenidos por ahora</span>
+          <span class="kpi-tile-value" th:text="${kpiEnPausa}">0</span>
         </div>
         <div class="kpi-tile accent-red">
           <div class="kpi-tile-icon red">
             <svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg>
           </div>
           <span class="kpi-tile-label">Cancelados</span>
-          <span class="kpi-tile-value" th:text="${kpiCancelados}">0</span><span class="kpi-tile-meta">cerrados sin terminar</span>
+          <span class="kpi-tile-value" th:text="${kpiCancelados}">0</span>
         </div>
       </div>
 
@@ -111,28 +111,28 @@
               <button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button>
             </div>
             <div class="modal-body">
-              <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripcion.'">Descripcion</p>
-              <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
-                <span data-tech-list th:attr="data-tech-list=${d.tecnologiasCsv}"></span>
+              <!-- Modelo v7, fase 5: mismas pestañas que el Administrador. -->
+              <div class="tabs pt-tabs" role="tablist" data-tabs>
+                <button type="button" class="tab-btn active" data-tab="resumen">Resumen</button>
+                <button type="button" class="tab-btn" data-tab="equipo">Equipo <span class="counter-badge" th:text="${d.equipo.size()}">0</span></button>
+                <button type="button" class="tab-btn" data-tab="estado">Estado</button>
               </div>
-              <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' -> ' + ${d.fechaFinLabel}">fechas</span></div>
-              <div class="info-row"><span class="info-row-label">Avance (heuristico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
-              <div class="info-row"><span class="info-row-label">Colaboradores requeridos</span><span class="info-row-value" th:text="${d.colaboradoresRequeridos}">0</span></div>
 
-              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Equipo activo</h3>
-              <div th:if="${d.equipo.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin colaboradores asignados todavia.</div>
-              <div th:each="m : ${d.equipo}" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-2) 0; border-bottom:1px solid var(--border-subtle);">
-                <span class="avatar avatar-sm" th:text="${m.iniciales}">MR</span>
-                <span style="flex:1; min-width:0;">
-                  <div style="font-size:var(--fs-sm); font-weight:500;" th:text="${m.nombre}">Nombre</div>
-                  <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${m.rolLabel} + ' · ' + ${m.cargaPorcentaje} + '%'">rol</div>
-                </span>
-                <button type="button" class="danger" th:if="${m.rolEnProyectoCrudo == 'colaborador'}" th:attr="data-finalizar-asignacion=${m.asignacionId},data-nombre=${m.nombre}">Finalizar</button>
-                <span class="badge badge-blue" th:if="${m.rolEnProyectoCrudo == 'project_manager'}">Tú lideras</span>
+              <div class="pt-panel" data-tab-panel="resumen">
+                <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
+                <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
+                  <span data-tech-list th:attr="data-tech-list=${d.tecnologiasCsv}"></span>
+                </div>
+                <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
+                <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
+                <div class="info-row"><span class="info-row-label">Colaboradores</span><span class="info-row-value" th:text="${d.colaboradoresAsignados} + ' de ' + ${d.colaboradoresRequeridos} + ' requeridos'">0</span></div>
               </div>
+
+              <div class="pt-panel" data-tab-panel="equipo" hidden>
+                <th:block th:replace="~{fragments/equipo-proyecto :: tabla(${d}, true)}"></th:block>
 
               <!-- Modelo v7: el PM no asigna directo; propone y el Resource Manager aprueba. -->
-              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-1);">Proponer colaborador</h3>
+              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-1);">Proponer colaboradores</h3>
               <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-3);">La propuesta llega al Resource Manager, que la aprueba o rechaza. El rol de Project Manager no se asigna desde aquí.</p>
               <div class="btn-group" style="justify-content:flex-start; margin-bottom:var(--space-5);"
                    th:if="${d.vacantes > 0 and (d.estadoCrudo == 'planificacion' or d.estadoCrudo == 'activo')}">
@@ -169,8 +169,12 @@
                 </div>
               </div>
 
-              <!-- Modelo v7, fase 2: transiciones con efectos (pausa, cierre, reapertura). -->
-              <th:block th:replace="~{fragments/estado-proyecto :: estado(${d})}"></th:block>
+              </div>
+
+              <div class="pt-panel" data-tab-panel="estado" hidden>
+                <!-- Modelo v7, fase 2: transiciones con efectos (pausa, cierre, reapertura). -->
+                <th:block th:replace="~{fragments/estado-proyecto :: estado(${d})}"></th:block>
+              </div>
             </div>
             <div class="modal-footer">
               <a class="btn btn-secondary" th:href="@{'/project-manager/proyectos/' + ${d.id} + '/entregables.html'}" style="text-decoration:none;">Ver entregables</a>
@@ -346,7 +350,8 @@ document.addEventListener("DOMContentLoaded", function () {
       var id = btn.dataset.viewProject;
       var tpl = document.querySelector('#project-detail-templates template[data-project-id="' + id + '"]');
       if (!tpl) return;
-      var backdrop = SBAI.modal.open('<div class="modal modal-wide" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
+      var backdrop = SBAI.modal.open('<div class="modal modal-xwide modal-proyecto" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
+      if (SBAI.uiKit) SBAI.uiKit.init(backdrop);
 
       backdrop.querySelectorAll("[data-finalizar-asignacion]").forEach(function (b) {
         b.addEventListener("click", function () {
@@ -548,6 +553,7 @@ document.addEventListener("DOMContentLoaded", function () {
 <script src="/js/proyecto-form.js"></script>
 <script src="/js/proyecto-acciones.js"></script>
 <script src="/js/selector-personas.js"></script>
+<script src="/js/ui-kit.js"></script>
 <script src="/js/project-ui.js"></script>
 <script src="/js/tabla-acciones.js"></script>
 </body>

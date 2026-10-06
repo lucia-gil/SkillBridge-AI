@@ -20,7 +20,8 @@ public record PaginaCandidatos(List<Candidato> items, int total, int pagina, int
     public record Candidato(Long perfilId, String nombre, String correo, String iniciales, String cargo,
                             int experienciaAnios, int cargaActual, int disponible, long proyectosVigentes,
                             int coincidencias, int requeridas, List<Chip> habilidades,
-                            boolean seleccionable, String motivo, boolean propuestaPendiente) {
+                            boolean seleccionable, String motivo, boolean propuestaPendiente,
+                            boolean enEquipo, String nota) {
     }
 
     /** Habilidad de una persona; requerida = la pide el proyecto; cumple = alcanza el nivel pedido. */

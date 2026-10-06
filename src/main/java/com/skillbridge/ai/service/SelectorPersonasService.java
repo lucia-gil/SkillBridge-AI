@@ -90,13 +90,35 @@ public class SelectorPersonasService {
     public PaginaCandidatos buscar(Long proyectoId, Filtros f) {
         Proyecto proyecto = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
+        return construir(proyecto, f, false);
+    }
+
+    /**
+     * Candidatos para ser PROJECT MANAGER (modelo v7, fase 5): al crear un
+     * proyecto (proyectoId null, Administrador) o en "Cambiar PM" (Resource
+     * Manager). Un colaborador del equipo puede ascender conservando su
+     * dedicación; quien viene de fuera entra con 20% y necesita capacidad
+     * (salvo en un proyecto cerrado, donde su carga no cuenta hasta reabrir).
+     */
+    @Transactional(readOnly = true)
+    public PaginaCandidatos buscarParaPm(Long proyectoId, Filtros f) {
+        Proyecto proyecto = proyectoId == null ? null : proyectoRepository.findById(proyectoId)
+                .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
+        Filtros conPm = new Filtros(f.q(), f.habilidades(), f.cargo(), f.disponibleMin(), f.experienciaMin(),
+                f.soloConCapacidad(), ProyectoService.CARGA_PM_POR_DEFECTO, f.orden(), f.pagina());
+        return construir(proyecto, conPm, true);
+    }
+
+    private PaginaCandidatos construir(Proyecto proyecto, Filtros f, boolean modoPm) {
+        Long proyectoId = proyecto != null ? proyecto.getId() : null;
         int limite = proyectoService.limiteCargaConfigurado();
         int maximo = proyectoService.maximoProyectosConfigurado();
         int dedicacion = Math.max(1, Math.min(limite, f.dedicacion() > 0 ? f.dedicacion() : 50));
+        boolean cerrado = proyecto != null && ProyectoService.estaCerrado(proyecto);
 
         Map<Long, Habilidad> habilidades = habilidadRepository.findAll().stream()
                 .collect(Collectors.toMap(Habilidad::getId, h -> h, (a, b) -> a, LinkedHashMap::new));
-        Map<Long, Integer> requeridas = requisitos(proyecto, habilidades);
+        Map<Long, Integer> requeridas = proyecto != null ? requisitos(proyecto, habilidades) : new LinkedHashMap<>();
 
         Map<Long, Integer> cargaPorPerfil = new HashMap<>();
         for (Object[] fila : asignacionRepository.sumarCargaActivaAgrupadaPorPerfil()) {
@@ -111,9 +133,12 @@ public class SelectorPersonasService {
             nivelesPorPerfil.computeIfAbsent(ph.getId().getPerfilId(), k -> new HashMap<>())
                     .put(ph.getId().getHabilidadId(), ph.getNivel() != null ? ph.getNivel() : 0);
         }
-        Set<Long> equipo = asignacionRepository.listarEquipoDeProyecto(proyectoId, "activa").stream()
-                .map(Asignacion::getPerfilId).collect(Collectors.toSet());
-        Set<Long> conPropuesta = propuestaRepository.findByProyectoIdAndEstado(proyectoId, "pendiente").stream()
+        // Equipo actual: perfilId -> fila activa (para excluir, o en modo PM para ascender).
+        Map<Long, Asignacion> equipo = proyectoId == null ? Map.of()
+                : asignacionRepository.listarEquipoDeProyecto(proyectoId, "activa").stream()
+                .collect(Collectors.toMap(Asignacion::getPerfilId, a -> a, (a, b) -> a));
+        Set<Long> conPropuesta = proyectoId == null ? Set.of()
+                : propuestaRepository.findByProyectoIdAndEstado(proyectoId, "pendiente").stream()
                 .map(PropuestaAsignacion::getCandidatoPerfilId).collect(Collectors.toSet());
 
         String q = normalizar(f.q());
@@ -122,7 +147,9 @@ public class SelectorPersonasService {
         List<Candidato> todos = new ArrayList<>();
         List<String> cargos = new ArrayList<>();
         for (Perfil p : perfilRepository.listarActivosConUsuario()) {
-            if (!ProyectoService.esMiembroAsignable(p) || equipo.contains(p.getId())) continue;
+            if (!ProyectoService.esMiembroAsignable(p)) continue;
+            Asignacion filaEquipo = equipo.get(p.getId());
+            if (filaEquipo != null && (!modoPm || Roles.PROJECT_MANAGER.equals(filaEquipo.getRolEnProyecto()))) continue;
             String cargo = p.getCargo() != null && !p.getCargo().isBlank() ? p.getCargo().trim() : "";
             if (!cargo.isEmpty() && !cargos.contains(cargo)) cargos.add(cargo);
 
@@ -143,8 +170,17 @@ public class SelectorPersonasService {
             long vigentes = vigentesPorPerfil.getOrDefault(p.getId(), 0L);
 
             String motivo = null;
-            if (vigentes >= maximo) motivo = "Está en el máximo de " + maximo + " proyectos vigentes";
-            else if (carga + dedicacion > limite) motivo = "Con " + dedicacion + "% llegaría a " + (carga + dedicacion) + "% (límite " + limite + "%)";
+            String nota = null;
+            if (filaEquipo != null) {
+                // Modo PM: ya colabora en el proyecto, asciende conservando su dedicación.
+                nota = "En el equipo · conserva su " + (filaEquipo.getCargaPorcentaje() != null ? filaEquipo.getCargaPorcentaje() : 0) + "%";
+            } else if (cerrado) {
+                nota = "Proyecto cerrado: su carga se valida al reabrir";
+            } else if (vigentes >= maximo) {
+                motivo = "Está en el máximo de " + maximo + " proyectos vigentes";
+            } else if (carga + dedicacion > limite) {
+                motivo = "Con " + dedicacion + "% llegaría a " + (carga + dedicacion) + "% (límite " + limite + "%)";
+            }
             if (motivo != null && f.soloConCapacidad()) continue;
 
             // Chips: primero las que pide el proyecto (cumpla o no), luego hasta 4 más de la persona.
@@ -164,7 +200,7 @@ public class SelectorPersonasService {
 
             todos.add(new Candidato(p.getId(), nombre, correo, InicialesUtil.de(nombre), cargo.isEmpty() ? "Miembro" : cargo,
                     experiencia, carga, disponible, vigentes, coincidencias, requeridas.size(), chips,
-                    motivo == null, motivo, conPropuesta.contains(p.getId())));
+                    motivo == null, motivo, conPropuesta.contains(p.getId()), filaEquipo != null, nota));
         }
 
         Comparator<Candidato> porNombre = Comparator.comparing(Candidato::nombre, String.CASE_INSENSITIVE_ORDER);
@@ -178,15 +214,20 @@ public class SelectorPersonasService {
                     .thenComparing(porNombre);
         };
         // Los seleccionables siempre primero: lo bloqueado queda al final, como referencia.
-        todos.sort(Comparator.comparing((Candidato c) -> !c.seleccionable()).thenComparing(orden));
+        Comparator<Candidato> base = Comparator.comparing((Candidato c) -> !c.seleccionable());
+        if (modoPm) base = base.thenComparing((Candidato c) -> !c.enEquipo());
+        todos.sort(base.thenComparing(orden));
 
         int total = todos.size();
         int paginas = Math.max(1, (int) Math.ceil(total / (double) TAMANIO_PAGINA));
         int pagina = Math.max(1, Math.min(f.pagina(), paginas));
         List<Candidato> items = todos.subList(Math.min(total, (pagina - 1) * TAMANIO_PAGINA), Math.min(total, pagina * TAMANIO_PAGINA));
 
-        long colaboradores = asignacionRepository.countByProyectoIdAndEstadoAndRolEnProyecto(proyectoId, "activa", Roles.COLABORADOR);
-        long vacantes = Math.max(0, (proyecto.getColaboradoresRequeridos() != null ? proyecto.getColaboradoresRequeridos() : 0) - colaboradores);
+        long vacantes = 0;
+        if (proyecto != null) {
+            long colaboradores = asignacionRepository.countByProyectoIdAndEstadoAndRolEnProyecto(proyectoId, "activa", Roles.COLABORADOR);
+            vacantes = Math.max(0, (proyecto.getColaboradoresRequeridos() != null ? proyecto.getColaboradoresRequeridos() : 0) - colaboradores);
+        }
 
         List<Opcion> deProyecto = requeridas.entrySet().stream()
                 .map(e -> new Opcion(e.getKey(), nombreHabilidad(habilidades, e.getKey()), e.getValue())).toList();

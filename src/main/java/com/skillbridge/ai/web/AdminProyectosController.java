@@ -1,5 +1,8 @@
 package com.skillbridge.ai.web;
 
+import com.skillbridge.ai.service.SelectorPersonasService;
+import org.springframework.http.ResponseEntity;
+
 import com.skillbridge.ai.dto.PerfilOpcion;
 import com.skillbridge.ai.dto.ProyectoDetalle;
 import com.skillbridge.ai.dto.ProyectoFila;
@@ -38,14 +41,17 @@ public class AdminProyectosController {
     private final ShellModelBuilder shellModelBuilder;
     private final TecnologiaCatalogoService tecnologiaCatalogoService;
     private final CambioEstadoProyecto cambioEstadoProyecto;
+    private final SelectorPersonasService selectorPersonasService;
 
     public AdminProyectosController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder,
                                     TecnologiaCatalogoService tecnologiaCatalogoService,
-                                    CambioEstadoProyecto cambioEstadoProyecto) {
+                                    CambioEstadoProyecto cambioEstadoProyecto,
+                                    SelectorPersonasService selectorPersonasService) {
         this.proyectoService = proyectoService;
         this.shellModelBuilder = shellModelBuilder;
         this.tecnologiaCatalogoService = tecnologiaCatalogoService;
         this.cambioEstadoProyecto = cambioEstadoProyecto;
+        this.selectorPersonasService = selectorPersonasService;
     }
 
     @GetMapping("/proyectos.html")
@@ -54,16 +60,19 @@ public class AdminProyectosController {
 
         List<ProyectoFila> proyectos = proyectoService.listar();
         List<ProyectoDetalle> detalles = proyectos.stream()
-                .map(p -> proyectoService.obtenerDetalle(p.getId()))
+                .map(p -> {
+                    ProyectoDetalle d = proyectoService.obtenerDetalle(p.getId());
+                    // Pestaña "Historial" del modal (modelo v7, fase 5).
+                    d.setHistorial(proyectoService.historialEquipo(p.getId()));
+                    return d;
+                })
                 .collect(Collectors.toList());
-        List<PerfilOpcion> perfiles = proyectoService.listarPerfilesParaAsignar();
 
         shellModelBuilder.aplicar(model, sesion, "proyectos.html", "Proyectos",
                 "Vista global de los " + proyectos.size() + " proyectos de la organización");
 
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("detalles", detalles);
-        model.addAttribute("perfiles", perfiles);
         model.addAttribute("catalogoTecnologias", tecnologiaCatalogoService.catalogo());
         model.addAttribute("maxTecnologias", TecnologiaCatalogoService.MAX_TECNOLOGIAS);
         return "administrador/proyectos";
@@ -107,6 +116,22 @@ public class AdminProyectosController {
         cambioEstadoProyecto.aplicar(id, estado, razonCancelacion, fechaReanudacion, reincorporar,
                 sesion.getUsuarioId(), redirectAttributes);
         return "redirect:/administrador/proyectos.html";
+    }
+
+    /**
+     * Candidatos a Project Manager para "Nuevo proyecto" (modelo v7, fase 5):
+     * Miembros activos con capacidad para el 20%, buscados en el servidor
+     * (selector-personas.js en modo "pm").
+     */
+    @GetMapping("/candidatos-pm")
+    @ResponseBody
+    public ResponseEntity<?> candidatosPm(
+                                              @RequestParam(required = false) String q,
+                                              @RequestParam(defaultValue = "match") String orden,
+                                              @RequestParam(defaultValue = "false") boolean soloConCapacidad,
+                                              @RequestParam(defaultValue = "1") int pagina) {
+        return ResponseEntity.ok(selectorPersonasService.buscarParaPm(null, new SelectorPersonasService.Filtros(q, null, null, null, null,
+                    soloConCapacidad, ProyectoService.CARGA_PM_POR_DEFECTO, orden, pagina)));
     }
 
     // Modelo v7: el Administrador NO asigna ni finaliza asignaciones (lo
