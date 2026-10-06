@@ -52,11 +52,10 @@ public class AccesoDenegadoHandler implements AccessDeniedHandler {
             return;
         }
 
-        if (usuario != null && "GET".equalsIgnoreCase(request.getMethod()) && !esPeticionDeDatos(request)) {
-            response.sendRedirect(contexto + SesionSegura.inicioDe(usuario));
-            return;
-        }
-        response.sendError(HttpServletResponse.SC_FORBIDDEN);
+        // Decisión del equipo: el acceso negado se muestra explícito con
+        // templates/error/403.html, en vez de redirigir en silencio al inicio.
+        response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                "No tienes permiso para acceder a esta seccion.");
     }
 
     /** fetch() que espera JSON: no tiene sentido responderle con una redirección a HTML. */
