@@ -28,15 +28,15 @@
             </button>
           </div>
           <div class="table-scroll">
-            <table class="data-table" style="min-width:0;">
-              <thead><tr><th>Categoría</th><th>Habilidades</th><th>Acciones</th></tr></thead>
+            <table class="data-table" style="min-width:0;" data-paginar="6">
+              <thead><tr><th>Categoría</th><th style="text-align:center;">Habilidades</th><th>Acciones</th></tr></thead>
               <tbody id="category-list">
                 <tr th:each="c : ${categorias}" th:attr="data-id=${c.id()}">
                   <td class="cell-primary" style="display:flex; align-items:center; gap:var(--space-2);">
                     <span class="card-header-icon category-color-icon" style="width:26px; height:26px; border-radius:var(--radius-sm);" th:attr="data-categoria=${c.nombre()}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-folder"></use></svg></span>
                     <span th:text="${c.nombre()}">Categoría</span>
                   </td>
-                  <td class="mono" th:text="${c.cantidad()}">0</td>
+                  <td class="mono" style="text-align:center;" th:text="${c.cantidad()}">0</td>
                   <td class="cell-actions">
                     <button type="button" data-edit-category
                             th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}">Editar</button>
@@ -65,14 +65,14 @@
           </div>
           <div class="table-scroll">
             <table class="data-table">
-              <thead><tr><th>Habilidad</th><th>Categoría</th><th>Personas</th><th>Proyectos</th><th>Nivel medio</th><th>Demanda</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>Habilidad</th><th>Categoría</th><th style="text-align:center;">Personas</th><th style="text-align:center;">Proyectos</th><th>Nivel medio</th><th>Demanda</th><th>Acciones</th></tr></thead>
               <tbody id="skills-body">
                 <tr th:each="s : ${habilidades}" data-filter-row="skills"
                     th:attr="data-f-demanda=${s.demanda}, data-f-search=${#strings.toLowerCase(s.nombre)}">
                   <td class="cell-primary" th:text="${s.nombre}">Nombre</td>
                   <td><span class="badge category-color-badge" th:text="${s.categoriaNombre}" th:attr="data-categoria=${s.categoriaNombre}">Categoría</span></td>
-                  <td class="mono" th:text="${s.personas}">0</td>
-                  <td class="mono" th:text="${s.proyectos}">0</td>
+                  <td class="mono" style="text-align:center;" th:text="${s.personas}">0</td>
+                  <td class="mono" style="text-align:center;" th:text="${s.proyectos}">0</td>
                   <td th:text="${s.nivelMedio}">—</td>
                   <td><span class="badge" th:classappend="${s.demandaBadgeClass}" th:text="${s.demanda}">Demanda</span></td>
                   <td class="cell-actions">
@@ -109,6 +109,7 @@
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/table-filter.js"></script>
+<script src="/js/paginar-lista.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
