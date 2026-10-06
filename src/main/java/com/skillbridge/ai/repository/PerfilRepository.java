@@ -17,6 +17,10 @@ public interface PerfilRepository extends JpaRepository<Perfil, Long> {
     @Query("select p from Perfil p join fetch p.usuario u where p.estado = 'activo' order by u.nombreCompleto asc")
     List<Perfil> listarActivosConUsuario();
 
+    // Modelo v7: Miembros (sin rol organizacional) con cuenta y perfil activos.
+    @Query("select count(p) from Perfil p join p.usuario u where p.estado = 'activo' and u.estado = 'activo' and u.rolOrganizacional is null")
+    long contarMiembrosActivos();
+
     @Query("select p from Perfil p join fetch p.usuario u where p.estado = 'activo' and u.rolOrganizacional = :rol order by u.nombreCompleto")
     List<Perfil> listarActivosPorRolOrganizacional(@Param("rol") String rol);
 

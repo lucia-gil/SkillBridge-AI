@@ -88,7 +88,12 @@ public class RmColaboradoresController {
         // listarTodosConUsuario() carga el Usuario en la misma consulta
         // (JOIN FETCH) - con findAll() a secas, p.getUsuario() explota con
         // LazyInitializationException fuera de la transacción.
-        List<Perfil> perfiles = perfilRepository.listarTodosConUsuario();
+        // Modelo v7: el directorio del RM muestra solo MIEMBROS (las personas
+        // que se pueden asignar a proyectos). Administradores y Resource
+        // Managers no participan en proyectos, así que no aparecen aquí.
+        List<Perfil> perfiles = perfilRepository.listarTodosConUsuario().stream()
+                .filter(p -> p.getUsuario() != null && p.getUsuario().getRolOrganizacional() == null)
+                .collect(Collectors.toList());
 
         List<ColaboradorFila> filas = perfiles.stream()
                 .map(p -> {
@@ -97,13 +102,16 @@ public class RmColaboradoresController {
                     boolean cumpleFiltroHabilidad = habilidadId == null
                             || habilidades.stream().anyMatch(h -> h.getHabilidadId().equals(habilidadId));
                     if (!cumpleFiltroHabilidad) return null;
-                    if (estado != null && !estado.isBlank() && !estado.equals(p.getEstado())) return null;
+                    // "cuenta_suspendida" = el Admin suspendió la cuenta (solo él la reactiva);
+                    // "inactivo" = el RM marcó el perfil como no disponible para proyectos.
+                    String estadoVista = !p.getUsuario().isActivo() ? "cuenta_suspendida" : p.getEstado();
+                    if (estado != null && !estado.isBlank() && !estado.equals(estadoVista)) return null;
 
                     Integer sumaCarga = asignacionRepository.sumarCargaActivaDePerfil(p.getId());
                     int ocupacion = sumaCarga != null ? sumaCarga : 0;
 
                     return new ColaboradorFila(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo(),
-                            p.getCargo(), ocupacion, p.getEstado(), habilidades);
+                            p.getCargo(), ocupacion, estadoVista, habilidades);
                 })
                 .filter(java.util.Objects::nonNull)
                 .sorted(Comparator.comparing(ColaboradorFila::getNombre))
@@ -140,6 +148,10 @@ public class RmColaboradoresController {
 
         Perfil p = perfilRepository.buscarConUsuario(perfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("El colaborador ya no existe."));
+        // Modelo v7: Admin y RM no forman parte del directorio de colaboradores.
+        if (p.getUsuario() != null && p.getUsuario().getRolOrganizacional() != null) {
+            return "redirect:/resource-manager/colaboradores.html";
+        }
         List<HabilidadPerfilFila> habilidades = habilidadService.habilidadesConValidacion(perfilId);
         Integer sumaCarga = asignacionRepository.sumarCargaActivaDePerfil(perfilId);
         int ocupacion = sumaCarga != null ? sumaCarga : 0;
@@ -181,12 +193,12 @@ public class RmColaboradoresController {
         // plantilla (que esconde el botón) - así alguien no puede saltarse
         // esto armando la petición a mano contra la URL directa.
         if (perfilId.equals(sesion.getPerfilId()) && "inactivo".equals(nuevoEstado)) {
-            redirectAttributes.addFlashAttribute("error", "No puedes suspender tu propia cuenta.");
+            redirectAttributes.addFlashAttribute("error", "No puedes cambiar la disponibilidad de tu propio perfil.");
             return "redirect:/resource-manager/colaboradores.html";
         }
 
         if ("inactivo".equals(nuevoEstado) && AuditoriaService.limpiarMotivo(motivo) == null) {
-            redirectAttributes.addFlashAttribute("error", "Indica el motivo de la suspensión: queda registrado en Auditoría.");
+            redirectAttributes.addFlashAttribute("error", "Indica el motivo: queda registrado en Auditoría.");
             return "redirect:/resource-manager/colaboradores.html";
         }
         Perfil p = perfilRepository.findById(perfilId)
@@ -196,9 +208,13 @@ public class RmColaboradoresController {
         // por encima" de los proyectos (ver comentario de la tabla
         // asignaciones en el SQL). Igual que la auto-suspension, se valida
         // aqui en el backend y no solo escondiendo el boton en la plantilla.
-        if ("inactivo".equals(nuevoEstado) && p.getUsuario() != null
-                && Roles.ADMINISTRADOR.equals(p.getUsuario().getRolOrganizacional())) {
-            redirectAttributes.addFlashAttribute("error", "No puedes suspender la cuenta de un Administrador.");
+        // Modelo v7: el RM solo gestiona la disponibilidad de MIEMBROS. Las
+        // cuentas de Administradores y Resource Managers las gestiona el
+        // Administrador en "Usuarios y roles".
+        if (p.getUsuario() != null && p.getUsuario().getRolOrganizacional() != null) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Ese perfil es de un " + Roles.etiqueta(p.getUsuario().getRolOrganizacional())
+                            + ": no forma parte del directorio de colaboradores.");
             return "redirect:/resource-manager/colaboradores.html";
         }
 
@@ -210,7 +226,7 @@ public class RmColaboradoresController {
             try {
                 usuarioService.salirDeProyectos(perfilId,
                         p.getUsuario() != null ? p.getUsuario().getNombreCompleto() : "El colaborador",
-                        "suspenderlo", true, motivo, sesion.getUsuarioId());
+                        "marcarlo como no disponible", true, motivo, sesion.getUsuarioId());
             } catch (OperacionInvalidaException ex) {
                 redirectAttributes.addFlashAttribute("error", ex.getMessage());
                 return "redirect:/resource-manager/colaboradores.html";
@@ -225,7 +241,7 @@ public class RmColaboradoresController {
                 "perfil", perfilId, AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevoEstado),
                 AuditoriaService.conMotivo(p.getUsuario() != null ? p.getUsuario().getCorreo() : "Perfil " + perfilId, motivo));
         redirectAttributes.addFlashAttribute("exito",
-                "activo".equals(nuevoEstado) ? "Colaborador reactivado." : "Colaborador suspendido.");
+                "activo".equals(nuevoEstado) ? "Perfil marcado como disponible." : "Perfil marcado como no disponible para proyectos.");
         return "redirect:/resource-manager/colaboradores.html";
     }
 }

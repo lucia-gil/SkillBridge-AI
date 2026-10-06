@@ -64,11 +64,15 @@ public class ColaboradorFila {
     }
 
     public String getEstadoLabel() {
-        return "activo".equals(estado) ? "Activo" : "Inactivo";
+        if ("activo".equals(estado)) return "Disponible";
+        if ("cuenta_suspendida".equals(estado)) return "Cuenta suspendida";
+        return "No disponible";
     }
 
     public String getEstadoBadgeClass() {
-        return "activo".equals(estado) ? "badge-green" : "badge-red";
+        if ("activo".equals(estado)) return "badge-green";
+        if ("cuenta_suspendida".equals(estado)) return "badge-red";
+        return "badge-amber";
     }
 
     public List<HabilidadPerfilFila> getHabilidades() {

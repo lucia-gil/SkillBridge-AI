@@ -49,7 +49,8 @@ public class ReporteService {
 
     public Map<String, Long> kpisAdministrador() {
         Map<String, Long> kpis = new LinkedHashMap<>();
-        kpis.put("colaboradoresActivos", perfilRepository.countByEstado("activo"));
+        // Modelo v7: "colaboradores" = Miembros con cuenta y perfil activos.
+        kpis.put("colaboradoresActivos", perfilRepository.contarMiembrosActivos());
         kpis.put("proyectosEnCurso", proyectoRepository.countByEstado("activo"));
         kpis.put("habilidadesCatalogo", habilidadRepository.count());
         kpis.put("habilidadesSinAsignar", habilidadRepository.contarSinProyectoAsociado());
@@ -95,6 +96,8 @@ public class ReporteService {
         }
         List<Perfil> perfiles = perfilRepository.listarActivosConUsuario();
         return perfiles.stream()
+                // Modelo v7: la ocupación es de Miembros (Admin y RM no tienen carga en proyectos).
+                .filter(p -> p.getUsuario() != null && p.getUsuario().getRolOrganizacional() == null)
                 .filter(p -> cargaPorPerfil.containsKey(p.getId()))
                 .map(p -> new OcupacionColaboradorFila(p.getId(), p.getUsuario().getNombreCompleto(), p.getCargo(), cargaPorPerfil.get(p.getId())))
                 .sorted((a, b) -> Integer.compare(b.getPromedio(), a.getPromedio()))

@@ -26,8 +26,8 @@
                     <div style="flex:1; min-width:220px;">
                         <h2 style="font-size:var(--fs-lg);" th:text="${perfil.usuario.nombreCompleto}">Nombre</h2>
                         <p class="text-tertiary" th:text="${perfil.cargo} + ' · ' + ${perfil.usuario.correo}">Cargo · correo</p>
-                        <span class="badge" th:classappend="${perfil.estado == 'activo'} ? 'badge-green' : 'badge-red'"
-                              th:text="${perfil.estado == 'activo'} ? 'Activo' : 'Inactivo'" style="margin-top:var(--space-2);">Estado</span>
+                        <span class="badge" th:classappend="${!perfil.usuario.activo} ? 'badge-red' : (${perfil.estado == 'activo'} ? 'badge-green' : 'badge-amber')"
+                              th:text="${!perfil.usuario.activo} ? 'Cuenta suspendida' : (${perfil.estado == 'activo'} ? 'Disponible' : 'No disponible')" style="margin-top:var(--space-2);">Estado</span>
                     </div>
                     <div style="text-align:center;">
                         <div style="font-size:var(--fs-xl); font-weight:700; color:var(--navy-700);" th:text="${ocupacion} + '%'">0%</div>

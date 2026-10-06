@@ -34,8 +34,9 @@
             </select>
             <select class="select" id="filtro-estado" onchange="aplicarFiltros()">
               <option value="">Estado: todos</option>
-              <option value="activo" th:selected="${estadoSeleccionado == 'activo'}">Activo</option>
-              <option value="inactivo" th:selected="${estadoSeleccionado == 'inactivo'}">Inactivo</option>
+              <option value="activo" th:selected="${estadoSeleccionado == 'activo'}">Disponible</option>
+              <option value="inactivo" th:selected="${estadoSeleccionado == 'inactivo'}">No disponible</option>
+              <option value="cuenta_suspendida" th:selected="${estadoSeleccionado == 'cuenta_suspendida'}">Cuenta suspendida</option>
             </select>
           </div>
         </div>
@@ -61,16 +62,19 @@
                 <span th:if="${c.habilidadesTop.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin habilidades declaradas</span>
               </td>
               <td>
-                <div data-escala="carga" class="progress-inline" style="min-width:100px;">
-                  <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${c.ocupacion > 100 ? 100 : c.ocupacion} + '%;'"></div></div>
+                <div class="progress-inline" style="min-width:100px;">
+                  <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${c.ocupacion > 100} ? 'red' : (${c.ocupacion >= 90} ? 'amber' : '')" th:style="'width:' + ${c.ocupacion > 100 ? 100 : c.ocupacion} + '%;'"></div></div>
                   <span class="progress-value" th:text="${c.ocupacion} + '%'">0%</span>
                 </div>
               </td>
               <td><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span></td>
               <td class="cell-actions">
                 <a th:href="@{/resource-manager/colaboradores/{id}(id=${c.perfilId})}">Ver perfil</a>
-                <button type="button" th:if="${c.estado == 'activo' and c.perfilId != miPerfilId}" class="danger" th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}">Suspender</button>
-                <button type="button" th:unless="${c.estado == 'activo'}" th:attr="data-reactivar=${c.perfilId}, data-nombre=${c.nombre}">Reactivar</button>
+                <!-- Modelo v7: el RM gestiona la DISPONIBILIDAD del perfil para proyectos;
+                     la cuenta (acceso a la plataforma) la gestiona el Administrador. -->
+                <button type="button" th:if="${c.estado == 'activo' and c.perfilId != miPerfilId}" class="danger" th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}">Marcar no disponible</button>
+                <button type="button" th:if="${c.estado == 'inactivo'}" th:attr="data-reactivar=${c.perfilId}, data-nombre=${c.nombre}">Marcar disponible</button>
+                <span class="text-tertiary" style="font-size:var(--fs-xs);" th:if="${c.estado == 'cuenta_suspendida'}">La reactiva el Administrador</span>
               </td>
             </tr>
             </tbody>
@@ -108,8 +112,8 @@
     document.querySelectorAll("[data-suspender]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         SBAI.modal.confirm({
-          title: "¿Suspender a " + btn.dataset.nombre + "?",
-          desc: "Su perfil deja de estar disponible para proyectos hasta que lo reactives. Su historial se conserva.",
+          title: "¿Marcar a " + btn.dataset.nombre + " como no disponible?",
+          desc: "Deja de aparecer para asignaciones y propuestas hasta que lo vuelvas a marcar disponible. Sigue pudiendo iniciar sesión; su historial se conserva.",
           variant: "warning", icon: "icon-user-x",
           subject: { nombre: btn.dataset.nombre },
           // Modelo v7: un perfil suspendido no sigue en proyectos.
@@ -117,9 +121,9 @@
             "Si colabora en proyectos, esas asignaciones se finalizan y su carga se libera.",
             "Si lidera algún proyecto, no se podrá suspender hasta usar “Cambiar PM” en Asignaciones."
           ],
-          reason: { label: "Motivo de la suspensión", required: true, placeholder: "Ej.: licencia prolongada.",
+          reason: { label: "Motivo", required: true, placeholder: "Ej.: licencia prolongada.",
             presets: ["Licencia prolongada", "Terminó su contrato", "Solicitud del área"] },
-          confirmLabel: "Suspender cuenta", cancelLabel: "Volver",
+          confirmLabel: "Marcar no disponible", cancelLabel: "Volver",
           onConfirm: function (d) {
             submitForm("/resource-manager/colaboradores/" + btn.dataset.suspender + "/estado", { nuevoEstado: "inactivo", motivo: d.motivo });
           }
