@@ -50,6 +50,18 @@ public class Proyecto {
     @Column(name = "razon_cancelacion", columnDefinition = "TEXT")
     private String razonCancelacion;
 
+    // Modelo v7 (fase 2): pausar = el equipo sale del proyecto; se exigen
+    // motivo y fecha estimada de reanudación. Columnas creadas por
+    // InicializadorEsquemaV7 / migracion_v7_consistencia_roles.sql.
+    @Column(name = "fecha_pausa")
+    private LocalDate fechaPausa;
+
+    @Column(name = "motivo_pausa", length = 500)
+    private String motivoPausa;
+
+    @Column(name = "fecha_reanudacion_estimada")
+    private LocalDate fechaReanudacionEstimada;
+
     public Long getId() {
         return id;
     }
@@ -124,5 +136,29 @@ public class Proyecto {
 
     public void setRazonCancelacion(String razonCancelacion) {
         this.razonCancelacion = razonCancelacion;
+    }
+
+    public LocalDate getFechaPausa() {
+        return fechaPausa;
+    }
+
+    public void setFechaPausa(LocalDate fechaPausa) {
+        this.fechaPausa = fechaPausa;
+    }
+
+    public String getMotivoPausa() {
+        return motivoPausa;
+    }
+
+    public void setMotivoPausa(String motivoPausa) {
+        this.motivoPausa = motivoPausa;
+    }
+
+    public LocalDate getFechaReanudacionEstimada() {
+        return fechaReanudacionEstimada;
+    }
+
+    public void setFechaReanudacionEstimada(LocalDate fechaReanudacionEstimada) {
+        this.fechaReanudacionEstimada = fechaReanudacionEstimada;
     }
 }

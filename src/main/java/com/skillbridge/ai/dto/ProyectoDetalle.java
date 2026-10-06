@@ -21,6 +21,17 @@ public class ProyectoDetalle {
     private final String pmNombre;
     private final List<MiembroEquipoFila> equipo;
 
+    // Modelo v7 (fase 2): datos de pausa / cierre y equipo anterior (para
+    // "Reincorporar equipo anterior" al reanudar o reabrir). Se llenan con
+    // setters desde ProyectoService.obtenerDetalle.
+    private String fechaPausaLabel;
+    private String motivoPausa;
+    private String fechaReanudacionLabel;
+    private String fechaReanudacionIso;
+    private boolean reanudacionVencida;
+    private String razonCancelacion;
+    private List<IntegranteAnterior> equipoAnterior = List.of();
+
     public ProyectoDetalle(Long id, String nombre, String descripcion, List<String> tecnologias, String estadoCrudo,
                             String fechaInicioLabel, String fechaFinLabel, String fechaInicioIso, String fechaFinIso,
                             int avance, int colaboradoresRequeridos, String pmNombre, List<MiembroEquipoFila> equipo) {
@@ -125,4 +136,22 @@ public class ProyectoDetalle {
         if (colaboradoresRequeridos <= 0) return 100;
         return (int) Math.min(100, Math.round(getColaboradoresAsignados() * 100.0 / colaboradoresRequeridos));
     }
+
+    public String getFechaPausaLabel() { return fechaPausaLabel; }
+    public void setFechaPausaLabel(String v) { this.fechaPausaLabel = v; }
+    public String getMotivoPausa() { return motivoPausa; }
+    public void setMotivoPausa(String v) { this.motivoPausa = v; }
+    public String getFechaReanudacionLabel() { return fechaReanudacionLabel; }
+    public void setFechaReanudacionLabel(String v) { this.fechaReanudacionLabel = v; }
+    public String getFechaReanudacionIso() { return fechaReanudacionIso; }
+    public void setFechaReanudacionIso(String v) { this.fechaReanudacionIso = v; }
+    /** true si ya pasó la fecha estimada de reanudación y el proyecto sigue en pausa. */
+    public boolean isReanudacionVencida() { return reanudacionVencida; }
+    public void setReanudacionVencida(boolean v) { this.reanudacionVencida = v; }
+    public String getRazonCancelacion() { return razonCancelacion; }
+    public void setRazonCancelacion(String v) { this.razonCancelacion = v; }
+    public List<IntegranteAnterior> getEquipoAnterior() { return equipoAnterior; }
+    public void setEquipoAnterior(List<IntegranteAnterior> v) { this.equipoAnterior = v != null ? v : List.of(); }
+    /** Proyecto completado o cancelado: solo lectura salvo "Reabrir". */
+    public boolean isCerrado() { return "completado".equals(estadoCrudo) || "cancelado".equals(estadoCrudo); }
 }

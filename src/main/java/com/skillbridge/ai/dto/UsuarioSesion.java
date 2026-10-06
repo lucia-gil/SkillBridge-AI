@@ -20,6 +20,26 @@ public class UsuarioSesion implements Serializable {
     /** Rol calculado para navegacion: administrador | resource_manager | project_manager | colaborador. */
     private String rolEfectivo;
     private String iniciales;
+    /**
+     * Modelo v7: true si este Miembro lidera hoy al menos un proyecto. Junto
+     * con rolOrganizacional decide a qué vistas puede entrar; rolEfectivo
+     * pasa a ser "la vista en la que está navegando ahora" (la fija
+     * SesionInterceptor según la ruta: /project-manager/** o /colaborador/**).
+     */
+    private boolean lideraProyectos;
+
+    public boolean isLideraProyectos() {
+        return lideraProyectos;
+    }
+
+    public void setLideraProyectos(boolean lideraProyectos) {
+        this.lideraProyectos = lideraProyectos;
+    }
+
+    /** Miembro (sin rol fijo) que además lidera proyectos: puede alternar entre vista PM y Colaborador. */
+    public boolean isPuedeCambiarVista() {
+        return rolOrganizacional == null && lideraProyectos;
+    }
 
     public Long getUsuarioId() {
         return usuarioId;

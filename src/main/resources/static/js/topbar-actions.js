@@ -23,11 +23,16 @@
     form.method = "POST";
     form.action = action;
     Object.keys(fields || {}).forEach(function (k) {
-      var input = document.createElement("input");
-      input.type = "hidden";
-      input.name = k;
-      input.value = fields[k];
-      form.appendChild(input);
+      // Un arreglo se envía como varios campos con el mismo nombre
+      // (p.ej. reincorporar=3&reincorporar=7 -> List<Long> en Spring).
+      var valores = Array.isArray(fields[k]) ? fields[k] : [fields[k]];
+      valores.forEach(function (v) {
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = k;
+        input.value = v;
+        form.appendChild(input);
+      });
     });
     document.body.appendChild(form);
     form.submit();

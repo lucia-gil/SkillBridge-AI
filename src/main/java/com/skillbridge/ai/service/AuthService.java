@@ -198,6 +198,7 @@ public class AuthService {
         sesion.setNombreCompleto(usuario.getNombreCompleto());
         sesion.setRolOrganizacional(usuario.getRolOrganizacional());
         sesion.setRolEfectivo(rolEfectivo);
+        sesion.setLideraProyectos(Roles.PROJECT_MANAGER.equals(rolEfectivo));
         sesion.setIniciales(iniciales(usuario.getNombreCompleto()));
 
         auditoriaService.registrar(usuario.getId(), "LOGIN_EXITOSO",
@@ -207,6 +208,10 @@ public class AuthService {
     }
 
     /**
+     * Vista INICIAL al iniciar sesión (modelo v7). Un Miembro que lidera algún
+     * proyecto entra a la vista Project Manager y puede pasar a la de
+     * Colaborador con el selector "Ver como" (ver SesionInterceptor).
+     *
      * Rol efectivo para navegacion (no confundir con usuarios.rol_organizacional,
      * ver comentario de la tabla asignaciones en skillbridge_db_v4.sql):
      * administrador/resource_manager son puestos fijos; si no aplica ninguno,
@@ -218,6 +223,15 @@ public class AuthService {
         if (Roles.RESOURCE_MANAGER.equals(rolOrganizacional)) return Roles.RESOURCE_MANAGER;
         if (perfilId != null && tieneAsignacionActivaComoPM(perfilId)) return Roles.PROJECT_MANAGER;
         return Roles.COLABORADOR;
+    }
+
+    /**
+     * ¿Este perfil lidera hoy algún proyecto (fila activa como
+     * project_manager)? Decide si un Miembro puede entrar a la vista
+     * Project Manager además de la de Colaborador (modelo v7).
+     */
+    public boolean lideraProyectos(Long perfilId) {
+        return perfilId != null && tieneAsignacionActivaComoPM(perfilId);
     }
 
     private boolean tieneAsignacionActivaComoPM(Long perfilId) {
@@ -312,7 +326,12 @@ public class AuthService {
         usuario.setCorreo(correoFinal);
         usuario.setContrasenaHash(passwordEncoder.encode(contrasena));
         usuario.setNombreCompleto(nombres + " " + apellidos);
-        usuario.setRolOrganizacional(null); // sin puesto fijo: lo asigna el Administrador despues
+        // Modelo v7 (fase 3): la cuenta nace con el rol con el que se la
+        // invitó (null = Miembro). Así el primer inicio de sesión ya abre el
+        // panel correcto, sin pasos manuales del Administrador.
+        String rolInvitado = oAcceso.get().getRolAsignado();
+        usuario.setRolOrganizacional(Roles.ADMINISTRADOR.equals(rolInvitado) || Roles.RESOURCE_MANAGER.equals(rolInvitado)
+                ? rolInvitado : null);
         usuario.setEstado("activo");
         usuario = usuarioRepository.save(usuario);
 
@@ -344,7 +363,9 @@ public class AuthService {
         correoAutorizadoRepository.save(acceso);
 
         auditoriaService.registrar(usuario.getId(), "REGISTRO_EXITOSO", "usuario", usuario.getId(),
-                null, null, "Cuenta creada por autoregistro (correo pre-autorizado).");
+                null, AuditoriaService.json("rol_organizacional", usuario.getRolOrganizacional()),
+                "Cuenta creada por autoregistro (correo pre-autorizado) con rol "
+                        + (usuario.getRolOrganizacional() == null ? "Miembro" : Roles.etiqueta(usuario.getRolOrganizacional())) + ".");
 
         // Correo de bienvenida real (además de quedar en la campana de notificaciones):
         // "info" no tiene preferencia configurable en preferencias_notificacion, así que

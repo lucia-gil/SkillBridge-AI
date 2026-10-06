@@ -189,6 +189,9 @@
     function enviar() {
       if (!tipeoValido()) { typeInput.focus(); return; }
       if (!motivoValido()) { ta.focus(); return; }
+      // Validación extra opcional (campos propios en bodyHtml): si devuelve
+      // false, el modal no se cierra.
+      if (opts.validate && opts.validate(backdrop) === false) return;
       var datos = { motivo: motivo() };
       okBtn.disabled = true;
       close(backdrop);

@@ -40,20 +40,24 @@ public class UsuariosController {
         Map<String, Long> kpis = usuarioService.kpis();
 
         shellModelBuilder.aplicar(model, sesion, "usuarios.html", "Usuarios y roles",
-                usuarios.size() + " cuentas registradas",
-                Map.of("usuarios.html", kpis.get("sinRol").intValue()));
+                usuarios.size() + " cuentas registradas");
 
         model.addAttribute("usuarios", usuarios);
         model.addAttribute("kpis", kpis);
         model.addAttribute("correosAutorizados", usuarioService.listarAutorizados());
+        // Para ocultar en la tabla las acciones sobre la propia cuenta (modelo v7).
+        model.addAttribute("usuarioActualId", sesion.getUsuarioId());
         return "administrador/usuarios";
     }
 
     @PostMapping("/usuarios/invitar")
-    public String invitar(@RequestParam String correo, HttpSession session, RedirectAttributes redirectAttributes) {
+    public String invitar(@RequestParam String correo,
+                          // Modelo v7: rol con el que nacerá la cuenta (NINGUNO = Miembro).
+                          @RequestParam(required = false) String rol,
+                          HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            usuarioService.invitar(correo, sesion.getUsuarioId());
+            usuarioService.invitar(correo, rol, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Invitación enviada a " + correo + ".");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -63,10 +67,13 @@ public class UsuariosController {
 
     @PostMapping("/usuarios/{id}/rol")
     public String cambiarRol(@PathVariable Long id, @RequestParam String rol,
+                              @RequestParam(required = false) String motivo,
+                              // true cuando el Admin confirmó que sus asignaciones como colaborador se finalizan.
+                              @RequestParam(defaultValue = "false") boolean confirmarSalida,
                               HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            usuarioService.cambiarRol(id, rol, sesion.getUsuarioId());
+            usuarioService.cambiarRol(id, rol, motivo, confirmarSalida, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Rol actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -77,10 +84,11 @@ public class UsuariosController {
     @PostMapping("/usuarios/{id}/estado")
     public String cambiarEstado(@PathVariable Long id, @RequestParam boolean activar,
                                  @RequestParam(required = false) String motivo,
+                                 @RequestParam(defaultValue = "false") boolean confirmarSalida,
                                  HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            usuarioService.cambiarEstado(id, activar, motivo, sesion.getUsuarioId());
+            usuarioService.cambiarEstado(id, activar, motivo, confirmarSalida, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", activar ? "Usuario reactivado." : "Usuario suspendido.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -95,6 +103,20 @@ public class UsuariosController {
         try {
             usuarioService.eliminar(id, motivo, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Usuario eliminado.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/administrador/usuarios.html";
+    }
+
+    /** Cambiar el rol de una invitación todavía no usada (modelo v7). */
+    @PostMapping("/usuarios/correos-autorizados/{id}/rol")
+    public String cambiarRolInvitacion(@PathVariable Long id, @RequestParam String rol,
+                                       HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            usuarioService.cambiarRolInvitacion(id, rol, sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "Rol de la invitación actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }

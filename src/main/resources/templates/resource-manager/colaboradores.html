@@ -109,9 +109,14 @@
       btn.addEventListener("click", function () {
         SBAI.modal.confirm({
           title: "¿Suspender a " + btn.dataset.nombre + "?",
-          desc: "Perderá acceso a la plataforma hasta que se reactive su cuenta. No afecta sus asignaciones históricas.",
+          desc: "Su perfil deja de estar disponible para proyectos hasta que lo reactives. Su historial se conserva.",
           variant: "warning", icon: "icon-user-x",
           subject: { nombre: btn.dataset.nombre },
+          // Modelo v7: un perfil suspendido no sigue en proyectos.
+          consequences: [
+            "Si colabora en proyectos, esas asignaciones se finalizan y su carga se libera.",
+            "Si lidera algún proyecto, no se podrá suspender hasta usar “Cambiar PM” en Asignaciones."
+          ],
           reason: { label: "Motivo de la suspensión", required: true, placeholder: "Ej.: licencia prolongada.",
             presets: ["Licencia prolongada", "Terminó su contrato", "Solicitud del área"] },
           confirmLabel: "Suspender cuenta", cancelLabel: "Volver",

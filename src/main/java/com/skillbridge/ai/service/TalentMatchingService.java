@@ -7,6 +7,7 @@ import com.skillbridge.ai.model.*;
 import com.skillbridge.ai.repository.*;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,25 +35,28 @@ public class TalentMatchingService {
     private final NotificacionService notificacionService;
     private final AuditoriaService auditoriaService;
     private final ObjectMapper objectMapper;
+    private final ObjectProvider<TalentMatchingService> selfProvider;
 
     public TalentMatchingService(ProyectoRepository proyectoRepository, PerfilRepository perfilRepository,
             AsignacionRepository asignacionRepository, PerfilHabilidadRepository perfilHabilidadRepository,
             ProyectoHabilidadRequeridaRepository requeridaRepository, HabilidadRepository habilidadRepository,
             PropuestaAsignacionRepository propuestaRepository, ConfiguracionService configuracionService,
             ProyectoService proyectoService, NotificacionService notificacionService,
-            AuditoriaService auditoriaService, ObjectMapper objectMapper) {
+            AuditoriaService auditoriaService, ObjectMapper objectMapper,
+            ObjectProvider<TalentMatchingService> selfProvider) {
         this.proyectoRepository = proyectoRepository; this.perfilRepository = perfilRepository;
         this.asignacionRepository = asignacionRepository; this.perfilHabilidadRepository = perfilHabilidadRepository;
         this.requeridaRepository = requeridaRepository; this.habilidadRepository = habilidadRepository;
         this.propuestaRepository = propuestaRepository; this.configuracionService = configuracionService;
         this.proyectoService = proyectoService; this.notificacionService = notificacionService;
         this.auditoriaService = auditoriaService; this.objectMapper = objectMapper;
+        this.selfProvider = selfProvider;
     }
 
     @Transactional(readOnly = true)
     public List<MatchingProyectoOpcion> proyectosDelPm(Long pmPerfilId) {
         return asignacionRepository.listarProyectosGestionados(pmPerfilId).stream()
-                .filter(p -> !"completado".equals(p.getEstado()) && !"cancelado".equals(p.getEstado()))
+                .filter(ProyectoService::admiteNuevosIntegrantes)
                 .map(p -> new MatchingProyectoOpcion(p.getId(), p.getNombre(), vacantes(p)))
                 .filter(p -> p.vacantes() > 0)
                 .toList();
@@ -67,12 +71,21 @@ public class TalentMatchingService {
 
     @Transactional(readOnly = true)
     public List<MatchingCandidato> calcular(Long pmPerfilId, Long proyectoId, int dedicacion, int ph, int pe, int pd) {
+        return calcularTodos(pmPerfilId, proyectoId, dedicacion, ph, pe, pd).stream().limit(20).toList();
+    }
+
+    /** Ranking completo con los pesos configurados (para validar una propuesta manual). */
+    private List<MatchingCandidato> calcularSinLimite(Long pmPerfilId, Long proyectoId, int dedicacion, int[] pesos) {
+        return calcularTodos(pmPerfilId, proyectoId, dedicacion, pesos[0], pesos[1], pesos[2]);
+    }
+
+    private List<MatchingCandidato> calcularTodos(Long pmPerfilId, Long proyectoId, int dedicacion, int ph, int pe, int pd) {
         Proyecto proyecto = exigirProyectoDelPm(pmPerfilId, proyectoId);
         if (dedicacion < 1 || dedicacion > 100) throw new OperacionInvalidaException("La dedicación debe estar entre 1% y 100%.");
         if (vacantes(proyecto) < 1) throw new OperacionInvalidaException("El proyecto ya no tiene vacantes disponibles.");
         validarPesos(ph, pe, pd);
         var cfg = configuracionService.obtenerMapa();
-        int limiteCarga = entero(configuracionService.valor(cfg, "limite_carga_colaborador", "100"), 100);
+        int limiteCarga = proyectoService.limiteCargaConfigurado();
         int maximoProyectos = entero(configuracionService.valor(cfg, "maximo_proyectos_simultaneos", "3"), 3);
 
         Map<Long, Habilidad> habilidades = habilidadRepository.findAll().stream()
@@ -83,8 +96,8 @@ public class TalentMatchingService {
 
         List<MatchingCandidato> resultado = new ArrayList<>();
         for (Perfil perfil : perfilRepository.listarActivosConUsuario()) {
-            if (perfil.getUsuario().getRolOrganizacional() != null || equipo.contains(perfil.getId())) continue;
-            if (asignacionRepository.listarPorPerfilYEstado(perfil.getId(), "activa").size() >= maximoProyectos) continue;
+            if (!ProyectoService.esMiembroAsignable(perfil) || equipo.contains(perfil.getId())) continue;
+            if (asignacionRepository.contarProyectosVigentesDePerfil(perfil.getId()) >= maximoProyectos) continue;
             Map<Long, Integer> niveles = perfilHabilidadRepository.findById_PerfilId(perfil.getId()).stream()
                     .collect(Collectors.toMap(phab -> phab.getId().getHabilidadId(), PerfilHabilidad::getNivel));
             List<MatchingHabilidad> detalle = new ArrayList<>();
@@ -110,9 +123,10 @@ public class TalentMatchingService {
                     experiencia, carga, disponible, carga + dedicacion, carga + dedicacion <= limiteCarga, detalle));
         }
         return resultado.stream().sorted(Comparator.comparingInt(MatchingCandidato::getScoreTotal).reversed()
-                .thenComparing(MatchingCandidato::getNombre)).limit(20).toList();
+                .thenComparing(MatchingCandidato::getNombre)).toList();
     }
 
+    /** Propuesta desde AI Talent Matching (el candidato sale del ranking calculado). */
     @Transactional
     public void proponer(Long pmPerfilId, Long actorUsuarioId, Long proyectoId, Long candidatoId,
                          int dedicacion, int ph, int pe, int pd) {
@@ -120,22 +134,127 @@ public class TalentMatchingService {
         MatchingCandidato candidato = calcular(pmPerfilId, proyectoId, dedicacion, ph, pe, pd).stream()
                 .filter(c -> c.getPerfilId().equals(candidatoId)).findFirst()
                 .orElseThrow(() -> new OperacionInvalidaException("El candidato ya no está disponible para este proyecto."));
+        registrarPropuesta(proyecto, pmPerfilId, actorUsuarioId, candidato, dedicacion, PropuestaAsignacion.ORIGEN_TALENT_MATCHING);
+    }
+
+    /**
+     * Propuesta MANUAL del PM (modelo v7: el PM no asigna directo, propone y
+     * el Resource Manager aprueba). Se calcula igual el puntaje de matching
+     * con los pesos configurados, para que el RM decida con la misma
+     * información que en una propuesta de Talent Matching.
+     */
+    @Transactional
+    public void proponerManual(Long pmPerfilId, Long actorUsuarioId, Long proyectoId, Long candidatoId, int dedicacion) {
+        Proyecto proyecto = exigirProyectoDelPm(pmPerfilId, proyectoId);
+        int[] pesos = pesosConfigurados();
+        MatchingCandidato candidato = calcularSinLimite(pmPerfilId, proyectoId, dedicacion, pesos).stream()
+                .filter(c -> c.getPerfilId().equals(candidatoId)).findFirst()
+                .orElseThrow(() -> new OperacionInvalidaException(nombreDe(candidatoId)
+                        + " no está disponible para este proyecto (ya está en el equipo, no es un Miembro activo o alcanzó el máximo de proyectos)."));
+        if (!candidato.isCargaCompatible()) {
+            throw new OperacionInvalidaException(candidato.getNombre() + " tiene " + candidato.getCargaActual()
+                    + "% de carga; con " + dedicacion + "% más superaría el límite configurado.");
+        }
+        registrarPropuesta(proyecto, pmPerfilId, actorUsuarioId, candidato, dedicacion, PropuestaAsignacion.ORIGEN_MANUAL);
+    }
+
+    /**
+     * Varias propuestas manuales en un solo envío (checkboxes del PM). Cada
+     * persona se valida por separado: si una falla, las demás sí se envían.
+     * Igual que en la asignación masiva del RM, no se pueden proponer más
+     * personas que vacantes libres (descontando las propuestas pendientes).
+     */
+    public AsignacionMasivaService.Resultado proponerVarios(Long pmPerfilId, Long actorUsuarioId, Long proyectoId,
+                                                           List<Long> perfilIds, int dedicacion) {
+        LinkedHashSet<Long> ids = new LinkedHashSet<>();
+        if (perfilIds != null) for (Long id : perfilIds) if (id != null) ids.add(id);
+        if (ids.isEmpty()) throw new OperacionInvalidaException("Selecciona al menos una persona.");
+        Proyecto proyecto = exigirProyectoDelPm(pmPerfilId, proyectoId);
+        long libres = vacantes(proyecto) - propuestaRepository.countByProyectoIdAndEstado(proyectoId, "pendiente");
+        if (ids.size() > Math.max(0, libres)) {
+            throw new OperacionInvalidaException("Seleccionaste " + ids.size() + " persona(s), pero el proyecto solo tiene "
+                    + Math.max(0, libres) + " vacante(s) sin propuesta pendiente.");
+        }
+        List<String> enviados = new ArrayList<>();
+        List<String> errores = new ArrayList<>();
+        for (Long id : ids) {
+            try {
+                self().proponerManual(pmPerfilId, actorUsuarioId, proyectoId, id, dedicacion);
+                enviados.add(nombreDe(id));
+            } catch (OperacionInvalidaException ex) {
+                errores.add(ex.getMessage());
+            }
+        }
+        return new AsignacionMasivaService.Resultado(enviados, errores);
+    }
+
+    /**
+     * Reincorporación tras reanudar o reabrir un proyecto (modelo v7, fase
+     * 2): por cada persona marcada del "equipo anterior" se crea una
+     * propuesta (origen=reincorporacion) con la MISMA dedicación que tenía,
+     * a nombre del PM del proyecto, para que el Resource Manager la apruebe.
+     * Solo el RM crea asignaciones de colaborador.
+     */
+    public AsignacionMasivaService.Resultado proponerReincorporaciones(Long proyectoId, List<Long> perfilIds, Long actorUsuarioId) {
+        LinkedHashSet<Long> ids = new LinkedHashSet<>();
+        if (perfilIds != null) for (Long id : perfilIds) if (id != null) ids.add(id);
+        List<String> enviados = new ArrayList<>();
+        List<String> errores = new ArrayList<>();
+        if (ids.isEmpty()) return new AsignacionMasivaService.Resultado(enviados, errores);
+        Long pmPerfilId = asignacionRepository.buscarResponsablesActivos(proyectoId, Roles.PROJECT_MANAGER).stream()
+                .findFirst().map(Asignacion::getPerfilId)
+                .orElseThrow(() -> new OperacionInvalidaException("El proyecto no tiene un Project Manager activo."));
+        Map<Long, IntegranteAnterior> anteriores = proyectoService.equipoAnterior(proyectoId).stream()
+                .collect(Collectors.toMap(IntegranteAnterior::perfilId, Function.identity()));
+        for (Long id : ids) {
+            IntegranteAnterior ant = anteriores.get(id);
+            if (ant == null) { errores.add(nombreDe(id) + " no formaba parte del equipo anterior."); continue; }
+            if (!ant.conCapacidad()) { errores.add(ant.nombre() + ": " + ant.motivo() + "."); continue; }
+            try {
+                self().proponerUnaReincorporacion(pmPerfilId, actorUsuarioId, proyectoId, id, ant.cargaAnterior());
+                enviados.add(ant.nombre());
+            } catch (OperacionInvalidaException ex) {
+                errores.add(ex.getMessage());
+            }
+        }
+        return new AsignacionMasivaService.Resultado(enviados, errores);
+    }
+
+    @Transactional
+    public void proponerUnaReincorporacion(Long pmPerfilId, Long actorUsuarioId, Long proyectoId, Long candidatoId, int dedicacion) {
+        Proyecto proyecto = exigirProyectoDelPm(pmPerfilId, proyectoId);
+        MatchingCandidato candidato = calcularSinLimite(pmPerfilId, proyectoId, dedicacion, pesosConfigurados()).stream()
+                .filter(c -> c.getPerfilId().equals(candidatoId)).findFirst()
+                .orElseThrow(() -> new OperacionInvalidaException(nombreDe(candidatoId) + " ya no está disponible para este proyecto."));
+        registrarPropuesta(proyecto, pmPerfilId, actorUsuarioId, candidato, dedicacion, PropuestaAsignacion.ORIGEN_REINCORPORACION);
+    }
+
+    private void registrarPropuesta(Proyecto proyecto, Long pmPerfilId, Long actorUsuarioId, MatchingCandidato candidato,
+                                    int dedicacion, String origen) {
+        Long proyectoId = proyecto.getId();
+        Long candidatoId = candidato.getPerfilId();
+        if (!ProyectoService.admiteNuevosIntegrantes(proyecto))
+            throw new OperacionInvalidaException("Solo se puede proponer personas para proyectos en Planificación o Activo.");
         if (propuestaRepository.existsByProyectoIdAndCandidatoPerfilIdAndEstado(proyectoId, candidatoId, "pendiente"))
-            throw new OperacionInvalidaException("Ya existe una propuesta pendiente para este candidato y proyecto.");
+            throw new OperacionInvalidaException("Ya existe una propuesta pendiente para " + candidato.getNombre() + " en este proyecto.");
 
         PropuestaAsignacion p = new PropuestaAsignacion();
         p.setProyectoId(proyectoId); p.setCandidatoPerfilId(candidatoId); p.setSolicitadoPorPerfilId(pmPerfilId);
         p.setDedicacionPorcentaje(dedicacion); p.setScoreTotal(candidato.getScoreTotal());
         p.setScoreHabilidades(candidato.getScoreHabilidades()); p.setScoreExperiencia(candidato.getScoreExperiencia());
         p.setScoreDisponibilidad(candidato.getScoreDisponibilidad());
+        p.setOrigen(origen);
         propuestaRepository.save(p);
+        String via = PropuestaAsignacion.ORIGEN_MANUAL.equals(origen) ? "manual"
+                : PropuestaAsignacion.ORIGEN_REINCORPORACION.equals(origen) ? "de reincorporación" : "de Talent Matching";
         for (Perfil rm : perfilRepository.listarActivosPorRolOrganizacional(Roles.RESOURCE_MANAGER)) {
-            notificacionService.crear(rm.getId(), "solicitud", "Nueva propuesta de Talent Matching",
+            notificacionService.crear(rm.getId(), "solicitud", "Nueva propuesta de asignación (" + via + ")",
                     candidato.getNombre() + " fue propuesto para \"" + proyecto.getNombre() + "\" con " + dedicacion + "% de dedicación.",
                     "ai-talent-matching.html");
         }
-        auditoriaService.registrar(actorUsuarioId, "MATCHING_PROPUESTO", "propuesta_asignacion", p.getId(), null, null,
-                candidato.getNombre() + " propuesto para \"" + proyecto.getNombre() + "\" (score " + candidato.getScoreTotal() + "%).");
+        auditoriaService.registrar(actorUsuarioId, "MATCHING_PROPUESTO", "propuesta_asignacion", p.getId(), null,
+                AuditoriaService.json("origen", origen),
+                candidato.getNombre() + " propuesto (" + via + ") para \"" + proyecto.getNombre() + "\" (score " + candidato.getScoreTotal() + "%).");
     }
 
     @Transactional(readOnly = true)
@@ -150,7 +269,7 @@ public class TalentMatchingService {
                 .orElseThrow(() -> new OperacionInvalidaException("La propuesta ya no existe."));
         if (!"pendiente".equals(p.getEstado())) throw new OperacionInvalidaException("La propuesta ya fue revisada.");
         if (aprobar) {
-            proyectoService.asignarColaborador(p.getProyectoId(), p.getCandidatoPerfilId(), Roles.COLABORADOR,
+            proyectoService.asignarColaborador(p.getProyectoId(), p.getCandidatoPerfilId(),
                     p.getDedicacionPorcentaje(), LocalDate.now(), actorUsuarioId);
             p.setEstado("aprobada");
         } else {
@@ -170,13 +289,29 @@ public class TalentMatchingService {
     private PropuestaAsignacionFila fila(PropuestaAsignacion p) {
         int carga = Optional.ofNullable(asignacionRepository.sumarCargaActivaDePerfil(p.getCandidatoPerfilId())).orElse(0);
         var cfg = configuracionService.obtenerMapa();
-        int limiteCarga = entero(configuracionService.valor(cfg, "limite_carga_colaborador", "100"), 100);
+        int limiteCarga = proyectoService.limiteCargaConfigurado();
         return new PropuestaAsignacionFila(p.getId(), p.getProyecto().getNombre(), p.getCandidato().getUsuario().getNombreCompleto(),
                 InicialesUtil.de(p.getCandidato().getUsuario().getNombreCompleto()),
                 Optional.ofNullable(p.getCandidato().getCargo()).orElse("Colaborador"), p.getSolicitante().getUsuario().getNombreCompleto(),
                 p.getDedicacionPorcentaje(), p.getScoreTotal(), p.getScoreHabilidades(), p.getScoreExperiencia(),
                 p.getScoreDisponibilidad(), carga, carga + p.getDedicacionPorcentaje(), carga + p.getDedicacionPorcentaje() <= limiteCarga,
-                p.getEstado(), p.getFechaSolicitud() != null ? p.getFechaSolicitud().format(FECHA) : "", p.getMotivoResolucion());
+                p.getEstado(), p.getFechaSolicitud() != null ? p.getFechaSolicitud().format(FECHA) : "", p.getMotivoResolucion(),
+                p.getOrigen());
+    }
+
+    /**
+     * Proxy de Spring de este mismo bean: proponerVarios llama a
+     * proponerManual a través de él para que cada propuesta corra en su
+     * propia transacción (mismo criterio que AsignacionMasivaService).
+     */
+    private TalentMatchingService self() {
+        return selfProvider.getObject();
+    }
+
+    private String nombreDe(Long perfilId) {
+        return perfilRepository.findById(perfilId)
+                .map(x -> x.getUsuario() != null ? x.getUsuario().getNombreCompleto() : "La persona")
+                .orElse("La persona");
     }
 
     private Proyecto exigirProyectoDelPm(Long pmId, Long proyectoId) {

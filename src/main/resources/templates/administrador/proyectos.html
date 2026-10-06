@@ -86,43 +86,19 @@
                 <span class="avatar avatar-sm" th:text="${m.iniciales}">MR</span>
                 <span style="flex:1; min-width:0;">
                   <div style="font-size:var(--fs-sm); font-weight:500;" th:text="${m.nombre}">Nombre</div>
-                  <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${m.rolLabel} + ' · ' + ${m.cargaPorcentaje} + '%'">rol</div>
+                  <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${m.correo}">correo</div>
                 </span>
-                <button type="button" class="danger" th:attr="data-finalizar-asignacion=${m.asignacionId},data-nombre=${m.nombre}">Finalizar</button>
+                <span class="badge" th:classappend="${m.rolEnProyectoCrudo == 'project_manager'} ? 'badge-blue' : 'badge-neutral'" th:text="${m.rolLabel}">Rol</span>
+                <span class="mono text-secondary" style="font-size:var(--fs-xs); min-width:3.5em; text-align:right;" th:text="${m.cargaPorcentaje} + '%'">0%</span>
+              </div>
+              <!-- Modelo v7: el Administrador no asigna ni finaliza (lo hace el Resource Manager; el PM propone). -->
+              <div class="readonly-note">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-info"></use></svg>
+                <span>Vista de solo lectura. Las asignaciones las gestiona el <strong>Resource Manager</strong> (asigna y cambia el Project Manager) y el <strong>Project Manager</strong> propone colaboradores.</span>
               </div>
 
-              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Asignar colaborador</h3>
-              <div class="field-row">
-                <div class="field"><label class="field-label">Colaborador</label>
-                  <select class="select" data-field="perfilId" data-combobox data-placeholder="Escribe el nombre o correo…">
-                    <option th:each="p : ${perfiles}" th:unless="${#lists.contains(d.equipo.![perfilId], p.perfilId())}" th:value="${p.perfilId()}" th:text="${p.nombre()} + ' · ' + ${p.correo()}">Colaborador</option>
-                  </select>
-                </div>
-                <div class="field"><label class="field-label">Rol en el proyecto</label>
-                  <select class="select" data-field="rolEnProyecto"><option value="colaborador">Colaborador</option><option value="project_manager">Project Manager</option></select>
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" min="1" max="100" value="50" data-field="cargaPorcentaje"></div>
-                <div class="field"><label class="field-label">Periodo de inicio</label><input class="input" type="date" data-field="fechaInicio"></div>
-              </div>
-              <div class="btn-group" style="justify-content:flex-end; margin-bottom:var(--space-5);">
-                <button type="button" class="btn btn-primary btn-sm btn-assign" th:attr="data-asignar-proyecto=${d.id}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-user-check"></use></svg>Asignar al equipo</button>
-              </div>
-
-              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Cambiar estado</h3>
-              <div class="field-row">
-                <div class="field">
-                  <select class="select" data-field="estado" th:attr="data-actual=${d.estadoCrudo}">
-                    <option value="planificacion" th:selected="${d.estadoCrudo == 'planificacion'}">Planificación</option>
-                    <option value="activo" th:selected="${d.estadoCrudo == 'activo'}">Activo</option>
-                    <option value="en_pausa" th:selected="${d.estadoCrudo == 'en_pausa'}">En pausa</option>
-                    <option value="completado" th:selected="${d.estadoCrudo == 'completado'}">Completado</option>
-                    <option value="cancelado" th:selected="${d.estadoCrudo == 'cancelado'}">Cancelado</option>
-                  </select>
-                </div>
-                <button type="button" class="btn btn-primary btn-sm" th:attr="data-cambiar-estado=${d.id}" style="align-self:flex-start;">Guardar estado</button>
-              </div>
+              <!-- Modelo v7, fase 2: transiciones con efectos (pausa, cierre, reapertura). -->
+              <th:block th:replace="~{fragments/estado-proyecto :: estado(${d})}"></th:block>
             </div>
             <div class="modal-footer">
               <a class="btn btn-secondary" th:href="@{'/administrador/proyectos/' + ${d.id} + '/entregables.html'}" style="text-decoration:none;">Ver entregables</a>
@@ -155,37 +131,20 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!tpl) return;
       var backdrop = SBAI.modal.open('<div class="modal modal-wide" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
 
-      backdrop.querySelectorAll("[data-finalizar-asignacion]").forEach(function (b) {
-        b.addEventListener("click", function () {
-          SBAI.proyectoAcciones.finalizarAsignacion({
-            url: "/administrador/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar",
-            nombre: b.dataset.nombre,
-            proyecto: (backdrop.querySelector("h2") || {}).textContent
-          });
-        });
-      });
-      var asignarBtn = backdrop.querySelector("[data-asignar-proyecto]");
-      if (asignarBtn) {
-        asignarBtn.addEventListener("click", function () {
-          var proyectoId = asignarBtn.dataset.asignarProyecto;
-          submitForm("/administrador/proyectos/" + proyectoId + "/asignar", {
-            perfilId: backdrop.querySelector('[data-field="perfilId"]').value,
-            rolEnProyecto: backdrop.querySelector('[data-field="rolEnProyecto"]').value,
-            cargaPorcentaje: backdrop.querySelector('[data-field="cargaPorcentaje"]').value,
-            fechaInicio: backdrop.querySelector('[data-field="fechaInicio"]').value
-          });
-        });
-      }
       var estadoSelect = backdrop.querySelector('[data-field="estado"]');
       var estadoBtn = backdrop.querySelector("[data-cambiar-estado]");
       if (estadoBtn) {
         estadoBtn.addEventListener("click", function () {
           var proyectoId = estadoBtn.dataset.cambiarEstado;
+          var datos = SBAI.proyectoAcciones.datosDeModal(backdrop);
           SBAI.proyectoAcciones.cambiarEstado({
             url: "/administrador/proyectos/" + proyectoId + "/estado",
             nombre: (backdrop.querySelector("h2") || {}).textContent,
-            actual: estadoSelect.getAttribute("data-actual"),
-            nuevo: estadoSelect.value
+            // "Reabrir" no tiene selector: su destino viene en data-estado-destino.
+            actual: estadoSelect ? estadoSelect.getAttribute("data-actual") : estadoBtn.dataset.estadoActual,
+            nuevo: estadoBtn.dataset.estadoDestino || estadoSelect.value,
+            colaboradoresActivos: datos.colaboradoresActivos,
+            equipoAnterior: datos.equipoAnterior
           });
         });
       }

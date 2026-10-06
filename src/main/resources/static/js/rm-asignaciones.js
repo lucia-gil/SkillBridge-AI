@@ -94,27 +94,100 @@
       });
     }
 
-    // "(cambiar)" el Project Manager del proyecto — funcionalidad propia
-    // del Resource Manager que no existe en la vista del PM.
+    // "(cambiar)" el Project Manager — funcionalidad propia del Resource
+    // Manager (modelo v7). Candidatos: Miembros activos (SBAI_ASIGNABLES ya
+    // excluye Admin/RM y cuentas suspendidas). Quien ya está en el equipo
+    // asciende conservando su dedicación; quien viene de fuera entra con 20%
+    // y necesita capacidad. El PM saliente puede quedarse como colaborador
+    // solo si hay vacante. El backend vuelve a validar todo.
     const cambiarPm = modal.querySelector('[data-cambiar-pm]');
     if (cambiarPm) cambiarPm.addEventListener('click', function () {
       const proyectoId = cambiarPm.dataset.cambiarPm;
       const proyectoNombre = cambiarPm.dataset.proyectoNombre || '';
-      const options = PERFILES.map(function (p) {
-        return '<option value="' + p.perfilId + '">' + p.nombre + ' · ' + p.correo + '</option>';
+      const vacantes = Number(cambiarPm.dataset.vacantes) || 0;
+      const limite = Number(window.SBAI_LIMITE_CARGA) || 100;
+      const CARGA_PM = 20;
+
+      const equipo = {};
+      let pmActual = null;
+      modal.querySelectorAll('[data-miembro-perfil]').forEach(function (tr) {
+        const m = { perfilId: String(tr.dataset.miembroPerfil), rol: tr.dataset.miembroRol,
+          carga: Number(tr.dataset.miembroCarga) || 0, nombre: tr.dataset.miembroNombre || '' };
+        equipo[m.perfilId] = m;
+        if (m.rol === 'project_manager') pmActual = m;
+      });
+
+      const opciones = (window.SBAI_ASIGNABLES || [])
+        .filter(function (p) { return !pmActual || String(p.perfilId) !== pmActual.perfilId; })
+        .map(function (p) {
+          const enEquipo = equipo[String(p.perfilId)];
+          const sinCapacidad = !enEquipo && (p.cargaActual + CARGA_PM > limite);
+          const detalle = enEquipo
+            ? 'ya en el equipo · conserva su ' + enEquipo.carga + '%'
+            : 'carga ' + p.cargaActual + '%' + (sinCapacidad ? ' · sin capacidad para 20%' : ' → ' + (p.cargaActual + CARGA_PM) + '%');
+          return { p: p, enEquipo: !!enEquipo, sinCapacidad: sinCapacidad, detalle: detalle };
+        })
+        .sort(function (a, b) { return (b.enEquipo - a.enEquipo) || (a.sinCapacidad - b.sinCapacidad) || a.p.nombre.localeCompare(b.p.nombre); });
+
+      const esc = function (t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; };
+      const options = opciones.map(function (o) {
+        return '<option value="' + o.p.perfilId + '"' + (o.sinCapacidad ? ' disabled' : '') + ' data-en-equipo="' + (o.enEquipo ? '1' : '0') + '">' +
+          esc(o.p.nombre) + ' · ' + esc(o.detalle) + '</option>';
       }).join('');
 
+      const salienteHtml = pmActual
+        ? '<div class="handover-panel" style="margin-top:var(--space-4);margin-bottom:0">' +
+          '<h3>' + esc(pmActual.nombre) + ' (PM actual)</h3>' +
+          '<label class="handover-check" id="pm-mantener-wrap"><input type="checkbox" id="pm-mantener">' +
+          '<span>Mantener como colaborador en este proyecto<span class="handover-hint" id="pm-mantener-hint" style="display:block"></span></span></label>' +
+          '<div class="field" id="pm-carga-wrap" hidden><label class="field-label">Su dedicación como colaborador (%)</label>' +
+          '<input class="input" type="number" min="1" max="' + limite + '" id="pm-carga" value="' + pmActual.carga + '"></div>' +
+          '</div>'
+        : '<p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:var(--space-3)">Este proyecto no tiene un Project Manager activo.</p>';
+
       const html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-        '<div class="modal-header"><div><h2>Cambiar Project Manager</h2><p>' + proyectoNombre + '</p></div>' +
+        '<div class="modal-header"><div><h2>Cambiar Project Manager</h2><p>' + esc(proyectoNombre) + '</p></div>' +
         '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
         '<div class="modal-body">' +
-        '<div class="field"><label class="field-label">Nuevo Project Manager</label><select class="select" id="pm-perfil">' + options + '</select></div>' +
-        '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="pm-confirm">Confirmar cambio</button></div></div>';
+        '<div class="field"><label class="field-label">Nuevo Project Manager</label>' +
+        (options ? '<select class="select" id="pm-perfil">' + options + '</select>' : '<p class="text-tertiary">No hay Miembros disponibles.</p>') +
+        '<p class="field-hint">Solo Miembros activos (nunca Administradores ni Resource Managers). Conserva sus asignaciones en otros proyectos.</p></div>' +
+        salienteHtml +
+        '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>' +
+        '<button type="button" class="btn btn-primary" id="pm-confirm"' + (options ? '' : ' disabled') + '>Confirmar cambio</button></div></div>';
 
       const backdrop = window.SBAI.modal.open(html);
+      const sel = backdrop.querySelector('#pm-perfil');
+      const mantener = backdrop.querySelector('#pm-mantener');
+      const cargaWrap = backdrop.querySelector('#pm-carga-wrap');
+      const hint = backdrop.querySelector('#pm-mantener-hint');
+
+      function refrescarMantener() {
+        if (!mantener || !sel) return;
+        const opt = sel.options[sel.selectedIndex];
+        // Si el nuevo PM ya era colaborador del equipo, su cupo se libera al ascender.
+        const hayCupo = vacantes > 0 || (opt && opt.dataset.enEquipo === '1');
+        mantener.disabled = !hayCupo;
+        if (!hayCupo) mantener.checked = false;
+        backdrop.querySelector('#pm-mantener-wrap').classList.toggle('is-disabled', !hayCupo);
+        hint.textContent = hayCupo
+          ? 'Si no lo marcas, su asignación en este proyecto se finaliza.'
+          : 'No hay vacante de colaborador: su asignación en este proyecto se finalizará.';
+        cargaWrap.hidden = !mantener.checked;
+      }
+      if (sel) {
+        const primeraValida = Array.prototype.find.call(sel.options, function (o) { return !o.disabled; });
+        if (primeraValida) sel.value = primeraValida.value;
+        sel.addEventListener('change', refrescarMantener);
+      }
+      if (mantener) mantener.addEventListener('change', refrescarMantener);
+      refrescarMantener();
+
       backdrop.querySelector('#pm-confirm').addEventListener('click', function () {
-        const nuevoPm = backdrop.querySelector('#pm-perfil').value;
-        submitForm('/resource-manager/proyectos/' + proyectoId + '/cambiar-pm', { nuevoPmPerfilId: nuevoPm });
+        if (!sel || !sel.value) return;
+        const valores = { nuevoPmPerfilId: sel.value, mantener: mantener && mantener.checked ? 'true' : 'false' };
+        if (mantener && mantener.checked) valores.cargaSaliente = backdrop.querySelector('#pm-carga').value;
+        submitForm('/resource-manager/proyectos/' + proyectoId + '/cambiar-pm', valores);
       });
     });
   }

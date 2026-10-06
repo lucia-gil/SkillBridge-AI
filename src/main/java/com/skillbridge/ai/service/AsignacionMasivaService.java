@@ -13,8 +13,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
- * Asignación en masa: asigna varios colaboradores a un proyecto en un solo
- * envío (checkboxes del modal "Asignar colaboradores").
+ * Asignación en masa del RESOURCE MANAGER: asigna varios colaboradores a un
+ * proyecto en un solo envío (checkboxes del modal "Asignar colaboradores").
+ * El PM no asigna: su equivalente es TalentMatchingService.proponerVarios
+ * (propuestas que el RM aprueba).
  *
  * No duplica ninguna regla de negocio: por cada persona llama a
  * ProyectoService.asignarColaborador(...) A TRAVÉS DEL PROXY de Spring, así
@@ -69,8 +71,7 @@ public class AsignacionMasivaService {
         List<String> errores = new ArrayList<>();
         for (Long perfilId : ids) {
             try {
-                proyectoService.asignarColaborador(proyectoId, perfilId, Roles.COLABORADOR, cargaPorcentaje,
-                        fechaInicio, actorUsuarioId);
+                proyectoService.asignarColaborador(proyectoId, perfilId, cargaPorcentaje, fechaInicio, actorUsuarioId);
                 asignados.add(proyectoService.nombreDePerfil(perfilId));
             } catch (OperacionInvalidaException ex) {
                 errores.add(ex.getMessage());

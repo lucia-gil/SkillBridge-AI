@@ -34,6 +34,14 @@ public class CorreoAutorizado {
     @Column(name = "fecha_uso")
     private LocalDateTime fechaUso;
 
+    /**
+     * Modelo v7 (fase 3): rol organizacional con el que se invitó
+     * (administrador | resource_manager | null = Miembro). Al registrarse,
+     * la cuenta nace con este rol. Columna creada por InicializadorEsquemaV7.
+     */
+    @Column(name = "rol_asignado", length = 20)
+    private String rolAsignado;
+
     public Long getId() {
         return id;
     }
@@ -84,5 +92,13 @@ public class CorreoAutorizado {
 
     public void setFechaUso(LocalDateTime fechaUso) {
         this.fechaUso = fechaUso;
+    }
+
+    public String getRolAsignado() {
+        return rolAsignado;
+    }
+
+    public void setRolAsignado(String rolAsignado) {
+        this.rolAsignado = rolAsignado;
     }
 }

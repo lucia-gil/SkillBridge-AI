@@ -48,7 +48,7 @@ public class ColaboradorInicioController {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         Long perfilId = sesion.getPerfilId();
 
-        List<MiProyectoFila> proyectosActivos = proyectoService.misProyectosActivos(perfilId);
+        List<MiProyectoFila> proyectosActivos = proyectoService.misProyectosComoColaborador(perfilId);
         List<HiloFila> hilosRecientes = foroService.listarHilosDeMisProyectos(perfilId);
         long habilidadesDeclaradas = perfilHabilidadRepository.countById_PerfilId(perfilId);
         long habilidadesValidadas = perfilHabilidadRepository.countById_PerfilIdAndValidadoPorIdIsNotNull(perfilId);

@@ -17,6 +17,9 @@ import com.skillbridge.ai.repository.AsignacionRepository;
 import com.skillbridge.ai.repository.EntregableRepository;
 import com.skillbridge.ai.repository.ForoPublicacionRepository;
 import com.skillbridge.ai.repository.PerfilRepository;
+import com.skillbridge.ai.repository.PropuestaAsignacionRepository;
+import com.skillbridge.ai.dto.IntegranteAnterior;
+import com.skillbridge.ai.model.PropuestaAsignacion;
 import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
@@ -58,12 +61,13 @@ public class ProyectoService {
     private final NotificacionService notificacionService;
     private final ConfiguracionService configuracionService;
     private final ObjectMapper objectMapper;
+    private final PropuestaAsignacionRepository propuestaRepository;
 
     public ProyectoService(ProyectoRepository proyectoRepository, AsignacionRepository asignacionRepository,
                             PerfilRepository perfilRepository, EntregableRepository entregableRepository,
                             ForoPublicacionRepository foroPublicacionRepository, AuditoriaService auditoriaService,
                             NotificacionService notificacionService, ConfiguracionService configuracionService,
-                            ObjectMapper objectMapper) {
+                            ObjectMapper objectMapper, PropuestaAsignacionRepository propuestaRepository) {
         this.proyectoRepository = proyectoRepository;
         this.asignacionRepository = asignacionRepository;
         this.perfilRepository = perfilRepository;
@@ -73,6 +77,7 @@ public class ProyectoService {
         this.notificacionService = notificacionService;
         this.configuracionService = configuracionService;
         this.objectMapper = objectMapper;
+        this.propuestaRepository = propuestaRepository;
     }
 
     // ───────────────────────── Lectura ─────────────────────────
@@ -100,11 +105,27 @@ public class ProyectoService {
                         a.getPerfil().getUsuario().getCorreo(), a.getRolEnProyecto(), a.getCargaPorcentaje()))
                 .collect(Collectors.toList());
         int avance = avanceHeuristico(p.getFechaInicio(), p.getFechaFinEstimada(), p.getEstado());
-        return new ProyectoDetalle(p.getId(), p.getNombre(), p.getDescripcion(), parseTecnologias(p.getTecnologias()),
+        ProyectoDetalle detalle = new ProyectoDetalle(p.getId(), p.getNombre(), p.getDescripcion(), parseTecnologias(p.getTecnologias()),
                 p.getEstado(), formatear(p.getFechaInicio()), formatear(p.getFechaFinEstimada()),
                 p.getFechaInicio() == null ? null : p.getFechaInicio().toString(),
                 p.getFechaFinEstimada() == null ? null : p.getFechaFinEstimada().toString(),
                 avance, p.getColaboradoresRequeridos(), pmNombre, equipo);
+        // Modelo v7 (fase 2): datos de la pausa / cierre y equipo anterior.
+        if ("en_pausa".equals(p.getEstado())) {
+            detalle.setFechaPausaLabel(p.getFechaPausa() != null ? formatear(p.getFechaPausa()) : null);
+            detalle.setMotivoPausa(p.getMotivoPausa());
+            detalle.setFechaReanudacionLabel(p.getFechaReanudacionEstimada() != null ? formatear(p.getFechaReanudacionEstimada()) : null);
+            detalle.setFechaReanudacionIso(p.getFechaReanudacionEstimada() != null ? p.getFechaReanudacionEstimada().toString() : null);
+            detalle.setReanudacionVencida(p.getFechaReanudacionEstimada() != null
+                    && p.getFechaReanudacionEstimada().isBefore(LocalDate.now()));
+        }
+        if ("cancelado".equals(p.getEstado())) {
+            detalle.setRazonCancelacion(p.getRazonCancelacion());
+        }
+        if ("en_pausa".equals(p.getEstado()) || estaCerrado(p)) {
+            detalle.setEquipoAnterior(equipoAnterior(p));
+        }
+        return detalle;
     }
 
     private String nombrePmActivo(Long proyectoId) {
@@ -120,7 +141,7 @@ public class ProyectoService {
         // poder ser asignados como colaborador. Decision confirmada con el
         // equipo (ver PDF de permisos, 2 de octubre).
         return perfilRepository.listarActivosConUsuario().stream()
-                .filter(p -> p.getUsuario().getRolOrganizacional() == null)
+                .filter(ProyectoService::esMiembroAsignable)
                 .map(p -> new PerfilOpcion(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo()))
                 .collect(Collectors.toList());
     }
@@ -133,18 +154,27 @@ public class ProyectoService {
     @Transactional(readOnly = true)
     public List<PerfilAsignable> listarPerfilesAsignables() {
         return perfilRepository.listarActivosConUsuario().stream()
-                .filter(p -> p.getUsuario().getRolOrganizacional() == null)
+                .filter(ProyectoService::esMiembroAsignable)
                 .map(p -> new PerfilAsignable(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo(),
                         p.getCargo() != null ? p.getCargo() : "",
                         sumarCargaActivaSegura(p.getId()),
-                        asignacionRepository.listarPorPerfilYEstado(p.getId(), "activa").size()))
+                        (int) asignacionRepository.contarProyectosVigentesDePerfil(p.getId())))
                 .collect(Collectors.toList());
     }
 
     /** Límite de carga (%) configurado en Configuración (por defecto 100). */
     public int limiteCargaConfigurado() {
         var configuracion = configuracionService.obtenerMapa();
-        return parseEntero(configuracionService.valor(configuracion, "limite_carga_colaborador", "100"), 100);
+        int configurado = parseEntero(configuracionService.valor(configuracion, "limite_carga_colaborador", "100"), 100);
+        // Tope duro del modelo v7: nadie puede quedar por encima del 100%,
+        // aunque en Configuración se haya guardado un valor mayor.
+        return Math.max(1, Math.min(LIMITE_CARGA_MAXIMO, configurado));
+    }
+
+    /** Máximo de proyectos vigentes simultáneos por persona (Configuración, por defecto 3). */
+    public int maximoProyectosConfigurado() {
+        var configuracion = configuracionService.obtenerMapa();
+        return parseEntero(configuracionService.valor(configuracion, "maximo_proyectos_simultaneos", "3"), 3);
     }
 
     /**
@@ -216,14 +246,14 @@ public class ProyectoService {
      * vacante adicional del equipo.
      */
     public int contarColaboradoresDisponibles(Long pmPerfilId) {
-        var configuracion = configuracionService.obtenerMapa();
-        int limiteCarga = parseEntero(configuracionService.valor(configuracion, "limite_carga_colaborador", "100"), 100);
-        int maximoProyectos = parseEntero(configuracionService.valor(configuracion, "maximo_proyectos_simultaneos", "3"), 3);
+        int limiteCarga = limiteCargaConfigurado();
+        int maximoProyectos = maximoProyectosConfigurado();
 
         return (int) perfilRepository.listarActivosConUsuario().stream()
+                .filter(ProyectoService::esMiembroAsignable)
                 .filter(p -> !p.getId().equals(pmPerfilId))
                 .filter(p -> p.getDisponibilidadPorcentaje() != null && p.getDisponibilidadPorcentaje() > 0)
-                .filter(p -> asignacionRepository.listarPorPerfilYEstado(p.getId(), "activa").size() < maximoProyectos)
+                .filter(p -> asignacionRepository.contarProyectosVigentesDePerfil(p.getId()) < maximoProyectos)
                 .filter(p -> sumarCargaActivaSegura(p.getId()) < limiteCarga)
                 .count();
     }
@@ -252,6 +282,17 @@ public class ProyectoService {
     public List<MiProyectoFila> misProyectosActivos(Long perfilId) {
         return asignacionRepository.listarPorPerfilYEstado(perfilId, "activa").stream()
                 .map(this::aMiProyectoFila)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Proyectos actuales donde el perfil COLABORA (vista Colaborador). Si la
+     * misma persona lidera otros proyectos, esos se ven en su vista Project
+     * Manager, no aquí (modelo v7, caso "Paco").
+     */
+    public List<MiProyectoFila> misProyectosComoColaborador(Long perfilId) {
+        return misProyectosActivos(perfilId).stream()
+                .filter(m -> Roles.COLABORADOR.equals(m.getRolEnProyectoCrudo()))
                 .collect(Collectors.toList());
     }
 
@@ -298,6 +339,14 @@ public class ProyectoService {
         }
         Perfil pm = perfilRepository.findById(pmPerfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona un Project Manager válido."));
+        // Modelo v7: solo un Miembro activo (sin rol organizacional) puede
+        // liderar un proyecto; Administrador y Resource Manager nunca
+        // participan en proyectos. Además debe tener capacidad para el 20%.
+        if (!esMiembroAsignable(pm)) {
+            throw new OperacionInvalidaException(pm.getUsuario().getNombreCompleto()
+                    + " no puede liderar proyectos: solo un Miembro activo (sin rol de Administrador o Resource Manager) puede ser Project Manager.");
+        }
+        exigirCapacidad(pm, CARGA_PM_POR_DEFECTO);
         int disponibles = contarColaboradoresDisponibles(pmPerfilId);
         if (colaboradoresRequeridos < 0) {
             throw new OperacionInvalidaException("La cantidad de colaboradores requeridos no puede ser negativa.");
@@ -323,7 +372,7 @@ public class ProyectoService {
         pmAsig.setProyectoId(p.getId());
         pmAsig.setPerfilId(pm.getId());
         pmAsig.setRolEnProyecto(Roles.PROJECT_MANAGER);
-        pmAsig.setCargaPorcentaje(20);
+        pmAsig.setCargaPorcentaje(CARGA_PM_POR_DEFECTO);
         pmAsig.setEstado("activa");
         pmAsig.setFechaInicio(fechaInicio);
         asignacionRepository.save(pmAsig);
@@ -376,34 +425,228 @@ public class ProyectoService {
                         + (razon != null && !razon.isBlank() ? " por: " + razon : "") + ")", motivoLimpio));
     }
 
+    /**
+     * Transiciones de estado permitidas (modelo v7, fase 2). Completado y
+     * Cancelado son estados de cierre: desde ahí solo se puede REABRIR, y
+     * reabrir siempre vuelve a Planificación.
+     */
+    private static final java.util.Map<String, List<String>> TRANSICIONES = java.util.Map.of(
+            "planificacion", List.of("activo", "en_pausa", "completado", "cancelado"),
+            "activo", List.of("planificacion", "en_pausa", "completado", "cancelado"),
+            "en_pausa", List.of("activo", "planificacion", "completado", "cancelado"),
+            "completado", List.of("planificacion"),
+            "cancelado", List.of("planificacion"));
+
+    /**
+     * Cambia el estado de un proyecto aplicando sus efectos (modelo v7):
+     *
+     *  - PAUSAR (motivo + fecha estimada de reanudación, obligatorios): los
+     *    colaboradores SALEN del proyecto (asignación finalizada con fecha de
+     *    hoy) y su carga se libera de verdad; el PM se queda (planifica la
+     *    reanudación) y su carga sigue contando. Así, al reanudar, nadie
+     *    puede quedar sobreasignado.
+     *  - REANUDAR (en_pausa -> activo/planificacion): el proyecto vuelve sin
+     *    equipo; quien reanuda puede marcar a quién reincorporar y eso genera
+     *    propuestas que aprueba el Resource Manager (lo hace el controlador
+     *    con TalentMatchingService.proponerReincorporaciones).
+     *  - COMPLETAR / CANCELAR: los colaboradores pasan a finalizada /
+     *    cancelada; el PM se mantiene (acceso al historial) pero su carga deja
+     *    de contar porque el proyecto ya no es vigente.
+     *  - REABRIR (completado/cancelado -> planificacion): exige que el PM
+     *    siga siendo un Miembro activo con capacidad; si no, el RM debe
+     *    cambiar el PM antes.
+     *
+     * En pausa, completar y cancelar, las propuestas pendientes se rechazan
+     * solas con el motivo correspondiente.
+     */
     @Transactional
-    public void cambiarEstado(Long proyectoId, String nuevoEstado, String razonCancelacion, Long actorUsuarioId) {
+    public void cambiarEstado(Long proyectoId, String nuevoEstado, String motivo, LocalDate fechaReanudacion,
+                              Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
-        List<String> validos = List.of("planificacion", "activo", "en_pausa", "completado", "cancelado");
-        if (!validos.contains(nuevoEstado)) {
+        String anterior = p.getEstado();
+        if (!TRANSICIONES.containsKey(nuevoEstado)) {
             throw new OperacionInvalidaException("Estado de proyecto no reconocido.");
         }
-        if ("cancelado".equals(nuevoEstado) && (razonCancelacion == null || razonCancelacion.isBlank())) {
-            throw new OperacionInvalidaException("Para cancelar el proyecto debes indicar una razón.");
+        if (nuevoEstado.equals(anterior)) {
+            throw new OperacionInvalidaException("El proyecto ya está " + etiquetaEstado(anterior) + ".");
         }
-        if ("en_pausa".equals(nuevoEstado) && !"en_pausa".equals(p.getEstado())
-                && AuditoriaService.limpiarMotivo(razonCancelacion) == null) {
-            throw new OperacionInvalidaException("Para pausar el proyecto debes indicar el motivo de la pausa.");
+        if (!TRANSICIONES.getOrDefault(anterior, List.of()).contains(nuevoEstado)) {
+            throw new OperacionInvalidaException("Un proyecto " + etiquetaEstado(anterior).replace("en ", "")
+                    + " no puede pasar a " + etiquetaEstado(nuevoEstado).replace("en ", "")
+                    + (estaCerrado(p) ? ". Usa \"Reabrir\": el proyecto vuelve a Planificación." : "."));
         }
-        String anterior = p.getEstado();
-        p.setEstado(nuevoEstado);
-        if ("cancelado".equals(nuevoEstado)) {
-            p.setRazonCancelacion(razonCancelacion.trim());
-        } else {
-            p.setRazonCancelacion(null);
+        String motivoLimpio = AuditoriaService.limpiarMotivo(motivo);
+        LocalDate hoy = LocalDate.now();
+
+        switch (nuevoEstado) {
+            case "en_pausa" -> {
+                if (motivoLimpio == null) {
+                    throw new OperacionInvalidaException("Para pausar el proyecto debes indicar el motivo de la pausa.");
+                }
+                if (fechaReanudacion == null) {
+                    throw new OperacionInvalidaException("Para pausar el proyecto debes indicar la fecha estimada de reanudación.");
+                }
+                if (!fechaReanudacion.isAfter(hoy)) {
+                    throw new OperacionInvalidaException("La fecha estimada de reanudación debe ser posterior a hoy.");
+                }
+                int salen = sacarColaboradores(p, "finalizada", actorUsuarioId,
+                        "El proyecto \"" + p.getNombre() + "\" se pausó hasta el " + formatear(fechaReanudacion)
+                                + " (motivo: " + motivoLimpio + "). Tu asignación finalizó y tu carga quedó liberada.");
+                int rechazadas = rechazarPropuestasPendientes(p, "El proyecto se pausó.");
+                p.setEstado("en_pausa");
+                p.setFechaPausa(hoy);
+                p.setMotivoPausa(motivoLimpio);
+                p.setFechaReanudacionEstimada(fechaReanudacion);
+                p.setRazonCancelacion(null);
+                proyectoRepository.save(p);
+                auditoriaService.registrar(actorUsuarioId, "PROYECTO_PAUSADO", "proyecto", proyectoId,
+                        AuditoriaService.json("estado", anterior),
+                        "{\"estado\":\"en_pausa\",\"fecha_reanudacion_estimada\":\"" + fechaReanudacion + "\"}",
+                        p.getNombre() + " pausado hasta el " + formatear(fechaReanudacion) + " — Motivo: " + motivoLimpio
+                                + ". Salen " + salen + " colaborador(es); " + rechazadas + " propuesta(s) pendiente(s) rechazada(s).");
+                notificarPm(p, "Proyecto en pausa", "\"" + p.getNombre() + "\" quedó en pausa hasta el " + formatear(fechaReanudacion)
+                        + ". El equipo salió del proyecto; al reanudarlo podrás proponer su reincorporación.");
+            }
+            case "completado", "cancelado" -> {
+                boolean cancelar = "cancelado".equals(nuevoEstado);
+                if (cancelar && motivoLimpio == null) {
+                    throw new OperacionInvalidaException("Para cancelar el proyecto debes indicar una razón.");
+                }
+                int salen = sacarColaboradores(p, cancelar ? "cancelada" : "finalizada", actorUsuarioId,
+                        "El proyecto \"" + p.getNombre() + "\" " + (cancelar ? "fue cancelado" : "se completó")
+                                + ". Tu asignación " + (cancelar ? "se canceló" : "finalizó") + " y queda en tu historial.");
+                int rechazadas = rechazarPropuestasPendientes(p, cancelar ? "El proyecto fue cancelado." : "El proyecto se completó.");
+                p.setEstado(nuevoEstado);
+                p.setRazonCancelacion(cancelar ? motivoLimpio : null);
+                limpiarPausa(p);
+                proyectoRepository.save(p);
+                auditoriaService.registrar(actorUsuarioId, cancelar ? "PROYECTO_CANCELADO" : "PROYECTO_COMPLETADO",
+                        "proyecto", proyectoId, AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevoEstado),
+                        AuditoriaService.conMotivo(p.getNombre() + ". Salen " + salen + " colaborador(es); "
+                                + rechazadas + " propuesta(s) pendiente(s) rechazada(s)", motivoLimpio) + ".");
+                notificarPm(p, cancelar ? "Proyecto cancelado" : "Proyecto completado",
+                        "\"" + p.getNombre() + "\" " + (cancelar ? "fue cancelado" : "se completó")
+                                + ". Lo sigues viendo en tu historial como su Project Manager.");
+            }
+            default -> { // planificacion / activo
+                Asignacion pm = pmActivoDe(proyectoId).orElse(null);
+                if ("en_pausa".equals(anterior) || estaCerrado(p)) {
+                    // Reanudar o reabrir: el proyecto necesita un PM operativo.
+                    if (pm == null || !esMiembroAsignable(pm.getPerfil())) {
+                        throw new OperacionInvalidaException("\"" + p.getNombre() + "\" no tiene un Project Manager activo. "
+                                + "El Resource Manager debe usar \"Cambiar PM\" antes de " + (estaCerrado(p) ? "reabrirlo." : "reanudarlo."));
+                    }
+                }
+                if (estaCerrado(p)) {
+                    // Al reabrir, la carga del PM vuelve a contar: debe tener capacidad.
+                    int cargaPm = valor(pm.getCargaPorcentaje());
+                    int total = sumarCargaActivaSegura(pm.getPerfilId()) + cargaPm;
+                    int limite = limiteCargaConfigurado();
+                    if (total > limite) {
+                        throw new OperacionInvalidaException("No se puede reabrir: el PM " + pm.getPerfil().getUsuario().getNombreCompleto()
+                                + " quedaría con " + total + "% de carga (límite " + limite + "%). El Resource Manager debe cambiar el PM o rebalancear su carga.");
+                    }
+                    if (asignacionRepository.contarProyectosVigentesDePerfil(pm.getPerfilId()) >= maximoProyectosConfigurado()) {
+                        throw new OperacionInvalidaException("No se puede reabrir: el PM ya está en el máximo de proyectos vigentes configurado.");
+                    }
+                }
+                String accion = "en_pausa".equals(anterior) ? "PROYECTO_REANUDADO"
+                        : estaCerrado(p) ? "PROYECTO_REABIERTO" : "PROYECTO_ESTADO_CAMBIADO";
+                p.setEstado(nuevoEstado);
+                p.setRazonCancelacion(null);
+                limpiarPausa(p);
+                proyectoRepository.save(p);
+                auditoriaService.registrar(actorUsuarioId, accion, "proyecto", proyectoId,
+                        AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevoEstado),
+                        AuditoriaService.conMotivo(p.getNombre() + ": " + etiquetaEstado(anterior) + " → " + etiquetaEstado(nuevoEstado), motivoLimpio) + ".");
+            }
         }
-        proyectoRepository.save(p);
-        String detalle = "cancelado".equals(nuevoEstado)
-                ? p.getNombre() + " (razón: " + p.getRazonCancelacion() + ")"
-                : AuditoriaService.conMotivo(p.getNombre(), cambioDeEstado(anterior, nuevoEstado) ? razonCancelacion : null);
-        auditoriaService.registrar(actorUsuarioId, "PROYECTO_ESTADO_CAMBIADO", "proyecto", proyectoId,
-                AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevoEstado), detalle);
+    }
+
+    /**
+     * Saca del proyecto a todos los colaboradores activos (el PM se queda),
+     * con el estado indicado y fecha_fin = hoy. No borra filas: el periodo
+     * real queda en el historial de cada persona.
+     */
+    private int sacarColaboradores(Proyecto p, String estadoFinal, Long actorUsuarioId, String aviso) {
+        List<Asignacion> colaboradores = asignacionRepository.listarEquipoDeProyecto(p.getId(), "activa").stream()
+                .filter(a -> Roles.COLABORADOR.equals(a.getRolEnProyecto()))
+                .collect(Collectors.toList());
+        for (Asignacion a : colaboradores) {
+            a.setEstado(estadoFinal);
+            a.setFechaFin(LocalDate.now());
+            asignacionRepository.save(a);
+            auditoriaService.registrar(actorUsuarioId, "ASIGNACION_FINALIZADA", "asignacion", a.getId(),
+                    AuditoriaService.json("estado", "activa"), AuditoriaService.json("estado", estadoFinal),
+                    a.getPerfil().getUsuario().getNombreCompleto() + " sale de \"" + p.getNombre() + "\" por cambio de estado del proyecto.");
+            notificacionService.crear(a.getPerfilId(), "asignacion", "Saliste de un proyecto", aviso, "proyectos.html");
+        }
+        return colaboradores.size();
+    }
+
+    private int rechazarPropuestasPendientes(Proyecto p, String motivo) {
+        List<PropuestaAsignacion> pendientes = propuestaRepository.findByProyectoIdAndEstado(p.getId(), "pendiente");
+        for (PropuestaAsignacion prop : pendientes) {
+            prop.setEstado("rechazada");
+            prop.setMotivoResolucion(motivo + " (rechazo automático)");
+            prop.setFechaResolucion(java.time.LocalDateTime.now());
+            propuestaRepository.save(prop);
+            notificacionService.crear(prop.getSolicitadoPorPerfilId(), "resultado_ia", "Propuesta cerrada automáticamente",
+                    "Tu propuesta para \"" + p.getNombre() + "\" se cerró: " + motivo, "ai-talent-matching.html");
+        }
+        return pendientes.size();
+    }
+
+    private void limpiarPausa(Proyecto p) {
+        p.setFechaPausa(null);
+        p.setMotivoPausa(null);
+        p.setFechaReanudacionEstimada(null);
+    }
+
+    private void notificarPm(Proyecto p, String titulo, String detalle) {
+        pmActivoDe(p.getId()).ifPresent(pm -> notificacionService.crear(pm.getPerfilId(), "asignacion", titulo, detalle, "proyectos.html"));
+    }
+
+    /**
+     * Equipo que había justo antes de la última pausa o cierre: los
+     * colaboradores que salieron en la fecha más reciente (todos salen el
+     * mismo día al pausar/cerrar). Para cada uno se indica si hoy tiene
+     * capacidad para volver con la misma dedicación.
+     */
+    @Transactional(readOnly = true)
+    public List<IntegranteAnterior> equipoAnterior(Long proyectoId) {
+        Proyecto p = proyectoRepository.findById(proyectoId)
+                .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
+        return equipoAnterior(p);
+    }
+
+    private List<IntegranteAnterior> equipoAnterior(Proyecto p) {
+        List<Asignacion> salientes = asignacionRepository.listarColaboradoresSalientes(p.getId());
+        if (salientes.isEmpty()) return List.of();
+        LocalDate ultimaSalida = salientes.get(0).getFechaFin();
+        java.util.Set<Long> activos = asignacionRepository.listarEquipoDeProyecto(p.getId(), "activa").stream()
+                .map(Asignacion::getPerfilId).collect(Collectors.toSet());
+        int limite = limiteCargaConfigurado();
+        int maximo = maximoProyectosConfigurado();
+        java.util.Map<Long, IntegranteAnterior> porPerfil = new java.util.LinkedHashMap<>();
+        for (Asignacion a : salientes) {
+            if (!ultimaSalida.equals(a.getFechaFin()) || activos.contains(a.getPerfilId()) || porPerfil.containsKey(a.getPerfilId())) continue;
+            Perfil perfil = a.getPerfil();
+            int cargaAnterior = valor(a.getCargaPorcentaje());
+            int cargaActual = sumarCargaActivaSegura(a.getPerfilId());
+            String motivo = null;
+            if (!esMiembroAsignable(perfil)) {
+                motivo = "Ya no es un Miembro activo";
+            } else if (cargaActual + cargaAnterior > limite) {
+                motivo = "Tiene " + cargaActual + "% de carga; con " + cargaAnterior + "% llegaría a " + (cargaActual + cargaAnterior) + "%";
+            } else if (asignacionRepository.contarProyectosVigentesDePerfil(a.getPerfilId()) >= maximo) {
+                motivo = "Está en el máximo de " + maximo + " proyectos vigentes";
+            }
+            porPerfil.put(a.getPerfilId(), new IntegranteAnterior(a.getPerfilId(), perfil.getUsuario().getNombreCompleto(),
+                    perfil.getCargo() != null ? perfil.getCargo() : "", cargaAnterior, cargaActual, motivo == null, motivo));
+        }
+        return new ArrayList<>(porPerfil.values());
     }
 
     /**
@@ -414,8 +657,7 @@ public class ProyectoService {
      */
     @Transactional
     public void editarProyecto(Long proyectoId, String nombre, String descripcion, List<String> tecnologias,
-                                LocalDate fechaInicio, LocalDate fechaFinEstimada, String nuevoEstado,
-                                String razonCancelacion, Long actorUsuarioId) {
+                                LocalDate fechaInicio, LocalDate fechaFinEstimada, Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         if (nombre == null || nombre.trim().isEmpty()) {
@@ -425,17 +667,9 @@ public class ProyectoService {
                 && !nombre.trim().equalsIgnoreCase(p.getNombre())) {
             throw new OperacionInvalidaException("Ya existe un proyecto con ese nombre.");
         }
-        List<String> validos = List.of("planificacion", "activo", "en_pausa", "completado", "cancelado");
-        if (!validos.contains(nuevoEstado)) {
-            throw new OperacionInvalidaException("Estado de proyecto no reconocido.");
-        }
-        if ("cancelado".equals(nuevoEstado) && (razonCancelacion == null || razonCancelacion.isBlank())) {
-            throw new OperacionInvalidaException("Para cancelar el proyecto debes indicar una razón.");
-        }
-        if ("en_pausa".equals(nuevoEstado) && !"en_pausa".equals(p.getEstado())
-                && AuditoriaService.limpiarMotivo(razonCancelacion) == null) {
-            throw new OperacionInvalidaException("Para pausar el proyecto debes indicar el motivo de la pausa.");
-        }
+        // Modelo v7 (fase 2): el estado ya NO se edita aquí. Cada transición
+        // tiene efectos (sacar al equipo, rechazar propuestas, reincorporar),
+        // así que pasa siempre por cambiarEstado(...).
         if (fechaInicio == null) {
             throw new OperacionInvalidaException("La fecha de inicio es obligatoria.");
         }
@@ -448,71 +682,48 @@ public class ProyectoService {
         if (ChronoUnit.DAYS.between(fechaInicio, fechaFinEstimada) < 7) {
             throw new OperacionInvalidaException("Debe haber al menos 7 días de diferencia entre la fecha de inicio y la fecha de fin.");
         }
-        String estadoAnterior = p.getEstado();
         p.setNombre(nombre.trim());
         p.setDescripcion(descripcion != null && !descripcion.isBlank() ? descripcion.trim() : null);
         p.setTecnologias(serializarTecnologias(tecnologias));
         p.setFechaInicio(fechaInicio);
         p.setFechaFinEstimada(fechaFinEstimada);
-        p.setEstado(nuevoEstado);
-        if ("cancelado".equals(nuevoEstado)) {
-            p.setRazonCancelacion(razonCancelacion.trim());
-        } else {
-            p.setRazonCancelacion(null);
-        }
         proyectoRepository.save(p);
-        String detalle = "cancelado".equals(nuevoEstado)
-                ? p.getNombre() + " (razón: " + p.getRazonCancelacion() + ")"
-                : AuditoriaService.conMotivo(p.getNombre(), cambioDeEstado(estadoAnterior, nuevoEstado) ? razonCancelacion : null);
-        auditoriaService.registrar(actorUsuarioId, "PROYECTO_EDITADO", "proyecto", proyectoId,
-                AuditoriaService.json("estado", estadoAnterior), AuditoriaService.json("estado", nuevoEstado), detalle);
+        auditoriaService.registrar(actorUsuarioId, "PROYECTO_EDITADO", "proyecto", proyectoId, null, null,
+                "Datos del proyecto \"" + p.getNombre() + "\" actualizados.");
     }
 
+    /**
+     * Asigna a un Miembro como COLABORADOR de un proyecto (asignación
+     * directa del Resource Manager, o aprobación de una propuesta del PM).
+     *
+     * Modelo v7: el rol Project Manager NUNCA se otorga por aquí; solo al
+     * crear el proyecto (crear) o con cambiar/transferir el PM
+     * (reasignarProjectManager / transferirLiderazgo).
+     */
     @Transactional
-    public void asignarColaborador(Long proyectoId, Long perfilId, String rolEnProyecto, int cargaPorcentaje,
+    public void asignarColaborador(Long proyectoId, Long perfilId, int cargaPorcentaje,
                                     LocalDate fechaInicio, Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
+        if (!admiteNuevosIntegrantes(p)) {
+            throw new OperacionInvalidaException("\"" + p.getNombre() + "\" está " + etiquetaEstado(p.getEstado())
+                    + ": solo se puede sumar personas a proyectos en Planificación o Activo.");
+        }
         Perfil perfil = perfilRepository.findById(perfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona un colaborador válido."));
-        if (!Roles.PROJECT_MANAGER.equals(rolEnProyecto) && !Roles.COLABORADOR.equals(rolEnProyecto)) {
-            throw new OperacionInvalidaException("Rol de proyecto no reconocido.");
+        // Defensa en el backend (no solo en el selector, que ya los oculta).
+        if (!esMiembroAsignable(perfil)) {
+            throw new OperacionInvalidaException(perfil.getUsuario().getNombreCompleto()
+                    + " no puede ser asignado: solo Miembros con cuenta activa participan en proyectos "
+                    + "(Administradores y Resource Managers nunca).");
         }
-        // Defensa en el backend (no solo en el selector, que ya los oculta):
-        // un usuario con rol_organizacional (Admin o Resource Manager) no
-        // puede quedar como colaborador de un proyecto.
-        if (Roles.COLABORADOR.equals(rolEnProyecto) && perfil.getUsuario().getRolOrganizacional() != null) {
-            throw new OperacionInvalidaException(
-                    "Un usuario con rol organizacional (Admin o Resource Manager) no puede ser asignado como colaborador.");
+        long colaboradoresActivos = asignacionRepository.countByProyectoIdAndEstadoAndRolEnProyecto(
+                proyectoId, "activa", Roles.COLABORADOR);
+        if (colaboradoresActivos >= requeridos(p)) {
+            throw new OperacionInvalidaException("El proyecto ya tiene cubiertas sus "
+                    + requeridos(p) + " vacante(s) de colaborador.");
         }
-        // Regla confirmada con el equipo: solo puede haber UN Project Manager
-        // activo por proyecto. Si ya hay uno y se intenta asignar otro, se
-        // bloquea antes de tocar la BD - para CAMBIAR de PM se usa
-        // reasignarProjectManager(...), que hace el reemplazo completo en
-        // una sola transaccion (ver mas abajo).
-        if (Roles.PROJECT_MANAGER.equals(rolEnProyecto)) {
-            long pmActivos = asignacionRepository.countByProyectoIdAndRolEnProyectoAndEstado(
-                    proyectoId, Roles.PROJECT_MANAGER, "activa");
-            if (pmActivos > 0) {
-                throw new OperacionInvalidaException(
-                        "Este proyecto ya tiene un Project Manager activo. Usa \"Cambiar Project Manager\" para reemplazarlo.");
-            }
-        }
-        if (Roles.COLABORADOR.equals(rolEnProyecto)) {
-            long colaboradoresActivos = asignacionRepository.countByProyectoIdAndEstadoAndRolEnProyecto(
-                    proyectoId, "activa", Roles.COLABORADOR);
-            if (colaboradoresActivos >= p.getColaboradoresRequeridos()) {
-                throw new OperacionInvalidaException("El proyecto ya tiene cubiertas sus "
-                        + p.getColaboradoresRequeridos() + " vacante(s) de colaborador.");
-            }
-        }
-        // Límites configurables (RF08, configuracion_global) en vez de topes
-        // fijos: así "Configuración" deja de ser un panel decorativo y
-        // efectivamente restringe estas dos operaciones.
-        var configuracion = configuracionService.obtenerMapa();
-        int limiteCarga = parseEntero(configuracionService.valor(configuracion, "limite_carga_colaborador", "100"), 100);
-        int maximoProyectos = parseEntero(configuracionService.valor(configuracion, "maximo_proyectos_simultaneos", "3"), 3);
-
+        int limiteCarga = limiteCargaConfigurado();
         if (cargaPorcentaje < 1 || cargaPorcentaje > limiteCarga) {
             throw new OperacionInvalidaException("La dedicación debe estar entre 1% y " + limiteCarga + "% (límite configurado en Configuración).");
         }
@@ -520,36 +731,23 @@ public class ProyectoService {
         if (existente.isPresent()) {
             throw new OperacionInvalidaException(perfil.getUsuario().getNombreCompleto() + " ya tiene una asignación activa en este proyecto.");
         }
-        int proyectosActivosDelPerfil = asignacionRepository.listarPorPerfilYEstado(perfilId, "activa").size();
-        if (proyectosActivosDelPerfil >= maximoProyectos) {
-            throw new OperacionInvalidaException(perfil.getUsuario().getNombreCompleto() + " ya está en " + proyectosActivosDelPerfil +
-                    " proyecto(s) activo(s), el máximo configurado es " + maximoProyectos + ".");
-        }
-        int cargaActual = sumarCargaActivaSegura(perfilId);
-        if (cargaActual + cargaPorcentaje > limiteCarga) {
-            throw new OperacionInvalidaException(perfil.getUsuario().getNombreCompleto() + " ya tiene " + cargaActual +
-                    "% de carga activa; esta asignación superaría el límite de " + limiteCarga + "%.");
-        }
+        exigirCapacidad(perfil, cargaPorcentaje);
 
         Asignacion a = new Asignacion();
         a.setProyectoId(proyectoId);
         a.setPerfilId(perfilId);
-        a.setRolEnProyecto(rolEnProyecto);
+        a.setRolEnProyecto(Roles.COLABORADOR);
         a.setCargaPorcentaje(cargaPorcentaje);
         a.setEstado("activa");
         a.setFechaInicio(fechaInicio != null ? fechaInicio : LocalDate.now());
         asignacionRepository.save(a);
 
-        auditoriaService.registrar(actorUsuarioId, "ASIGNACION_CREADA", "asignacion", a.getId(), null, null,
-                perfil.getUsuario().getNombreCompleto() + " asignado a \"" + p.getNombre() + "\" (" + cargaPorcentaje + "%).");
+        auditoriaService.registrar(actorUsuarioId, "ASIGNACION_CREADA", "asignacion", a.getId(), null,
+                AuditoriaService.json("rol_en_proyecto", Roles.COLABORADOR),
+                perfil.getUsuario().getNombreCompleto() + " asignado a \"" + p.getNombre() + "\" como colaborador (" + cargaPorcentaje + "%).");
         notificacionService.crear(perfilId, "asignacion", "Nueva asignación de proyecto",
-                "Fuiste asignado a \"" + p.getNombre() + "\" como " +
-                        (Roles.PROJECT_MANAGER.equals(rolEnProyecto) ? "Project Manager" : "colaborador") +
-                        " con " + cargaPorcentaje + "% de dedicación.", "proyectos.html");
-    }
-
-    private static boolean cambioDeEstado(String anterior, String nuevo) {
-        return anterior == null || !anterior.equals(nuevo);
+                "Fuiste asignado a \"" + p.getNombre() + "\" como colaborador con " + cargaPorcentaje + "% de dedicación.",
+                "proyectos.html");
     }
 
     @Transactional
@@ -563,19 +761,16 @@ public class ProyectoService {
         Asignacion a = asignacionRepository.findById(asignacionId)
                 .orElseThrow(() -> new OperacionInvalidaException("La asignación ya no existe."));
 
-        // Regla de negocio confirmada con el equipo: un proyecto NUNCA debe
-        // quedar sin ningun Project Manager activo. Si esta asignacion es
-        // de rol project_manager y es la UNICA activa de ese rol en el
-        // proyecto, se bloquea aqui - para CAMBIAR de PM se usa
-        // reasignarProjectManager(...) en vez de este metodo, que hace el
-        // reemplazo completo en una sola transaccion (ver mas abajo).
+        // Un proyecto vigente NUNCA queda sin Project Manager. Modelo v7: la
+        // fila del PM nunca se finaliza a mano; se reemplaza con "Cambiar PM"
+        // (Resource Manager) o "Transferir liderazgo" (el propio PM), que
+        // hacen el reemplazo completo en una sola transacción.
         if (Roles.PROJECT_MANAGER.equals(a.getRolEnProyecto()) && "activa".equals(a.getEstado())) {
-            long pmActivos = asignacionRepository.countByProyectoIdAndRolEnProyectoAndEstado(
-                    a.getProyectoId(), Roles.PROJECT_MANAGER, "activa");
-            if (pmActivos <= 1) {
-                throw new OperacionInvalidaException(
-                        "No puedes finalizar esta asignación: es el único Project Manager activo del proyecto. Usa \"Cambiar Project Manager\" para reemplazarlo.");
-            }
+            throw new OperacionInvalidaException(
+                    "No se puede finalizar la asignación del Project Manager. Usa \"Cambiar Project Manager\" o \"Transferir liderazgo\" para reemplazarlo.");
+        }
+        if (!"activa".equals(a.getEstado())) {
+            throw new OperacionInvalidaException("Esa asignación ya no está activa.");
         }
 
         a.setEstado("finalizada");
@@ -588,72 +783,235 @@ public class ProyectoService {
     }
 
     /**
-     * Reemplaza al Project Manager activo de un proyecto por otra persona,
-     * en una sola transaccion: al PM actual (si existe) se lo BAJA a
-     * colaborador (no se finaliza su asignacion) y se crea/actualiza la del
-     * nuevo PM. Bajar en vez de finalizar es intencional: reemplazar al PM
-     * no significa que esa persona deba salir del proyecto - si el equipo
-     * decide que sí debe salir, eso se hace aparte con el boton
-     * "Finalizar" de su fila, como cualquier otra asignacion.
+     * "Cambiar PM" del Resource Manager: cualquier proyecto vigente, a favor
+     * de cualquier Miembro activo con capacidad (si ya está en el equipo, se
+     * asciende su misma fila y conserva su dedicación; si no, entra con 20%).
      *
-     * Esto tambien evita el problema de "candado sin llave" mencionado en
-     * finalizarAsignacion(): como aqui nunca se finaliza al PM saliente
-     * (solo cambia de rol), nunca se pasa por el estado "0 PM activos" que
-     * esa validacion bloquea.
-     *
-     * Caso especial: si la persona elegida como nuevo PM YA tiene una
-     * asignacion activa en este proyecto (ej. ya era colaborador), no se
-     * puede insertar una fila nueva - la restriccion uq_asig_clave_activa
-     * bloquea que la misma persona tenga 2 filas activas en el mismo
-     * proyecto, sin importar el rol. En ese caso se actualiza esa MISMA
-     * fila (se "asciende" a colaborador existente), en vez de crear una
-     * fila nueva.
+     * @param mantenerSaliente true = el PM saliente se queda en el proyecto
+     *        como colaborador (requiere vacante); false = su asignación se finaliza.
+     * @param cargaSaliente dedicación con la que se queda (null = la misma que tenía).
      */
     @Transactional
-    public void reasignarProjectManager(Long proyectoId, Long nuevoPmPerfilId, Long actorUsuarioId) {
+    public void reasignarProjectManager(Long proyectoId, Long nuevoPmPerfilId, boolean mantenerSaliente,
+                                        Integer cargaSaliente, Long actorUsuarioId) {
+        cambiarLiderazgo(proyectoId, nuevoPmPerfilId, mantenerSaliente, cargaSaliente, actorUsuarioId, false);
+    }
+
+    /**
+     * "Transferir liderazgo" del propio PM: solo a un colaborador activo de
+     * SU equipo. Es directo (sin aprobación del RM) porque nadie suma carga:
+     * cada uno conserva su porcentaje y solo cambia rol_en_proyecto.
+     */
+    @Transactional
+    public void transferirLiderazgo(Long proyectoId, Long pmPerfilId, Long nuevoPmPerfilId, boolean mantenerSaliente,
+                                    Integer cargaSaliente, Long actorUsuarioId) {
+        Asignacion actual = pmActivoDe(proyectoId)
+                .orElseThrow(() -> new OperacionInvalidaException("El proyecto no tiene un Project Manager activo."));
+        if (!actual.getPerfilId().equals(pmPerfilId)) {
+            throw new OperacionInvalidaException("Solo el Project Manager del proyecto puede transferir su liderazgo.");
+        }
+        asignacionRepository.findByProyectoIdAndPerfilIdAndEstado(proyectoId, nuevoPmPerfilId, "activa")
+                .filter(a -> Roles.COLABORADOR.equals(a.getRolEnProyecto()))
+                .orElseThrow(() -> new OperacionInvalidaException(
+                        "Solo puedes transferir el liderazgo a un colaborador activo de tu equipo."));
+        cambiarLiderazgo(proyectoId, nuevoPmPerfilId, mantenerSaliente, cargaSaliente, actorUsuarioId, true);
+    }
+
+    /**
+     * Núcleo común de cambiar/transferir el PM, en una sola transacción.
+     * Todo pasa sobre filas de asignaciones del MISMO proyecto (UPDATE de
+     * rol_en_proyecto), así nunca choca con uq_asig_clave_activa y el
+     * historial de cada persona queda intacto.
+     */
+    private void cambiarLiderazgo(Long proyectoId, Long nuevoPmPerfilId, boolean mantenerSaliente,
+                                  Integer cargaSaliente, Long actorUsuarioId, boolean porTransferencia) {
+        Proyecto p = proyectoRepository.findById(proyectoId)
+                .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
+        // En un proyecto cerrado solo el Resource Manager puede cambiar el PM
+        // (para poder reabrirlo); el equipo ya salió, así que el PM saliente
+        // no puede "quedarse como colaborador".
+        boolean cerrado = estaCerrado(p);
+        if (cerrado && porTransferencia) {
+            throw new OperacionInvalidaException("\"" + p.getNombre() + "\" está " + etiquetaEstado(p.getEstado())
+                    + ": no se puede transferir su liderazgo.");
+        }
+        if (cerrado) mantenerSaliente = false;
         Perfil nuevoPm = perfilRepository.findById(nuevoPmPerfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona un Project Manager válido."));
-
-        Optional<Asignacion> pmActual = asignacionRepository.buscarResponsableActivo(proyectoId, Roles.PROJECT_MANAGER);
+        if (!esMiembroAsignable(nuevoPm)) {
+            throw new OperacionInvalidaException(nuevoPm.getUsuario().getNombreCompleto()
+                    + " no puede liderar proyectos: solo un Miembro activo (sin rol de Administrador o Resource Manager) puede ser Project Manager.");
+        }
+        Optional<Asignacion> pmActual = pmActivoDe(proyectoId);
         if (pmActual.isPresent() && pmActual.get().getPerfilId().equals(nuevoPmPerfilId)) {
             throw new OperacionInvalidaException(nuevoPm.getUsuario().getNombreCompleto() + " ya es el Project Manager de este proyecto.");
         }
-        // Se BAJA de rol al PM saliente (sigue activo en el proyecto, solo
-        // que ahora como colaborador) - no se toca su fecha_fin ni su
-        // carga_porcentaje, sigue siendo la misma asignacion de siempre.
-        pmActual.ifPresent(a -> {
-            a.setRolEnProyecto(Roles.COLABORADOR);
-            asignacionRepository.save(a);
-        });
-
-        // ¿La persona elegida ya está en el equipo (activa, con cualquier
-        // rol) en este mismo proyecto? Si sí, se actualiza su fila en vez
-        // de crear una nueva - evita chocar con uq_asig_clave_activa.
-        Optional<Asignacion> asignacionExistente =
-                asignacionRepository.findByProyectoIdAndPerfilIdAndEstado(proyectoId, nuevoPmPerfilId, "activa");
-
-        if (asignacionExistente.isPresent()) {
-            Asignacion a = asignacionExistente.get();
-            a.setRolEnProyecto(Roles.PROJECT_MANAGER);
-            asignacionRepository.save(a);
-        } else {
-            Asignacion nueva = new Asignacion();
-            nueva.setProyectoId(proyectoId);
-            nueva.setPerfilId(nuevoPmPerfilId);
-            nueva.setRolEnProyecto(Roles.PROJECT_MANAGER);
-            nueva.setCargaPorcentaje(20);
-            nueva.setEstado("activa");
-            nueva.setFechaInicio(LocalDate.now());
-            asignacionRepository.save(nueva);
+        Optional<Asignacion> filaNuevo = asignacionRepository.findByProyectoIdAndPerfilIdAndEstado(proyectoId, nuevoPmPerfilId, "activa");
+        boolean nuevoYaEstaEnElEquipo = filaNuevo.isPresent();
+        if (!nuevoYaEstaEnElEquipo && !cerrado) {
+            // Entra de fuera con la dedicación estándar de PM: debe tener
+            // capacidad (en un proyecto cerrado su carga no cuenta hasta que
+            // se reabra, y reabrir vuelve a validarla).
+            exigirCapacidad(nuevoPm, CARGA_PM_POR_DEFECTO);
         }
 
-        auditoriaService.registrar(actorUsuarioId, "PM_REASIGNADO", "proyecto", proyectoId, null, null,
-                "Nuevo Project Manager: " + nuevoPm.getUsuario().getNombreCompleto() + ".");
-        notificacionService.crear(nuevoPmPerfilId, "asignacion", "Nuevo proyecto asignado",
-                "Se te asignó como Project Manager del proyecto.", "proyectos.html");
+        String nombreNuevo = nuevoPm.getUsuario().getNombreCompleto();
+        String nombreSaliente = pmActual.map(a -> a.getPerfil().getUsuario().getNombreCompleto()).orElse(null);
+        int limiteCarga = limiteCargaConfigurado();
+
+        // 1) PM saliente: se queda como colaborador (si hay vacante) o sale.
+        if (pmActual.isPresent()) {
+            Asignacion saliente = pmActual.get();
+            if (mantenerSaliente) {
+                long colaboradores = asignacionRepository.countByProyectoIdAndEstadoAndRolEnProyecto(
+                        proyectoId, "activa", Roles.COLABORADOR);
+                // Si el nuevo PM era colaborador, su cupo se libera al ascender.
+                long ocupadas = colaboradores - (nuevoYaEstaEnElEquipo ? 1 : 0);
+                if (ocupadas >= requeridos(p)) {
+                    throw new OperacionInvalidaException("No hay vacante para mantener a " + nombreSaliente
+                            + " como colaborador (el proyecto requiere " + requeridos(p)
+                            + "). Desmarca \"Mantener como colaborador\" o amplía las vacantes del proyecto.");
+                }
+                int anterior = valor(saliente.getCargaPorcentaje());
+                int nueva = cargaSaliente != null ? cargaSaliente : anterior;
+                if (nueva < 1 || nueva > limiteCarga) {
+                    throw new OperacionInvalidaException("La dedicación de " + nombreSaliente + " debe estar entre 1% y " + limiteCarga + "%.");
+                }
+                if (nueva > anterior) {
+                    int total = sumarCargaActivaSegura(saliente.getPerfilId()) - anterior + nueva;
+                    if (total > limiteCarga) {
+                        throw new OperacionInvalidaException("Con " + nueva + "% la carga de " + nombreSaliente
+                                + " sería " + total + "%, por encima del límite de " + limiteCarga + "%.");
+                    }
+                }
+                saliente.setRolEnProyecto(Roles.COLABORADOR);
+                saliente.setCargaPorcentaje(nueva);
+                asignacionRepository.save(saliente);
+                auditoriaService.registrar(actorUsuarioId, "ASIGNACION_ROL_CAMBIADO", "asignacion", saliente.getId(),
+                        AuditoriaService.json("rol_en_proyecto", Roles.PROJECT_MANAGER),
+                        AuditoriaService.json("rol_en_proyecto", Roles.COLABORADOR),
+                        nombreSaliente + " deja de liderar \"" + p.getNombre() + "\" y sigue como colaborador (" + nueva + "%).");
+                notificacionService.crear(saliente.getPerfilId(), "asignacion", "Cambio de Project Manager",
+                        nombreNuevo + " es ahora el Project Manager de \"" + p.getNombre() + "\". Sigues en el equipo como colaborador ("
+                                + nueva + "%).", "proyectos.html");
+            } else {
+                saliente.setEstado("finalizada");
+                saliente.setFechaFin(LocalDate.now());
+                asignacionRepository.save(saliente);
+                auditoriaService.registrar(actorUsuarioId, "ASIGNACION_FINALIZADA", "asignacion", saliente.getId(),
+                        AuditoriaService.json("rol_en_proyecto", Roles.PROJECT_MANAGER), null,
+                        nombreSaliente + " deja de liderar \"" + p.getNombre() + "\" y sale del proyecto.");
+                notificacionService.crear(saliente.getPerfilId(), "asignacion", "Cambio de Project Manager",
+                        nombreNuevo + " es ahora el Project Manager de \"" + p.getNombre() + "\". Tu asignación en ese proyecto finalizó.",
+                        "proyectos.html");
+            }
+        }
+
+        // 2) Nuevo PM: se asciende su misma fila (conserva su %) o entra con 20%.
+        Asignacion filaPm;
+        if (nuevoYaEstaEnElEquipo) {
+            filaPm = filaNuevo.get();
+            filaPm.setRolEnProyecto(Roles.PROJECT_MANAGER);
+            asignacionRepository.save(filaPm);
+            auditoriaService.registrar(actorUsuarioId, "ASIGNACION_ROL_CAMBIADO", "asignacion", filaPm.getId(),
+                    AuditoriaService.json("rol_en_proyecto", Roles.COLABORADOR),
+                    AuditoriaService.json("rol_en_proyecto", Roles.PROJECT_MANAGER),
+                    nombreNuevo + " pasa a liderar \"" + p.getNombre() + "\" (conserva su " + valor(filaPm.getCargaPorcentaje()) + "%).");
+        } else {
+            filaPm = new Asignacion();
+            filaPm.setProyectoId(proyectoId);
+            filaPm.setPerfilId(nuevoPmPerfilId);
+            filaPm.setRolEnProyecto(Roles.PROJECT_MANAGER);
+            filaPm.setCargaPorcentaje(CARGA_PM_POR_DEFECTO);
+            filaPm.setEstado("activa");
+            filaPm.setFechaInicio(LocalDate.now());
+            asignacionRepository.save(filaPm);
+            auditoriaService.registrar(actorUsuarioId, "ASIGNACION_CREADA", "asignacion", filaPm.getId(), null,
+                    AuditoriaService.json("rol_en_proyecto", Roles.PROJECT_MANAGER),
+                    nombreNuevo + " entra a \"" + p.getNombre() + "\" como Project Manager (" + CARGA_PM_POR_DEFECTO + "%).");
+        }
+
+        auditoriaService.registrar(actorUsuarioId, "PM_REASIGNADO", "proyecto", proyectoId,
+                AuditoriaService.json("pm", nombreSaliente), AuditoriaService.json("pm", nombreNuevo),
+                (porTransferencia ? "Transferencia de liderazgo" : "Cambio de Project Manager") + " en \"" + p.getNombre() + "\": "
+                        + (nombreSaliente != null ? nombreSaliente : "sin PM") + " → " + nombreNuevo + ".");
+        notificacionService.crear(nuevoPmPerfilId, "asignacion", "Ahora lideras un proyecto",
+                "Eres el Project Manager de \"" + p.getNombre() + "\". Lo encontrarás en tu vista Project Manager.",
+                "proyectos.html");
     }
 
     // ───────────────────────── Helpers ─────────────────────────
+
+    /** Dedicación estándar con la que entra un Project Manager. */
+    public static final int CARGA_PM_POR_DEFECTO = 20;
+    /** Tope duro de carga (modelo v7): nadie supera el 100%. */
+    public static final int LIMITE_CARGA_MAXIMO = 100;
+
+    /**
+     * ¿Puede esta persona participar en proyectos? Cuenta y perfil activos y
+     * SIN rol organizacional: Administrador y Resource Manager nunca tienen
+     * filas en asignaciones (modelo v7).
+     */
+    public static boolean esMiembroAsignable(Perfil p) {
+        return p != null && p.getUsuario() != null
+                && p.getUsuario().isActivo()
+                && p.getUsuario().getRolOrganizacional() == null
+                && "activo".equalsIgnoreCase(p.getEstado());
+    }
+
+    /**
+     * Valida que la persona tenga capacidad para sumar un proyecto vigente
+     * más con la dedicación indicada (límite de carga y máximo de proyectos
+     * simultáneos de Configuración, ambos sobre la carga EFECTIVA).
+     */
+    private void exigirCapacidad(Perfil perfil, int dedicacion) {
+        int limiteCarga = limiteCargaConfigurado();
+        int maximoProyectos = maximoProyectosConfigurado();
+        String nombre = perfil.getUsuario().getNombreCompleto();
+        long vigentes = asignacionRepository.contarProyectosVigentesDePerfil(perfil.getId());
+        if (vigentes >= maximoProyectos) {
+            throw new OperacionInvalidaException(nombre + " ya está en " + vigentes
+                    + " proyecto(s) vigente(s), el máximo configurado es " + maximoProyectos + ".");
+        }
+        int cargaActual = sumarCargaActivaSegura(perfil.getId());
+        if (cargaActual + dedicacion > limiteCarga) {
+            throw new OperacionInvalidaException(nombre + " tiene " + cargaActual + "% de carga; con "
+                    + dedicacion + "% más llegaría a " + (cargaActual + dedicacion) + "%, por encima del límite de " + limiteCarga + "%.");
+        }
+    }
+
+    /** PM activo del proyecto (el primero, por si un dato heredado tuviera dos). */
+    private Optional<Asignacion> pmActivoDe(Long proyectoId) {
+        return asignacionRepository.buscarResponsablesActivos(proyectoId, Roles.PROJECT_MANAGER).stream().findFirst();
+    }
+
+    static boolean estaCerrado(Proyecto p) {
+        return "completado".equals(p.getEstado()) || "cancelado".equals(p.getEstado());
+    }
+
+    static boolean admiteNuevosIntegrantes(Proyecto p) {
+        return "planificacion".equals(p.getEstado()) || "activo".equals(p.getEstado());
+    }
+
+    static String etiquetaEstado(String estado) {
+        if (estado == null) return "sin estado";
+        return switch (estado) {
+            case "planificacion" -> "en Planificación";
+            case "activo" -> "Activo";
+            case "en_pausa" -> "En pausa";
+            case "completado" -> "Completado";
+            case "cancelado" -> "Cancelado";
+            default -> estado;
+        };
+    }
+
+    private static int requeridos(Proyecto p) {
+        return p.getColaboradoresRequeridos() != null ? p.getColaboradoresRequeridos() : 0;
+    }
+
+    private static int valor(Integer v) {
+        return v != null ? v : 0;
+    }
 
     static int avanceHeuristico(LocalDate inicio, LocalDate finEstimada, String estado) {
         if ("completado".equals(estado)) return 100;

@@ -81,15 +81,16 @@
       });
     });
 
-    // Asignacion en masa: lista con checkboxes (ver asignacion-masiva.js).
+    // Propuesta en masa (modelo v7: el PM propone, el RM aprueba). Ver asignacion-masiva.js.
     const assign = modal.querySelector('[data-assign-project]');
     if (assign && panel && window.SBAI.asignacionMasiva) {
       window.SBAI.asignacionMasiva.montar(panel, {
         perfiles: window.SBAI_ASIGNABLES || [],
         limiteCarga: window.SBAI_LIMITE_CARGA || 100,
-        url: '/project-manager/proyectos/' + assign.dataset.assignProject + '/asignar-varios',
+        url: '/project-manager/proyectos/' + assign.dataset.assignProject + '/proponer-varios',
         extra: { volver: 'asignaciones' },
-        proyecto: assign.dataset.proyectoNombre || ''
+        proyecto: assign.dataset.proyectoNombre || '',
+        modo: 'proponer'
       });
     }
   }

@@ -37,11 +37,15 @@ public class AdminProyectosController {
     private final ProyectoService proyectoService;
     private final ShellModelBuilder shellModelBuilder;
     private final TecnologiaCatalogoService tecnologiaCatalogoService;
+    private final CambioEstadoProyecto cambioEstadoProyecto;
 
-    public AdminProyectosController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder, TecnologiaCatalogoService tecnologiaCatalogoService) {
+    public AdminProyectosController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder,
+                                    TecnologiaCatalogoService tecnologiaCatalogoService,
+                                    CambioEstadoProyecto cambioEstadoProyecto) {
         this.proyectoService = proyectoService;
         this.shellModelBuilder = shellModelBuilder;
         this.tecnologiaCatalogoService = tecnologiaCatalogoService;
+        this.cambioEstadoProyecto = cambioEstadoProyecto;
     }
 
     @GetMapping("/proyectos.html")
@@ -86,45 +90,28 @@ public class AdminProyectosController {
         return "redirect:/administrador/proyectos.html";
     }
 
+    /**
+     * Cambiar estado (modelo v7, fase 2): pausar exige motivo y fecha
+     * estimada de reanudación; al reanudar/reabrir se puede marcar a quién
+     * del equipo anterior reincorporar (propuestas que aprueba el RM).
+     * razonCancelacion conserva su nombre por compatibilidad: es el motivo
+     * de la pausa o la razón de la cancelación.
+     */
     @PostMapping("/proyectos/{id}/estado")
     public String cambiarEstado(@PathVariable Long id, @RequestParam String estado,
                                  @RequestParam(required = false) String razonCancelacion,
+                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaReanudacion,
+                                 @RequestParam(name = "reincorporar", required = false) List<Long> reincorporar,
                                  HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-        try {
-            proyectoService.cambiarEstado(id, estado, razonCancelacion, sesion.getUsuarioId());
-            redirectAttributes.addFlashAttribute("exito", "Estado del proyecto actualizado.");
-        } catch (OperacionInvalidaException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-        }
+        cambioEstadoProyecto.aplicar(id, estado, razonCancelacion, fechaReanudacion, reincorporar,
+                sesion.getUsuarioId(), redirectAttributes);
         return "redirect:/administrador/proyectos.html";
     }
 
-    @PostMapping("/proyectos/{id}/asignar")
-    public String asignar(@PathVariable Long id, @RequestParam Long perfilId, @RequestParam String rolEnProyecto,
-                           @RequestParam int cargaPorcentaje,
-                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
-                           HttpSession session, RedirectAttributes redirectAttributes) {
-        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-        try {
-            proyectoService.asignarColaborador(id, perfilId, rolEnProyecto, cargaPorcentaje, fechaInicio, sesion.getUsuarioId());
-            redirectAttributes.addFlashAttribute("exito", "Colaborador asignado al proyecto.");
-        } catch (OperacionInvalidaException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-        }
-        return "redirect:/administrador/proyectos.html";
-    }
-
-    @PostMapping("/asignaciones/{asignacionId}/finalizar")
-    public String finalizar(@PathVariable Long asignacionId, @RequestParam(required = false) String motivo,
-                            HttpSession session, RedirectAttributes redirectAttributes) {
-        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-        try {
-            proyectoService.finalizarAsignacion(asignacionId, motivo, sesion.getUsuarioId());
-            redirectAttributes.addFlashAttribute("exito", "Asignación finalizada.");
-        } catch (OperacionInvalidaException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-        }
-        return "redirect:/administrador/proyectos.html";
-    }
+    // Modelo v7: el Administrador NO asigna ni finaliza asignaciones (lo
+    // hace el Resource Manager; el PM propone). Solo elige al PM al crear
+    // el proyecto y ve los equipos en modo lectura. Por eso se retiraron
+    // POST /administrador/proyectos/{id}/asignar y
+    // POST /administrador/asignaciones/{id}/finalizar.
 }

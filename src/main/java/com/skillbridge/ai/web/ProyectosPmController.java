@@ -10,6 +10,7 @@ import com.skillbridge.ai.service.AsignacionMasivaService;
 import com.skillbridge.ai.service.ProyectoService;
 import com.skillbridge.ai.service.TecnologiaCatalogoService;
 import com.skillbridge.ai.service.ShellModelBuilder;
+import com.skillbridge.ai.service.TalentMatchingService;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
@@ -44,16 +45,18 @@ public class ProyectosPmController {
     private final AsignacionRepository asignacionRepository;
     private final ShellModelBuilder shellModelBuilder;
     private final TecnologiaCatalogoService tecnologiaCatalogoService;
-    private final AsignacionMasivaService asignacionMasivaService;
+    private final TalentMatchingService talentMatchingService;
+    private final CambioEstadoProyecto cambioEstadoProyecto;
 
     public ProyectosPmController(ProyectoService proyectoService, AsignacionRepository asignacionRepository,
                                  ShellModelBuilder shellModelBuilder, TecnologiaCatalogoService tecnologiaCatalogoService,
-                                 AsignacionMasivaService asignacionMasivaService) {
+                                 TalentMatchingService talentMatchingService, CambioEstadoProyecto cambioEstadoProyecto) {
         this.proyectoService = proyectoService;
         this.asignacionRepository = asignacionRepository;
         this.shellModelBuilder = shellModelBuilder;
         this.tecnologiaCatalogoService = tecnologiaCatalogoService;
-        this.asignacionMasivaService = asignacionMasivaService;
+        this.talentMatchingService = talentMatchingService;
+        this.cambioEstadoProyecto = cambioEstadoProyecto;
     }
 
     /** "React, MySQL" -> ["React", "MySQL"] (el formulario manda los chips unidos por coma). */
@@ -89,6 +92,7 @@ public class ProyectosPmController {
                 "Tus " + proyectos.size() + " proyectos como Project Manager");
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("perfiles", perfiles);
+        model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
         model.addAttribute("colaboradoresDisponibles", colaboradoresDisponibles);
         // Catálogo del Admin para el autocompletado de tecnologías (chips).
         model.addAttribute("catalogoTecnologias", tecnologiaCatalogoService.catalogo());
@@ -122,18 +126,22 @@ public class ProyectosPmController {
         return "redirect:/project-manager/proyectos.html";
     }
 
+    /** Cambiar estado de un proyecto propio (ver CambioEstadoProyecto). */
     @PostMapping("/proyectos/{id}/estado")
     public String cambiarEstado(@PathVariable Long id, @RequestParam String estado,
                                 @RequestParam(required = false) String razonCancelacion,
+                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaReanudacion,
+                                @RequestParam(name = "reincorporar", required = false) List<Long> reincorporar,
                                 HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             exigirPropiedad(sesion.getPerfilId(), id);
-            proyectoService.cambiarEstado(id, estado, razonCancelacion, sesion.getUsuarioId());
-            redirectAttributes.addFlashAttribute("exito", "Estado del proyecto actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/project-manager/proyectos.html";
         }
+        cambioEstadoProyecto.aplicar(id, estado, razonCancelacion, fechaReanudacion, reincorporar,
+                sesion.getUsuarioId(), redirectAttributes);
         return "redirect:/project-manager/proyectos.html";
     }
 
@@ -144,8 +152,6 @@ public class ProyectosPmController {
                          @RequestParam(required = false) String tecnologias,
                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFinEstimada,
-                         @RequestParam String estado,
-                         @RequestParam(required = false) String razonCancelacion,
                          HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
@@ -153,8 +159,10 @@ public class ProyectosPmController {
             // Se conservan las tecnologías que el proyecto ya tenía aunque no estén en el catálogo.
             List<String> actuales = proyectoService.obtenerDetalle(id).getTecnologias();
             List<String> lista = tecnologiaCatalogoService.normalizar(separarTecnologias(tecnologias), actuales);
-            proyectoService.editarProyecto(id, nombre, descripcion, lista, fechaInicio, fechaFinEstimada, estado,
-                    razonCancelacion, sesion.getUsuarioId());
+            // El estado se cambia aparte ("Cambiar estado"), porque cada
+            // transición tiene efectos sobre el equipo (modelo v7, fase 2).
+            proyectoService.editarProyecto(id, nombre, descripcion, lista, fechaInicio, fechaFinEstimada,
+                    sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -176,17 +184,21 @@ public class ProyectosPmController {
         return "redirect:/project-manager/proyectos.html";
     }
 
-    @PostMapping("/proyectos/{id}/asignar")
-    public String asignar(@PathVariable Long id, @RequestParam Long perfilId, @RequestParam String rolEnProyecto,
-                          @RequestParam int cargaPorcentaje,
-                          @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
-                          @RequestParam(required = false) String volver,
-                          HttpSession session, RedirectAttributes redirectAttributes) {
+    /**
+     * Modelo v7: el PM NO asigna directo. "Proponer colaborador" crea una
+     * propuesta manual (origen=manual) que el Resource Manager aprueba o
+     * rechaza en su bandeja, igual que las de AI Talent Matching.
+     */
+    @PostMapping("/proyectos/{id}/proponer")
+    public String proponer(@PathVariable Long id, @RequestParam Long perfilId,
+                           @RequestParam int cargaPorcentaje,
+                           @RequestParam(required = false) String volver,
+                           HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             exigirPropiedad(sesion.getPerfilId(), id);
-            proyectoService.asignarColaborador(id, perfilId, rolEnProyecto, cargaPorcentaje, fechaInicio, sesion.getUsuarioId());
-            redirectAttributes.addFlashAttribute("exito", "Colaborador asignado al proyecto.");
+            talentMatchingService.proponerManual(sesion.getPerfilId(), sesion.getUsuarioId(), id, perfilId, cargaPorcentaje);
+            redirectAttributes.addFlashAttribute("exito", "Propuesta enviada al Resource Manager. Te avisaremos cuando la revise.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
@@ -194,28 +206,61 @@ public class ProyectosPmController {
     }
 
     /**
-     * Asignación en masa (checkboxes del modal "Asignar colaboradores" en
-     * Asignaciones). Cada persona pasa por las mismas validaciones que la
-     * asignación individual (ver AsignacionMasivaService).
+     * Propuesta en masa (checkboxes del modal en Asignaciones): una propuesta
+     * por persona; las que no cumplen se informan y las demás se envían.
      */
-    @PostMapping("/proyectos/{id}/asignar-varios")
-    public String asignarVarios(@PathVariable Long id,
-                                @RequestParam(name = "perfilIds", required = false) List<Long> perfilIds,
-                                @RequestParam int cargaPorcentaje,
-                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
-                                @RequestParam(required = false) String volver,
-                                HttpSession session, RedirectAttributes redirectAttributes) {
+    @PostMapping("/proyectos/{id}/proponer-varios")
+    public String proponerVarios(@PathVariable Long id,
+                                 @RequestParam(name = "perfilIds", required = false) List<Long> perfilIds,
+                                 @RequestParam int cargaPorcentaje,
+                                 @RequestParam(required = false) String volver,
+                                 HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             exigirPropiedad(sesion.getPerfilId(), id);
-            AsignacionMasivaService.Resultado r = asignacionMasivaService.asignarVarios(
-                    id, perfilIds, cargaPorcentaje, fechaInicio, sesion.getUsuarioId());
-            if (r.huboAsignados()) redirectAttributes.addFlashAttribute("exito", AsignacionMasivaService.mensajeExito(r));
-            if (r.huboErrores()) redirectAttributes.addFlashAttribute("error", AsignacionMasivaService.mensajeError(r));
+            AsignacionMasivaService.Resultado r = talentMatchingService.proponerVarios(
+                    sesion.getPerfilId(), sesion.getUsuarioId(), id, perfilIds, cargaPorcentaje);
+            if (r.huboAsignados()) {
+                redirectAttributes.addFlashAttribute("exito", r.asignados().size() == 1
+                        ? "Propuesta enviada al Resource Manager: " + r.asignados().get(0) + "."
+                        : r.asignados().size() + " propuestas enviadas al Resource Manager: " + String.join(", ", r.asignados()) + ".");
+            }
+            if (r.huboErrores()) {
+                redirectAttributes.addFlashAttribute("error",
+                        (r.huboAsignados() ? "Algunas propuestas no se enviaron. " : "") + String.join(" ", r.errores()));
+            }
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return destino(volver);
+    }
+
+    /**
+     * "Transferir liderazgo": el PM cede su rol a un colaborador de SU
+     * equipo, de forma directa (nadie suma carga). Él decide si se queda
+     * como colaborador (si hay vacante) o sale del proyecto.
+     */
+    @PostMapping("/proyectos/{id}/transferir-liderazgo")
+    public String transferirLiderazgo(@PathVariable Long id, @RequestParam Long nuevoPmPerfilId,
+                                      @RequestParam(defaultValue = "false") boolean mantener,
+                                      @RequestParam(required = false) Integer cargaSaliente,
+                                      HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            exigirPropiedad(sesion.getPerfilId(), id);
+            proyectoService.transferirLiderazgo(id, sesion.getPerfilId(), nuevoPmPerfilId, mantener, cargaSaliente,
+                    sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", mantener
+                    ? "Liderazgo transferido. Sigues en el proyecto como colaborador."
+                    : "Liderazgo transferido. Tu asignación en ese proyecto finalizó.");
+        } catch (OperacionInvalidaException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/project-manager/proyectos.html";
+        }
+        // Si ya no lidera ningún proyecto, el interceptor lo llevará a su
+        // vista Colaborador en el siguiente clic; redirigir a proyectos.html
+        // de PM lo resuelve en este mismo paso.
+        return "redirect:/project-manager/proyectos.html";
     }
 
     @PostMapping("/asignaciones/{asignacionId}/finalizar")

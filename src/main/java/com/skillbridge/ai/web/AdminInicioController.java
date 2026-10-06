@@ -74,7 +74,7 @@ public class AdminInicioController {
         model.addAttribute("proyectosPorEstado", proyectosPorEstado);
         model.addAttribute("sobrecargados", sobrecargados);
         model.addAttribute("habilidadesSinAsignar", kpisReporte.get("habilidadesSinAsignar"));
-        model.addAttribute("usuariosSinRol", kpisUsuarios.get("sinRol"));
+        // Modelo v7: "Miembro" (sin rol fijo) es lo normal, ya no se alerta.
 
         model.addAttribute("usuariosPreview", usuarios.size() > 6 ? usuarios.subList(0, 6) : usuarios);
         model.addAttribute("totalUsuarios", usuarios.size());

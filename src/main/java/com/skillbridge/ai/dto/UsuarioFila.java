@@ -21,6 +21,11 @@ public class UsuarioFila {
     private final String estadoBadgeClass;
     private final String cuentaDesde;
 
+    // Modelo v7 (fase 3): participación en proyectos, para avisar en el modal
+    // de cambiar rol / suspender qué pasaría (y bloquear si lidera proyectos).
+    private java.util.List<String> proyectosQueLidera = java.util.List.of();
+    private java.util.List<String> asignacionesComoColaborador = java.util.List.of();
+
     public UsuarioFila(Long id, String nombreCompleto, String correo, String cargo,
                         String rolOrganizacionalCrudo, String estado, LocalDateTime fechaCreacion) {
         this.id = id;
@@ -37,7 +42,7 @@ public class UsuarioFila {
             this.rolLabel = "Resource Manager";
             this.rolBadgeClass = "badge-neutral";
         } else {
-            this.rolLabel = "Sin rol fijo";
+            this.rolLabel = "Miembro";
             this.rolBadgeClass = "badge-neutral";
         }
 
@@ -105,4 +110,12 @@ public class UsuarioFila {
     public String getCuentaDesde() {
         return cuentaDesde;
     }
+
+    public java.util.List<String> getProyectosQueLidera() { return proyectosQueLidera; }
+    public void setProyectosQueLidera(java.util.List<String> v) { this.proyectosQueLidera = v != null ? v : java.util.List.of(); }
+    public java.util.List<String> getAsignacionesComoColaborador() { return asignacionesComoColaborador; }
+    public void setAsignacionesComoColaborador(java.util.List<String> v) { this.asignacionesComoColaborador = v != null ? v : java.util.List.of(); }
+    /** Texto para data-* de la plantilla: "Proyecto A|Proyecto B". */
+    public String getProyectosQueLideraTexto() { return String.join("|", proyectosQueLidera); }
+    public String getAsignacionesComoColaboradorTexto() { return String.join("|", asignacionesComoColaborador); }
 }

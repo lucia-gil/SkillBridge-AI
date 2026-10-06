@@ -22,9 +22,9 @@
           <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div>
           <span class="kpi-tile-label">TOTAL USUARIOS</span><span class="kpi-tile-value" th:text="${kpis.total}">0</span>
         </div>
-        <div class="kpi-tile accent-amber">
-          <div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></div>
-          <span class="kpi-tile-label">SIN ROL ASIGNADO</span><span class="kpi-tile-value" th:text="${kpis.sinRol}">0</span><span class="kpi-tile-meta warn"></span>
+        <div class="kpi-tile accent-blue">
+          <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div>
+          <span class="kpi-tile-label">MIEMBROS</span><span class="kpi-tile-value" th:text="${kpis.sinRol}">0</span><span class="kpi-tile-meta">Lideran o colaboran en proyectos</span>
         </div>
         <div class="kpi-tile accent-red">
           <div class="kpi-tile-icon red"><svg class="icon"><use href="/img/icons.svg#icon-user-x"></use></svg></div>
@@ -45,7 +45,7 @@
           <div class="table-filters">
             <input type="text" class="input" data-filter-scope="users" data-filter-key="q" placeholder="Buscar por nombre o correo…" style="width:210px; height:38px; font-size:var(--fs-xs);">
             <select class="select" data-filter-scope="users" data-filter-key="rol">
-              <option value="todos">Rol: todos</option><option>Administrador</option><option>Resource Manager</option><option>Sin rol fijo</option>
+              <option value="todos">Rol: todos</option><option>Administrador</option><option>Resource Manager</option><option>Miembro</option>
             </select>
             <select class="select" data-filter-scope="users" data-filter-key="estado">
               <option value="todos">Estado: todos</option><option>Activo</option><option>Bloqueado</option>
@@ -67,7 +67,14 @@
                 <td th:text="${u.cargo}">—</td>
                 <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${u.cuentaDesde}">—</td>
                 <td><span class="badge" th:classappend="${u.estadoBadgeClass}" th:text="${u.estadoLabel}">Estado</span></td>
-                <td class="cell-actions">
+                <!-- Modelo v7: nadie actúa sobre su propia cuenta; los datos de
+                     participación permiten avisar (o bloquear) antes de cambiar
+                     rol o suspender. -->
+                <td class="cell-actions" th:if="${u.id == usuarioActualId}">
+                  <span class="badge badge-blue">Tu cuenta</span>
+                </td>
+                <td class="cell-actions" th:unless="${u.id == usuarioActualId}"
+                    th:attr="data-lidera=${u.proyectosQueLideraTexto}, data-colabora=${u.asignacionesComoColaboradorTexto}">
                   <button type="button" data-edit-role
                           th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}, data-rol-crudo=${u.rolOrganizacionalCrudo}">Editar rol</button>
                   <button type="button" class="danger" th:if="${u.estado == 'activo'}" data-suspend
@@ -106,13 +113,16 @@
         </div>
         <div class="table-scroll">
           <table class="data-table">
-            <thead><tr><th>Correo</th><th>Autorizado el</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Correo</th><th>Rol al registrarse</th><th>Autorizado el</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               <tr th:each="c : ${correosAutorizados}" data-correo-row th:attr="data-correo=${#strings.toLowerCase(c.correo())},data-estado=${c.utilizado()} ? 'registrado' : 'pendiente'">
                 <td class="cell-primary" th:text="${c.correo()}">correo@nexacorp.com</td>
+                <td><span class="badge" th:classappend="${c.rolAsignado() == null} ? 'badge-neutral' : 'badge-blue'" th:text="${c.rolLabel()}">Miembro</span></td>
                 <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${c.fechaAutorizacion()}">—</td>
                 <td><span class="badge" th:classappend="${c.estadoBadgeClass()}" th:text="${c.estadoLabel()}">Pendiente</span></td>
                 <td class="cell-actions">
+                  <button type="button" th:if="${!c.utilizado()}" data-invite-role
+                          th:attr="data-id=${c.id()}, data-correo=${c.correo()}, data-rol=${c.rolValor()}">Cambiar rol</button>
                   <button type="button" class="danger" th:if="${!c.utilizado()}" data-revoke-invite
                           th:attr="data-id=${c.id()}, data-correo=${c.correo()}">Revocar</button>
                 </td>
@@ -200,19 +210,71 @@ document.addEventListener("DOMContentLoaded", function () {
     form.submit();
   }
 
+  // Modelo v7: roles organizacionales. "Project Manager" no es un puesto:
+  // un Miembro lidera proyectos concretos.
+  var ROLES = [
+    { value: "NINGUNO", label: "Miembro", desc: "Participa en proyectos: puede liderar unos y colaborar en otros." },
+    { value: "resource_manager", label: "Resource Manager", desc: "Gestiona asignaciones y aprueba propuestas. No participa en proyectos." },
+    { value: "administrador", label: "Administrador", desc: "Gestiona usuarios, catálogos y configuración. No participa en proyectos." }
+  ];
+  function escH(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; }
+  function opcionesRol(actual) {
+    return ROLES.map(function (o) {
+      var sel = actual === o.value || ((!actual || actual === "null") && o.value === "NINGUNO");
+      return '<label class="role-option"><input type="radio" name="rol-opcion" value="' + o.value + '"' + (sel ? " checked" : "") + '>' +
+        '<span><strong>' + o.label + '</strong><span class="role-option-desc">' + o.desc + "</span></span></label>";
+    }).join("");
+  }
+
   document.getElementById("invite-btn").addEventListener("click", function () {
-    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Autoriza el correo para que la persona pueda registrarse.</p></div>' +
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Autoriza el correo y elige con qué rol nacerá su cuenta.</p></div>' +
       '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
       '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" id="invite-email" placeholder="correo@dominio.com"></div>' +
-      '<p class="field-hint">El rol se asigna desde esta misma pantalla después de que la persona complete su registro.</p></div>' +
+      '<div class="field"><span class="field-label">Rol en la organización</span><div class="role-options">' + opcionesRol("NINGUNO") + '</div></div>' +
+      '<p class="field-hint">Le llegará un correo con el enlace de registro. Al completar sus datos e iniciar sesión verá directamente el panel de su rol. Puedes cambiar el rol mientras la invitación siga pendiente.</p></div>' +
       '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="invite-confirm">Enviar invitación</button></div></div>';
     var backdrop = SBAI.modal.open(html);
     backdrop.querySelector("#invite-confirm").addEventListener("click", function () {
       var correo = backdrop.querySelector("#invite-email").value.trim();
       if (!correo) { SBAI.toast.show("Ingresa un correo.", { type: "error" }); return; }
-      submitForm("/administrador/usuarios/invitar", { correo: correo });
+      var rol = (backdrop.querySelector('input[name="rol-opcion"]:checked') || {}).value || "NINGUNO";
+      submitForm("/administrador/usuarios/invitar", { correo: correo, rol: rol });
     });
   });
+
+  document.querySelectorAll("[data-invite-role]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Rol de la invitación</h2><p>' + escH(btn.dataset.correo) + '</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div class="role-options">' + opcionesRol(btn.dataset.rol) + '</div></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="inv-rol-ok">Guardar</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#inv-rol-ok").addEventListener("click", function () {
+        var rol = (backdrop.querySelector('input[name="rol-opcion"]:checked') || {}).value || "NINGUNO";
+        submitForm("/administrador/usuarios/correos-autorizados/" + btn.dataset.id + "/rol", { rol: rol });
+      });
+    });
+  });
+
+  /** Participación en proyectos de la fila (data-lidera / data-colabora). */
+  function participacion(btn) {
+    var cell = btn.closest("[data-lidera]");
+    var partir = function (t) { return t ? t.split("|").filter(Boolean) : []; };
+    return { lidera: partir(cell && cell.dataset.lidera), colabora: partir(cell && cell.dataset.colabora) };
+  }
+  /** Aviso / bloqueo común para cambiar a rol fijo o suspender. */
+  function avisoProyectos(nombre, part, accion) {
+    if (part.lidera.length) {
+      SBAI.modal.notice
+        ? SBAI.modal.notice({ variant: "warning", title: "Primero hay que cambiar el PM",
+            desc: nombre + " lidera " + part.lidera.join(", ") + ". Antes de " + accion + ", el Resource Manager debe usar “Cambiar PM” en esos proyectos." })
+        : SBAI.toast.show(nombre + " lidera proyectos: primero cambia el PM.", { type: "error" });
+      return null;
+    }
+    return part.colabora.length
+      ? [nombre + " colabora en: " + part.colabora.join(", ") + ".", "Esas asignaciones se finalizarán (quedan en su historial) y su carga se libera."]
+      : [];
+  }
 
   document.querySelectorAll("[data-revoke-invite]").forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -228,24 +290,37 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.querySelectorAll("[data-edit-role]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var id = btn.dataset.id, nombre = btn.dataset.nombre, correo = btn.dataset.correo, rolCrudo = btn.dataset.rolCrudo;
-      var opciones = [
-        { value: "NINGUNO", label: "Sin rol fijo (Colaborador / Project Manager según proyecto)" },
-        { value: "resource_manager", label: "Resource Manager" },
-        { value: "administrador", label: "Administrador" }
-      ];
-      var opts = opciones.map(function (o) {
-        var sel = (rolCrudo === o.value) || (rolCrudo === "null" && o.value === "NINGUNO") || (!rolCrudo && o.value === "NINGUNO");
-        return "<option value=\"" + o.value + "\"" + (sel ? " selected" : "") + ">" + o.label + "</option>";
-      }).join("");
-      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar rol</h2><p>' + nombre + ' · ' + correo + '</p></div>' +
+      var id = btn.dataset.id, nombre = btn.dataset.nombre, correo = btn.dataset.correo;
+      var actual = btn.dataset.rolCrudo && btn.dataset.rolCrudo !== "null" ? btn.dataset.rolCrudo : "NINGUNO";
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar rol</h2><p>' + escH(nombre) + ' · ' + escH(correo) + '</p></div>' +
         '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body"><div class="field"><label class="field-label">Rol</label><select class="select" id="edit-role-select">' + opts + '</select></div>' +
-        '<p class="field-hint">El cambio queda registrado en Auditoría con tu usuario y la hora exacta.</p></div>' +
+        '<div class="modal-body"><div class="role-options">' + opcionesRol(actual) + '</div>' +
+        '<p class="field-hint">El cambio queda en Auditoría. Su sesión abierta toma el rol nuevo en su siguiente clic.</p></div>' +
         '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="save-role-btn">Guardar rol</button></div></div>';
       var backdrop = SBAI.modal.open(html);
       backdrop.querySelector("#save-role-btn").addEventListener("click", function () {
-        submitForm("/administrador/usuarios/" + id + "/rol", { rol: backdrop.querySelector("#edit-role-select").value });
+        var rol = (backdrop.querySelector('input[name="rol-opcion"]:checked') || {}).value || "NINGUNO";
+        if (rol === actual) { SBAI.toast.show("Ya tiene ese rol.", {}); return; }
+        var etiqueta = ROLES.filter(function (o) { return o.value === rol; })[0].label;
+        var consecuencias = [];
+        // Miembro -> Admin/RM: deja de participar en proyectos.
+        if (actual === "NINGUNO" && rol !== "NINGUNO") {
+          consecuencias = avisoProyectos(nombre, participacion(btn), "convertirlo en " + etiqueta);
+          if (consecuencias === null) return;
+          consecuencias.push(etiqueta + " no participa en proyectos.");
+        }
+        SBAI.modal.close && SBAI.modal.close(backdrop);
+        SBAI.modal.confirm({
+          variant: "primary", icon: "icon-shield",
+          title: "¿Cambiar el rol de " + nombre + " a " + etiqueta + "?",
+          desc: "Se registra en Auditoría y se le notifica.",
+          consequences: consecuencias,
+          reason: { label: "Motivo", required: false, placeholder: "Opcional: queda registrado en Auditoría." },
+          confirmLabel: "Cambiar rol", cancelLabel: "Volver",
+          onConfirm: function (d) {
+            submitForm("/administrador/usuarios/" + id + "/rol", { rol: rol, motivo: d.motivo || "", confirmarSalida: "true" });
+          }
+        });
       });
     });
   });
@@ -253,15 +328,19 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("[data-suspend]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var id = btn.dataset.id, nombre = btn.dataset.nombre;
+      var consecuencias = avisoProyectos(nombre, participacion(btn), "suspender su cuenta");
+      if (consecuencias === null) return;
+      consecuencias.push("Se le avisará por correo, con el motivo.");
       SBAI.modal.confirm({
         title: "¿Suspender a " + nombre + "?",
         desc: "Perderá acceso a la plataforma de inmediato. Puedes reactivarlo cuando quieras.",
         variant: "warning", icon: "icon-user-x",
         subject: { nombre: nombre, meta: btn.dataset.correo || "" },
+        consequences: consecuencias,
         reason: { label: "Motivo de la suspensión", required: true, placeholder: "Ej.: terminó su contrato.",
           presets: ["Terminó su contrato", "Actividad sospechosa", "Solicitud del área", "Cuenta duplicada"] },
         confirmLabel: "Suspender cuenta", cancelLabel: "Volver",
-        onConfirm: function (d) { submitForm("/administrador/usuarios/" + id + "/estado", { activar: "false", motivo: d.motivo }); }
+        onConfirm: function (d) { submitForm("/administrador/usuarios/" + id + "/estado", { activar: "false", motivo: d.motivo, confirmarSalida: "true" }); }
       });
     });
   });

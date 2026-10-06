@@ -39,6 +39,19 @@
   <div class="topbar-actions">
 
 
+    <!-- VER COMO (modelo v7): un Miembro que lidera proyectos alterna entre
+         su vista Project Manager y su vista Colaborador. Cada vista muestra
+         solo los proyectos de ese papel, con sus permisos. -->
+    <nav class="segmented view-switch" th:if="${puedeCambiarVista}" aria-label="Ver como">
+      <span class="view-switch-label">Ver como</span>
+      <a class="segmented-btn" href="/project-manager/inicio.html"
+         th:classappend="${vistaActualEsPm} ? 'active'"
+         th:attr="aria-current=${vistaActualEsPm} ? 'page' : null">Project Manager</a>
+      <a class="segmented-btn" href="/colaborador/inicio.html"
+         th:classappend="${!vistaActualEsPm} ? 'active'"
+         th:attr="aria-current=${!vistaActualEsPm} ? 'page' : null">Colaborador</a>
+    </nav>
+
     <!-- ASISTENTE IA -->
 
     <a

@@ -18,6 +18,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     long countByRolOrganizacional(String rolOrganizacional);
 
+    // Modelo v7 (fase 3): nunca puede quedar el sistema sin un Administrador
+    // ni sin un Resource Manager ACTIVOS.
+    long countByRolOrganizacionalAndEstado(String rolOrganizacional, String estado);
+
     long countByEstado(String estado);
 
     /**

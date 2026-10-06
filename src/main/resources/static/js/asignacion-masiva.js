@@ -8,7 +8,8 @@
  *    limiteCarga: 100,                 // límite configurado en Configuración
  *    url:        '/…/proyectos/ID/asignar-varios',
  *    extra:      { volver: 'asignaciones' },   // campos extra del POST (opcional)
- *    proyecto:   'Nombre del proyecto'
+ *    proyecto:   'Nombre del proyecto',
+ *    modo:       'asignar' | 'proponer'   // 'proponer' = PM (el RM aprueba)
  *  });
  *
  * El panel debe tener data-vacantes, un contenedor [data-bulk-list], los
@@ -61,6 +62,9 @@
     var perfiles = opts.perfiles || [];
     var limite = Number(opts.limiteCarga) || 100;
     var vacantes = Math.max(0, Number(panel.dataset.vacantes) || 0);
+    // Modelo v7: el PM propone (el RM aprueba); el RM asigna directo.
+    var proponer = opts.modo === "proponer";
+    var verbo = proponer ? "Proponer" : "Asignar";
     var modal = panel.closest(".modal") || document;
     var enEquipo = {};
     modal.querySelectorAll("[data-miembro-perfil]").forEach(function (el) { enEquipo[el.dataset.miembroPerfil] = true; });
@@ -142,7 +146,7 @@
       todos.disabled = visiblesLibres.length === 0 || vacantes === 0;
       if (boton) {
         boton.disabled = n === 0;
-        boton.textContent = n > 1 ? "Asignar " + n + " seleccionados" : (n === 1 ? "Asignar seleccionado" : "Asignar seleccionados");
+        boton.textContent = n > 1 ? verbo + " " + n + " seleccionados" : (n === 1 ? verbo + " seleccionado" : verbo + " seleccionados");
       }
     }
 
@@ -207,22 +211,24 @@
       if (!ids.length) return toast("Marca al menos un colaborador.");
       if (ids.length > vacantes) return toast("Este proyecto solo tiene " + vacantes + " vacante(s).");
       if (!Number.isInteger(d) || d < 1 || d > limite) return toast("La dedicación debe estar entre 1% y " + limite + "%.");
-      if (!fecha) return toast("Selecciona una fecha de inicio.");
+      if (!fecha && !proponer) return toast("Selecciona una fecha de inicio.");
       var exceden = ids.map(function (id) { return porId[id]; }).filter(excede);
       if (exceden.length) {
         return toast("Con " + d + "% de dedicación superarían el límite de carga: " +
           exceden.map(function (p) { return p.nombre; }).join(", ") + ". Baja la dedicación o desmárcalos.");
       }
       var nombres = ids.map(function (id) { return porId[id].nombre; });
-      var campos = Object.assign({ cargaPorcentaje: d, fechaInicio: fecha }, opts.extra || {});
+      var campos = Object.assign(proponer ? { cargaPorcentaje: d } : { cargaPorcentaje: d, fechaInicio: fecha }, opts.extra || {});
       var ejecutar = function () { boton.disabled = true; enviar(opts.url, campos, ids); };
       if (window.SBAI.modal && window.SBAI.modal.confirm) {
         window.SBAI.modal.confirm({
-          title: ids.length === 1 ? "¿Asignar a " + nombres[0] + "?" : "¿Asignar a " + ids.length + " colaboradores?",
-          desc: "Se asignarán a \"" + (opts.proyecto || "este proyecto") + "\" con " + d + "% de dedicación desde el " + fecha + ".",
+          title: ids.length === 1 ? "¿" + verbo + " a " + nombres[0] + "?" : "¿" + verbo + " a " + ids.length + " colaboradores?",
+          desc: proponer
+            ? "Se enviará una propuesta al Resource Manager para sumarlos a \"" + (opts.proyecto || "este proyecto") + "\" con " + d + "% de dedicación. Quedarán asignados cuando la apruebe."
+            : "Se asignarán a \"" + (opts.proyecto || "este proyecto") + "\" con " + d + "% de dedicación desde el " + fecha + ".",
           variant: "primary", icon: "icon-users",
           consequences: nombres,
-          confirmLabel: ids.length === 1 ? "Asignar" : "Asignar " + ids.length, cancelLabel: "Volver",
+          confirmLabel: ids.length === 1 ? verbo : verbo + " " + ids.length, cancelLabel: "Volver",
           onConfirm: ejecutar
         });
       } else {

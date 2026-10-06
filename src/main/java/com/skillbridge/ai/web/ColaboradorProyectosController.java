@@ -42,7 +42,7 @@ public class ColaboradorProyectosController {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         Long perfilId = sesion.getPerfilId();
 
-        List<MiProyectoFila> activos = proyectoService.misProyectosActivos(perfilId);
+        List<MiProyectoFila> activos = proyectoService.misProyectosComoColaborador(perfilId);
         List<MiProyectoFila> historial = proyectoService.misProyectosHistorial(perfilId);
 
         // Un colaborador puede tener más de una asignación histórica al mismo

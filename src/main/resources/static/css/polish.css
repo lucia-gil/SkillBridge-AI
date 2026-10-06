@@ -372,3 +372,49 @@ input[type="file"]::file-selector-button:hover { background: var(--blue-bg); }
 :root[data-theme="dark"] input[type="file"]::file-selector-button { color: var(--text-primary); }
 :root[data-theme="dark"] .account-hero .account-photo-large { box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px color-mix(in srgb, var(--blue-accent) 55%, transparent); }
 .account-hero + .detail-grid { margin-top: 0 !important; }
+
+/* ───────── Modelo v7: selector "Ver como" (Miembro que lidera y colabora) ───────── */
+.view-switch { align-items: center; flex-shrink: 0; }
+.view-switch-label {
+  padding: 0 var(--space-2) 0 var(--space-3);
+  font-family: var(--font-mono); font-size: var(--fs-2xs); letter-spacing: var(--tracking-label);
+  text-transform: uppercase; color: var(--text-tertiary); white-space: nowrap;
+}
+.view-switch .segmented-btn { text-decoration: none; white-space: nowrap; }
+.view-switch .segmented-btn:not(.active):hover { color: var(--text-primary); }
+:root[data-theme="dark"] .view-switch .segmented-btn.active { color: var(--text-primary); }
+@media (max-width: 1100px) { .view-switch-label { display: none; } }
+@media (max-width: 760px) { .view-switch .segmented-btn { padding: 6px var(--space-2); } }
+
+/* Etiqueta de origen de una propuesta (bandeja del Resource Manager) */
+.origin-tag { font-size: var(--fs-2xs); }
+
+/* Panel "Transferir liderazgo" / "Cambiar PM" */
+.handover-panel { border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); background: var(--surface-sunken); margin-bottom: var(--space-5); }
+.handover-panel h3 { font-size: var(--fs-sm); margin-bottom: var(--space-1); }
+.handover-check { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--fs-sm); margin: var(--space-3) 0; cursor: pointer; }
+.handover-check input { margin-top: 3px; }
+.handover-check.is-disabled { color: var(--text-tertiary); cursor: not-allowed; }
+.handover-hint { font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: 2px; }
+.readonly-note { display: flex; gap: var(--space-2); align-items: flex-start; font-size: var(--fs-xs); color: var(--text-secondary); background: var(--blue-bg); border: 1px solid var(--blue-border); border-radius: var(--radius-md); padding: var(--space-3); margin: var(--space-4) 0; }
+:root[data-theme="dark"] .readonly-note { background: color-mix(in srgb, var(--blue-accent) 14%, var(--surface)); border-color: color-mix(in srgb, var(--blue-accent) 35%, transparent); }
+
+/* ───────── Modelo v7, fase 2: reincorporar equipo anterior (reanudar / reabrir) ───────── */
+.reinc-list { display: flex; flex-direction: column; gap: var(--space-2); max-height: 280px; overflow-y: auto; margin-top: var(--space-2); }
+.reinc-row { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--surface); cursor: pointer; }
+.reinc-row:hover { border-color: var(--border-strong); }
+.reinc-row input { margin-top: 3px; }
+.reinc-row.is-blocked { cursor: not-allowed; background: var(--surface-sunken); opacity: .8; }
+.reinc-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: var(--fs-sm); }
+.reinc-sub { font-size: var(--fs-xs); color: var(--text-tertiary); }
+.reinc-why { font-size: var(--fs-xs); color: var(--red-fg); }
+
+/* ───────── Modelo v7, fase 3: selector de rol (invitar / editar rol) ───────── */
+.role-options { display: flex; flex-direction: column; gap: var(--space-2); }
+.role-option { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); cursor: pointer; background: var(--surface); transition: border-color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard); }
+.role-option:hover { border-color: var(--border-strong); }
+.role-option:has(input:checked) { border-color: var(--blue-accent-strong); background: var(--blue-bg); }
+:root[data-theme="dark"] .role-option:has(input:checked) { background: color-mix(in srgb, var(--blue-accent) 14%, var(--surface)); }
+.role-option input { margin-top: 3px; }
+.role-option strong { display: block; font-size: var(--fs-sm); }
+.role-option-desc { display: block; font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: 2px; }

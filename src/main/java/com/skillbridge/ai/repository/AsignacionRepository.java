@@ -40,6 +40,12 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
     @Query("select a from Asignacion a join fetch a.perfil p join fetch p.usuario u where a.proyectoId = :proyectoId and a.rolEnProyecto = :rol and a.estado = 'activa' order by a.fechaInicio asc")
     List<Asignacion> buscarResponsablesActivos(@Param("proyectoId") Long proyectoId, @Param("rol") String rol);
 
+    // Colaboradores que YA NO están activos en el proyecto (más reciente
+    // primero): de aquí sale el "equipo anterior" a una pausa o a un cierre.
+    @Query("select a from Asignacion a join fetch a.perfil p join fetch p.usuario u where a.proyectoId = :proyectoId " +
+            "and a.rolEnProyecto = 'colaborador' and a.estado <> 'activa' and a.fechaFin is not null order by a.fechaFin desc")
+    List<Asignacion> listarColaboradoresSalientes(@Param("proyectoId") Long proyectoId);
+
     long countByProyectoIdAndEstado(Long proyectoId, String estado);
 
     // Cuenta cuantos PM activos tiene un proyecto - se usa para bloquear que
@@ -62,8 +68,28 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
     boolean existsByProyectoIdAndPerfilIdAndRolEnProyectoAndEstado(
             Long proyectoId, Long perfilId, String rolEnProyecto, String estado);
 
-    @Query("select coalesce(sum(a.cargaPorcentaje), 0) from Asignacion a where a.perfilId = :perfilId and a.estado = 'activa'")
+    // CARGA EFECTIVA (modelo v7): solo cuentan las asignaciones activas en
+    // proyectos vigentes (planificacion / activo / en_pausa). Al pausar, los
+    // colaboradores salen del proyecto y solo queda el PM, cuya carga sigue
+    // contando; en un proyecto completado o cancelado el PM se conserva
+    // (acceso al historial) pero ya no ocupa capacidad.
+    @Query("select coalesce(sum(a.cargaPorcentaje), 0) from Asignacion a join a.proyecto p " +
+            "where a.perfilId = :perfilId and a.estado = 'activa' " +
+            "and p.estado in ('planificacion', 'activo', 'en_pausa')")
     Integer sumarCargaActivaDePerfil(@Param("perfilId") Long perfilId);
+
+    // Proyectos vigentes en los que participa el perfil (mismo criterio que
+    // la carga efectiva): es lo que limita "maximo_proyectos_simultaneos".
+    @Query("select count(a) from Asignacion a join a.proyecto p " +
+            "where a.perfilId = :perfilId and a.estado = 'activa' " +
+            "and p.estado in ('planificacion', 'activo', 'en_pausa')")
+    long contarProyectosVigentesDePerfil(@Param("perfilId") Long perfilId);
+
+    // Proyectos que el perfil lidera HOY (fila activa como project_manager).
+    // Decide si un Miembro puede entrar a la vista Project Manager.
+    @Query("select count(a) from Asignacion a where a.perfilId = :perfilId " +
+            "and a.rolEnProyecto = 'project_manager' and a.estado = 'activa'")
+    long contarLiderazgosActivos(@Param("perfilId") Long perfilId);
 
     // Borrado en cascada manual: fk_asig_proyecto NO tiene ON DELETE CASCADE
     // (ver db/skillbridge_db_v4.sql), asi que ProyectoService.eliminar() debe
@@ -73,6 +99,7 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
     // Ocupación de TODOS los colaboradores con al menos una asignación activa,
     // en una sola consulta (evita golpear la BD una vez por colaborador en
     // Reportes globales / KPI de sobrecarga del dashboard de Administrador).
-    @Query("select a.perfilId, sum(a.cargaPorcentaje) from Asignacion a where a.estado = 'activa' group by a.perfilId")
+    @Query("select a.perfilId, sum(a.cargaPorcentaje) from Asignacion a join a.proyecto p where a.estado = 'activa' " +
+            "and p.estado in ('planificacion', 'activo', 'en_pausa') group by a.perfilId")
     List<Object[]> sumarCargaActivaAgrupadaPorPerfil();
 }

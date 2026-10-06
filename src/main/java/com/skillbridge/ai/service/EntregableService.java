@@ -246,8 +246,11 @@ public class EntregableService {
     // ───────────────────────── Colaborador ─────────────────────────
 
     private void verificarPertenece(Long proyectoId, Long perfilId) {
-        boolean pertenece = asignacionRepository.findByProyectoIdAndPerfilIdAndEstado(proyectoId, perfilId, "activa").isPresent();
-        if (!pertenece) throw new OperacionInvalidaException("No perteneces a este proyecto.");
+        // Solo quien COLABORA en el proyecto entrega (el PM revisa y califica).
+        boolean pertenece = asignacionRepository.findByProyectoIdAndPerfilIdAndEstado(proyectoId, perfilId, "activa")
+                .filter(a -> Roles.COLABORADOR.equals(a.getRolEnProyecto()))
+                .isPresent();
+        if (!pertenece) throw new OperacionInvalidaException("No eres colaborador de este proyecto.");
     }
 
     @Transactional(readOnly = true)

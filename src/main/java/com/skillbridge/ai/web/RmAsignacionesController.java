@@ -131,15 +131,15 @@ public class RmAsignacionesController {
     @PostMapping("/proyectos/{id}/asignar")
     public String asignar(@PathVariable Long id,
                           @RequestParam Long perfilId,
-                          @RequestParam String rolEnProyecto,
                           @RequestParam int cargaPorcentaje,
                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
                           HttpSession session,
                           RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            proyectoService.asignarColaborador(id, perfilId, rolEnProyecto, cargaPorcentaje,
-                    fechaInicio, sesion.getUsuarioId());
+            // Siempre como colaborador: el rol PM solo se otorga al crear el
+            // proyecto o con "Cambiar PM" (modelo v7).
+            proyectoService.asignarColaborador(id, perfilId, cargaPorcentaje, fechaInicio, sesion.getUsuarioId());
             // addFlashAttribute (no addAttribute): el mensaje debe
             // sobrevivir UN solo redirect y desaparecer despues, para que
             // si el usuario refresca la pagina no se le repita el aviso.
@@ -210,18 +210,23 @@ public class RmAsignacionesController {
     }
 
     /**
-     * "Cambiar Project Manager" - reemplaza al PM activo por otra persona
-     * en un solo paso (ver ProyectoService.reasignarProjectManager para el
-     * porque no se hace con finalizar + asignar por separado).
+     * "Cambiar Project Manager" - reemplaza al PM activo por otro Miembro
+     * en un solo paso (ver ProyectoService.reasignarProjectManager). El PM
+     * saliente se queda como colaborador si se marcó "mantener" y hay
+     * vacante; si no, su asignación se finaliza.
      */
     @PostMapping("/proyectos/{id}/cambiar-pm")
     public String cambiarPm(@PathVariable Long id,
                             @RequestParam Long nuevoPmPerfilId,
+                            // Casilla "Mantener como colaborador" del modal (requiere vacante).
+                            @RequestParam(defaultValue = "false") boolean mantener,
+                            // Dedicación con la que se queda el PM saliente (vacío = la misma).
+                            @RequestParam(required = false) Integer cargaSaliente,
                             HttpSession session,
                             RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            proyectoService.reasignarProjectManager(id, nuevoPmPerfilId, sesion.getUsuarioId());
+            proyectoService.reasignarProjectManager(id, nuevoPmPerfilId, mantener, cargaSaliente, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Project Manager actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

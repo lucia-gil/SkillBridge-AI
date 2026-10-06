@@ -92,6 +92,10 @@ public class ShellModelBuilder {
         );
 
         model.addAttribute("roleLabel", Roles.etiqueta(sesion.getRolEfectivo()));
+        // Selector "Ver como" (modelo v7): solo para un Miembro que lidera
+        // proyectos y también puede tener proyectos como colaborador.
+        model.addAttribute("puedeCambiarVista", sesion.isPuedeCambiarVista());
+        model.addAttribute("vistaActualEsPm", Roles.PROJECT_MANAGER.equals(sesion.getRolEfectivo()));
         model.addAttribute("rolSlug", slug);
         model.addAttribute("navItems", navItems);
         model.addAttribute("activeHref", activeHref);

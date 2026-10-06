@@ -24,6 +24,12 @@ public class PropuestaAsignacion {
     @Column(name = "motivo_resolucion", length = 500) private String motivoResolucion;
     @Column(name = "fecha_solicitud", insertable = false, updatable = false) private LocalDateTime fechaSolicitud;
     @Column(name = "fecha_resolucion") private LocalDateTime fechaResolucion;
+    /** talent_matching | manual | reincorporacion (columna agregada en el esquema v7). */
+    @Column(nullable = false, length = 20) private String origen = ORIGEN_TALENT_MATCHING;
+
+    public static final String ORIGEN_TALENT_MATCHING = "talent_matching";
+    public static final String ORIGEN_MANUAL = "manual";
+    public static final String ORIGEN_REINCORPORACION = "reincorporacion";
 
     public Long getId() { return id; }
     public Long getProyectoId() { return proyectoId; }
@@ -54,4 +60,6 @@ public class PropuestaAsignacion {
     public LocalDateTime getFechaSolicitud() { return fechaSolicitud; }
     public LocalDateTime getFechaResolucion() { return fechaResolucion; }
     public void setFechaResolucion(LocalDateTime v) { this.fechaResolucion = v; }
+    public String getOrigen() { return origen; }
+    public void setOrigen(String origen) { this.origen = origen; }
 }

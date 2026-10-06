@@ -20,6 +20,20 @@
 
 -- ################ 1) ESQUEMA BASE ################
 -- =====================================================================
+-- CAMBIOS v7 — modelo de permisos y consistencia de roles
+--  * Dos niveles de rol: usuarios.rol_organizacional (administrador |
+--    resource_manager | NULL = Miembro) y asignaciones.rol_en_proyecto
+--    (project_manager | colaborador). Admin y RM NUNCA tienen filas en
+--    asignaciones; un Miembro puede liderar unos proyectos y colaborar en
+--    otros a la vez. Validado en el backend (sin triggers).
+--  * Columnas nuevas (aditivas): proyectos.fecha_pausa / motivo_pausa /
+--    fecha_reanudacion_estimada, correos_autorizados.rol_asignado y
+--    propuestas_asignacion.origen.
+--  * Datos demo: App Móvil Aurora la lidera Tomás Herrera (35%, total 95%);
+--    Luis Peña queda solo como Resource Manager.
+--  * Para una BD YA creada con una versión anterior, usar
+--    db/migracion_v7_consistencia_roles.sql.
+-- =====================================================================
 -- SkillBridge AI
 -- Modelo de datos v4.1 (v4 + fixes para que el código Java corra)
 -- Motor: MySQL 8.0+  |  Charset: utf8mb4  |  Motor de tabla: InnoDB
@@ -150,6 +164,9 @@ CREATE TABLE correos_autorizados (
                                      utilizado           BOOLEAN NOT NULL DEFAULT FALSE,
                                      fecha_autorizacion  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                      fecha_uso           DATETIME NULL,
+    -- v7: rol organizacional con el que se invitó (NULL = Miembro). Al
+    -- registrarse, la cuenta nace con ese rol.
+                                     rol_asignado        ENUM('administrador','resource_manager') NULL,
                                      CONSTRAINT fk_correoaut_admin FOREIGN KEY (autorizado_por_id) REFERENCES usuarios(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -242,7 +259,12 @@ CREATE TABLE proyectos (
                            colaboradores_requeridos TINYINT UNSIGNED NOT NULL DEFAULT 0,
                            fecha_inicio            DATE NOT NULL,
                            fecha_fin_estimada      DATE NULL,
-                           fecha_creacion          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                           fecha_creacion          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- v7: pausar = el equipo sale del proyecto (solo queda el PM); se
+    -- exigen motivo y fecha estimada de reanudación.
+                           fecha_pausa             DATE NULL,
+                           motivo_pausa            VARCHAR(500) NULL,
+                           fecha_reanudacion_estimada DATE NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE INDEX idx_proyectos_estado ON proyectos(estado);
@@ -273,12 +295,17 @@ CREATE TABLE proyecto_habilidad_requerida (
 -- ---------------------------------------------------------------------
 -- 9. ASIGNACIONES — Rol contextual por proyecto (RF03/RF04)
 --    rol_en_proyecto SOLO puede ser 'project_manager' o 'colaborador':
---    liderar el proyecto o aportar como recurso. Administrador y Resource
---    Manager no "participan en" un proyecto de esa forma (existen por
---    encima de todos los proyectos a la vez) — si un Resource Manager
---    quiere aportar como recurso en un proyecto puntual, se le crea una
---    fila aquí con rol_en_proyecto='colaborador', sin tocar su
---    usuarios.rol_organizacional='resource_manager', que no cambia nunca.
+--    liderar el proyecto o aportar como recurso. Describe la función de la
+--    persona DENTRO de ese proyecto, no quién es en la empresa.
+--
+--    Modelo v7 (regla de negocio, validada en el backend): Administrador y
+--    Resource Manager NUNCA tienen filas aquí — existen por encima de todos
+--    los proyectos (el RM aprueba asignaciones; no puede aprobarse a sí
+--    mismo). Solo los Miembros (usuarios.rol_organizacional IS NULL)
+--    participan, y un mismo Miembro puede liderar unos proyectos y
+--    colaborar en otros a la vez. La carga efectiva de una persona suma sus
+--    filas activas en proyectos vigentes (planificacion/activo/en_pausa) y
+--    nunca supera el 100%.
 --
 --    Desde v4, esta tabla también es la ÚNICA fuente de verdad de quién
 --    creó/lidera cada proyecto (fila con rol_en_proyecto='project_manager'):
@@ -356,6 +383,8 @@ CREATE TABLE propuestas_asignacion (
                                        motivo_resolucion           VARCHAR(500) NULL,
                                        fecha_solicitud             DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                        fecha_resolucion            DATETIME NULL,
+    -- v7: de dónde viene la propuesta (talent_matching | manual | reincorporacion).
+                                       origen                      VARCHAR(20) NOT NULL DEFAULT 'talent_matching',
                                        CONSTRAINT fk_propasig_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE,
                                        CONSTRAINT fk_propasig_candidato FOREIGN KEY (candidato_perfil_id) REFERENCES perfiles(id),
                                        CONSTRAINT fk_propasig_solicitante FOREIGN KEY (solicitado_por_perfil_id) REFERENCES perfiles(id),
@@ -905,17 +934,15 @@ VALUES (LAST_INSERT_ID(), 'Frontend Developer', 100, 'activo');
 INSERT INTO correos_autorizados (correo, autorizado_por_id, origen_carga, utilizado, fecha_uso)
 VALUES ('diego.salazar@nexacorp.com', 1, 'individual', TRUE, NOW());
 
--- 1. Proyecto nuevo, con Luis Peña como PM (así tienes 2 proyectos con PMs distintos)
+-- 1. Proyecto nuevo. Modelo v7: Luis Peña es Resource Manager (puesto fijo)
+--    y por eso NO lidera ni participa en proyectos. El PM de Aurora es
+--    Tomás Herrera, que se inserta más abajo (sección 4), cuando ya existe.
 INSERT INTO proyectos (nombre, descripcion, tecnologias, estado, colaboradores_requeridos, fecha_inicio)
 VALUES ('App Móvil Aurora', 'App móvil de logística para Aurora Telecom',
         JSON_ARRAY('Kotlin', 'Firebase', 'REST API'),
         'activo', 4, CURDATE());
 
 SET @aurora_id = LAST_INSERT_ID();
-SET @luis_perfil_id = (SELECT id FROM perfiles WHERE usuario_id = (SELECT id FROM usuarios WHERE correo = 'luis.pena@nexacorp.com'));
-
-INSERT INTO asignaciones (proyecto_id, perfil_id, rol_en_proyecto, carga_porcentaje, estado, fecha_inicio)
-VALUES (@aurora_id, @luis_perfil_id, 'project_manager', 20, 'activa', CURDATE());
 
 -- 2. Diego (ya tiene 20% en Portal Andes) entra también a este proyecto
 -- con 45% más → su carga total sube a 65% → debería categorizarse "Óptimo"
@@ -1244,9 +1271,8 @@ INSERT INTO asignaciones (proyecto_id, perfil_id, rol_en_proyecto, carga_porcent
                                                                                                                (@pr_k8s, @pid_jorge,    'project_manager', 20, 'activa', CURDATE() - INTERVAL 45 DAY),
                                                                                                                (@pr_k8s, @pid_fiorella, 'colaborador',     60, 'activa', CURDATE() - INTERVAL 40 DAY),
                                                                                                                (@pr_k8s, @pid_ivan,     'colaborador',     55, 'activa', CURDATE() - INTERVAL 40 DAY),
-                                                                                                               -- Tomás Herrera: segunda asignación activa (ver App Móvil Aurora más abajo)
-                                                                                                               -- que lo deja en 115% de carga total, a propósito, para la demo de
-                                                                                                               -- ocupación/sobrecarga en resource-manager/ocupacion.html.
+                                                                                                               -- Tomás Herrera: además lidera App Móvil Aurora (35%, más abajo):
+                                                                                                               -- 60 + 35 = 95% de carga total, para la demo de "cerca del límite".
                                                                                                                (@pr_k8s, @pid_tomas,    'colaborador',     60, 'activa', CURDATE() - INTERVAL 20 DAY);
 
 -- --- Proyecto 4: Dashboard de Analítica de Ventas (en_pausa) -----------
@@ -1334,11 +1360,13 @@ INSERT INTO proyecto_habilidad_requerida (proyecto_id, habilidad_id, nivel_reque
                                                                                           (@pid_portal_andes, (SELECT id FROM habilidades WHERE nombre='Docker'), 2),
                                                                                           (@pid_app_aurora,   (SELECT id FROM habilidades WHERE nombre='Kotlin'), 3);
 
--- Tomás Herrera también está en App Móvil Aurora (55%) — junto con el
--- 60% de Migración a Kubernetes de arriba, su carga total queda en
--- 115%: por diseño, para poder mostrar la alerta de sobrecarga.
+-- Tomás Herrera LIDERA App Móvil Aurora (35%) y a la vez es colaborador
+-- en Migración a Kubernetes (60%): es el caso "Miembro con dos papeles"
+-- del modelo v7 (ve Aurora en su vista Project Manager y Kubernetes en su
+-- vista Colaborador). Su carga total queda en 95%: cerca del límite, pero
+-- nunca por encima del tope duro de 100%.
 INSERT INTO asignaciones (proyecto_id, perfil_id, rol_en_proyecto, carga_porcentaje, estado, fecha_inicio)
-VALUES (@pid_app_aurora, @pid_tomas, 'colaborador', 55, 'activa', CURDATE() - INTERVAL 15 DAY);
+VALUES (@pid_app_aurora, @pid_tomas, 'project_manager', 35, 'activa', CURDATE() - INTERVAL 15 DAY);
 
 -- =====================================================================
 -- 5. HABILIDADES DECLARADAS POR PERFIL (perfil_habilidad) — algunas
@@ -1429,7 +1457,7 @@ VALUES (@pid_app_aurora, @pid_diego, 'Dudas sobre autenticación con Firebase',
 SET @hilo_aurora = LAST_INSERT_ID();
 
 INSERT INTO foro_publicaciones (proyecto_id, autor_id, publicacion_padre_id, contenido)
-VALUES (@pid_app_aurora, @pid_luis, @hilo_aurora,
+VALUES (@pid_app_aurora, @pid_tomas, @hilo_aurora,
         'Pasemos por nuestro backend para poder validar el rol del usuario antes de emitir el token final. Lo reviso con el equipo de seguridad y les confirmo esta semana.');
 
 -- =====================================================================
@@ -1705,20 +1733,20 @@ WHERE NOT EXISTS (SELECT 1 FROM tipos_notificacion WHERE codigo = 'foro_cita');
 SET @r_ivan_k8s   = (SELECT id FROM foro_publicaciones WHERE publicacion_padre_id = @hilo_k8s AND autor_id = @pid_ivan LIMIT 1);
 SET @r_jorge_k8s  = (SELECT id FROM foro_publicaciones WHERE publicacion_padre_id = @hilo_k8s AND autor_id = @pid_jorge LIMIT 1);
 SET @r_mariana_qa = (SELECT id FROM foro_publicaciones WHERE publicacion_padre_id = @hilo_qa AND autor_id = @pid_mariana LIMIT 1);
-SET @r_luis_aur   = (SELECT id FROM foro_publicaciones WHERE publicacion_padre_id = @hilo_aurora AND autor_id = @pid_luis LIMIT 1);
+SET @r_tomas_aur  = (SELECT id FROM foro_publicaciones WHERE publicacion_padre_id = @hilo_aurora AND autor_id = @pid_tomas LIMIT 1);
 
 -- Jorge responde citando puntualmente el mensaje de Iván.
 UPDATE foro_publicaciones SET respuesta_a_id = @r_ivan_k8s WHERE id = @r_jorge_k8s;
 
--- Luis editó su respuesta una vez (queda la huella "editado").
+-- Tomás (PM de Aurora) editó su respuesta una vez (queda la huella "editado").
 UPDATE foro_publicaciones SET editado = TRUE, num_ediciones = 1, fecha_edicion = NOW() - INTERVAL 1 DAY
-WHERE id = @r_luis_aur;
+WHERE id = @r_tomas_aur;
 
 -- "Me fue útil"
 INSERT INTO foro_destacados (publicacion_id, perfil_id) VALUES
                                                             (@r_jorge_k8s, @pid_fiorella), (@r_jorge_k8s, @pid_ivan),
                                                             (@r_mariana_qa, @pid_karla), (@r_mariana_qa, @pid_eduardo),
-                                                            (@hilo_aurora, @pid_luis);
+                                                            (@hilo_aurora, @pid_tomas);
 
 -- Enlace adjunto a la solución del hilo de Kubernetes.
 INSERT INTO foro_adjuntos (publicacion_id, tipo, nombre, url) VALUES

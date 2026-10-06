@@ -11,6 +11,7 @@ import com.skillbridge.ai.repository.PerfilRepository;
 import com.skillbridge.ai.service.AuditoriaService;
 import com.skillbridge.ai.service.HabilidadService;
 import com.skillbridge.ai.service.ShellModelBuilder;
+import com.skillbridge.ai.service.UsuarioService;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
@@ -61,11 +62,14 @@ public class RmColaboradoresController {
     private final HabilidadService habilidadService;
     private final ShellModelBuilder shellModelBuilder;
     private final AuditoriaService auditoriaService;
+    private final UsuarioService usuarioService;
 
     public RmColaboradoresController(PerfilRepository perfilRepository, AsignacionRepository asignacionRepository,
                                      HabilidadRepository habilidadRepository, HabilidadService habilidadService,
-                                     ShellModelBuilder shellModelBuilder, AuditoriaService auditoriaService) {
+                                     ShellModelBuilder shellModelBuilder, AuditoriaService auditoriaService,
+                                     UsuarioService usuarioService) {
         this.auditoriaService = auditoriaService;
+        this.usuarioService = usuarioService;
         this.perfilRepository = perfilRepository;
         this.asignacionRepository = asignacionRepository;
         this.habilidadRepository = habilidadRepository;
@@ -198,6 +202,20 @@ public class RmColaboradoresController {
             return "redirect:/resource-manager/colaboradores.html";
         }
 
+        // Modelo v7 (fase 3): un perfil suspendido no puede seguir en
+        // proyectos. Misma regla que al suspender la cuenta: si lidera,
+        // bloqueado (primero "Cambiar PM"); si colabora, se finalizan sus
+        // asignaciones (el modal de esta pantalla ya lo advierte).
+        if ("inactivo".equals(nuevoEstado)) {
+            try {
+                usuarioService.salirDeProyectos(perfilId,
+                        p.getUsuario() != null ? p.getUsuario().getNombreCompleto() : "El colaborador",
+                        "suspenderlo", true, motivo, sesion.getUsuarioId());
+            } catch (OperacionInvalidaException ex) {
+                redirectAttributes.addFlashAttribute("error", ex.getMessage());
+                return "redirect:/resource-manager/colaboradores.html";
+            }
+        }
         String anterior = p.getEstado();
         p.setEstado(nuevoEstado);
         perfilRepository.save(p);
