@@ -8,7 +8,7 @@ import com.skillbridge.ai.repository.UsuarioRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.PasswordPolicy;
 import com.skillbridge.ai.util.Roles;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -188,7 +188,7 @@ public class CuentaService {
                         )
                 );
 
-        BCryptPasswordEncoder encoder =
+        PasswordEncoder encoder =
                 authService.passwordEncoder();
 
         if (actual == null

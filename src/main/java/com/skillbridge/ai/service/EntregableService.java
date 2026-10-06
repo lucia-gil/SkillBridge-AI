@@ -22,6 +22,8 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,6 +57,26 @@ public class EntregableService {
             "application/vnd.ms-excel",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/json");
+
+    /**
+     * Extensión → tipo MIME que se guarda. El tipo que se sirve al descargar lo
+     * decide el SERVIDOR según la extensión (no el Content-Type que manda el
+     * navegador, que el usuario puede falsificar: p.ej. un HTML con JavaScript
+     * declarado como "image/png").
+     */
+    private static final Map<String, String> MIME_POR_EXTENSION = Map.ofEntries(
+            Map.entry("pdf", "application/pdf"),
+            Map.entry("txt", "text/plain"),
+            Map.entry("png", "image/png"),
+            Map.entry("jpg", "image/jpeg"),
+            Map.entry("jpeg", "image/jpeg"),
+            Map.entry("webp", "image/webp"),
+            Map.entry("zip", "application/zip"),
+            Map.entry("doc", "application/msword"),
+            Map.entry("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            Map.entry("xls", "application/vnd.ms-excel"),
+            Map.entry("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            Map.entry("json", "application/json"));
 
     private final EntregableRepository entregableRepository;
     private final EntregaRepository entregaRepository;
@@ -294,15 +316,16 @@ public class EntregableService {
         en.setTexto(hayTexto ? texto.trim() : null);
         en.setUrlEntrega(hayUrl ? urlEntrega.trim() : null);
         if (hayArchivo) {
-            validarArchivo(archivo);
+            byte[] contenido;
             try {
-                en.setArchivoContenido(archivo.getBytes());
+                contenido = archivo.getBytes();
             } catch (IOException ex) {
                 throw new OperacionInvalidaException("No se pudo procesar el archivo.");
             }
-            en.setArchivoTipo(archivo.getContentType() != null ? archivo.getContentType() : "application/octet-stream");
-            String original = archivo.getOriginalFilename();
-            en.setArchivoNombre(original != null && !original.isBlank() ? original : "entrega");
+            String nombre = nombreSeguro(archivo.getOriginalFilename());
+            en.setArchivoTipo(validarArchivo(archivo, nombre, contenido));
+            en.setArchivoContenido(contenido);
+            en.setArchivoNombre(nombre);
         }
         // Reemplazar/quitar el archivo si ya existía uno y ahora no viene ninguno nuevo
         // se maneja en editar(); acá (primera entrega o "entregar de nuevo" trae siempre
@@ -327,14 +350,69 @@ public class EntregableService {
                 "Perfil " + perfilId);
     }
 
-    private void validarArchivo(MultipartFile archivo) {
+    /**
+     * Valida tamaño, tipo declarado, extensión y (para PDF/imágenes, que se
+     * abren en el navegador) la firma real del contenido. Devuelve el tipo
+     * MIME que se guardará, decidido por el servidor.
+     */
+    private String validarArchivo(MultipartFile archivo, String nombre, byte[] contenido) {
         if (archivo.getSize() > MAX_ARCHIVO_BYTES) {
             throw new OperacionInvalidaException("El archivo no puede superar los 15 MB.");
         }
         String tipo = archivo.getContentType();
-        if (tipo == null || !TIPOS_PERMITIDOS.contains(tipo)) {
+        int punto = nombre.lastIndexOf('.');
+        String extension = punto >= 0 ? nombre.substring(punto + 1).toLowerCase(Locale.ROOT) : "";
+        String mime = MIME_POR_EXTENSION.get(extension);
+        if (tipo == null || !TIPOS_PERMITIDOS.contains(tipo) || mime == null) {
             throw new OperacionInvalidaException("Formato no permitido. Usa PDF, Word, Excel, imagen, ZIP o texto plano.");
         }
+        if (!firmaCoincide(extension, contenido)) {
+            throw new OperacionInvalidaException("El contenido del archivo no corresponde a su extensión ." + extension + ".");
+        }
+        return mime;
+    }
+
+    /** "Magic numbers" de los formatos que el navegador abre directamente. */
+    private static boolean firmaCoincide(String extension, byte[] b) {
+        switch (extension) {
+            case "pdf":
+                return empiezaCon(b, 0x25, 0x50, 0x44, 0x46, 0x2D);                 // %PDF-
+            case "png":
+                return empiezaCon(b, 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A);
+            case "jpg":
+            case "jpeg":
+                return empiezaCon(b, 0xFF, 0xD8, 0xFF);
+            case "webp":
+                return b.length >= 12 && empiezaCon(b, 0x52, 0x49, 0x46, 0x46)       // RIFF....WEBP
+                        && b[8] == 0x57 && b[9] == 0x45 && b[10] == 0x42 && b[11] == 0x50;
+            case "zip":
+            case "docx":
+            case "xlsx":
+                return empiezaCon(b, 0x50, 0x4B);                                     // PK
+            default:
+                return true;
+        }
+    }
+
+    private static boolean empiezaCon(byte[] b, int... firma) {
+        if (b == null || b.length < firma.length) return false;
+        for (int i = 0; i < firma.length; i++) {
+            if ((b[i] & 0xFF) != firma[i]) return false;
+        }
+        return true;
+    }
+
+    /** Solo el nombre (sin rutas), sin saltos de línea ni comillas, máximo 200 caracteres. */
+    private static String nombreSeguro(String original) {
+        if (original == null || original.isBlank()) return "entrega";
+        String limpio = original.replace("\\", "/");
+        limpio = limpio.substring(limpio.lastIndexOf('/') + 1).replaceAll("[\\r\\n\"<>]", "").trim();
+        if (limpio.length() > 200) {
+            int punto = limpio.lastIndexOf('.');
+            String ext = punto > 0 && limpio.length() - punto <= 10 ? limpio.substring(punto) : "";
+            limpio = limpio.substring(0, 200 - ext.length()) + ext;
+        }
+        return limpio.isEmpty() ? "entrega" : limpio;
     }
 
     // ───────────────────────── Común ─────────────────────────

@@ -2,10 +2,13 @@
 <!--
   fragments/topbar.html
 -->
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
 <header class="topbar" th:fragment="topbar">
+
+  <!-- Token CSRF de Spring Security para formularios/fetch armados por JS -->
+  <th:block th:replace="~{fragments/seguridad :: csrf}"></th:block>
 
   <!-- MENÚ (solo celular / pantallas angostas) -->
   <button type="button" class="topbar-icon-btn topbar-menu-btn" data-action="toggle-sidebar" aria-label="Abrir menú de navegación">
@@ -42,7 +45,10 @@
     <!-- VER COMO (modelo v7): un Miembro que lidera proyectos alterna entre
          su vista Project Manager y su vista Colaborador. Cada vista muestra
          solo los proyectos de ese papel, con sus permisos. -->
-    <nav class="segmented view-switch" th:if="${puedeCambiarVista}" aria-label="Ver como">
+    <!-- sec:authorize (thymeleaf-extras-springsecurity6): solo se pinta si el
+         usuario tiene la autoridad project_manager, es decir, es Miembro y
+         lidera al menos un proyecto (ver security/SesionSegura.autoridades). -->
+    <nav class="segmented view-switch" sec:authorize="hasAuthority('project_manager')" aria-label="Ver como">
       <span class="view-switch-label">Ver como</span>
       <a class="segmented-btn" href="/project-manager/inicio.html"
          th:classappend="${vistaActualEsPm} ? 'active'"

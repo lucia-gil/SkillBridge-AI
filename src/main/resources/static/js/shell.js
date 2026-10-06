@@ -12,6 +12,13 @@
 (function () {
     "use strict";
 
+    /** Escapa texto antes de insertarlo como HTML (nombre del usuario, etc.). */
+    function escHtml(t) {
+        var d = document.createElement("div");
+        d.textContent = t == null ? "" : String(t);
+        return d.innerHTML;
+    }
+
     function icon(name, cls) {
         return '<svg class="icon ' + (cls || "") + '"><use href="' + window.SBAI.state.STATIC + "img/icons.svg#" + name + '"></use></svg>';
     }
@@ -72,8 +79,8 @@
             "</div>" +
             '<div class="dropdown">' +
             '<button type="button" class="topbar-user-btn" data-dropdown-trigger="user-menu-topbar">' +
-            '<span class="avatar avatar-sm">' + user.iniciales + "</span>" +
-            '<span class="topbar-user-name">' + user.nombre + "</span>" +
+            '<span class="avatar avatar-sm">' + escHtml(user.iniciales) + "</span>" +
+            '<span class="topbar-user-name">' + escHtml(user.nombre) + "</span>" +
             icon("icon-chevron-down", "icon-sm") +
             "</button>" +
             userMenuPanel("user-menu-topbar", "align-right") +
@@ -130,7 +137,8 @@
                 // Cierre de sesion real: invalida la HttpSession del servidor
                 // (antes solo se limpiaba sessionStorage, que era el mecanismo de
                 // la demo sin backend, y no cerraba ninguna sesion de verdad).
-                window.location.href = "/auth/logout";
+                // Logout real: POST /auth/logout con token CSRF (Spring Security).
+                (window.SBAI && window.SBAI.logout) ? window.SBAI.logout() : window.location.assign("/auth/login.html");
                 return;
             }
             var markAllBtn = e.target.closest('[data-action="mark-all-read-quick"]');

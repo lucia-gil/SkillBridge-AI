@@ -337,7 +337,7 @@
       if (!Number.isInteger(d) || d < 1 || d > limite) return toast("La dedicación debe estar entre 1% y " + limite + "%.");
       var exceden = ids.map(function (id) { return seleccion[id]; }).filter(function (c) { return c.cargaActual + d > limite; });
       if (exceden.length) {
-        return toast("Con " + d + "% superarían el límite: " + exceden.map(function (c) { return c.nombre; }).join(", ") + ". Baja la dedicación o quítalos.");
+        return toast("Con " + d + "% superarían el límite: " + exceden.map(function (c) { return esc(c.nombre); }).join(", ") + ". Baja la dedicación o quítalos.");
       }
       var fecha = proponer ? "" : $("#sp-fecha").value;
       if (!proponer && !fecha) return toast("Elige la fecha de inicio.");

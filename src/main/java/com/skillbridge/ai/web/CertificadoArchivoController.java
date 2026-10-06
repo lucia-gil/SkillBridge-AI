@@ -7,12 +7,15 @@ import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * Sirve el contenido binario de un certificado subido como PDF real
@@ -56,7 +59,11 @@ public class CertificadoArchivoController {
                     return ResponseEntity.ok()
                             .contentType(mediaType)
                             .cacheControl(CacheControl.noCache())
-                            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + c.getNombreArchivo() + "\"")
+                            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                                    .filename(c.getNombreArchivo() != null ? c.getNombreArchivo() : "constancia.pdf", StandardCharsets.UTF_8)
+                                    .build().toString())
+                            .header("X-Content-Type-Options", "nosniff")
+                            .header("Content-Security-Policy", "sandbox")
                             .body(c.getContenidoArchivo());
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());

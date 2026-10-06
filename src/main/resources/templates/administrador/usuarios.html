@@ -20,7 +20,7 @@
       <div class="kpi-grid">
         <div class="kpi-tile accent-blue">
           <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div>
-          <span class="kpi-tile-label">TOTAL USUARIOS</span><span class="kpi-tile-value" th:text="${kpis.total}">0</span><span class="kpi-tile-meta">cuentas registradas</span>
+          <span class="kpi-tile-label">TOTAL USUARIOS</span><span class="kpi-tile-value" th:text="${kpis.total}">0</span>
         </div>
         <div class="kpi-tile accent-blue">
           <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div>
@@ -32,7 +32,7 @@
         </div>
         <div class="kpi-tile accent-violet">
           <div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-shield"></use></svg></div>
-          <span class="kpi-tile-label">ADMINISTRADORES</span><span class="kpi-tile-value" th:text="${kpis.administradores}">0</span><span class="kpi-tile-meta">con acceso total</span>
+          <span class="kpi-tile-label">ADMINISTRADORES</span><span class="kpi-tile-value" th:text="${kpis.administradores}">0</span>
         </div>
       </div>
 
@@ -189,7 +189,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.tableFilter.init(document);
 
   document.body.addEventListener("click", function (e) {
-    if (e.target.closest('[data-action="logout"]')) { window.location.href = "/auth/logout"; }
+    if (e.target.closest('[data-action="logout"]')) { (window.SBAI && window.SBAI.logout) ? window.SBAI.logout() : window.location.assign("/auth/login.html"); }
   });
 
   var exito = /*[[${exito}]]*/ null;

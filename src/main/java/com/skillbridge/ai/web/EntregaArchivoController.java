@@ -9,12 +9,16 @@ import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 /**
  * Sirve el archivo binario de una entrega (mismo patrón que
@@ -24,6 +28,9 @@ import org.springframework.web.bind.annotation.PathVariable;
  */
 @Controller
 public class EntregaArchivoController {
+
+    private static final Set<String> ABRIBLES_EN_NAVEGADOR =
+            Set.of("application/pdf", "image/png", "image/jpeg", "image/webp");
 
     private final EntregaRepository entregaRepository;
     private final EntregableRepository entregableRepository;
@@ -54,10 +61,19 @@ public class EntregaArchivoController {
                     } catch (Exception ex) {
                         mediaType = MediaType.APPLICATION_OCTET_STREAM;
                     }
+                    // Solo PDF e imágenes se abren en el navegador; todo lo demás se
+                    // descarga. nosniff + CSP sandbox: aunque alguien suba un HTML
+                    // disfrazado, el navegador no lo ejecuta en nuestro dominio.
+                    boolean enNavegador = ABRIBLES_EN_NAVEGADOR.contains(mediaType.getType() + "/" + mediaType.getSubtype());
+                    ContentDisposition disposicion = (enNavegador ? ContentDisposition.inline() : ContentDisposition.attachment())
+                            .filename(en.getArchivoNombre() != null ? en.getArchivoNombre() : "entrega", StandardCharsets.UTF_8)
+                            .build();
                     return ResponseEntity.ok()
                             .contentType(mediaType)
                             .cacheControl(CacheControl.noCache())
-                            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + en.getArchivoNombre() + "\"")
+                            .header(HttpHeaders.CONTENT_DISPOSITION, disposicion.toString())
+                            .header("X-Content-Type-Options", "nosniff")
+                            .header("Content-Security-Policy", "sandbox")
                             .body(en.getArchivoContenido());
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());

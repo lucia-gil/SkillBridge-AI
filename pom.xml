@@ -74,15 +74,24 @@
             <version>1.3.39</version>
         </dependency>
 
-        <!-- Solo el modulo de criptografia de Spring Security: da BCryptPasswordEncoder
-             para el hash de contrasenas sin activar el filtro de seguridad por defecto
-             (la autenticacion/autorizacion de esta app se maneja a mano con sesion HTTP
-             + SesionInterceptor, igual que el AuthFilter de referencia de QuintaOla-SGA,
-             para no depender de una configuracion de Spring Security que no se puede
-             verificar compilando en este entorno). -->
+        <!-- Spring Security (Clase 6.1): SecurityFilterChain, formLogin, roles por
+             URL (hasAuthority), CSRF, logout y cabeceras de seguridad. Incluye
+             spring-security-crypto (BCryptPasswordEncoder). Ver config/SecurityConfig. -->
         <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- sec:authorize / sec:authentication en las plantillas Thymeleaf. -->
+        <dependency>
+            <groupId>org.thymeleaf.extras</groupId>
+            <artifactId>thymeleaf-extras-springsecurity6</artifactId>
+        </dependency>
+        <!-- Spring Session JDBC (Clase 6.2): la sesion se guarda en MySQL
+             (tablas SPRING_SESSION y SPRING_SESSION_ATTRIBUTES), sobrevive a
+             reinicios del Tomcat del EC2 y sirve con varias instancias. -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-jdbc</artifactId>
         </dependency>
 
         <!-- Empaquetado WAR: se necesita un contenedor Servlet embebido en tiempo

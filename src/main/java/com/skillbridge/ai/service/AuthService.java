@@ -14,7 +14,7 @@ import com.skillbridge.ai.repository.UsuarioRepository;
 import com.skillbridge.ai.util.PasswordPolicy;
 import com.skillbridge.ai.util.Roles;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,7 +60,8 @@ public class AuthService {
     private final ConfiguracionService configuracionService;
     private final NotificacionService notificacionService;
     private final JdbcTemplate jdbcTemplate;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    /** Bean BCrypt de SecurityConfig (Clase 6.1). */
+    private final PasswordEncoder passwordEncoder;
 
     private final ConcurrentHashMap<String, int[]> intentosFallidos = new ConcurrentHashMap<>();
 
@@ -72,7 +73,9 @@ public class AuthService {
                         AuditoriaService auditoriaService,
                         ConfiguracionService configuracionService,
                         NotificacionService notificacionService,
-                        JdbcTemplate jdbcTemplate) {
+                        JdbcTemplate jdbcTemplate,
+                        PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
         this.usuarioRepository = usuarioRepository;
         this.perfilRepository = perfilRepository;
         this.correoAutorizadoRepository = correoAutorizadoRepository;
@@ -124,7 +127,7 @@ public class AuthService {
                 .orElse(CORREO_NO_AUTORIZADO);
     }
 
-    public BCryptPasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return passwordEncoder;
     }
 
