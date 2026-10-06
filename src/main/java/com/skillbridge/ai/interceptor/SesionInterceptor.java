@@ -99,10 +99,11 @@ public class SesionInterceptor implements HandlerInterceptor {
         // un Miembro como "Paco" ve sus proyectos de PM en una vista y sus
         // proyectos de colaborador en la otra, con los permisos de cada una.
         if (!puedeEntrarA(rolRequerido, rolOrg, lidera)) {
-            String destino = authService.calcularRolEfectivo(sesion.getPerfilId(), rolOrg);
-            sesion.setRolEfectivo(destino);
-            session.setAttribute(SesionKeys.USUARIO, sesion);
-            response.sendRedirect(request.getContextPath() + "/" + Roles.slug(destino) + "/inicio.html");
+            // Antes redirigia en silencio al inicio propio del usuario; el
+            // equipo prefirio que quede explicito que el acceso fue negado
+            // (403) en vez de un salto silencioso a otra pantalla.
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "No tienes permiso para acceder a esta seccion.");
             return false;
         }
         sesion.setRolEfectivo(rolRequerido);
