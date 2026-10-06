@@ -346,7 +346,7 @@ public class ProyectoService {
             throw new OperacionInvalidaException(pm.getUsuario().getNombreCompleto()
                     + " no puede liderar proyectos: solo un Miembro activo (sin rol de Administrador o Resource Manager) puede ser Project Manager.");
         }
-        exigirCapacidad(pm, CARGA_PM_POR_DEFECTO);
+        exigirCapacidad(pm, CARGA_PM_POR_DEFECTO, true);
         int disponibles = contarColaboradoresDisponibles(pmPerfilId);
         if (colaboradoresRequeridos < 0) {
             throw new OperacionInvalidaException("La cantidad de colaboradores requeridos no puede ser negativa.");
@@ -547,8 +547,8 @@ public class ProyectoService {
                         throw new OperacionInvalidaException("No se puede reabrir: el PM " + pm.getPerfil().getUsuario().getNombreCompleto()
                                 + " quedaría con " + total + "% de carga (límite " + limite + "%). El Resource Manager debe cambiar el PM o rebalancear su carga.");
                     }
-                    if (asignacionRepository.contarProyectosVigentesDePerfil(pm.getPerfilId()) >= maximoProyectosConfigurado()) {
-                        throw new OperacionInvalidaException("No se puede reabrir: el PM ya está en el máximo de proyectos vigentes configurado.");
+                    if (asignacionRepository.contarProyectosVigentesDePerfil(pm.getPerfilId()) >= MAXIMO_PROYECTOS_PM) {
+                        throw new OperacionInvalidaException("No se puede reabrir: el PM ya está en el máximo de proyectos vigentes para Project Manager (" + MAXIMO_PROYECTOS_PM + ").");
                     }
                 }
                 String accion = "en_pausa".equals(anterior) ? "PROYECTO_REANUDADO"
@@ -866,7 +866,7 @@ public class ProyectoService {
             // Entra de fuera con la dedicación estándar de PM: debe tener
             // capacidad (en un proyecto cerrado su carga no cuenta hasta que
             // se reabra, y reabrir vuelve a validarla).
-            exigirCapacidad(nuevoPm, CARGA_PM_POR_DEFECTO);
+            exigirCapacidad(nuevoPm, CARGA_PM_POR_DEFECTO, true);
         }
 
         String nombreNuevo = nuevoPm.getUsuario().getNombreCompleto();
@@ -960,6 +960,8 @@ public class ProyectoService {
     public static final int CARGA_PM_POR_DEFECTO = 20;
     /** Tope duro de carga (modelo v7): nadie supera el 100%. */
     public static final int LIMITE_CARGA_MAXIMO = 100;
+    /** Máximo de proyectos vigentes simultáneos para un Project Manager (más alto que el de colaborador). */
+    public static final int MAXIMO_PROYECTOS_PM = 6;
 
     /**
      * ¿Puede esta persona participar en proyectos? Cuenta y perfil activos y
@@ -979,13 +981,17 @@ public class ProyectoService {
      * simultáneos de Configuración, ambos sobre la carga EFECTIVA).
      */
     private void exigirCapacidad(Perfil perfil, int dedicacion) {
+        exigirCapacidad(perfil, dedicacion, false);
+    }
+
+    private void exigirCapacidad(Perfil perfil, int dedicacion, boolean esPm) {
         int limiteCarga = limiteCargaConfigurado();
-        int maximoProyectos = maximoProyectosConfigurado();
+        int maximoProyectos = esPm ? MAXIMO_PROYECTOS_PM : maximoProyectosConfigurado();
         String nombre = perfil.getUsuario().getNombreCompleto();
         long vigentes = asignacionRepository.contarProyectosVigentesDePerfil(perfil.getId());
         if (vigentes >= maximoProyectos) {
             throw new OperacionInvalidaException(nombre + " ya está en " + vigentes
-                    + " proyecto(s) vigente(s), el máximo configurado es " + maximoProyectos + ".");
+                    + " proyecto(s) vigente(s), el máximo " + (esPm ? "para Project Manager es " : "configurado es ") + maximoProyectos + ".");
         }
         int cargaActual = sumarCargaActivaSegura(perfil.getId());
         if (cargaActual + dedicacion > limiteCarga) {

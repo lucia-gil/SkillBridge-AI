@@ -112,7 +112,7 @@ public class SelectorPersonasService {
     private PaginaCandidatos construir(Proyecto proyecto, Filtros f, boolean modoPm) {
         Long proyectoId = proyecto != null ? proyecto.getId() : null;
         int limite = proyectoService.limiteCargaConfigurado();
-        int maximo = proyectoService.maximoProyectosConfigurado();
+        int maximo = modoPm ? ProyectoService.MAXIMO_PROYECTOS_PM : proyectoService.maximoProyectosConfigurado();
         int dedicacion = Math.max(1, Math.min(limite, f.dedicacion() > 0 ? f.dedicacion() : 50));
         boolean cerrado = proyecto != null && ProyectoService.estaCerrado(proyecto);
 
