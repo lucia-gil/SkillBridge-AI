@@ -57,18 +57,20 @@
   }
 
   function bindModal(modal) {
-    const panel = modal.querySelector('[data-assignment-form]');
+    // Modelo v7, fase 4: el botón abre el selector de personas (búsqueda y
+    // filtros en el servidor, selección múltiple). Ver selector-personas.js.
     const show = modal.querySelector('[data-show-assignment-form]');
-    const hide = modal.querySelector('[data-hide-assignment-form]');
-    if (show && panel) show.addEventListener('click', function () {
-      panel.hidden = false; show.hidden = true;
-      const date = panel.querySelector('[data-field="fechaInicio"]');
-      if (date && !date.value) date.value = new Date().toISOString().slice(0, 10);
+    if (show && window.SBAI.selectorPersonas) show.addEventListener('click', function () {
+      const id = show.dataset.proyectoId;
+      window.SBAI.selectorPersonas.abrir({
+        proyecto: show.dataset.proyectoNombre || '',
+        endpoint: '/resource-manager/proyectos/' + id + '/candidatos',
+        accion: '/resource-manager/proyectos/' + id + '/asignar-varios',
+        modo: 'asignar',
+        extra: {}
+      });
     });
-    if (hide && panel) hide.addEventListener('click', function () { panel.hidden = true; show.hidden = false; });
 
-    // "Finalizar" pide confirmación (y un motivo opcional para Auditoría) antes de ejecutar,
-    // para que un clic accidental no finalice una asignación sin querer.
     modal.querySelectorAll('[data-finalizar-asignacion]').forEach(function (button) {
       button.addEventListener('click', function () {
         const fila = button.closest('tr');
@@ -82,17 +84,6 @@
       });
     });
 
-    // Asignacion en masa: lista con checkboxes (ver asignacion-masiva.js).
-    const assign = modal.querySelector('[data-assign-project]');
-    if (assign && panel && window.SBAI.asignacionMasiva) {
-      window.SBAI.asignacionMasiva.montar(panel, {
-        perfiles: window.SBAI_ASIGNABLES || [],
-        limiteCarga: window.SBAI_LIMITE_CARGA || 100,
-        url: '/resource-manager/proyectos/' + assign.dataset.assignProject + '/asignar-varios',
-        extra: {},
-        proyecto: assign.dataset.proyectoNombre || ''
-      });
-    }
 
     // "(cambiar)" el Project Manager — funcionalidad propia del Resource
     // Manager (modelo v7). Candidatos: Miembros activos (SBAI_ASIGNABLES ya

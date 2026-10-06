@@ -1,5 +1,9 @@
 package com.skillbridge.ai.web;
 
+import com.skillbridge.ai.service.SelectorPersonasService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import com.skillbridge.ai.dto.PerfilOpcion;
 import com.skillbridge.ai.dto.ProyectoDetalle;
 import com.skillbridge.ai.dto.ProyectoFila;
@@ -49,16 +53,19 @@ public class RmAsignacionesController {
     private final ProyectoService proyectoService;
     private final ShellModelBuilder shellModelBuilder;
     private final AsignacionMasivaService asignacionMasivaService;
+    private final SelectorPersonasService selectorPersonasService;
 
     // Inyeccion por constructor (no @Autowired en el campo): es el estilo
     // que ya usa el resto del proyecto (ver AsignacionesPmController) y es
     // la forma recomendada en Spring porque permite que el objeto quede
     // "completo" desde que se crea, sin campos que puedan quedar en null.
     public RmAsignacionesController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder,
-                                    AsignacionMasivaService asignacionMasivaService) {
+                                    AsignacionMasivaService asignacionMasivaService,
+                                    SelectorPersonasService selectorPersonasService) {
         this.proyectoService = proyectoService;
         this.shellModelBuilder = shellModelBuilder;
         this.asignacionMasivaService = asignacionMasivaService;
+        this.selectorPersonasService = selectorPersonasService;
     }
 
     /**
@@ -128,6 +135,30 @@ public class RmAsignacionesController {
      * responsabilidades: el Controller habla HTTP, el Service habla reglas
      * de negocio.
      */
+    /**
+     * Selector de personas (modelo v7, fase 4): búsqueda en el servidor con
+     * filtros, orden y paginación. Devuelve JSON para selector-personas.js.
+     */
+    @GetMapping("/proyectos/{id}/candidatos")
+    @ResponseBody
+    public ResponseEntity<?> candidatos(@PathVariable Long id,
+                                          @RequestParam(required = false) String q,
+                                          @RequestParam(name = "habilidad", required = false) List<Long> habilidades,
+                                          @RequestParam(required = false) String cargo,
+                                          @RequestParam(required = false) Integer disponibleMin,
+                                          @RequestParam(required = false) Integer experienciaMin,
+                                          @RequestParam(defaultValue = "false") boolean soloConCapacidad,
+                                          @RequestParam(defaultValue = "50") int dedicacion,
+                                          @RequestParam(defaultValue = "match") String orden,
+                                          @RequestParam(defaultValue = "1") int pagina) {
+        try {
+            return ResponseEntity.ok(selectorPersonasService.buscar(id, new SelectorPersonasService.Filtros(q, habilidades, cargo, disponibleMin,
+                    experienciaMin, soloConCapacidad, dedicacion, orden, pagina)));
+        } catch (OperacionInvalidaException ex) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", ex.getMessage()));
+        }
+    }
+
     @PostMapping("/proyectos/{id}/asignar")
     public String asignar(@PathVariable Long id,
                           @RequestParam Long perfilId,

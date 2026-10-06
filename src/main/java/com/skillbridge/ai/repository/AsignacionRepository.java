@@ -102,4 +102,10 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
     @Query("select a.perfilId, sum(a.cargaPorcentaje) from Asignacion a join a.proyecto p where a.estado = 'activa' " +
             "and p.estado in ('planificacion', 'activo', 'en_pausa') group by a.perfilId")
     List<Object[]> sumarCargaActivaAgrupadaPorPerfil();
+
+    // Proyectos vigentes por perfil, en una sola consulta (selector de
+    // personas, fase 4): mismo criterio que contarProyectosVigentesDePerfil.
+    @Query("select a.perfilId, count(a) from Asignacion a join a.proyecto p where a.estado = 'activa' " +
+            "and p.estado in ('planificacion', 'activo', 'en_pausa') group by a.perfilId")
+    List<Object[]> contarProyectosVigentesAgrupadoPorPerfil();
 }

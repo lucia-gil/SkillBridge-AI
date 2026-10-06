@@ -134,19 +134,15 @@
               <!-- Modelo v7: el PM no asigna directo; propone y el Resource Manager aprueba. -->
               <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-1);">Proponer colaborador</h3>
               <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-3);">La propuesta llega al Resource Manager, que la aprueba o rechaza. El rol de Project Manager no se asigna desde aquí.</p>
-              <th:block th:if="${d.vacantes > 0 and (d.estadoCrudo == 'planificacion' or d.estadoCrudo == 'activo')}">
-                <div class="field-row">
-                  <div class="field"><label class="field-label">Colaborador</label>
-                    <select class="select" data-field="perfilId" data-combobox data-placeholder="Escribe el nombre o correo…">
-                      <option th:each="p : ${perfiles}" th:unless="${#lists.contains(d.equipo.![perfilId], p.perfilId())}" th:value="${p.perfilId()}" th:text="${p.nombre()} + ' · ' + ${p.correo()}">Colaborador</option>
-                    </select>
-                  </div>
-                  <div class="field"><label class="field-label">Dedicación propuesta (%)</label><input class="input" type="number" min="1" th:attr="max=${limiteCarga}" value="50" data-field="cargaPorcentaje"></div>
-                </div>
-                <div class="btn-group" style="justify-content:flex-end; margin-bottom:var(--space-5);">
-                  <button type="button" class="btn btn-primary btn-sm btn-assign" th:attr="data-proponer-proyecto=${d.id}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-user-check"></use></svg>Enviar propuesta al RM</button>
-                </div>
-              </th:block>
+              <div class="btn-group" style="justify-content:flex-start; margin-bottom:var(--space-5);"
+                   th:if="${d.vacantes > 0 and (d.estadoCrudo == 'planificacion' or d.estadoCrudo == 'activo')}">
+                <!-- Modelo v7, fase 4: selector con búsqueda y filtros, selección múltiple. -->
+                <button type="button" class="btn btn-primary btn-sm btn-assign"
+                        th:attr="data-abrir-selector=${d.id}, data-proyecto-nombre=${d.nombre}">
+                  <svg class="icon icon-sm"><use href="/img/icons.svg#icon-search"></use></svg>Buscar y proponer colaboradores
+                </button>
+                <span class="text-tertiary" style="font-size:var(--fs-xs); align-self:center;" th:text="${d.vacantes} + ' vacante(s)'">vacantes</span>
+              </div>
               <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);"
                  th:unless="${d.vacantes > 0 and (d.estadoCrudo == 'planificacion' or d.estadoCrudo == 'activo')}"
                  th:text="${d.vacantes > 0} ? 'Solo se puede proponer personas para proyectos en Planificación o Activo.' : 'El equipo está completo: no hay vacantes para proponer.'">Sin vacantes.</p>
@@ -361,17 +357,15 @@ document.addEventListener("DOMContentLoaded", function () {
           });
         });
       });
-      var proponerBtn = backdrop.querySelector("[data-proponer-proyecto]");
-      if (proponerBtn) {
-        proponerBtn.addEventListener("click", function () {
-          var perfil = backdrop.querySelector('[data-field="perfilId"]');
-          if (!perfil || !perfil.value) {
-            if (window.SBAI.toast) window.SBAI.toast.show("Elige a quién proponer.", { type: "error" });
-            return;
-          }
-          submitForm("/project-manager/proyectos/" + proponerBtn.dataset.proponerProyecto + "/proponer", {
-            perfilId: perfil.value,
-            cargaPorcentaje: backdrop.querySelector('[data-field="cargaPorcentaje"]').value
+      var abrirSelector = backdrop.querySelector("[data-abrir-selector]");
+      if (abrirSelector && window.SBAI.selectorPersonas) {
+        abrirSelector.addEventListener("click", function () {
+          var pid = abrirSelector.dataset.abrirSelector;
+          window.SBAI.selectorPersonas.abrir({
+            proyecto: abrirSelector.dataset.proyectoNombre || "",
+            endpoint: "/project-manager/proyectos/" + pid + "/candidatos",
+            accion: "/project-manager/proyectos/" + pid + "/proponer-varios",
+            modo: "proponer"
           });
         });
       }
@@ -553,6 +547,7 @@ document.addEventListener("DOMContentLoaded", function () {
 <script src="/js/tech-icons.js"></script>
 <script src="/js/proyecto-form.js"></script>
 <script src="/js/proyecto-acciones.js"></script>
+<script src="/js/selector-personas.js"></script>
 <script src="/js/project-ui.js"></script>
 <script src="/js/tabla-acciones.js"></script>
 </body>

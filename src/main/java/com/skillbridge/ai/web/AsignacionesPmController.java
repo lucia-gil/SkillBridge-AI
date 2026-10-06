@@ -45,7 +45,6 @@ public class AsignacionesPmController {
                 .map(MiProyectoFila::getProyectoId)
                 .map(proyectoService::obtenerDetalle)
                 .collect(Collectors.toList());
-        List<PerfilOpcion> perfiles = proyectoService.listarPerfilesParaAsignar();
         long totalMiembros = proyectos.stream().mapToLong(p -> p.getEquipo().size()).sum();
         long totalColaboradores = proyectos.stream().mapToLong(ProyectoDetalle::getColaboradoresAsignados).sum();
         long totalVacantes = proyectos.stream().mapToLong(ProyectoDetalle::getVacantes).sum();
@@ -53,9 +52,9 @@ public class AsignacionesPmController {
         shellModelBuilder.aplicar(model, sesion, "asignaciones.html", "Asignaciones",
                 totalMiembros + " asignaciones activas en tus " + proyectos.size() + " proyectos");
         model.addAttribute("proyectos", proyectos);
-        model.addAttribute("perfiles", perfiles);
-        // Lista con carga actual para la asignacion en masa (checkboxes).
-        model.addAttribute("perfilesAsignables", proyectoService.listarPerfilesAsignables());
+        // Modelo v7, fase 4: las personas se buscan en el servidor desde el
+        // selector (GET /project-manager/proyectos/{id}/candidatos); ya no se
+        // incrusta la lista completa en la página.
         model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
         model.addAttribute("totalColaboradores", totalColaboradores);
         model.addAttribute("totalVacantes", totalVacantes);

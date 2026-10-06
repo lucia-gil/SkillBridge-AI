@@ -57,15 +57,19 @@
   }
 
   function bindModal(modal) {
-    const panel = modal.querySelector('[data-assignment-form]');
+    // Modelo v7, fase 4: el botón abre el selector de personas (búsqueda y
+    // filtros en el servidor, selección múltiple). Ver selector-personas.js.
     const show = modal.querySelector('[data-show-assignment-form]');
-    const hide = modal.querySelector('[data-hide-assignment-form]');
-    if (show && panel) show.addEventListener('click', function () {
-      panel.hidden = false; show.hidden = true;
-      const date = panel.querySelector('[data-field="fechaInicio"]');
-      if (date && !date.value) date.value = new Date().toISOString().slice(0, 10);
+    if (show && window.SBAI.selectorPersonas) show.addEventListener('click', function () {
+      const id = show.dataset.proyectoId;
+      window.SBAI.selectorPersonas.abrir({
+        proyecto: show.dataset.proyectoNombre || '',
+        endpoint: '/project-manager/proyectos/' + id + '/candidatos',
+        accion: '/project-manager/proyectos/' + id + '/proponer-varios',
+        modo: 'proponer',
+        extra: { volver: 'asignaciones' }
+      });
     });
-    if (hide && panel) hide.addEventListener('click', function () { panel.hidden = true; show.hidden = false; });
 
     modal.querySelectorAll('[data-finalizar-asignacion]').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -81,18 +85,6 @@
       });
     });
 
-    // Propuesta en masa (modelo v7: el PM propone, el RM aprueba). Ver asignacion-masiva.js.
-    const assign = modal.querySelector('[data-assign-project]');
-    if (assign && panel && window.SBAI.asignacionMasiva) {
-      window.SBAI.asignacionMasiva.montar(panel, {
-        perfiles: window.SBAI_ASIGNABLES || [],
-        limiteCarga: window.SBAI_LIMITE_CARGA || 100,
-        url: '/project-manager/proyectos/' + assign.dataset.assignProject + '/proponer-varios',
-        extra: { volver: 'asignaciones' },
-        proyecto: assign.dataset.proyectoNombre || '',
-        modo: 'proponer'
-      });
-    }
   }
 
   document.querySelectorAll('[data-view-team]').forEach(function (button) {

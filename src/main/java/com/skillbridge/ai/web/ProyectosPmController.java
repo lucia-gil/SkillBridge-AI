@@ -1,5 +1,9 @@
 package com.skillbridge.ai.web;
 
+import com.skillbridge.ai.service.SelectorPersonasService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import com.skillbridge.ai.dto.MiProyectoFila;
 import com.skillbridge.ai.dto.PerfilOpcion;
 import com.skillbridge.ai.dto.ProyectoDetalle;
@@ -47,16 +51,19 @@ public class ProyectosPmController {
     private final TecnologiaCatalogoService tecnologiaCatalogoService;
     private final TalentMatchingService talentMatchingService;
     private final CambioEstadoProyecto cambioEstadoProyecto;
+    private final SelectorPersonasService selectorPersonasService;
 
     public ProyectosPmController(ProyectoService proyectoService, AsignacionRepository asignacionRepository,
                                  ShellModelBuilder shellModelBuilder, TecnologiaCatalogoService tecnologiaCatalogoService,
-                                 TalentMatchingService talentMatchingService, CambioEstadoProyecto cambioEstadoProyecto) {
+                                 TalentMatchingService talentMatchingService, CambioEstadoProyecto cambioEstadoProyecto,
+                                 SelectorPersonasService selectorPersonasService) {
         this.proyectoService = proyectoService;
         this.asignacionRepository = asignacionRepository;
         this.shellModelBuilder = shellModelBuilder;
         this.tecnologiaCatalogoService = tecnologiaCatalogoService;
         this.talentMatchingService = talentMatchingService;
         this.cambioEstadoProyecto = cambioEstadoProyecto;
+        this.selectorPersonasService = selectorPersonasService;
     }
 
     /** "React, MySQL" -> ["React", "MySQL"] (el formulario manda los chips unidos por coma). */
@@ -85,13 +92,11 @@ public class ProyectosPmController {
         List<ProyectoDetalle> proyectos = misProyectoIds(sesion.getPerfilId()).stream()
                 .map(proyectoService::obtenerDetalle)
                 .collect(Collectors.toList());
-        List<PerfilOpcion> perfiles = proyectoService.listarPerfilesParaAsignar();
         int colaboradoresDisponibles = proyectoService.contarColaboradoresDisponibles(sesion.getPerfilId());
 
         shellModelBuilder.aplicar(model, sesion, "proyectos.html", "Proyectos",
                 "Tus " + proyectos.size() + " proyectos como Project Manager");
         model.addAttribute("proyectos", proyectos);
-        model.addAttribute("perfiles", perfiles);
         model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
         model.addAttribute("colaboradoresDisponibles", colaboradoresDisponibles);
         // Catálogo del Admin para el autocompletado de tecnologías (chips).
@@ -182,6 +187,33 @@ public class ProyectosPmController {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/project-manager/proyectos.html";
+    }
+
+    /**
+     * Selector de personas (modelo v7, fase 4): búsqueda en el servidor con
+     * filtros, orden y paginación. Devuelve JSON para selector-personas.js.
+     */
+    @GetMapping("/proyectos/{id}/candidatos")
+    @ResponseBody
+    public ResponseEntity<?> candidatos(@PathVariable Long id,
+                                          @RequestParam(required = false) String q,
+                                          @RequestParam(name = "habilidad", required = false) List<Long> habilidades,
+                                          @RequestParam(required = false) String cargo,
+                                          @RequestParam(required = false) Integer disponibleMin,
+                                          @RequestParam(required = false) Integer experienciaMin,
+                                          @RequestParam(defaultValue = "false") boolean soloConCapacidad,
+                                          @RequestParam(defaultValue = "50") int dedicacion,
+                                          @RequestParam(defaultValue = "match") String orden,
+                                          @RequestParam(defaultValue = "1") int pagina,
+                                          HttpSession session) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            exigirPropiedad(sesion.getPerfilId(), id);
+            return ResponseEntity.ok(selectorPersonasService.buscar(id, new SelectorPersonasService.Filtros(q, habilidades, cargo, disponibleMin,
+                    experienciaMin, soloConCapacidad, dedicacion, orden, pagina)));
+        } catch (OperacionInvalidaException ex) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", ex.getMessage()));
+        }
     }
 
     /**
