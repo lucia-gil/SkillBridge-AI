@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/proyecto-form.css">
 </head>
 <body>
 <div class="app-shell">
@@ -47,11 +48,10 @@
               <div th:if="${habilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no declaraste ninguna habilidad.</div>
 
               <div id="skills-list">
-                <div th:each="h : ${habilidades}" data-habilidad-row style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+                <div th:each="h : ${habilidades}" data-habilidad-row class="skill-row">
                   <div style="flex:1; min-width:0;">
                     <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
                           th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
-                    <span th:if="${h.validada}" class="badge badge-green" style="margin-left:6px;">Validada por RM</span>
 
                     <!-- Certificado ya cargado: link externo o PDF subido (se sirve por /certificados/{id}/archivo) -->
                     <div th:if="${h.tieneCertificado}" th:each="cert : ${h.certificados}" style="margin-top:6px; font-size:var(--fs-xs);">
@@ -62,7 +62,14 @@
                     <div th:unless="${h.tieneCertificado}" class="text-tertiary" style="margin-top:6px; font-size:var(--fs-xs);">Sin constancia adjunta</div>
                   </div>
 
-                  <div class="cell-actions" style="flex:0 0 auto; flex-wrap:wrap; justify-content:flex-end;">
+                  <!-- Columna fija y centrada: solo aparece cuando el RM validó la habilidad -->
+                  <div class="skill-row-status">
+                    <span th:if="${h.validada}" class="skill-validada" title="Validada por el Resource Manager">
+                      <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-check-circle"></use></svg>Validada por RM
+                    </span>
+                  </div>
+
+                  <div class="cell-actions" style="flex-wrap:wrap; justify-content:flex-end;">
                     <button type="button" data-editar-nivel
                             th:attr="data-id=${h.habilidadId}, data-nombre=${h.nombre}, data-nivel-label=${h.nivelLabel}">Editar nivel</button>
                     <button type="button" data-editar-cert
@@ -84,8 +91,8 @@
         <div style="display:flex; flex-direction:column; gap:var(--space-6);">
           <section class="card card-pad">
             <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Carga de trabajo</h3>
-            <div class="progress-inline" style="margin-bottom:var(--space-2);">
-              <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${cargaActiva > 100} ? 'amber' : ''" th:style="'width:' + ${cargaActiva > 100 ? 100 : cargaActiva} + '%;'"></div></div>
+            <div data-escala="carga" class="progress-inline" style="margin-bottom:var(--space-2);">
+              <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${cargaActiva > 100 ? 100 : cargaActiva} + '%;'"></div></div>
               <span class="progress-value" th:text="${cargaActiva} + '%'">0%</span>
             </div>
             <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);" th:text="${cargaActiva > 100} ? 'sobre el límite' : 'dentro del límite (100%)'">dentro del límite</p>
@@ -138,10 +145,14 @@
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/modal.js"></script>
+<script src="/js/tech-icons.js"></script>
+<script src="/js/habilidad-picker.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
   window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
   var CATALOGO_HABILIDADES = /*[[${catalogoHabilidades}]]*/ [];
+  // Habilidades que ya declaró: no se ofrecen otra vez en "Agregar habilidad".
+  var MIS_HABILIDADES = /*[[${habilidades.![habilidadId]}]]*/ [];
   document.addEventListener("DOMContentLoaded", function () {
     var submitForm = window.SBAI.submitForm;
 
@@ -168,10 +179,9 @@
     }
 
     document.getElementById("add-skill-btn").addEventListener("click", function () {
-      var options = CATALOGO_HABILIDADES.map(function (h) { return '<option value="' + h.id + '">' + h.nombre + '</option>'; }).join("");
       var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia.</p></div>' +
               '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-              '<div class="modal-body"><div class="field"><label class="field-label">Habilidad</label><select class="select" id="new-skill-id">' + options + '</select></div>' +
+              '<div class="modal-body"><div class="field"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><label class="field-label">Habilidad</label><span class="text-tertiary" style="font-size:var(--fs-xs)">Del catálogo de habilidades</span></div><div id="new-skill-picker"></div></div>' +
               '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div>' +
               '<div class="field"><label class="field-label">Constancia de respaldo (opcional)</label>' +
               '<input class="input" type="url" id="new-skill-cert-url" placeholder="Link a tu certificado (Drive, Coursera, LinkedIn Learning...)">' +
@@ -183,9 +193,12 @@
               '</div>' +
               '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
       var backdrop = SBAI.modal.open(html);
+      var picker = SBAI.habilidadPicker.montar(backdrop.querySelector("#new-skill-picker"), {
+        catalogo: CATALOGO_HABILIDADES, excluir: MIS_HABILIDADES
+      });
       backdrop.querySelector("#confirm-add-skill").addEventListener("click", function () {
-        var habilidadId = backdrop.querySelector("#new-skill-id").value;
-        if (!habilidadId) { SBAI.toast.show("Selecciona una habilidad del catálogo.", { type: "error" }); return; }
+        var habilidadId = picker.valor();
+        if (!habilidadId) { picker.marcarError("Selecciona una habilidad del catálogo."); picker.enfocar(); return; }
         var fields = {
           habilidadId: habilidadId,
           nivel: backdrop.querySelector("#new-skill-level").value,

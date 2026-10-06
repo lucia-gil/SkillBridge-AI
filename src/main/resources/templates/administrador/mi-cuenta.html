@@ -541,7 +541,7 @@
             <div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value account-mail" th:text="${resumen.correo}" th:title="${resumen.correo}">correo</span></div>
             <div class="info-row"><span class="info-row-label">Experiencia</span><span class="info-row-value" th:text="${resumen.experienciaAnios} + (${resumen.experienciaAnios} == 1 ? ' año' : ' años')">0 años</span></div>
             <div class="info-row" style="flex-direction:column;align-items:stretch;gap:6px;"><span class="info-row-label">Disponibilidad declarada</span>
-              <div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill green" th:style="'width:' + ${resumen.disponibilidadPorcentaje} + '%;'"></div></div><span class="progress-value" th:text="${resumen.disponibilidadPorcentaje} + '%'">0%</span></div>
+              <div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${resumen.disponibilidadPorcentaje} + '%;'"></div></div><span class="progress-value" th:text="${resumen.disponibilidadPorcentaje} + '%'">0%</span></div>
             </div>
           </section>
 

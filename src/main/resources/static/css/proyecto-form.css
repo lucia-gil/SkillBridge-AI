@@ -167,3 +167,13 @@
 @media (prefers-reduced-motion: reduce) {
   .ti-chip, .ti-panel, .ti.is-shake .ti-box { animation: none; }
 }
+
+/* Selector de UNA habilidad (habilidad-picker.js): el valor elegido se ve
+   como un select normal (logo + nombre + flecha), sin chip ni "x". */
+.hp-value { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 30px; padding: 0 4px; cursor: pointer; }
+.hp-value .tech-chip-logo { width: 24px; height: 24px; }
+.hp-value-name { font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text-primary); }
+.hp-value-cat { font-size: var(--fs-2xs); color: var(--text-tertiary); padding: 2px 8px; border-radius: var(--radius-full); background: var(--surface-sunken); }
+.hp-value-caret { margin-left: auto; color: var(--text-tertiary); }
+.ti.hp-has-value .ti-box { cursor: pointer; }
+.ti.hp-has-value .ti-box:hover .hp-value-caret { color: var(--text-primary); }

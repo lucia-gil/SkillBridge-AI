@@ -52,10 +52,9 @@
               </td>
               <td th:text="${o.cargo}">Cargo</td>
               <td>
-                <div class="progress-inline" style="min-width:110px;">
+                <div data-escala="carga" class="progress-inline" style="min-width:110px;">
                   <div class="progress-bar">
                     <div class="progress-bar-fill"
-                         th:classappend="${o.promedio > 100} ? 'red' : (${o.promedio >= 90} ? 'amber' : '')"
                          th:style="'width:' + ${#numbers.formatDecimal(o.promedio > 100 ? 100 : o.promedio, 1, 0)} + '%;'"></div>
                   </div>
                   <span class="progress-value" th:text="${o.promedio} + '%'">0%</span>

@@ -20,19 +20,19 @@
       <div class="kpi-grid">
         <div class="kpi-tile accent-blue">
           <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div>
-          <span class="kpi-tile-label">COLABORADORES ACTIVOS</span><span class="kpi-tile-value" th:text="${kpiColaboradoresActivos}">0</span>
+          <span class="kpi-tile-label">COLABORADORES ACTIVOS</span><span class="kpi-tile-value" th:text="${kpiColaboradoresActivos}">0</span><span class="kpi-tile-meta">cuentas habilitadas</span>
         </div>
         <div class="kpi-tile accent-green">
           <div class="kpi-tile-icon green"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></div>
-          <span class="kpi-tile-label">PROYECTOS EN CURSO</span><span class="kpi-tile-value" th:text="${kpiProyectosEnCurso}">0</span>
+          <span class="kpi-tile-label">PROYECTOS EN CURSO</span><span class="kpi-tile-value" th:text="${kpiProyectosEnCurso}">0</span><span class="kpi-tile-meta">en estado activo</span>
         </div>
         <div class="kpi-tile accent-amber">
           <div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></div>
-          <span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span>
+          <span class="kpi-tile-label">OCUPACIÓN PROMEDIO</span><span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span><span class="kpi-tile-meta">carga media del equipo</span>
         </div>
         <div class="kpi-tile accent-violet">
           <div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-user-check"></use></svg></div>
-          <span class="kpi-tile-label">ASIGNACIONES ACTIVAS</span><span class="kpi-tile-value" th:text="${kpiAsignacionesActivas}">0</span>
+          <span class="kpi-tile-label">ASIGNACIONES ACTIVAS</span><span class="kpi-tile-value" th:text="${kpiAsignacionesActivas}">0</span><span class="kpi-tile-meta">personas en proyectos</span>
         </div>
       </div>
 
@@ -101,11 +101,10 @@
           <a href="habilidades.html" class="btn btn-secondary btn-sm">Ver catálogo completo</a>
         </div>
         <div th:if="${topHabilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
-        <div th:each="s : ${topHabilidades}" style="display:flex; align-items:center; gap:var(--space-4); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
-          <span style="flex:1; font-size:var(--fs-sm); font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
-          <div class="progress-bar" style="max-width:140px;"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
-          <span class="mono text-tertiary" style="font-size:var(--fs-xs); min-width:110px; text-align:right;" th:text="${s.vacantes()} + ' persona(s)'">0 personas</span>
-        </div>
+        <div th:each="s : ${topHabilidades}" class="rank-row" style="padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+            <span class="rank-name" style="font-size:var(--fs-sm); font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
+            <div data-escala="ranking" class="progress-bar" th:attr="data-etiqueta=${s.vacantes()} + ' persona(s)'"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
+          </div>
       </section>
 
     </main>
