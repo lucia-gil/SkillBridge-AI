@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!--
+  fragments/seguridad.html — Token CSRF de Spring Security para el JavaScript.
+
+  Los <form th:action="..."> ya incluyen el campo oculto _csrf automáticamente.
+  Para lo que se arma o envía desde JS (formularios creados con
+  document.createElement, fetch POST, cerrar sesión), este fragmento deja el
+  token en window.SBAI_CSRF y carga /js/csrf.js, que lo agrega solo.
+
+  Ya está incluido en fragments/topbar.html (todas las páginas internas).
+  En una página sin topbar: <th:block th:replace="~{fragments/seguridad :: csrf}"></th:block>
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="csrf">
+  <script th:inline="javascript">
+    window.SBAI_CSRF = {
+      token: /*[[${_csrf?.token}]]*/ null,
+      header: /*[[${_csrf?.headerName}]]*/ "X-CSRF-TOKEN",
+      param: /*[[${_csrf?.parameterName}]]*/ "_csrf"
+    };
+  </script>
+  <script src="/js/csrf.js"></script>
+</th:block>
+</body>
+</html>

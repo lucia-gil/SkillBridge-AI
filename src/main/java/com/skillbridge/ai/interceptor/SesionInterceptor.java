@@ -1,8 +1,6 @@
 package com.skillbridge.ai.interceptor;
 
 import com.skillbridge.ai.dto.UsuarioSesion;
-import com.skillbridge.ai.model.Usuario;
-import com.skillbridge.ai.repository.UsuarioRepository;
 import com.skillbridge.ai.service.AuthService;
 import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
@@ -12,10 +10,14 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.util.Optional;
-
 /**
- * Control de acceso por sesion + rol, adaptado de AuthFilter de
+ * Desde la migración a Spring Security, QUIÉN puede entrar a cada área lo
+ * decide config/SecurityConfig (hasAuthority) y la revalidación contra la BD
+ * la hace security/SesionVigenteFilter. Este interceptor queda como segunda
+ * capa y para la navegación: fija rolEfectivo (la vista activa, "Ver como")
+ * según el área visitada y redirige al inicio correcto.
+ *
+ * Historia (antes de Spring Security), adaptado de AuthFilter de
  * QuintaOla-SGA:
  *  - exige sesion activa para /administrador/**, /resource-manager/**,
  *    /project-manager/** y /colaborador/**,
@@ -40,11 +42,9 @@ import java.util.Optional;
 @Component
 public class SesionInterceptor implements HandlerInterceptor {
 
-    private final UsuarioRepository usuarioRepository;
     private final AuthService authService;
 
-    public SesionInterceptor(UsuarioRepository usuarioRepository, AuthService authService) {
-        this.usuarioRepository = usuarioRepository;
+    public SesionInterceptor(AuthService authService) {
         this.authService = authService;
     }
 
@@ -72,18 +72,12 @@ public class SesionInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        Optional<Usuario> oActual = usuarioRepository.findById(sesion.getUsuarioId());
-        if (oActual.isEmpty() || !oActual.get().isActivo()) {
-            session.invalidate();
-            response.sendRedirect(request.getContextPath() + "/auth/login.html");
-            return false;
-        }
-
-        Usuario actual = oActual.get();
-        String rolOrg = actual.getRolOrganizacional();
-        boolean lidera = rolOrg == null && authService.lideraProyectos(sesion.getPerfilId());
-        sesion.setRolOrganizacional(rolOrg);
-        sesion.setLideraProyectos(lidera);
+        // La revalidación contra la BD (cuenta suspendida, rol o liderazgo
+        // cambiados) ya la hizo security/SesionVigenteFilter en la cadena de
+        // Spring Security antes de llegar aquí, y dejó rolOrganizacional y
+        // lideraProyectos al día en el UsuarioSesion de la sesión.
+        String rolOrg = sesion.getRolOrganizacional();
+        boolean lidera = sesion.isLideraProyectos();
 
         // Rutas compartidas (/cuenta, /notificaciones...): se conserva la
         // vista en la que venía navegando, salvo que ya no le corresponda

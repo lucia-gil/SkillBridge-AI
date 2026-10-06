@@ -3,8 +3,8 @@ package com.skillbridge.ai.web;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillbridge.ai.dto.*;
+import com.skillbridge.ai.security.SesionSegura;
 import com.skillbridge.ai.service.AuthService;
-import com.skillbridge.ai.service.ConfiguracionService;
 import com.skillbridge.ai.service.DobleFactorService;
 import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
@@ -35,18 +35,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuthController {
 
     private final AuthService authService;
-    private final ConfiguracionService configuracionService;
     private final ObjectMapper objectMapper;
-
     private final DobleFactorService dobleFactorService;
-    private static final String PENDIENTE_2FA = "PENDIENTE_2FA";
-    private static final String INTENTOS_2FA = "INTENTOS_2FA";
+    private final SesionSegura sesionSegura;
 
-    public AuthController(AuthService authService, ConfiguracionService configuracionService, ObjectMapper objectMapper, DobleFactorService dobleFactorService) {
-        this.dobleFactorService = dobleFactorService;
+    private static final String PENDIENTE_2FA = SesionKeys.PENDIENTE_2FA;
+    private static final String INTENTOS_2FA = SesionKeys.INTENTOS_2FA;
+
+    public AuthController(AuthService authService, ObjectMapper objectMapper,
+                          DobleFactorService dobleFactorService, SesionSegura sesionSegura) {
         this.authService = authService;
-        this.configuracionService = configuracionService;
         this.objectMapper = objectMapper;
+        this.dobleFactorService = dobleFactorService;
+        this.sesionSegura = sesionSegura;
     }
 
     @GetMapping("/")
@@ -59,70 +60,26 @@ public class AuthController {
 
     // ───────────────────────── Login ─────────────────────────
 
+    /**
+     * Solo muestra el formulario. El POST a /auth/login.html ya no llega a este
+     * controlador: lo procesa el filtro formLogin de Spring Security
+     * (config/SecurityConfig) con SkillBridgeAuthenticationProvider y los
+     * handlers de security/ (éxito por rol + 2FA, error con mensaje).
+     */
     @GetMapping("/auth/login.html")
-    public String loginForm(HttpSession session, Model model) {
+    public String loginForm(HttpSession session,
+                            @RequestParam(value = "salir", required = false) String salir,
+                            Model model) {
         if (session.getAttribute(SesionKeys.USUARIO) != null) {
             return "redirect:" + homeDe((UsuarioSesion) session.getAttribute(SesionKeys.USUARIO));
+        }
+        if (salir != null && !model.containsAttribute("exito")) {
+            model.addAttribute("exito", "Cerraste sesión correctamente.");
         }
         // "error", "correoIntentado" y "exito" llegan solos via flash attributes
         // cuando vienen de un redirect (POST /auth/login.html o /auth/registro.html);
         // en una entrada directa por GET simplemente no existen en el Model.
         return "auth/login";
-    }
-
-    @PostMapping("/auth/login.html")
-    public String login(@RequestParam String email,
-                        @RequestParam String password,
-                        HttpServletRequest request,
-                        HttpServletResponse response,
-                        RedirectAttributes redirectAttributes) {
-
-        // Cabeceras de seguridad (mismo criterio que LoginServlet de QuintaOla-SGA)
-        response.setHeader("X-Frame-Options", "DENY");
-        response.setHeader("X-Content-Type-Options", "nosniff");
-        response.setHeader("Cache-Control", "no-store");
-
-        String ip = obtenerIp(request);
-        ResultadoLogin resultado = authService.intentarLogin(email, password, ip);
-
-        if (!resultado.isExito()) {
-            redirectAttributes.addFlashAttribute("error", resultado.getMensajeError());
-            redirectAttributes.addFlashAttribute("correoIntentado", email);
-            return "redirect:/auth/login.html";
-        }
-
-        if (dobleFactorService.estaActivo(resultado.getUsuarioSesion().getUsuarioId())) {
-            // Contraseña correcta pero falta el segundo factor: sesion nueva SIN SesionKeys.USUARIO.
-            HttpSession previa = request.getSession(false);
-            if (previa != null) {
-                previa.invalidate();
-            }
-            HttpSession pendiente = request.getSession(true);
-            pendiente.setMaxInactiveInterval(5 * 60);
-            pendiente.setAttribute(PENDIENTE_2FA, resultado.getUsuarioSesion());
-            pendiente.setAttribute(INTENTOS_2FA, 0);
-            return "redirect:/auth/verificar-2fa.html";
-        }
-        iniciarSesion(request, resultado.getUsuarioSesion());
-        return "redirect:" + homeDe(resultado.getUsuarioSesion());
-    }
-
-    /** Prevencion de session fixation + duracion configurable (RF08). */
-    private void iniciarSesion(HttpServletRequest request, UsuarioSesion usuario) {
-        HttpSession vieja = request.getSession(false);
-        if (vieja != null) {
-            vieja.invalidate();
-        }
-        HttpSession nueva = request.getSession(true);
-        String minutosTexto = configuracionService.valor(configuracionService.obtenerMapa(), "expiracion_sesion_minutos", "30");
-        int minutos;
-        try {
-            minutos = Math.max(1, Integer.parseInt(minutosTexto.trim()));
-        } catch (NumberFormatException ex) {
-            minutos = 30;
-        }
-        nueva.setMaxInactiveInterval(minutos * 60);
-        nueva.setAttribute(SesionKeys.USUARIO, usuario);
     }
 
     // ───────────────────────── Segundo factor ─────────────────────────
@@ -136,14 +93,17 @@ public class AuthController {
     }
 
     @PostMapping("/auth/verificar-2fa.html")
-    public String verificar2fa(@RequestParam String codigo, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+    public String verificar2fa(@RequestParam String codigo, HttpServletRequest request, HttpServletResponse response,
+                               RedirectAttributes redirectAttributes) {
         HttpSession session = request.getSession(false);
         UsuarioSesion pendiente = session == null ? null : (UsuarioSesion) session.getAttribute(PENDIENTE_2FA);
         if (pendiente == null) {
             return "redirect:/auth/login.html";
         }
         if (dobleFactorService.verificar(pendiente.getUsuarioId(), codigo)) {
-            iniciarSesion(request, pendiente);
+            // Código correcto: recién aquí queda autenticado en Spring Security
+            // (sesión nueva + SecurityContext guardado). Ver SesionSegura.
+            sesionSegura.iniciarSesion(request, response, pendiente);
             return "redirect:" + homeDe(pendiente);
         }
         Object n = session.getAttribute(INTENTOS_2FA);
@@ -158,10 +118,15 @@ public class AuthController {
         return "redirect:/auth/verificar-2fa.html";
     }
 
+    /**
+     * El cierre de sesión real es un POST a /auth/logout que procesa Spring
+     * Security (invalida la sesión, borra la cookie y exige token CSRF, así
+     * otra página no puede desloguearte con un simple enlace). Un GET viejo
+     * (marcador, caché) solo vuelve al inicio, sin cerrar nada.
+     */
     @GetMapping("/auth/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
-        return "redirect:/auth/login.html";
+    public String logoutPorGet() {
+        return "redirect:/";
     }
 
     // ───────────────────────── Registro ─────────────────────────
@@ -257,11 +222,13 @@ public class AuthController {
         return "/" + slug + "/inicio.html";
     }
 
+    /**
+     * IP real de la conexión. NO se usa X-Forwarded-For: el cliente puede
+     * inventarla y saltarse el límite de intentos. Si algún día se pone un
+     * proxy (Nginx) delante, activar server.forward-headers-strategy=native
+     * y getRemoteAddr() devolverá la IP correcta.
+     */
     private String obtenerIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip != null && !ip.isBlank()) {
-            return ip.split(",")[0].trim();
-        }
         return request.getRemoteAddr();
     }
 }

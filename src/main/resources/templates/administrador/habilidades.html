@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.tableFilter.init(document);
 
   document.body.addEventListener("click", function (e) {
-    if (e.target.closest('[data-action="logout"]')) { window.location.href = "/auth/logout"; }
+    if (e.target.closest('[data-action="logout"]')) { (window.SBAI && window.SBAI.logout) ? window.SBAI.logout() : window.location.assign("/auth/login.html"); }
   });
 
   var exito = /*[[${exito}]]*/ null;

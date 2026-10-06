@@ -80,7 +80,8 @@
 
     document.body.addEventListener("click", function (e) {
       if (e.target.closest('[data-action="logout"]')) {
-        window.location.href = "/auth/logout";
+        // Logout real: POST /auth/logout con token CSRF (Spring Security).
+        (window.SBAI && window.SBAI.logout) ? window.SBAI.logout() : window.location.assign("/auth/login.html");
         return;
       }
       var markAllBtn = e.target.closest('[data-action="mark-all-read-quick"]');

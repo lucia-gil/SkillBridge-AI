@@ -1,5 +1,7 @@
 package com.skillbridge.ai.dto;
 
+import org.springframework.security.core.AuthenticatedPrincipal;
+
 import java.io.Serializable;
 
 /**
@@ -9,7 +11,9 @@ import java.io.Serializable;
  * entidad JPA completa, para no arrastrar el contexto de persistencia
  * dentro de la sesion HTTP.
  */
-public class UsuarioSesion implements Serializable {
+public class UsuarioSesion implements Serializable, AuthenticatedPrincipal {
+
+    private static final long serialVersionUID = 1L;
 
     private Long usuarioId;
     private Long perfilId;
@@ -95,5 +99,15 @@ public class UsuarioSesion implements Serializable {
 
     public void setIniciales(String iniciales) {
         this.iniciales = iniciales;
+    }
+
+    /**
+     * Nombre del usuario para Spring Security: es el principal del
+     * Authentication (ver security/SesionSegura). Spring Session lo guarda en
+     * SPRING_SESSION.PRINCIPAL_NAME y sec:authentication="name" lo muestra.
+     */
+    @Override
+    public String getName() {
+        return correo;
     }
 }
