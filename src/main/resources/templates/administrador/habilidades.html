@@ -32,7 +32,10 @@
               <thead><tr><th>Categoría</th><th>Habilidades</th><th>Acciones</th></tr></thead>
               <tbody id="category-list">
                 <tr th:each="c : ${categorias}" th:attr="data-id=${c.id()}">
-                  <td class="cell-primary" th:text="${c.nombre()}">Categoría</td>
+                  <td class="cell-primary" style="display:flex; align-items:center; gap:var(--space-2);">
+                    <span class="card-header-icon category-color-icon" style="width:26px; height:26px; border-radius:var(--radius-sm);" th:attr="data-categoria=${c.nombre()}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+                    <span th:text="${c.nombre()}">Categoría</span>
+                  </td>
                   <td class="mono" th:text="${c.cantidad()}">0</td>
                   <td class="cell-actions">
                     <button type="button" data-edit-category
@@ -67,7 +70,7 @@
                 <tr th:each="s : ${habilidades}" data-filter-row="skills"
                     th:attr="data-f-demanda=${s.demanda}, data-f-search=${#strings.toLowerCase(s.nombre)}">
                   <td class="cell-primary" th:text="${s.nombre}">Nombre</td>
-                  <td th:text="${s.categoriaNombre}">Categoría</td>
+                  <td><span class="badge category-color-badge" th:text="${s.categoriaNombre}" th:attr="data-categoria=${s.categoriaNombre}">Categoría</span></td>
                   <td class="mono" th:text="${s.personas}">0</td>
                   <td class="mono" th:text="${s.proyectos}">0</td>
                   <td th:text="${s.nivelMedio}">—</td>
@@ -112,6 +115,22 @@
 document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.dropdown.init(document);
   window.SBAI.tableFilter.init(document);
+
+  // Color por categoría (icono del panel izquierdo + badge en la tabla de
+  // habilidades): mismo nombre de categoría siempre sale con el mismo color,
+  // calculado con un hash simple del nombre sobre la paleta de badges/iconos
+  // que ya usa el resto de la app (azul, violeta, verde, ámbar, rojo).
+  var PALETA_CATEGORIAS = ["blue", "violet", "green", "amber", "red"];
+  function colorDeCategoria(nombre) {
+    var hash = 0;
+    for (var i = 0; i < nombre.length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) >>> 0;
+    return PALETA_CATEGORIAS[hash % PALETA_CATEGORIAS.length];
+  }
+  document.querySelectorAll("[data-categoria]").forEach(function (el) {
+    var color = colorDeCategoria(el.dataset.categoria);
+    if (el.classList.contains("category-color-icon")) el.classList.add(color);
+    if (el.classList.contains("category-color-badge")) el.classList.add("badge-" + color);
+  });
 
   document.body.addEventListener("click", function (e) {
     if (e.target.closest('[data-action="logout"]')) { window.location.href = "/auth/logout"; }
