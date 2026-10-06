@@ -1,6 +1,6 @@
 # SkillBridge AI — Backend Spring Boot
 
-Backend Spring Boot 3.2.5 (Java 17, empaquetado WAR) para el frontend Thymeleaf de SkillBridge AI, conectado a la base de datos MySQL de `db/skillbridge_db_v4.sql`.
+Backend Spring Boot 3.2.5 (Java 17, empaquetado WAR) para el frontend Thymeleaf de SkillBridge AI, conectado a la base de datos MySQL de `db/skillbridge_db.sql`.
 
 ## ⚠️ Importante: este código NO fue compilado en el entorno donde se generó
 
@@ -12,7 +12,7 @@ Un hallazgo concreto de esa revisión manual, ya corregido: al conectar cada pá
 
 1. **Crear la base de datos** (MySQL 8, con el servidor corriendo localmente):
    ```bash
-   mysql -u root -p < db/skillbridge_db_v4.sql
+   mysql -u root -p < db/skillbridge_db.sql
    ```
    Esto crea el esquema `skillbridge_db` con todas las tablas y los datos semilla (incluido el usuario administrador).
 
@@ -32,7 +32,7 @@ Un hallazgo concreto de esa revisión manual, ya corregido: al conectar cada pá
 
 4. Abrir `http://localhost:8080/` — redirige automáticamente a `/auth/login.html`.
 
-## Credenciales de prueba (usuario semilla del propio `skillbridge_db_v4.sql`)
+## Credenciales de prueba (usuario semilla del propio `skillbridge_db.sql`)
 
 - **Correo:** `admin@nexacorp.com`
 - **Contraseña:** `admin123`
@@ -95,7 +95,7 @@ Esta es la segunda entrega sobre este proyecto. La primera hizo 2 CRUD (Usuarios
 
 ```
 src/main/java/com/skillbridge/ai/
-  model/        entidades JPA (mapeo 1:1 con skillbridge_db_v4.sql)
+  model/        entidades JPA (mapeo 1:1 con skillbridge_db.sql)
   repository/   Spring Data JPA
   service/      lógica de negocio: auth, usuarios, habilidades, auditoría,
                 proyectos, foros, notificaciones, preferencias de aviso,
@@ -132,7 +132,7 @@ Administrador/Colaborador.
 - Proyectos (admin, PM, colaborador): logos de tecnología (`js/tech-icons.js`, sin CDN), periodo/duración, "N miembros" y filtros por tecnología / duración / avance / miembros (`js/project-ui.js`).
 
 **Seguridad**
-- **Doble factor TOTP (RFC 6238)**: `util/Totp.java` (probado con los vectores oficiales del RFC), `DobleFactorService`, `DobleFactorController` (`/cuenta/2fa/*`), paso extra en `AuthController` (`/auth/verificar-2fa.html`: 5 intentos, 5 min) y tarjeta con QR en *Mi cuenta*. La tabla `usuarios_2fa` la crea `Inicializador2fa` al arrancar (o aplica `db/migracion_v5_doble_factor.sql`). Nota: el secreto se guarda sin cifrar en BD; para producción conviene cifrarlo.
+- **Doble factor TOTP (RFC 6238)**: `util/Totp.java` (probado con los vectores oficiales del RFC), `DobleFactorService`, `DobleFactorController` (`/cuenta/2fa/*`), paso extra en `AuthController` (`/auth/verificar-2fa.html`: 5 intentos, 5 min) y tarjeta con QR en *Mi cuenta*. La tabla `usuarios_2fa` la crea `Inicializador2fa` al arrancar (ya incluida en `db/skillbridge_db.sql`). Nota: el secreto se guarda sin cifrar en BD; para producción conviene cifrarlo.
 - **Contraseña generativa** (`js/password-generator.js`, `crypto.getRandomValues`): botón en Mi cuenta (4 roles), registro y restablecer; cumple la política (12+, mayúscula, minúscula, número, símbolo).
 - **Restricción de foros** (`ForoService`): responder exige tener asignación en el proyecto (antes solo lo exigía crear hilo) y los foros de proyectos completados/cancelados quedan en solo lectura.
 
