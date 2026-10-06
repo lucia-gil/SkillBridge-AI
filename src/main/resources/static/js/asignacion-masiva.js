@@ -92,7 +92,6 @@
       var yaEsta = !!enEquipo[String(p.perfilId)];
       var sinCapacidad = !yaEsta && p.cargaActual >= limite;
       var bloqueado = yaEsta || sinCapacidad;
-      var nivel = p.cargaActual >= limite ? "red" : (p.cargaActual >= limite * 0.8 ? "amber" : "green");
       var motivo = yaEsta ? "Ya está en el equipo" : (sinCapacidad ? "Sin capacidad" : "");
       return '<tr class="bulk-row' + (bloqueado ? " is-blocked" : "") + '" data-perfil="' + esc(p.perfilId) + '" data-hay="' +
         esc(norm(p.nombre + " " + p.correo + " " + (p.cargo || ""))) + '">' +
@@ -101,8 +100,7 @@
         '<td class="cell-person"><span class="avatar avatar-sm">' + esc(iniciales(p.nombre)) + '</span>' +
           '<span class="cell-person-text"><span class="cell-person-name">' + esc(p.nombre) + '</span>' +
           '<span class="cell-person-sub">' + esc(p.cargo ? p.cargo + " · " + p.correo : p.correo) + '</span></span></td>' +
-        '<td><div class="progress-inline bulk-load"><div class="progress-bar"><div class="progress-bar-fill ' + nivel +
-          '" style="width:' + Math.min(100, p.cargaActual) + '%"></div></div><span class="progress-value">' + esc(p.cargaActual) + '%</span></div>' +
+        '<td><div class="progress-inline bulk-load" data-escala="carga"><div class="progress-bar"><div class="progress-bar-fill" style="width:' + Math.min(100, p.cargaActual) + '%"></div></div><span class="progress-value">' + esc(p.cargaActual) + '%</span></div>' +
           '<span class="bulk-sub">' + (motivo ? esc(motivo) : esc(p.proyectosActivos) + " proyecto(s) activo(s)") + '</span>' +
           '<span class="bulk-warn" hidden></span></td>' +
       '</tr>';
