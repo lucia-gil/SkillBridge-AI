@@ -25,6 +25,7 @@
           </div>
           <span class="kpi-tile-label">PROYECTOS ACTIVOS</span>
           <span class="kpi-tile-value" th:text="${proyectosActivos.size()}">0</span>
+          <span class="kpi-tile-meta">asignaciones en curso</span>
         </div>
         <div class="kpi-tile" th:classappend="${cargaActiva > 100} ? 'accent-red' : 'accent-amber'">
           <div class="kpi-tile-icon" th:classappend="${cargaActiva > 100} ? 'red' : 'amber'">
@@ -39,14 +40,14 @@
             <svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg>
           </div>
           <span class="kpi-tile-label">HABILIDADES DECLARADAS</span>
-          <span class="kpi-tile-value" th:text="${habilidadesDeclaradas}">0</span>
+          <span class="kpi-tile-value" th:text="${habilidadesDeclaradas}">0</span><span class="kpi-tile-meta">en tu perfil</span>
         </div>
         <div class="kpi-tile accent-green">
           <div class="kpi-tile-icon green">
             <svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg>
           </div>
           <span class="kpi-tile-label">HABILIDADES VALIDADAS</span>
-          <span class="kpi-tile-value" th:text="${habilidadesValidadas} + ' / ' + ${habilidadesDeclaradas}">0 / 0</span>
+          <span class="kpi-tile-value" th:text="${habilidadesValidadas} + ' / ' + ${habilidadesDeclaradas}">0 / 0</span><span class="kpi-tile-meta">confirmadas por el RM</span>
         </div>
       </div>
 

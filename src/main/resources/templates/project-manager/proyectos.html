@@ -24,28 +24,28 @@
             <svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg>
           </div>
           <span class="kpi-tile-label">En planificacion</span>
-          <span class="kpi-tile-value" th:text="${kpiPlanificacion}">0</span>
+          <span class="kpi-tile-value" th:text="${kpiPlanificacion}">0</span><span class="kpi-tile-meta">aún no inician</span>
         </div>
         <div class="kpi-tile accent-green">
           <div class="kpi-tile-icon green">
             <svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg>
           </div>
           <span class="kpi-tile-label">Activos</span>
-          <span class="kpi-tile-value" th:text="${kpiActivos}">0</span>
+          <span class="kpi-tile-value" th:text="${kpiActivos}">0</span><span class="kpi-tile-meta">en ejecución</span>
         </div>
         <div class="kpi-tile accent-amber">
           <div class="kpi-tile-icon amber">
             <svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg>
           </div>
           <span class="kpi-tile-label">En pausa</span>
-          <span class="kpi-tile-value" th:text="${kpiEnPausa}">0</span>
+          <span class="kpi-tile-value" th:text="${kpiEnPausa}">0</span><span class="kpi-tile-meta">detenidos por ahora</span>
         </div>
         <div class="kpi-tile accent-red">
           <div class="kpi-tile-icon red">
             <svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg>
           </div>
           <span class="kpi-tile-label">Cancelados</span>
-          <span class="kpi-tile-value" th:text="${kpiCancelados}">0</span>
+          <span class="kpi-tile-value" th:text="${kpiCancelados}">0</span><span class="kpi-tile-meta">cerrados sin terminar</span>
         </div>
       </div>
 

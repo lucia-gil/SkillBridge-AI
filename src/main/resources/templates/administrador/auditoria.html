@@ -20,19 +20,19 @@
       <div class="kpi-grid">
         <div class="kpi-tile accent-red">
           <div class="kpi-tile-icon red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></div>
-          <span class="kpi-tile-label">EVENTOS DE SEVERIDAD ALTA</span><span class="kpi-tile-value" th:text="${altaCount}">0</span>
+          <span class="kpi-tile-label">EVENTOS DE SEVERIDAD ALTA</span><span class="kpi-tile-value" th:text="${altaCount}">0</span><span class="kpi-tile-meta">requieren revisión</span>
         </div>
         <div class="kpi-tile accent-amber">
           <div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></div>
-          <span class="kpi-tile-label">EVENTOS DE SEVERIDAD MEDIA</span><span class="kpi-tile-value" th:text="${mediaCount}">0</span>
+          <span class="kpi-tile-label">EVENTOS DE SEVERIDAD MEDIA</span><span class="kpi-tile-value" th:text="${mediaCount}">0</span><span class="kpi-tile-meta">conviene monitorear</span>
         </div>
         <div class="kpi-tile accent-blue">
           <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-info"></use></svg></div>
-          <span class="kpi-tile-label">EVENTOS INFORMATIVOS</span><span class="kpi-tile-value" th:text="${infoCount}">0</span>
+          <span class="kpi-tile-label">EVENTOS INFORMATIVOS</span><span class="kpi-tile-value" th:text="${infoCount}">0</span><span class="kpi-tile-meta">actividad normal</span>
         </div>
         <div class="kpi-tile accent-violet">
           <div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-bar-chart"></use></svg></div>
-          <span class="kpi-tile-label">TOTAL (ÚLTIMOS 200)</span><span class="kpi-tile-value" th:text="${eventos.size()}">0</span>
+          <span class="kpi-tile-label">TOTAL (ÚLTIMOS 200)</span><span class="kpi-tile-value" th:text="${eventos.size()}">0</span><span class="kpi-tile-meta">registros recientes</span>
         </div>
       </div>
 

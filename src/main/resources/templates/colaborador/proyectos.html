@@ -9,6 +9,16 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<style>
+  /* Tarjetas de "Mis proyectos" alineadas: misma altura por fila y la parte
+     inferior (periodo, avance, dedicación) siempre al fondo de la tarjeta. */
+  .colab-card { display: flex; flex-direction: column; }
+  .colab-card[hidden] { display: none; }
+  .colab-card-desc { font-size: var(--fs-sm); line-height: 1.5; margin-bottom: var(--space-4); min-height: 3em;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .colab-card-tech { display: block; margin-bottom: var(--space-4); }
+  .colab-card-bottom { margin-top: auto; padding-top: var(--space-4); border-top: 1px solid var(--border-subtle); }
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -46,7 +56,7 @@
 
       <div id="tab-actuales" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:var(--space-5);">
         <div th:if="${proyectosActivos.isEmpty()}" class="text-tertiary" style="grid-column:1/-1; text-align:center; padding:var(--space-6);">No tienes proyectos activos por ahora.</div>
-        <div class="card card-pad" th:each="p : ${proyectosActivos}" data-project-card="proyectos-colab" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre)}">
+        <div class="card card-pad colab-card" th:each="p : ${proyectosActivos}" data-project-card="proyectos-colab" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre)}">
           <div style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">
             <span class="avatar" style="border-radius:var(--radius-md); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
             <div style="flex:1; min-width:0;">
@@ -55,10 +65,14 @@
             </div>
             <span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span>
           </div>
-          <p class="text-secondary" style="font-size:var(--fs-sm); line-height:1.5; margin-bottom:var(--space-4);"
-             th:text="${#strings.abbreviate(p.descripcion ?: 'Sin descripción.', 130)}">Descripción</p>
-          <span data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="4" style="margin-bottom:var(--space-4);"></span>
-          <div data-periodo th:attr="data-periodo=${p.periodoLabel}" style="margin:var(--space-3) 0 var(--space-4);"></div>
+          <p class="text-secondary colab-card-desc" th:title="${p.descripcion}"
+             th:text="${p.descripcion ?: 'Sin descripción.'}">Descripción</p>
+          <span class="colab-card-tech" data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="4"></span>
+          <!-- Parte inferior anclada abajo: periodo, barra y dedicación quedan
+               a la misma altura en todas las tarjetas aunque la descripción o
+               las tecnologías ocupen distinto alto. -->
+          <div class="colab-card-bottom">
+          <div data-periodo th:attr="data-periodo=${p.periodoLabel}" style="margin:0 0 var(--space-4);"></div>
           <div class="progress-inline" style="margin-bottom:var(--space-4);">
             <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div>
             <span class="progress-value" th:text="${p.avance} + '%'">0%</span>
@@ -67,12 +81,13 @@
             <span class="label-mono" th:text="${p.cargaPorcentaje} + '% dedicación'">0%</span>
             <button type="button" class="btn btn-tertiary btn-sm" th:attr="data-view-project=${p.proyectoId}">Ver detalle →</button>
           </div>
+          </div>
         </div>
       </div>
 
       <section class="card" id="tab-historial" hidden>
         <div class="table-scroll">
-          <table class="data-table">
+          <table class="data-table" data-paginar="8">
             <thead><tr><th>Proyecto</th><th>Rol</th><th>Periodo</th><th>Dedicación</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
             <tr th:if="${historial.isEmpty()}"><td colspan="6" class="text-tertiary" style="text-align:center; padding:var(--space-6);">Todavía no tienes asignaciones registradas.</td></tr>
@@ -154,6 +169,8 @@
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
+<script src="/js/paginar-lista.js"></script>
+<script src="/js/paginacion.js"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/tech-icons.js"></script>
 <script src="/js/project-ui.js"></script>

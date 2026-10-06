@@ -25,7 +25,7 @@
           </div>
           <span class="kpi-tile-label">Proyectos activos</span>
           <span class="kpi-tile-value" th:text="${proyectosActivos}">0</span>
-          <span class="kpi-tile-meta" th:if="${proyectos.size() > proyectosActivos}" th:text="'de ' + ${proyectos.size()} + ' en total'">de N en total</span>
+          <span class="kpi-tile-meta" th:text="'de ' + ${proyectos.size()} + ' en total'">de N en total</span>
         </div>
         <div class="kpi-tile accent-red">
           <div class="kpi-tile-icon red">
@@ -49,7 +49,7 @@
           </div>
           <span class="kpi-tile-label">Hilos en tus foros</span>
           <span class="kpi-tile-value" th:text="${totalHilos}">0</span>
-          <span class="kpi-tile-meta" th:if="${!hilosRecientes.isEmpty()}" th:text="${hilosRecientes.size()} + ' recientes'">N recientes</span>
+          <span class="kpi-tile-meta" th:text="${hilosRecientes.isEmpty()} ? 'sin actividad reciente' : ${hilosRecientes.size()} + ' recientes'">N recientes</span>
         </div>
       </div>
 
@@ -87,7 +87,7 @@
               </div>
             </div>
             <div class="progress-bar" style="height:8px;">
-              <div class="progress-bar-fill" th:classappend="${p.avance >= 70 ? 'green' : (p.avance >= 40 ? '' : 'amber')}" th:style="'width:' + ${p.avance} + '%;'"></div>
+              <div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div>
             </div>
           </div>
         </div>

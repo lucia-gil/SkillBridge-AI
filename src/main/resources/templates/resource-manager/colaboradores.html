@@ -61,8 +61,8 @@
                 <span th:if="${c.habilidadesTop.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin habilidades declaradas</span>
               </td>
               <td>
-                <div class="progress-inline" style="min-width:100px;">
-                  <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${c.ocupacion > 100} ? 'red' : (${c.ocupacion >= 90} ? 'amber' : '')" th:style="'width:' + ${c.ocupacion > 100 ? 100 : c.ocupacion} + '%;'"></div></div>
+                <div data-escala="carga" class="progress-inline" style="min-width:100px;">
+                  <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${c.ocupacion > 100 ? 100 : c.ocupacion} + '%;'"></div></div>
                   <span class="progress-value" th:text="${c.ocupacion} + '%'">0%</span>
                 </div>
               </td>

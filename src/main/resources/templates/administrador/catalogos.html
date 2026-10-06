@@ -20,15 +20,15 @@
             <div class="kpi-grid">
               <div class="kpi-tile accent-blue">
                 <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg></div>
-                <span class="kpi-tile-label">TIPOS DE NOTIFICACIÓN</span><span class="kpi-tile-value" th:text="${tiposNotificacion.size()}">0</span>
+                <span class="kpi-tile-label">TIPOS DE NOTIFICACIÓN</span><span class="kpi-tile-value" th:text="${tiposNotificacion.size()}">0</span><span class="kpi-tile-meta">disponibles en el sistema</span>
               </div>
               <div class="kpi-tile accent-amber">
                 <div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-calendar"></use></svg></div>
-                <span class="kpi-tile-label">TIPOS DE EVENTO</span><span class="kpi-tile-value" th:text="${tiposEvento.size()}">0</span>
+                <span class="kpi-tile-label">TIPOS DE EVENTO</span><span class="kpi-tile-value" th:text="${tiposEvento.size()}">0</span><span class="kpi-tile-meta">para el calendario</span>
               </div>
               <div class="kpi-tile accent-violet">
                 <div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></div>
-                <span class="kpi-tile-label">TIPOS DE AUDIENCIA</span><span class="kpi-tile-value" th:text="${tiposAudiencia.size()}">0</span>
+                <span class="kpi-tile-label">TIPOS DE AUDIENCIA</span><span class="kpi-tile-value" th:text="${tiposAudiencia.size()}">0</span><span class="kpi-tile-meta">visibilidad de eventos</span>
               </div>
             </div>
 
@@ -48,7 +48,7 @@
                 </div>
                 <div class="accordion-body" style="padding:0 var(--space-5) var(--space-5);">
                 <div class="table-scroll">
-                    <table class="data-table">
+                    <table class="data-table" data-paginar="6">
                         <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
                         <tbody>
                         <tr th:each="t : ${tiposNotificacion}">
@@ -80,7 +80,7 @@
                 </div>
                 <div class="accordion-body" hidden style="padding:0 var(--space-5) var(--space-5);">
                 <div class="table-scroll">
-                    <table class="data-table">
+                    <table class="data-table" data-paginar="6">
                         <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Color</th><th>Acciones</th></tr></thead>
                         <tbody>
                         <tr th:each="t : ${tiposEvento}">
@@ -116,7 +116,7 @@
                 </div>
                 <div class="accordion-body" hidden style="padding:0 var(--space-5) var(--space-5);">
                 <div class="table-scroll">
-                    <table class="data-table">
+                    <table class="data-table" data-paginar="6">
                         <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
                         <tbody>
                         <tr th:each="t : ${tiposAudiencia}">
@@ -327,6 +327,8 @@
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
+<script src="/js/paginar-lista.js"></script>
+<script src="/js/paginacion.js"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/tabla-acciones.js"></script>
 </body>
