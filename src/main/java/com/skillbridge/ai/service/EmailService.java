@@ -6,6 +6,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,6 +28,19 @@ public class EmailService {
     private static final Logger log = Logger.getLogger(EmailService.class.getName());
 
     private final JavaMailSender mailSender;
+
+    /**
+     * El envio por SMTP (Gmail) tarda 1-3 s por correo. Si se hacia dentro de
+     * la peticion, acciones que notifican a todo un equipo (p. ej. crear un
+     * entregable) demoraban varios segundos y el usuario volvia a hacer clic,
+     * creando duplicados. Ahora el correo se arma en la peticion y se envia
+     * en segundo plano: la pantalla responde al instante.
+     */
+    private static final ExecutorService ENVIOS = Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "sbai-correo");
+        t.setDaemon(true);
+        return t;
+    });
 
     @Value("${spring.mail.username}")
     private String remitente;
@@ -69,9 +84,15 @@ public class EmailService {
             helper.setTo(destinatario);
             helper.setSubject(asunto);
             helper.setText(construirHtml(titulo, detalle, enlace, textoBoton), true);
-            mailSender.send(mensaje);
+            ENVIOS.submit(() -> {
+                try {
+                    mailSender.send(mensaje);
+                } catch (Exception e) {
+                    log.log(Level.WARNING, "No se pudo enviar el correo de notificacion a " + destinatario, e);
+                }
+            });
         } catch (Exception e) {
-            log.log(Level.WARNING, "No se pudo enviar el correo de notificacion a " + destinatario, e);
+            log.log(Level.WARNING, "No se pudo preparar el correo de notificacion a " + destinatario, e);
         }
     }
 

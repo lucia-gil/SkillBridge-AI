@@ -69,10 +69,15 @@
                         <div th:if="${h.certificados.isEmpty()}" class="callout warn" style="margin:0;">
                             <span class="callout-body" style="font-size:var(--fs-xs);">Sin constancia adjunta — esta validación se basaría solo en criterio del Resource Manager, no en evidencia documental.</span>
                         </div>
-                        <div th:each="cert : ${h.certificados}" style="display:flex; align-items:center; gap:6px; font-size:var(--fs-xs); margin-bottom:4px;">
-                            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg>
-                            <a th:if="${cert.tieneArchivo}" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
-                            <a th:unless="${cert.tieneArchivo}" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                        <div class="cert-links" th:unless="${h.certificados.isEmpty()}">
+                          <th:block th:each="cert : ${h.certificados}">
+                            <a th:if="${cert.tieneArchivo}" class="cert-chip" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" title="Abrir PDF">
+                              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${cert.nombreArchivo}">certificado.pdf</span>
+                            </a>
+                            <a th:if="${cert.tieneEnlace()}" class="cert-chip is-link" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:title="${cert.urlArchivo}">
+                              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-external-link"></use></svg><span th:text="${cert.enlaceEtiqueta()}">enlace</span>
+                            </a>
+                          </th:block>
                         </div>
                     </div>
                 </div>
@@ -113,4 +118,4 @@
 <script src="/js/battery-progress.js"></script>
 <script src="/js/mobile-nav.js"></script>
 </body>
-</html>
+</html>

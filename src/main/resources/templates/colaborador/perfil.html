@@ -53,11 +53,16 @@
                     <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
                           th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
 
-                    <!-- Certificado ya cargado: link externo o PDF subido (se sirve por /certificados/{id}/archivo) -->
-                    <div th:if="${h.tieneCertificado}" th:each="cert : ${h.certificados}" style="margin-top:6px; font-size:var(--fs-xs);">
-                      <svg class="icon icon-sm" style="vertical-align:-2px;"><use href="/img/icons.svg#icon-file-text"></use></svg>
-                      <a th:if="${cert.tieneArchivo}" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
-                      <a th:unless="${cert.tieneArchivo}" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                    <!-- Constancia: PDF subido y/o link externo (se muestran los que existan) -->
+                    <div th:if="${h.tieneCertificado}" class="cert-links">
+                      <th:block th:each="cert : ${h.certificados}">
+                        <a th:if="${cert.tieneArchivo}" class="cert-chip" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" title="Abrir PDF">
+                          <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${cert.nombreArchivo}">certificado.pdf</span>
+                        </a>
+                        <a th:if="${cert.tieneEnlace()}" class="cert-chip is-link" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:title="${cert.urlArchivo}">
+                          <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-external-link"></use></svg><span th:text="${cert.enlaceEtiqueta()}">enlace</span>
+                        </a>
+                      </th:block>
                     </div>
                     <div th:unless="${h.tieneCertificado}" class="text-tertiary" style="margin-top:6px; font-size:var(--fs-xs);">Sin constancia adjunta</div>
                   </div>
@@ -178,21 +183,40 @@
       form.submit();
     }
 
+    // Nombre visible del PDF: se propone el del archivo elegido y se puede cambiar.
+    function nombrePdf(v) {
+      v = String(v || "").trim();
+      if (!v) return "";
+      return /\.pdf$/i.test(v) ? v : v + ".pdf";
+    }
+    function enlazarNombrePdf(fileInput, nameInput, campo, siempreVisible) {
+      fileInput.addEventListener("change", function () {
+        var f = fileInput.files && fileInput.files[0];
+        if (f) { nameInput.value = f.name; campo.hidden = false; nameInput.select(); }
+        else if (!siempreVisible) { campo.hidden = true; nameInput.value = ""; }
+      });
+    }
+
     document.getElementById("add-skill-btn").addEventListener("click", function () {
       var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia.</p></div>' +
               '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
               '<div class="modal-body"><div class="field"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><label class="field-label">Habilidad</label><span class="text-tertiary" style="font-size:var(--fs-xs)">Del catálogo de habilidades</span></div><div id="new-skill-picker"></div></div>' +
               '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div>' +
-              '<div class="field"><label class="field-label">Constancia de respaldo (opcional)</label>' +
-              '<input class="input" type="url" id="new-skill-cert-url" placeholder="Link a tu certificado (Drive, Coursera, LinkedIn Learning...)">' +
-              '<p class="field-hint">Un link ayuda a que el Resource Manager valide tu habilidad más rápido, pero no es obligatorio.</p></div>' +
-              '<div class="field"><label class="field-label">Nombre del archivo (opcional)</label><input class="input" type="text" id="new-skill-cert-name" placeholder="Ej. certificado-react.pdf"></div>' +
-              '<div class="field"><label class="field-label">O sube el PDF directamente (opcional)</label>' +
+              '<div class="cert-form"><p class="cert-form-title">Constancia de respaldo <span>(opcional)</span></p>' +
+              '<p class="field-hint" style="margin:0 0 var(--space-3)">Puedes agregar un link, un PDF o ambos. Ayuda a que el Resource Manager valide tu habilidad.</p>' +
+              '<div class="field"><label class="field-label">Link al certificado</label>' +
+              '<input class="input" type="url" id="new-skill-cert-url" placeholder="https://coursera.org/verify/…"></div>' +
+              '<div class="field" style="margin-bottom:0"><label class="field-label">Archivo PDF</label>' +
               '<input class="input" type="file" id="new-skill-cert-file" accept="application/pdf">' +
-              '<p class="field-hint">Si subes un PDF, se usa en vez del link. Máximo 5 MB.</p></div>' +
+              '<p class="field-hint">Máximo 5 MB.</p></div>' +
+              '<div class="field cert-nombre" id="new-skill-cert-name-field" hidden style="margin:var(--space-3) 0 0"><label class="field-label">Nombre del PDF</label>' +
+              '<input class="input" type="text" id="new-skill-cert-name" maxlength="190" placeholder="Ej. certificado-react.pdf">' +
+              '<p class="field-hint">Así se verá en tu perfil. Puedes cambiarlo.</p></div></div>' +
               '</div>' +
               '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
       var backdrop = SBAI.modal.open(html);
+      enlazarNombrePdf(backdrop.querySelector("#new-skill-cert-file"), backdrop.querySelector("#new-skill-cert-name"),
+                       backdrop.querySelector("#new-skill-cert-name-field"));
       var picker = SBAI.habilidadPicker.montar(backdrop.querySelector("#new-skill-picker"), {
         catalogo: CATALOGO_HABILIDADES, excluir: MIS_HABILIDADES
       });
@@ -202,8 +226,8 @@
         var fields = {
           habilidadId: habilidadId,
           nivel: backdrop.querySelector("#new-skill-level").value,
-          urlArchivo: backdrop.querySelector("#new-skill-cert-url").value,
-          nombreArchivo: backdrop.querySelector("#new-skill-cert-name").value
+          urlArchivo: backdrop.querySelector("#new-skill-cert-url").value.trim(),
+          nombreArchivo: nombrePdf(backdrop.querySelector("#new-skill-cert-name").value)
         };
         var fileInput = backdrop.querySelector("#new-skill-cert-file");
         if (fileInput.files && fileInput.files[0]) {
@@ -220,25 +244,33 @@
         var urlActual = btn.dataset.certUrl || "";
         var tieneArchivoActual = btn.dataset.certTieneArchivo === "true";
         var certId = btn.dataset.certId || "";
-        var avisoArchivo = tieneArchivoActual
-                ? '<p class="field-hint">Ya tienes un PDF subido (<a href="/certificados/' + certId + '/archivo" target="_blank" rel="noopener">verlo</a>). Sube uno nuevo para reemplazarlo.</p>'
+        var esc = function (t) { return String(t || "").replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+        var pdfActual = tieneArchivoActual
+                ? '<div class="cert-current"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg>' +
+                  '<a href="/certificados/' + esc(certId) + '/archivo" target="_blank" rel="noopener">' + esc(nombreActual) + '</a>' +
+                  '<label class="cert-quitar"><input type="checkbox" id="edit-cert-quitar"> Quitar</label></div>'
                 : "";
-        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Constancia de habilidad</h2></div>' +
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Constancia de habilidad</h2><p>Puedes tener un link, un PDF o ambos.</p></div>' +
                 '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
                 '<div class="modal-body">' +
-                '<div class="field"><label class="field-label">Link</label><input class="input" type="url" id="edit-cert-url" value="' + urlActual + '" placeholder="Link a tu certificado"></div>' +
-                '<div class="field"><label class="field-label">Nombre del archivo</label><input class="input" type="text" id="edit-cert-name" value="' + nombreActual + '" placeholder="Ej. certificado.pdf"></div>' +
-                '<div class="field"><label class="field-label">O sube el PDF directamente (opcional)</label>' +
+                '<div class="field"><label class="field-label">Link al certificado</label><input class="input" type="url" id="edit-cert-url" value="' + esc(urlActual) + '" placeholder="https://coursera.org/verify/…">' +
+                '<p class="field-hint">Déjalo vacío si no quieres link.</p></div>' +
+                '<div class="field" style="margin-bottom:0"><label class="field-label">Archivo PDF</label>' + pdfActual +
                 '<input class="input" type="file" id="edit-cert-file" accept="application/pdf">' +
-                avisoArchivo +
-                '</div>' +
-                '<p class="field-hint">Deja el link vacío, no subas archivo, y guarda para quitar la constancia.</p>' +
+                '<p class="field-hint">' + (tieneArchivoActual ? "Sube otro PDF para reemplazar el actual." : "Máximo 5 MB.") + '</p></div>' +
+                '<div class="field" id="edit-cert-name-field"' + (tieneArchivoActual ? '' : ' hidden') + ' style="margin:var(--space-3) 0 0"><label class="field-label">Nombre del PDF</label>' +
+                '<input class="input" type="text" id="edit-cert-name" maxlength="190" value="' + (tieneArchivoActual ? esc(nombreActual) : '') + '" placeholder="Ej. certificado.pdf">' +
+                '<p class="field-hint">Así se verá en tu perfil. Puedes cambiarlo sin volver a subir el archivo.</p></div>' +
                 '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-edit-cert">Guardar</button></div></div>';
         var backdrop = SBAI.modal.open(html);
+        enlazarNombrePdf(backdrop.querySelector("#edit-cert-file"), backdrop.querySelector("#edit-cert-name"),
+                         backdrop.querySelector("#edit-cert-name-field"), tieneArchivoActual);
         backdrop.querySelector("#confirm-edit-cert").addEventListener("click", function () {
+          var quitar = backdrop.querySelector("#edit-cert-quitar");
           var fields = {
-            urlArchivo: backdrop.querySelector("#edit-cert-url").value,
-            nombreArchivo: backdrop.querySelector("#edit-cert-name").value
+            urlArchivo: backdrop.querySelector("#edit-cert-url").value.trim(),
+            quitarArchivo: quitar && quitar.checked ? "true" : "false",
+            nombreArchivo: nombrePdf(backdrop.querySelector("#edit-cert-name").value)
           };
           var fileInput = backdrop.querySelector("#edit-cert-file");
           if (fileInput.files && fileInput.files[0]) {
@@ -326,4 +358,4 @@
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/tabla-acciones.js"></script>
 </body>
-</html>
+</html>

@@ -98,11 +98,12 @@ public class ColaboradorPerfilController {
                                     @RequestParam(required = false) String nombreArchivo,
                                     @RequestParam(required = false) String urlArchivo,
                                     @RequestParam(required = false) MultipartFile archivo,
+                                    @RequestParam(defaultValue = "false") boolean quitarArchivo,
                                     HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             habilidadService.actualizarCertificado(sesion.getPerfilId(), habilidadId, nombreArchivo, urlArchivo,
-                    archivo, sesion.getUsuarioId());
+                    archivo, quitarArchivo, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Constancia actualizada.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -136,4 +137,4 @@ public class ColaboradorPerfilController {
         }
         return "redirect:/colaborador/perfil.html";
     }
-}
+}

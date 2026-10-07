@@ -1,5 +1,6 @@
 package com.skillbridge.ai.web;
 
+import com.skillbridge.ai.dto.EntregaFila;
 import com.skillbridge.ai.dto.EntregableFila;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.model.Entregable;
@@ -72,7 +73,12 @@ public class ColaboradorEntregablesController {
         model.addAttribute("fechaAperturaLabel", FECHA.format(e.getFechaApertura()));
         model.addAttribute("fechaCierreLabel", FECHA.format(e.getFechaCierre()));
         model.addAttribute("proyecto", proyecto);
-        model.addAttribute("fila", fila);
+        // La vista muestra la entrega del propio colaborador (EntregaFila); si
+        // todavía no entregó, se pasa una fila "sin_entregar" vacía.
+        EntregaFila mia = fila.getMiEntrega() != null ? fila.getMiEntrega()
+                : new EntregaFila(null, id, sesion.getPerfilId(), null, false, null, false, null, null,
+                        false, null, "sin_entregar", null, null);
+        model.addAttribute("fila", mia);
         return "colaborador/entregable-detalle";
     }
 

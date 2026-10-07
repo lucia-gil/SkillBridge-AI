@@ -184,6 +184,9 @@ public class RmColaboradoresController {
 
     /** Update real: activar/desactivar cuenta (soft delete, igual que el resto del sistema). */
     @PostMapping("/colaboradores/{perfilId}/estado")
+    // Transaccional para poder leer p.getUsuario() (relación LAZY) sin
+    // LazyInitializationException, ya que open-in-view está desactivado.
+    @org.springframework.transaction.annotation.Transactional
     public String cambiarEstado(@PathVariable Long perfilId, @RequestParam String nuevoEstado,
                                 @RequestParam(required = false) String motivo,
                                 HttpSession session, RedirectAttributes redirectAttributes) {
@@ -244,4 +247,4 @@ public class RmColaboradoresController {
                 "activo".equals(nuevoEstado) ? "Perfil marcado como disponible." : "Perfil marcado como no disponible para proyectos.");
         return "redirect:/resource-manager/colaboradores.html";
     }
-}
+}

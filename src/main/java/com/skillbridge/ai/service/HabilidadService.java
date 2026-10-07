@@ -231,13 +231,29 @@ public class HabilidadService {
      */
     @Transactional
     public void actualizarCertificado(Long perfilId, Long habilidadId, String nombreArchivo, String urlArchivo,
-                                      MultipartFile archivo, Long actorUsuarioId) {
+                                      MultipartFile archivo, boolean quitarArchivo, Long actorUsuarioId) {
         PerfilHabilidadId id = new PerfilHabilidadId(perfilId, habilidadId);
         if (!perfilHabilidadRepository.existsById(id)) {
             throw new OperacionInvalidaException("Esa habilidad ya no está declarada en tu perfil.");
         }
-        certificadoHabilidadRepository.deleteByPerfilIdAndHabilidadId(perfilId, habilidadId);
+        // Constancia actual (si había): se conserva el PDF ya subido cuando el
+        // colaborador solo edita el link, salvo que marque "quitar PDF".
+        CertificadoHabilidad actual = certificadoHabilidadRepository
+                .findByPerfilIdAndHabilidadId(perfilId, habilidadId).stream().findFirst().orElse(null);
         CertificadoHabilidad cert = construirCertificadoSiCorresponde(perfilId, habilidadId, nombreArchivo, urlArchivo, archivo);
+        boolean hayArchivoNuevo = archivo != null && !archivo.isEmpty();
+        if (!hayArchivoNuevo && !quitarArchivo && actual != null && actual.tieneArchivo()) {
+            if (cert == null) {
+                cert = new CertificadoHabilidad();
+                cert.setPerfilId(perfilId);
+                cert.setHabilidadId(habilidadId);
+            }
+            cert.setContenidoArchivo(actual.getContenidoArchivo());
+            cert.setTipoArchivo(actual.getTipoArchivo());
+            // Permite renombrar el PDF que ya estaba subido sin volver a subirlo.
+            cert.setNombreArchivo(nombreArchivo != null && !nombreArchivo.isBlank() ? nombreArchivo.trim() : actual.getNombreArchivo());
+        }
+        certificadoHabilidadRepository.deleteByPerfilIdAndHabilidadId(perfilId, habilidadId);
         if (cert != null) {
             certificadoHabilidadRepository.save(cert);
         }
@@ -304,6 +320,7 @@ public class HabilidadService {
         cert.setPerfilId(perfilId);
         cert.setHabilidadId(habilidadId);
 
+        // Se guardan AMBOS si vienen los dos: el PDF subido y el link externo.
         if (hayArchivo) {
             validarPdf(archivo);
             try {
@@ -316,8 +333,10 @@ public class HabilidadService {
             cert.setNombreArchivo(nombreArchivo != null && !nombreArchivo.isBlank() ? nombreArchivo
                     : (nombreOriginal != null && !nombreOriginal.isBlank() ? nombreOriginal : "certificado.pdf"));
         } else {
-            cert.setUrlArchivo(urlArchivo);
             cert.setNombreArchivo(nombreArchivo != null && !nombreArchivo.isBlank() ? nombreArchivo : "constancia");
+        }
+        if (hayLink) {
+            cert.setUrlArchivo(urlArchivo.trim());
         }
         return cert;
     }
@@ -447,4 +466,4 @@ public class HabilidadService {
         }
         return limpio;
     }
-}
+}

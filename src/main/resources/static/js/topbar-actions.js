@@ -18,7 +18,42 @@
 (function () {
   "use strict";
 
+  // Evita envíos dobles: si el usuario hace clic otra vez mientras la
+  // página procesa (p. ej. crear un entregable), no se crea un duplicado.
+  var enviando = false;
+  function marcarEnviando() {
+    document.querySelectorAll(".modal .modal-footer .btn-primary, .modal .modal-footer .btn-danger").forEach(function (b) {
+      b.disabled = true;
+      b.classList.add("is-loading");
+      if (!b.dataset.textoOriginal) { b.dataset.textoOriginal = b.textContent; b.textContent = "Procesando…"; }
+    });
+  }
+  document.addEventListener("submit", function (e) {
+    var f = e.target;
+    // Fase de burbuja: si otra validación ya canceló el envío, no se marca.
+    if (e.defaultPrevented || !f || (f.method || "").toLowerCase() !== "post") return;
+    if (f.dataset.enviado) { e.preventDefault(); return; }
+    f.dataset.enviado = "1";
+    setTimeout(function () {
+      f.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (b) { b.disabled = true; });
+    }, 0);
+  });
+  // Si el navegador restaura la página con "Atrás", se reactivan los botones.
+  window.addEventListener("pageshow", function () {
+    enviando = false;
+    document.querySelectorAll("[data-texto-original]").forEach(function (b) {
+      b.disabled = false; b.classList.remove("is-loading"); b.textContent = b.dataset.textoOriginal; delete b.dataset.textoOriginal;
+    });
+    document.querySelectorAll("form[data-enviado]").forEach(function (f) {
+      delete f.dataset.enviado;
+      f.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (b) { b.disabled = false; });
+    });
+  });
+
   function submitForm(action, fields) {
+    if (enviando) return;
+    enviando = true;
+    marcarEnviando();
     var form = document.createElement("form");
     form.method = "POST";
     form.action = action;
