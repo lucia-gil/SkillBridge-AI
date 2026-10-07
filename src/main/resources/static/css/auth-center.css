@@ -121,7 +121,8 @@
 .auth-center-page .auth-card-sub + div:not([class]) { margin: 0 0 var(--space-5) !important; }
 
 /* Logo blanco en tema oscuro (la versión normal es oscura y no se lee). */
-:root[data-theme="dark"] .auth-center-page .auth-card-header img { content: url("/img/logo_blanco-tight.png"); }
+:root[data-theme="dark"] .auth-center-page .auth-card-header img,
+:root[data-theme="dark"] .login-page .auth-card-header img { content: url("/img/logo_blanco-tight.png"); }
 
 /* Selects y textareas con el mismo foco violeta que los inputs del login. */
 .auth-center-page .select { border-radius: var(--radius-md); }
