@@ -4,47 +4,23 @@
    proyecto (tokens.css), así respeta el tema claro/oscuro.
    ===================================================================== */
 
-.rmi-kpis { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 
 /* Dos columnas que apilan sus tarjetas: así no quedan huecos en blanco
    cuando una tarjeta es más alta que la de al lado. */
-.rmi-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: var(--space-5); margin-top: var(--space-6); align-items: start; }
+.rmi-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: var(--space-5); margin-top: 0; align-items: start; }
 .rmi-col { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
 .rmi-col > .card { min-width: 0; }
-
-/* ── KPIs: versión amable (solo en esta página) ─────────────
-   Tarjetas blancas, sin franja superior ni círculo decorativo; el color
-   queda en el ícono (pastel) y en un halo suave al pasar el mouse. */
-.rmi-kpis .kpi-tile { background: var(--surface); border: 1px solid var(--border-subtle); box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
-  min-height: 160px; padding: var(--space-5); gap: 6px; }
-.rmi-kpis .kpi-tile::before, .rmi-kpis .kpi-tile::after { display: none; }
-.rmi-kpis .kpi-tile:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -14px var(--kpi-halo, rgba(16, 24, 40, .18)); border-color: var(--kpi-ring, var(--border-default)); }
-.rmi-kpis .kpi-tile.accent-blue { --kpi-halo: rgba(44, 91, 176, .45); --kpi-ring: var(--blue-border); }
-.rmi-kpis .kpi-tile.accent-green { --kpi-halo: rgba(21, 153, 120, .45); --kpi-ring: var(--green-border); }
-.rmi-kpis .kpi-tile.accent-amber { --kpi-halo: rgba(217, 144, 34, .45); --kpi-ring: var(--amber-border); }
-.rmi-kpis .kpi-tile.accent-violet { --kpi-halo: rgba(110, 78, 190, .45); --kpi-ring: var(--violet-border); }
-.rmi-kpis .kpi-tile.accent-red { --kpi-halo: rgba(196, 60, 40, .45); --kpi-ring: var(--red-border); }
-.rmi-kpis .kpi-tile-icon { width: 40px; height: 40px; border-radius: 12px; margin-bottom: var(--space-2); }
-.rmi-kpis .kpi-tile:hover .kpi-tile-icon { transform: scale(1.06); }
-.rmi-kpis .kpi-tile-label { font-family: var(--font-ui); text-transform: none; letter-spacing: 0; font-size: var(--fs-sm);
-  font-weight: var(--fw-medium); color: var(--text-secondary); }
-.rmi-kpis .kpi-tile-meta { font-size: var(--fs-xs); color: var(--text-tertiary); }
-.rmi-kpis .kpi-tile-meta.up, .rmi-kpis .kpi-tile-meta.warn, .rmi-kpis .kpi-tile-meta.down {
-  align-self: flex-start; padding: 2px 10px; border-radius: var(--radius-full); border: 1px solid; font-weight: var(--fw-medium); }
-.rmi-kpis .kpi-tile-meta.up { background: var(--green-bg); border-color: var(--green-border); }
-.rmi-kpis .kpi-tile-meta.warn { background: var(--amber-bg); border-color: var(--amber-border); }
-.rmi-kpis .kpi-tile-meta.down { background: var(--red-bg); border-color: var(--red-border); }
 
 .rmi-of { font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--text-tertiary); margin-left: 4px; }
 .rmi-delta { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font-weight: var(--fw-semibold); color: var(--text-secondary); }
 .rmi-delta.is-up { color: var(--blue-fg); }
 .rmi-delta.is-down { color: var(--green-fg); }
-.rmi-spark { position: absolute; right: 18px; top: 22px; width: 44%; max-width: 140px; height: 38px; z-index: 1; overflow: visible; }
+.rmi-spark { display: block; width: 100%; height: 30px; margin-top: 4px; overflow: visible; }
 .rmi-spark-line { fill: none; stroke: var(--blue-fg); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; opacity: .8; }
 .rmi-spark-area { fill: var(--blue-fg); opacity: .07; }
-.rmi-kpi-foot { position: relative; z-index: 1; font-size: var(--fs-2xs); color: var(--text-tertiary); }
+.rmi-kpi-foot { font-size: var(--fs-2xs); color: #8a93a6; }
 
-.rmi-dist { position: relative; z-index: 1; display: flex; gap: 3px; height: 8px; margin-top: 6px; }
+.rmi-dist { display: flex; gap: 3px; height: 8px; margin-top: 8px; }
 .rmi-dist-seg { min-width: 6px; border-radius: var(--radius-full); }
 .rmi-dist-seg.is-libre { background: var(--border-default); }
 .rmi-dist-seg.is-baja { background: color-mix(in srgb, var(--blue-fg) 30%, var(--surface)); }
@@ -214,17 +190,10 @@ a.rmi-row-title:hover { color: var(--blue-link); }
   .rmi-central { order: 1; } .rmi-inbox { order: 2; } .rmi-timeline { order: 3; } .rmi-skills-card { order: 4; }
 }
 @media (max-width: 720px) {
-  .rmi-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-  .rmi-kpis .kpi-tile { min-height: 0; padding: var(--space-4); }
-  .rmi-kpis .kpi-tile-value { font-size: var(--fs-xl); }
-  .rmi-kpis .kpi-tile-meta.up, .rmi-kpis .kpi-tile-meta.warn, .rmi-kpis .kpi-tile-meta.down { padding: 3px 8px; border-radius: var(--radius-md); }
-  .rmi-kpis .kpi-tile-meta { flex-wrap: wrap; column-gap: 4px; row-gap: 0; }
-  .rmi-spark { top: 18px; right: 12px; width: 42%; height: 30px; }
   .rmi-track { grid-auto-columns: 82%; }
   .rmi-nav { display: none; }
   .rmi-gantt { --label-w: 108px; }
   .rmi-head { flex-wrap: wrap; }
-  .rmi-spark { width: 40%; }
 }
 
 /* ── Tema oscuro: los acentos navy no se leen sobre fondo oscuro ── */

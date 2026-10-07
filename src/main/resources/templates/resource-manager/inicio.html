@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
   <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
   <link rel="stylesheet" href="/css/rm-inicio.css">
 </head>
 <body>
@@ -23,70 +24,95 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content rmi" id="page-content" th:with="p=${panel}">
 
-      <!-- ═════════════ KPIs ═════════════ -->
-      <div class="kpi-grid rmi-kpis">
-
-        <!-- Ocupación promedio + tendencia -->
-        <div class="kpi-tile accent-blue rmi-kpi">
-          <div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></div>
-          <span class="kpi-tile-label">Ocupación promedio</span>
-          <span class="kpi-tile-value" th:text="${kpiOcupacionPromedio} + '%'">0%</span>
-          <span class="kpi-tile-meta" th:if="${!p.tendencia().semanas().isEmpty()}">
-            <span class="rmi-delta" th:classappend="${p.tendencia().sube()} ? 'is-up' : (${p.tendencia().baja()} ? 'is-down' : '')">
-              <svg class="icon icon-sm" th:if="${p.tendencia().sube()}"><use href="/img/icons.svg#icon-trending-up"></use></svg>
-              <svg class="icon icon-sm" th:if="${p.tendencia().baja()}"><use href="/img/icons.svg#icon-trending-down"></use></svg>
-              <span th:text="${p.tendencia().variacion() > 0 ? '+' : ''} + ${p.tendencia().variacion()} + ' pts'">0 pts</span>
-            </span>
-            vs. semana pasada
-          </span>
-          <svg class="rmi-spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"
-               th:if="${!p.tendencia().semanas().isEmpty()}">
-            <polygon class="rmi-spark-area" th:attr="points=${p.tendencia().areaSparkline()}"></polygon>
-            <polyline class="rmi-spark-line" th:attr="points=${p.tendencia().puntosSparkline()}"></polyline>
-          </svg>
-          <span class="rmi-kpi-foot" th:if="${!p.tendencia().semanas().isEmpty()}"
-                th:text="'Últimas ' + ${p.tendencia().semanas().size()} + ' semanas'">Últimas semanas</span>
-        </div>
-
-        <!-- Sobre-asignados + predicción -->
-        <div class="kpi-tile rmi-kpi" th:classappend="${kpiSobreAsignados > 0} ? 'accent-red' : (${p.prediccion().hayRiesgo()} ? 'accent-amber' : 'accent-green')">
-          <div class="kpi-tile-icon" th:classappend="${kpiSobreAsignados > 0} ? 'red' : (${p.prediccion().hayRiesgo()} ? 'amber' : 'green')">
-            <svg class="icon"><use th:href="${kpiSobreAsignados > 0 or p.prediccion().hayRiesgo()} ? '/img/icons.svg#icon-alert-triangle' : '/img/icons.svg#icon-shield-check'"></use></svg>
+      <!-- ═════════════ Encabezado + indicadores (patrón kpi-hero.css) ═════════════ -->
+      <section class="kpi-hero" th:with="b=${p.balance()}">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title" th:text="'¡Hola, ' + ${user != null and user.nombre != null and !#strings.isEmpty(user.nombre) ? #strings.arraySplit(user.nombre, ' ')[0] : 'equipo'} + '!'">¡Hola!</h2>
+            <p class="kpi-hero-sub">Esto es lo que pasa hoy con la carga y la disponibilidad de tu equipo.</p>
           </div>
-          <span class="kpi-tile-label">Sobre-asignados</span>
-          <span class="kpi-tile-value" th:text="${kpiSobreAsignados}">0</span>
-          <span class="kpi-tile-meta down" th:if="${kpiSobreAsignados > 0}">requieren acción hoy</span>
-          <span class="kpi-tile-meta warn" th:if="${kpiSobreAsignados == 0 and p.prediccion().hayRiesgo()}"
-                th:text="${p.prediccion().enRiesgo().size()} + ' superaría(n) el ' + ${p.limiteCarga()} + '% en ' + ${p.prediccion().dias()} + ' días'">riesgo</span>
-          <span class="kpi-tile-meta up" th:if="${kpiSobreAsignados == 0 and !p.prediccion().hayRiesgo()}"
-                th:text="'Sin riesgo en los próximos ' + ${p.prediccion().dias()} + ' días'">Sin riesgo</span>
+          <a class="kpi-hero-action" href="ai-talent-matching.html" th:if="${p.solicitudesTotal() > 0}">
+            <svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg>
+            <span th:text="'Revisar solicitudes (' + ${p.solicitudesTotal()} + ')'">Revisar solicitudes</span>
+          </a>
+          <a class="kpi-hero-action" href="asignaciones.html" th:if="${p.solicitudesTotal() == 0}">
+            <svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg><span>Ir a asignaciones</span>
+          </a>
         </div>
 
-        <!-- Balance de carga -->
-        <div class="kpi-tile accent-green rmi-kpi" th:with="b=${p.balance()}">
-          <div class="kpi-tile-icon green"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></div>
-          <span class="kpi-tile-label">En carga óptima</span>
-          <span class="kpi-tile-value"><span th:text="${b.optimos()}">0</span><small class="rmi-of" th:text="'/ ' + ${b.total()}">/ 0</small></span>
-          <span class="kpi-tile-meta">entre 70% y 85% de dedicación</span>
-          <div class="rmi-dist" th:if="${b.total() > 0}" role="img"
-               th:attr="aria-label=${'Distribución: ' + b.sinAsignar() + ' sin asignar, ' + b.baja() + ' baja, ' + b.media() + ' media, ' + b.optimos() + ' óptima, ' + b.alta() + ' alta, ' + b.sobre() + ' sobre el límite'}">
-            <span class="rmi-dist-seg is-libre" th:if="${b.sinAsignar() > 0}" th:style="'flex:' + ${b.sinAsignar()}" th:title="${b.sinAsignar()} + ' sin asignar (0%)'"></span>
-            <span class="rmi-dist-seg is-baja" th:if="${b.baja() > 0}" th:style="'flex:' + ${b.baja()}" th:title="${b.baja()} + ' con carga baja (1–29%)'"></span>
-            <span class="rmi-dist-seg is-media" th:if="${b.media() > 0}" th:style="'flex:' + ${b.media()}" th:title="${b.media()} + ' con carga media (30–69%)'"></span>
-            <span class="rmi-dist-seg is-optima" th:if="${b.optimos() > 0}" th:style="'flex:' + ${b.optimos()}" th:title="${b.optimos()} + ' en carga óptima (70–85%)'"></span>
-            <span class="rmi-dist-seg is-alta" th:if="${b.alta() > 0}" th:style="'flex:' + ${b.alta()}" th:title="${b.alta()} + ' con carga alta (86–100%)'"></span>
-            <span class="rmi-dist-seg is-sobre" th:if="${b.sobre() > 0}" th:style="'flex:' + ${b.sobre()}" th:title="${b.sobre()} + ' sobre el límite'"></span>
-          </div>
-        </div>
+        <div class="kpi-hero-grid">
+          <!-- Ocupación promedio + tendencia -->
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></span>
+              <span class="hero-card-label">Ocupación promedio</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiOcupacionPromedio} + '%'">0%</div>
+            <p class="hero-card-meta" th:if="${!p.tendencia().semanas().isEmpty()}">
+              <b th:classappend="${p.tendencia().sube()} ? 'tone-blue' : (${p.tendencia().baja()} ? 'tone-green' : 'tone-muted')"
+                 th:text="${p.tendencia().variacion() > 0 ? '+' : ''} + ${p.tendencia().variacion()} + ' pts'">0 pts</b> vs. semana pasada
+            </p>
+            <svg class="rmi-spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"
+                 th:if="${!p.tendencia().semanas().isEmpty()}">
+              <polygon class="rmi-spark-area" th:attr="points=${p.tendencia().areaSparkline()}"></polygon>
+              <polyline class="rmi-spark-line" th:attr="points=${p.tendencia().puntosSparkline()}"></polyline>
+            </svg>
+            <span class="rmi-kpi-foot" th:if="${!p.tendencia().semanas().isEmpty()}"
+                  th:text="'Últimas ' + ${p.tendencia().semanas().size()} + ' semanas'">Últimas semanas</span>
+          </article>
 
-        <!-- Disponibles ahora -->
-        <div class="kpi-tile accent-violet rmi-kpi">
-          <div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-user-check"></use></svg></div>
-          <span class="kpi-tile-label">Disponibles ahora</span>
-          <span class="kpi-tile-value" th:text="${disponiblesTotal}">0</span>
-          <span class="kpi-tile-meta" th:text="${p.enBanca()} + ' en la banca · ' + ${p.capacidadLibreTotal()} + '% de capacidad libre'">0 en la banca</span>
+          <!-- Sobre-asignados + predicción -->
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon" th:classappend="${kpiSobreAsignados > 0} ? 'tone-red' : (${p.prediccion().hayRiesgo()} ? 'tone-amber' : 'tone-green')">
+                <svg class="icon"><use th:href="${kpiSobreAsignados > 0 or p.prediccion().hayRiesgo()} ? '/img/icons.svg#icon-alert-triangle' : '/img/icons.svg#icon-shield-check'"></use></svg>
+              </span>
+              <span class="hero-card-label">Sobre-asignados</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiSobreAsignados}">0</div>
+            <p class="hero-card-meta" th:if="${kpiSobreAsignados > 0}"><b class="tone-red">Requieren acción</b> hoy</p>
+            <p class="hero-card-meta" th:if="${kpiSobreAsignados == 0 and p.prediccion().hayRiesgo()}">
+              <b class="tone-amber" th:text="${p.prediccion().enRiesgo().size()} + ' en riesgo'">en riesgo</b>
+              <span th:text="'de pasar el ' + ${p.limiteCarga()} + '% en ' + ${p.prediccion().dias()} + ' días'">días</span>
+            </p>
+            <p class="hero-card-meta" th:if="${kpiSobreAsignados == 0 and !p.prediccion().hayRiesgo()}">
+              <b class="tone-green">Sin riesgo</b> <span th:text="'en los próximos ' + ${p.prediccion().dias()} + ' días'">días</span>
+            </p>
+          </article>
+
+          <!-- Balance de carga -->
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></span>
+              <span class="hero-card-label">En carga óptima</span>
+            </div>
+            <div class="hero-card-value"><span th:text="${b.optimos()}">0</span><small th:text="'/ ' + ${b.total()}">/ 0</small></div>
+            <p class="hero-card-meta"><b class="tone-green">70%–85%</b> de dedicación</p>
+            <div class="rmi-dist" th:if="${b.total() > 0}" role="img"
+                 th:attr="aria-label=${'Distribución: ' + b.sinAsignar() + ' sin asignar, ' + b.baja() + ' baja, ' + b.media() + ' media, ' + b.optimos() + ' óptima, ' + b.alta() + ' alta, ' + b.sobre() + ' sobre el límite'}">
+              <span class="rmi-dist-seg is-libre" th:if="${b.sinAsignar() > 0}" th:style="'flex:' + ${b.sinAsignar()}" th:title="${b.sinAsignar()} + ' sin asignar (0%)'"></span>
+              <span class="rmi-dist-seg is-baja" th:if="${b.baja() > 0}" th:style="'flex:' + ${b.baja()}" th:title="${b.baja()} + ' con carga baja (1–29%)'"></span>
+              <span class="rmi-dist-seg is-media" th:if="${b.media() > 0}" th:style="'flex:' + ${b.media()}" th:title="${b.media()} + ' con carga media (30–69%)'"></span>
+              <span class="rmi-dist-seg is-optima" th:if="${b.optimos() > 0}" th:style="'flex:' + ${b.optimos()}" th:title="${b.optimos()} + ' en carga óptima (70–85%)'"></span>
+              <span class="rmi-dist-seg is-alta" th:if="${b.alta() > 0}" th:style="'flex:' + ${b.alta()}" th:title="${b.alta()} + ' con carga alta (86–100%)'"></span>
+              <span class="rmi-dist-seg is-sobre" th:if="${b.sobre() > 0}" th:style="'flex:' + ${b.sobre()}" th:title="${b.sobre()} + ' sobre el límite'"></span>
+            </div>
+          </article>
+
+          <!-- Disponibles ahora -->
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-user-check"></use></svg></span>
+              <span class="hero-card-label">Disponibles ahora</span>
+            </div>
+            <div class="hero-card-value" th:text="${disponiblesTotal}">0</div>
+            <p class="hero-card-meta">
+              <b class="tone-violet" th:text="${p.enBanca()} + ' en la banca'">0 en la banca</b>
+              <span th:text="'· ' + ${p.capacidadLibreTotal()} + '% de capacidad libre'">capacidad</span>
+            </p>
+          </article>
         </div>
-      </div>
+      </section>
 
       <!-- ═════════════ Dos columnas: izquierda (banca + línea de tiempo), derecha (solicitudes + habilidades) ═════════════ -->
       <div class="rmi-layout">

@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
   <style>.rb-rol{display:block;font-size:11px;color:var(--text-tertiary);font-weight:400}.rb-input{width:96px;text-align:center}.rb-table{border:1px solid var(--border-subtle);border-radius:var(--radius-md)}</style>
 </head>
 <body>
@@ -20,12 +21,37 @@
 
       <!-- Los 4 KPI se calculan en el Controller contando cuantos
            colaboradores caen en cada rango de ocupacion -->
-      <div class="kpi-grid">
-        <div class="kpi-tile accent-blue"><div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-trending-down"></use></svg></div><span class="kpi-tile-label">SUBUTILIZADOS</span><span class="kpi-tile-value" th:text="${subutilizados}">0</span><span class="kpi-tile-meta">&lt; 60% de carga</span></div>
-        <div class="kpi-tile accent-green"><div class="kpi-tile-icon green"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></div><span class="kpi-tile-label">ÓPTIMO</span><span class="kpi-tile-value" th:text="${optimo}">0</span><span class="kpi-tile-meta up">60–89% de carga</span></div>
-        <div class="kpi-tile accent-amber"><div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></div><span class="kpi-tile-label">AL LÍMITE</span><span class="kpi-tile-value" th:text="${alLimite}">0</span><span class="kpi-tile-meta warn">90–100% de carga</span></div>
-        <div class="kpi-tile accent-red"><div class="kpi-tile-icon red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></div><span class="kpi-tile-label">SOBRE-ASIGNADOS</span><span class="kpi-tile-value" th:text="${sobreAsignados}">0</span><span class="kpi-tile-meta down">&gt; 100% de carga</span></div>
-      </div>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title">¿Cómo está la carga del equipo?</h2>
+            <p class="kpi-hero-sub">Cuántos colaboradores hay en cada rango de dedicación, sumando todos sus proyectos.</p>
+          </div>
+          <a class="kpi-hero-action" href="asignaciones.html"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg><span>Ir a asignaciones</span></a>
+        </div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-trending-down"></use></svg></span><span class="hero-card-label">Subutilizados</span></div>
+            <div class="hero-card-value" th:text="${subutilizados}">0</div>
+            <p class="hero-card-meta"><b class="tone-blue">&lt; 60%</b> de carga</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span><span class="hero-card-label">Óptimo</span></div>
+            <div class="hero-card-value" th:text="${optimo}">0</div>
+            <p class="hero-card-meta"><b class="tone-green">60%–89%</b> de carga</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span><span class="hero-card-label">Al límite</span></div>
+            <div class="hero-card-value" th:text="${alLimite}">0</div>
+            <p class="hero-card-meta"><b class="tone-amber">90%–100%</b> de carga</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span><span class="hero-card-label">Sobre-asignados</span></div>
+            <div class="hero-card-value" th:text="${sobreAsignados}">0</div>
+            <p class="hero-card-meta"><b class="tone-red">&gt; 100%</b> de carga</p>
+          </article>
+        </div>
+      </section>
 
       <section class="card" style="margin-top:var(--space-6);">
         <div class="table-toolbar">
@@ -52,9 +78,10 @@
               </td>
               <td th:text="${o.cargo}">Cargo</td>
               <td>
-                <div data-escala="carga" class="progress-inline" style="min-width:110px;">
+                <div class="progress-inline" style="min-width:110px;">
                   <div class="progress-bar">
                     <div class="progress-bar-fill"
+                         th:classappend="${o.promedio > 100} ? 'red' : (${o.promedio >= 90} ? 'amber' : '')"
                          th:style="'width:' + ${#numbers.formatDecimal(o.promedio > 100 ? 100 : o.promedio, 1, 0)} + '%;'"></div>
                   </div>
                   <span class="progress-value" th:text="${o.promedio} + '%'">0%</span>
