@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/kpi-hero.css">
   <style>
     .coverage-cell{min-width:180px}.vacancy-zero{color:var(--green-fg);font-weight:600}.team-modal-table{max-height:330px;overflow:auto;border:1px solid var(--border-subtle);border-radius:var(--radius-card)}
     .assign-panel{margin-top:var(--space-5);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-subtle);border-radius:var(--radius-md)}
@@ -22,12 +23,48 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" style="margin-bottom:var(--space-5)">
-        <div class="kpi-tile accent-blue"><div class="kpi-tile-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></div><span class="kpi-tile-label">Proyectos gestionados</span><span class="kpi-tile-value" th:text="${proyectos.size()}">0</span><span class="kpi-tile-meta">total bajo tu gestión</span></div>
-        <div class="kpi-tile accent-green"><div class="kpi-tile-icon green"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div><span class="kpi-tile-label">Colaboradores asignados</span><span class="kpi-tile-value" th:text="${totalColaboradores}">0</span><span class="kpi-tile-meta">personas activas en equipos</span></div>
-        <div class="kpi-tile accent-amber"><div class="kpi-tile-icon amber"><svg class="icon"><use href="/img/icons.svg#icon-user-x"></use></svg></div><span class="kpi-tile-label">Vacantes pendientes</span><span class="kpi-tile-value" th:text="${totalVacantes}">0</span><span class="kpi-tile-meta">cupos aún por cubrir</span></div>
-        <div class="kpi-tile accent-violet"><div class="kpi-tile-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></div><span class="kpi-tile-label">Equipos completos</span><span class="kpi-tile-value" th:text="${#lists.size(proyectos.?[cupoCompleto])}">0</span><span class="kpi-tile-meta" th:text="'de ' + ${proyectos.size()} + ' proyecto(s)'">de 0</span></div>
-      </div>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title">Cobertura de equipos</h2>
+            <p class="kpi-hero-sub">Vacantes y colaboradores por proyecto</p>
+          </div>
+        </div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+              <span class="hero-card-label">Proyectos gestionados</span>
+            </div>
+            <div class="hero-card-value" th:text="${proyectos.size()}">0</div>
+            <p class="hero-card-meta">total bajo tu gestión</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+              <span class="hero-card-label">Colaboradores asignados</span>
+            </div>
+            <div class="hero-card-value" th:text="${totalColaboradores}">0</div>
+            <p class="hero-card-meta">personas activas en equipos</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-user-x"></use></svg></span>
+              <span class="hero-card-label">Vacantes pendientes</span>
+            </div>
+            <div class="hero-card-value" th:text="${totalVacantes}">0</div>
+            <p class="hero-card-meta">cupos aún por cubrir</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span>
+              <span class="hero-card-label">Equipos completos</span>
+            </div>
+            <div class="hero-card-value" th:text="${#lists.size(proyectos.?[cupoCompleto])}">0</div>
+            <p class="hero-card-meta" th:text="'de ' + ${proyectos.size()} + ' proyecto(s)'">de 0</p>
+          </article>
+        </div>
+      </section>
 
       <section class="card" th:if="${proyectos.isEmpty()}">
         <div class="state-panel"><span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></span><span class="state-panel-title">No gestionas proyectos todavía</span><span class="state-panel-desc">Crea un proyecto en la sección “Proyectos” para empezar a asignar colaboradores.</span></div>
