@@ -3,7 +3,9 @@ package com.skillbridge.ai.web;
 import com.skillbridge.ai.dto.OcupacionColaboradorFila;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.dto.VacanteHabilidad;
+import com.skillbridge.ai.dto.PanelRm;
 import com.skillbridge.ai.service.ReporteService;
+import com.skillbridge.ai.service.RmPanelService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
@@ -37,6 +39,13 @@ import java.util.List;
  * "solicitudes pendientes" en este esquema (excepciones_carga tampoco tiene
  * entidad/repositorio implementado), asi que se deja fuera hasta que exista
  * un dato real que respalde ese KPI.
+ *
+ * 2026-10 (rediseño): se suma RmPanelService con datos reales de la BD -
+ * banca/disponibilidad, tendencia de ocupación, predicción de sobrecarga,
+ * balance de carga, liberaciones próximas, solicitudes pendientes de los PM
+ * (propuestas_asignacion, que en el modelo v7 ya existe), proyectos por
+ * iniciar, línea de tiempo y demanda vs. oferta de habilidades. Los atributos
+ * anteriores se mantienen (la plantilla los sigue usando).
  */
 @Controller
 @RequestMapping("/resource-manager")
@@ -44,10 +53,13 @@ public class RmInicioController {
 
     private final ReporteService reporteService;
     private final ShellModelBuilder shellModelBuilder;
+    private final RmPanelService rmPanelService;
 
-    public RmInicioController(ReporteService reporteService, ShellModelBuilder shellModelBuilder) {
+    public RmInicioController(ReporteService reporteService, ShellModelBuilder shellModelBuilder,
+                              RmPanelService rmPanelService) {
         this.reporteService = reporteService;
         this.shellModelBuilder = shellModelBuilder;
+        this.rmPanelService = rmPanelService;
     }
 
     @GetMapping("/inicio.html")
@@ -69,6 +81,13 @@ public class RmInicioController {
         model.addAttribute("sobrecargados", sobrecargados);
         model.addAttribute("topHabilidades", topHabilidades);
         model.addAttribute("maxDeclarada", maxDeclarada);
+
+        PanelRm panel = rmPanelService.construir();
+        model.addAttribute("panel", panel);
+        // Pestaña inicial: "Alertas de carga" si hay algo que atender; si no, "La banca".
+        int alertas = sobrecargados.size() + panel.prediccion().enRiesgo().size();
+        model.addAttribute("alertasCarga", alertas);
+        model.addAttribute("disponiblesTotal", panel.balance().sinAsignar() + panel.balance().baja());
 
         return "resource-manager/inicio";
     }
