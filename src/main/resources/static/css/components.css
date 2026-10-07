@@ -1204,3 +1204,7 @@ td.cell-actions > * + * { margin-left: 6px !important; }
   background: var(--surface); color: var(--red-fg); font-size: var(--fs-xs); font-weight: 600;
 }
 .modal-body button.danger:not(.btn):hover { background: var(--red-bg); }
+
+/* Icono de tecnología small (tech-icons.js) */
+.tech-logo-sm { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; flex-shrink:0; }
+.tech-logo-sm img, .tech-logo-sm svg { width:20px; height:20px; }

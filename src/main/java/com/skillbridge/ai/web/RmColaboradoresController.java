@@ -63,11 +63,13 @@ public class RmColaboradoresController {
     private final ShellModelBuilder shellModelBuilder;
     private final AuditoriaService auditoriaService;
     private final UsuarioService usuarioService;
+    private final com.skillbridge.ai.service.ProyectoService proyectoService;
 
     public RmColaboradoresController(PerfilRepository perfilRepository, AsignacionRepository asignacionRepository,
                                      HabilidadRepository habilidadRepository, HabilidadService habilidadService,
                                      ShellModelBuilder shellModelBuilder, AuditoriaService auditoriaService,
-                                     UsuarioService usuarioService) {
+                                     UsuarioService usuarioService,
+                                     com.skillbridge.ai.service.ProyectoService proyectoService) {
         this.auditoriaService = auditoriaService;
         this.usuarioService = usuarioService;
         this.perfilRepository = perfilRepository;
@@ -75,6 +77,7 @@ public class RmColaboradoresController {
         this.habilidadRepository = habilidadRepository;
         this.habilidadService = habilidadService;
         this.shellModelBuilder = shellModelBuilder;
+        this.proyectoService = proyectoService;
     }
 
     @GetMapping("/colaboradores.html")
@@ -111,7 +114,8 @@ public class RmColaboradoresController {
                     int ocupacion = sumaCarga != null ? sumaCarga : 0;
 
                     return new ColaboradorFila(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo(),
-                            p.getCargo(), ocupacion, estadoVista, habilidades);
+                            p.getCargo(), ocupacion, estadoVista, habilidades,
+                            p.getUsuario().tieneFotoPerfil(), p.getUsuario().getId());
                 })
                 .filter(java.util.Objects::nonNull)
                 .sorted(Comparator.comparing(ColaboradorFila::getNombre))
@@ -159,9 +163,15 @@ public class RmColaboradoresController {
         shellModelBuilder.aplicar(model, sesion, "colaboradores.html", p.getUsuario().getNombreCompleto(),
                 "Perfil profesional");
 
+        // Proyectos activos del colaborador
+        List<com.skillbridge.ai.dto.MiProyectoFila> proyectosActivos = proyectoService.misProyectosActivos(perfilId);
+        List<com.skillbridge.ai.dto.MiProyectoFila> historialProyectos = proyectoService.misProyectosHistorial(perfilId);
+
         model.addAttribute("perfil", p);
         model.addAttribute("ocupacion", ocupacion);
         model.addAttribute("habilidades", habilidades);
+        model.addAttribute("proyectosActivos", proyectosActivos);
+        model.addAttribute("historialProyectos", historialProyectos);
 
         return "resource-manager/colaborador-detalle";
     }
@@ -184,9 +194,6 @@ public class RmColaboradoresController {
 
     /** Update real: activar/desactivar cuenta (soft delete, igual que el resto del sistema). */
     @PostMapping("/colaboradores/{perfilId}/estado")
-    // Transaccional para poder leer p.getUsuario() (relación LAZY) sin
-    // LazyInitializationException, ya que open-in-view está desactivado.
-    @org.springframework.transaction.annotation.Transactional
     public String cambiarEstado(@PathVariable Long perfilId, @RequestParam String nuevoEstado,
                                 @RequestParam(required = false) String motivo,
                                 HttpSession session, RedirectAttributes redirectAttributes) {
@@ -247,4 +254,4 @@ public class RmColaboradoresController {
                 "activo".equals(nuevoEstado) ? "Perfil marcado como disponible." : "Perfil marcado como no disponible para proyectos.");
         return "redirect:/resource-manager/colaboradores.html";
     }
-}
+}

@@ -117,13 +117,14 @@ public class ProyectosPmController {
                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFinEstimada,
                         @RequestParam(defaultValue = "0") int colaboradoresRequeridos,
+                        @RequestParam(required = false) String githubUrl,
                         HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             List<String> lista = tecnologiaCatalogoService.normalizar(separarTecnologias(tecnologias), List.of());
             // El Project Manager del proyecto es el propio usuario que lo crea.
             proyectoService.crear(nombre, descripcion, lista, fechaInicio, fechaFinEstimada,
-                    colaboradoresRequeridos, sesion.getPerfilId(), sesion.getUsuarioId());
+                    colaboradoresRequeridos, sesion.getPerfilId(), sesion.getUsuarioId(), githubUrl);
             redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" creado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -157,6 +158,7 @@ public class ProyectosPmController {
                          @RequestParam(required = false) String tecnologias,
                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFinEstimada,
+                         @RequestParam(required = false) String githubUrl,
                          HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
@@ -167,7 +169,7 @@ public class ProyectosPmController {
             // El estado se cambia aparte ("Cambiar estado"), porque cada
             // transición tiene efectos sobre el equipo (modelo v7, fase 2).
             proyectoService.editarProyecto(id, nombre, descripcion, lista, fechaInicio, fechaFinEstimada,
-                    sesion.getUsuarioId());
+                    githubUrl, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

@@ -6,8 +6,6 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,19 +26,6 @@ public class EmailService {
     private static final Logger log = Logger.getLogger(EmailService.class.getName());
 
     private final JavaMailSender mailSender;
-
-    /**
-     * El envio por SMTP (Gmail) tarda 1-3 s por correo. Si se hacia dentro de
-     * la peticion, acciones que notifican a todo un equipo (p. ej. crear un
-     * entregable) demoraban varios segundos y el usuario volvia a hacer clic,
-     * creando duplicados. Ahora el correo se arma en la peticion y se envia
-     * en segundo plano: la pantalla responde al instante.
-     */
-    private static final ExecutorService ENVIOS = Executors.newFixedThreadPool(2, r -> {
-        Thread t = new Thread(r, "sbai-correo");
-        t.setDaemon(true);
-        return t;
-    });
 
     @Value("${spring.mail.username}")
     private String remitente;
@@ -84,15 +69,9 @@ public class EmailService {
             helper.setTo(destinatario);
             helper.setSubject(asunto);
             helper.setText(construirHtml(titulo, detalle, enlace, textoBoton), true);
-            ENVIOS.submit(() -> {
-                try {
-                    mailSender.send(mensaje);
-                } catch (Exception e) {
-                    log.log(Level.WARNING, "No se pudo enviar el correo de notificacion a " + destinatario, e);
-                }
-            });
+            mailSender.send(mensaje);
         } catch (Exception e) {
-            log.log(Level.WARNING, "No se pudo preparar el correo de notificacion a " + destinatario, e);
+            log.log(Level.WARNING, "No se pudo enviar el correo de notificacion a " + destinatario, e);
         }
     }
 
@@ -103,24 +82,30 @@ public class EmailService {
                 : "Tienes una nueva notificación en SkillBridge AI.";
         return "<!DOCTYPE html>"
                 + "<html lang=\"es\">"
-                + "<body style=\"margin:0; padding:0; background-color:#eef1f6; font-family:Segoe UI, Arial, sans-serif;\">"
-                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#eef1f6; padding:32px 0;\">"
+                + "<body style=\"margin:0; padding:0; background-color:#f0f2f5; font-family:'Segoe UI', Roboto, Arial, sans-serif;\">"
+                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#f0f2f5; padding:40px 0;\">"
                 + "<tr><td align=\"center\">"
-                + "<table role=\"presentation\" width=\"480\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 10px rgba(16,24,40,0.08);\">"
-                + "<tr><td style=\"background:linear-gradient(90deg,#7c3aed,#3b82f6); padding:22px 28px;\">"
-                + "<span style=\"color:#ffffff; font-size:18px; font-weight:700; letter-spacing:0.3px;\">SkillBridge AI</span>"
+                + "<table role=\"presentation\" width=\"520\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(15,26,46,0.12);\">"
+                // — Header con logo y nombre —
+                + "<tr><td style=\"background:#0f1a2e; padding:28px 32px; text-align:center;\">"
+                + "<img src=\"https://i.imgur.com/placeholder.png\" alt=\"\" width=\"36\" height=\"36\" style=\"display:inline-block; vertical-align:middle; margin-right:10px; border-radius:8px;\">"
+                + "<span style=\"color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.3px; vertical-align:middle;\">SkillBridge AI</span>"
                 + "</td></tr>"
-                + "<tr><td style=\"padding:28px 28px 8px 28px;\">"
-                + "<p style=\"margin:0 0 6px 0; font-size:12px; font-weight:600; color:#7c3aed; text-transform:uppercase; letter-spacing:0.5px;\">Nueva notificación</p>"
-                + "<h1 style=\"margin:0 0 14px 0; font-size:20px; line-height:1.35; color:#111827;\">" + tituloSeguro + "</h1>"
-                + "<p style=\"margin:0; font-size:15px; line-height:1.6; color:#374151;\">" + detalleSeguro + "</p>"
+                // — Accent bar —
+                + "<tr><td style=\"background:linear-gradient(90deg,#2f3fe6,#6b7cfa); height:4px; font-size:0; line-height:0;\">&nbsp;</td></tr>"
+                // — Body —
+                + "<tr><td style=\"padding:32px 32px 12px 32px;\">"
+                + "<p style=\"margin:0 0 8px 0; font-size:11px; font-weight:700; color:#2f3fe6; text-transform:uppercase; letter-spacing:1px;\">Nueva notificación</p>"
+                + "<h1 style=\"margin:0 0 16px 0; font-size:22px; line-height:1.35; color:#0f1a2e; font-weight:700;\">" + tituloSeguro + "</h1>"
+                + "<p style=\"margin:0; font-size:15px; line-height:1.65; color:#374151;\">" + detalleSeguro + "</p>"
                 + "</td></tr>"
-                + "<tr><td style=\"padding:20px 28px 26px 28px;\">"
-                + "<div style=\"border-top:1px solid #e5e7eb; padding-top:16px;\">"
+                + "<tr><td style=\"padding:20px 32px 28px 32px;\">"
+                + "<div style=\"border-top:1px solid #e5e7eb; padding-top:20px;\">"
                 + botonHtml(enlace, textoBoton)
                 + "</div></td></tr>"
                 + "</table>"
-                + "<p style=\"margin:18px 0 0 0; font-size:11px; color:#9ca3af;\">Este es un mensaje automático de SkillBridge AI, no respondas a este correo.</p>"
+                // — Footer —
+                + "<p style=\"margin:20px 0 0 0; font-size:11px; color:#9ca3af; text-align:center;\">Este es un mensaje automático de SkillBridge AI · No respondas a este correo</p>"
                 + "</td></tr>"
                 + "</table>"
                 + "</body></html>";
@@ -128,15 +113,17 @@ public class EmailService {
 
     private String botonHtml(String enlace, String textoBoton) {
         if (enlace == null || enlace.isBlank()) {
-            return "<p style=\"margin:0; font-size:12px; color:#9ca3af;\">Ingresa a SkillBridge AI para ver los detalles y tomar acción.</p>";
+            return "<p style=\"margin:0; font-size:13px; color:#6b7385;\">Ingresa a <strong style=\"color:#0f1a2e;\">SkillBridge AI</strong> para ver los detalles y tomar acción.</p>";
         }
-        String texto = (textoBoton != null && !textoBoton.isBlank()) ? escapar(textoBoton) : "Ir a SkillBridge AI";
+        String texto = (textoBoton != null && !textoBoton.isBlank()) ? escapar(textoBoton) : "Ver en SkillBridge AI";
         String enlaceSeguro = escapar(enlace);
         return "<a href=\"" + enlaceSeguro + "\" target=\"_blank\" "
-                + "style=\"display:inline-block; background:linear-gradient(90deg,#7c3aed,#3b82f6); color:#ffffff; "
-                + "text-decoration:none; font-size:14px; font-weight:600; padding:12px 22px; border-radius:8px;\">"
+                + "style=\"display:inline-block; background:#0f1a2e; color:#ffffff; "
+                + "text-decoration:none; font-size:14px; font-weight:600; padding:14px 28px; border-radius:10px; "
+                + "box-shadow:0 4px 12px rgba(15,26,46,0.25);\">"
                 + texto + "</a>"
-                + "<p style=\"margin:12px 0 0 0; font-size:12px; color:#9ca3af;\">Si el botón no funciona, copia y pega este link en tu navegador:<br>" + enlaceSeguro + "</p>";
+                + "<p style=\"margin:14px 0 0 0; font-size:12px; color:#9ca3af;\">Si el botón no funciona, copia y pega este link:<br>"
+                + "<a href=\"" + enlaceSeguro + "\" style=\"color:#2f3fe6; word-break:break-all;\">" + enlaceSeguro + "</a></p>";
     }
 
     private String escapar(String texto) {

@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
-<link rel="stylesheet" href="/css/proyecto-form.css">
 </head>
 <body>
 <div class="app-shell">
@@ -30,9 +29,19 @@
               <div style="flex:1; min-width:200px;">
                 <h2 style="font-size:var(--fs-lg);" th:text="${resumen.nombreCompleto}">Nombre</h2>
                 <p class="text-tertiary" style="margin-top:2px;" th:text="${resumen.cargo}">Cargo</p>
-                <div style="display:flex; gap:var(--space-2); margin-top:var(--space-3);">
+                <div style="display:flex; gap:var(--space-2); margin-top:var(--space-3); flex-wrap:wrap;">
                   <span class="badge badge-green" th:text="'DISPONIBLE ' + ${resumen.disponibilidadPorcentaje} + '%'">DISPONIBLE 0%</span>
                   <span class="badge badge-blue" th:text="${resumen.rolLabel}">Rol</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:var(--space-3); margin-top:var(--space-3);" th:if="${!resumen.linkedinUrl.isEmpty() or !resumen.githubUrl.isEmpty()}">
+                  <a th:if="${!resumen.linkedinUrl.isEmpty()}" th:href="${resumen.linkedinUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); color:var(--text-secondary); text-decoration:none;">
+                    <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    LinkedIn
+                  </a>
+                  <a th:if="${!resumen.githubUrl.isEmpty()}" th:href="${resumen.githubUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); color:var(--text-secondary); text-decoration:none;">
+                    <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                    GitHub
+                  </a>
                 </div>
               </div>
             </div>
@@ -48,33 +57,25 @@
               <div th:if="${habilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no declaraste ninguna habilidad.</div>
 
               <div id="skills-list">
-                <div th:each="h : ${habilidades}" data-habilidad-row class="skill-row">
+                <div th:each="h : ${habilidades}" data-habilidad-row style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
                   <div style="flex:1; min-width:0;">
-                    <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
-                          th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
+                    <div style="display:flex; align-items:center; gap:var(--space-2);">
+                      <span class="tech-logo-sm" th:attr="data-tech-logo=${h.nombre}"></span>
+                      <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
+                            th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
+                    </div>
+                    <span th:if="${h.validada}" class="badge badge-green" style="margin-left:6px;">Validada por RM</span>
 
-                    <!-- Constancia: PDF subido y/o link externo (se muestran los que existan) -->
-                    <div th:if="${h.tieneCertificado}" class="cert-links">
-                      <th:block th:each="cert : ${h.certificados}">
-                        <a th:if="${cert.tieneArchivo}" class="cert-chip" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" title="Abrir PDF">
-                          <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${cert.nombreArchivo}">certificado.pdf</span>
-                        </a>
-                        <a th:if="${cert.tieneEnlace()}" class="cert-chip is-link" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:title="${cert.urlArchivo}">
-                          <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-external-link"></use></svg><span th:text="${cert.enlaceEtiqueta()}">enlace</span>
-                        </a>
-                      </th:block>
+                    <!-- Certificado ya cargado: link externo o PDF subido (se sirve por /certificados/{id}/archivo) -->
+                    <div th:if="${h.tieneCertificado}" th:each="cert : ${h.certificados}" style="margin-top:6px; font-size:var(--fs-xs);">
+                      <svg class="icon icon-sm" style="vertical-align:-2px;"><use href="/img/icons.svg#icon-file-text"></use></svg>
+                      <a th:if="${cert.tieneArchivo}" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                      <a th:unless="${cert.tieneArchivo}" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
                     </div>
                     <div th:unless="${h.tieneCertificado}" class="text-tertiary" style="margin-top:6px; font-size:var(--fs-xs);">Sin constancia adjunta</div>
                   </div>
 
-                  <!-- Columna fija y centrada: solo aparece cuando el RM validó la habilidad -->
-                  <div class="skill-row-status">
-                    <span th:if="${h.validada}" class="skill-validada" title="Validada por el Resource Manager">
-                      <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-check-circle"></use></svg>Validada por RM
-                    </span>
-                  </div>
-
-                  <div class="cell-actions" style="flex-wrap:wrap; justify-content:flex-end;">
+                  <div class="cell-actions" style="flex:0 0 auto; flex-wrap:wrap; justify-content:flex-end;">
                     <button type="button" data-editar-nivel
                             th:attr="data-id=${h.habilidadId}, data-nombre=${h.nombre}, data-nivel-label=${h.nivelLabel}">Editar nivel</button>
                     <button type="button" data-editar-cert
@@ -96,8 +97,8 @@
         <div style="display:flex; flex-direction:column; gap:var(--space-6);">
           <section class="card card-pad">
             <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Carga de trabajo</h3>
-            <div data-escala="carga" class="progress-inline" style="margin-bottom:var(--space-2);">
-              <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${cargaActiva > 100 ? 100 : cargaActiva} + '%;'"></div></div>
+            <div class="progress-inline" style="margin-bottom:var(--space-2);">
+              <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${cargaActiva > 100} ? 'amber' : ''" th:style="'width:' + ${cargaActiva > 100 ? 100 : cargaActiva} + '%;'"></div></div>
               <span class="progress-value" th:text="${cargaActiva} + '%'">0%</span>
             </div>
             <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);" th:text="${cargaActiva > 100} ? 'sobre el límite' : 'dentro del límite (100%)'">dentro del límite</p>
@@ -150,14 +151,10 @@
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/modal.js"></script>
-<script src="/js/tech-icons.js"></script>
-<script src="/js/habilidad-picker.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
   window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
   var CATALOGO_HABILIDADES = /*[[${catalogoHabilidades}]]*/ [];
-  // Habilidades que ya declaró: no se ofrecen otra vez en "Agregar habilidad".
-  var MIS_HABILIDADES = /*[[${habilidades.![habilidadId]}]]*/ [];
   document.addEventListener("DOMContentLoaded", function () {
     var submitForm = window.SBAI.submitForm;
 
@@ -183,51 +180,39 @@
       form.submit();
     }
 
-    // Nombre visible del PDF: se propone el del archivo elegido y se puede cambiar.
-    function nombrePdf(v) {
-      v = String(v || "").trim();
-      if (!v) return "";
-      return /\.pdf$/i.test(v) ? v : v + ".pdf";
-    }
-    function enlazarNombrePdf(fileInput, nameInput, campo, siempreVisible) {
-      fileInput.addEventListener("change", function () {
-        var f = fileInput.files && fileInput.files[0];
-        if (f) { nameInput.value = f.name; campo.hidden = false; nameInput.select(); }
-        else if (!siempreVisible) { campo.hidden = true; nameInput.value = ""; }
-      });
-    }
+    // Renderizar logos de tecnologías en habilidades
+    document.querySelectorAll("[data-tech-logo]").forEach(function (el) {
+      var name = el.getAttribute("data-tech-logo");
+      if (window.SBAI && window.SBAI.techIcons) {
+        var html = window.SBAI.techIcons.logo(name);
+        if (html) { el.innerHTML = html; }
+      }
+    });
 
     document.getElementById("add-skill-btn").addEventListener("click", function () {
+      var options = CATALOGO_HABILIDADES.map(function (h) { return '<option value="' + h.id + '">' + h.nombre + '</option>'; }).join("");
       var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia.</p></div>' +
               '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-              '<div class="modal-body"><div class="field"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><label class="field-label">Habilidad</label><span class="text-tertiary" style="font-size:var(--fs-xs)">Del catálogo de habilidades</span></div><div id="new-skill-picker"></div></div>' +
+              '<div class="modal-body"><div class="field"><label class="field-label">Habilidad</label><select class="select" id="new-skill-id">' + options + '</select></div>' +
               '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div>' +
-              '<div class="cert-form"><p class="cert-form-title">Constancia de respaldo <span>(opcional)</span></p>' +
-              '<p class="field-hint" style="margin:0 0 var(--space-3)">Puedes agregar un link, un PDF o ambos. Ayuda a que el Resource Manager valide tu habilidad.</p>' +
-              '<div class="field"><label class="field-label">Link al certificado</label>' +
-              '<input class="input" type="url" id="new-skill-cert-url" placeholder="https://coursera.org/verify/…"></div>' +
-              '<div class="field" style="margin-bottom:0"><label class="field-label">Archivo PDF</label>' +
+              '<div class="field"><label class="field-label">Constancia de respaldo (opcional)</label>' +
+              '<input class="input" type="url" id="new-skill-cert-url" placeholder="Link a tu certificado (Drive, Coursera, LinkedIn Learning...)">' +
+              '<p class="field-hint">Un link ayuda a que el Resource Manager valide tu habilidad más rápido, pero no es obligatorio.</p></div>' +
+              '<div class="field"><label class="field-label">Nombre del archivo (opcional)</label><input class="input" type="text" id="new-skill-cert-name" placeholder="Ej. certificado-react.pdf"></div>' +
+              '<div class="field"><label class="field-label">O sube el PDF directamente (opcional)</label>' +
               '<input class="input" type="file" id="new-skill-cert-file" accept="application/pdf">' +
-              '<p class="field-hint">Máximo 5 MB.</p></div>' +
-              '<div class="field cert-nombre" id="new-skill-cert-name-field" hidden style="margin:var(--space-3) 0 0"><label class="field-label">Nombre del PDF</label>' +
-              '<input class="input" type="text" id="new-skill-cert-name" maxlength="190" placeholder="Ej. certificado-react.pdf">' +
-              '<p class="field-hint">Así se verá en tu perfil. Puedes cambiarlo.</p></div></div>' +
+              '<p class="field-hint">Si subes un PDF, se usa en vez del link. Máximo 5 MB.</p></div>' +
               '</div>' +
               '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
       var backdrop = SBAI.modal.open(html);
-      enlazarNombrePdf(backdrop.querySelector("#new-skill-cert-file"), backdrop.querySelector("#new-skill-cert-name"),
-                       backdrop.querySelector("#new-skill-cert-name-field"));
-      var picker = SBAI.habilidadPicker.montar(backdrop.querySelector("#new-skill-picker"), {
-        catalogo: CATALOGO_HABILIDADES, excluir: MIS_HABILIDADES
-      });
       backdrop.querySelector("#confirm-add-skill").addEventListener("click", function () {
-        var habilidadId = picker.valor();
-        if (!habilidadId) { picker.marcarError("Selecciona una habilidad del catálogo."); picker.enfocar(); return; }
+        var habilidadId = backdrop.querySelector("#new-skill-id").value;
+        if (!habilidadId) { SBAI.toast.show("Selecciona una habilidad del catálogo.", { type: "error" }); return; }
         var fields = {
           habilidadId: habilidadId,
           nivel: backdrop.querySelector("#new-skill-level").value,
-          urlArchivo: backdrop.querySelector("#new-skill-cert-url").value.trim(),
-          nombreArchivo: nombrePdf(backdrop.querySelector("#new-skill-cert-name").value)
+          urlArchivo: backdrop.querySelector("#new-skill-cert-url").value,
+          nombreArchivo: backdrop.querySelector("#new-skill-cert-name").value
         };
         var fileInput = backdrop.querySelector("#new-skill-cert-file");
         if (fileInput.files && fileInput.files[0]) {
@@ -244,33 +229,25 @@
         var urlActual = btn.dataset.certUrl || "";
         var tieneArchivoActual = btn.dataset.certTieneArchivo === "true";
         var certId = btn.dataset.certId || "";
-        var esc = function (t) { return String(t || "").replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
-        var pdfActual = tieneArchivoActual
-                ? '<div class="cert-current"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg>' +
-                  '<a href="/certificados/' + esc(certId) + '/archivo" target="_blank" rel="noopener">' + esc(nombreActual) + '</a>' +
-                  '<label class="cert-quitar"><input type="checkbox" id="edit-cert-quitar"> Quitar</label></div>'
+        var avisoArchivo = tieneArchivoActual
+                ? '<p class="field-hint">Ya tienes un PDF subido (<a href="/certificados/' + certId + '/archivo" target="_blank" rel="noopener">verlo</a>). Sube uno nuevo para reemplazarlo.</p>'
                 : "";
-        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Constancia de habilidad</h2><p>Puedes tener un link, un PDF o ambos.</p></div>' +
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Constancia de habilidad</h2></div>' +
                 '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
                 '<div class="modal-body">' +
-                '<div class="field"><label class="field-label">Link al certificado</label><input class="input" type="url" id="edit-cert-url" value="' + esc(urlActual) + '" placeholder="https://coursera.org/verify/…">' +
-                '<p class="field-hint">Déjalo vacío si no quieres link.</p></div>' +
-                '<div class="field" style="margin-bottom:0"><label class="field-label">Archivo PDF</label>' + pdfActual +
+                '<div class="field"><label class="field-label">Link</label><input class="input" type="url" id="edit-cert-url" value="' + urlActual + '" placeholder="Link a tu certificado"></div>' +
+                '<div class="field"><label class="field-label">Nombre del archivo</label><input class="input" type="text" id="edit-cert-name" value="' + nombreActual + '" placeholder="Ej. certificado.pdf"></div>' +
+                '<div class="field"><label class="field-label">O sube el PDF directamente (opcional)</label>' +
                 '<input class="input" type="file" id="edit-cert-file" accept="application/pdf">' +
-                '<p class="field-hint">' + (tieneArchivoActual ? "Sube otro PDF para reemplazar el actual." : "Máximo 5 MB.") + '</p></div>' +
-                '<div class="field" id="edit-cert-name-field"' + (tieneArchivoActual ? '' : ' hidden') + ' style="margin:var(--space-3) 0 0"><label class="field-label">Nombre del PDF</label>' +
-                '<input class="input" type="text" id="edit-cert-name" maxlength="190" value="' + (tieneArchivoActual ? esc(nombreActual) : '') + '" placeholder="Ej. certificado.pdf">' +
-                '<p class="field-hint">Así se verá en tu perfil. Puedes cambiarlo sin volver a subir el archivo.</p></div>' +
+                avisoArchivo +
+                '</div>' +
+                '<p class="field-hint">Deja el link vacío, no subas archivo, y guarda para quitar la constancia.</p>' +
                 '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-edit-cert">Guardar</button></div></div>';
         var backdrop = SBAI.modal.open(html);
-        enlazarNombrePdf(backdrop.querySelector("#edit-cert-file"), backdrop.querySelector("#edit-cert-name"),
-                         backdrop.querySelector("#edit-cert-name-field"), tieneArchivoActual);
         backdrop.querySelector("#confirm-edit-cert").addEventListener("click", function () {
-          var quitar = backdrop.querySelector("#edit-cert-quitar");
           var fields = {
-            urlArchivo: backdrop.querySelector("#edit-cert-url").value.trim(),
-            quitarArchivo: quitar && quitar.checked ? "true" : "false",
-            nombreArchivo: nombrePdf(backdrop.querySelector("#edit-cert-name").value)
+            urlArchivo: backdrop.querySelector("#edit-cert-url").value,
+            nombreArchivo: backdrop.querySelector("#edit-cert-name").value
           };
           var fileInput = backdrop.querySelector("#edit-cert-file");
           if (fileInput.files && fileInput.files[0]) {
@@ -357,5 +334,6 @@
 <script src="/js/paginacion.js"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/tabla-acciones.js"></script>
+<script src="/js/tech-icons.js"></script>
 </body>
-</html>
+</html>

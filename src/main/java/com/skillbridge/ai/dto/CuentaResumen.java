@@ -12,9 +12,12 @@ public class CuentaResumen {
     private final String rolLabel;
     private final String iniciales;
     private final String cuentaDesdeLabel;
+    private final String linkedinUrl;
+    private final String githubUrl;
 
     public CuentaResumen(String nombreCompleto, String correo, String cargo, String biografia, int experienciaAnios,
-                          int disponibilidadPorcentaje, String rolLabel, String cuentaDesdeLabel) {
+                          int disponibilidadPorcentaje, String rolLabel, String cuentaDesdeLabel,
+                          String linkedinUrl, String githubUrl) {
         this.nombreCompleto = nombreCompleto;
         this.correo = correo;
         this.cargo = cargo != null ? cargo : "";
@@ -24,6 +27,8 @@ public class CuentaResumen {
         this.rolLabel = rolLabel;
         this.iniciales = InicialesUtil.de(nombreCompleto);
         this.cuentaDesdeLabel = cuentaDesdeLabel;
+        this.linkedinUrl = linkedinUrl != null ? linkedinUrl : "";
+        this.githubUrl = githubUrl != null ? githubUrl : "";
     }
 
     public String getNombreCompleto() {
@@ -61,4 +66,7 @@ public class CuentaResumen {
     public String getCuentaDesdeLabel() {
         return cuentaDesdeLabel;
     }
+
+    public String getLinkedinUrl() { return linkedinUrl; }
+    public String getGithubUrl() { return githubUrl; }
 }

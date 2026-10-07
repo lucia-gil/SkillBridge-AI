@@ -91,7 +91,7 @@ public class AdminProyectosController {
         try {
             List<String> lista = tecnologiaCatalogoService.normalizar(ProyectosPmController.separarTecnologias(tecnologias), List.of());
             proyectoService.crear(nombre, descripcion, lista, fechaInicio, fechaFinEstimada,
-                    colaboradoresRequeridos, pmPerfilId, sesion.getUsuarioId());
+                    colaboradoresRequeridos, pmPerfilId, sesion.getUsuarioId(), null);
             redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" creado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

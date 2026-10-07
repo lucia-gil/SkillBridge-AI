@@ -62,6 +62,9 @@ public class Proyecto {
     @Column(name = "fecha_reanudacion_estimada")
     private LocalDate fechaReanudacionEstimada;
 
+    @Column(name = "github_url", length = 500)
+    private String githubUrl;
+
     public Long getId() {
         return id;
     }
@@ -160,5 +163,13 @@ public class Proyecto {
 
     public void setFechaReanudacionEstimada(LocalDate fechaReanudacionEstimada) {
         this.fechaReanudacionEstimada = fechaReanudacionEstimada;
+    }
+
+    public String getGithubUrl() {
+        return githubUrl;
+    }
+
+    public void setGithubUrl(String githubUrl) {
+        this.githubUrl = githubUrl;
     }
 }

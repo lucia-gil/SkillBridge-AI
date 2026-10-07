@@ -113,7 +113,9 @@ public class CuentaService {
                         ? perfil.getDisponibilidadPorcentaje()
                         : 0,
                 Roles.etiqueta(rolEfectivo),
-                cuentaDesde
+                cuentaDesde,
+                perfil.getLinkedinUrl(),
+                perfil.getGithubUrl()
         );
     }
 
@@ -123,6 +125,8 @@ public class CuentaService {
             String cargo,
             String biografia,
             int experienciaAnios,
+            String linkedinUrl,
+            String githubUrl,
             Long actorUsuarioId) {
 
         Perfil perfil = perfilRepository.findById(perfilId)
@@ -153,6 +157,18 @@ public class CuentaService {
         );
 
         perfil.setExperienciaAnios(experienciaAnios);
+
+        perfil.setLinkedinUrl(
+                linkedinUrl != null && !linkedinUrl.isBlank()
+                        ? linkedinUrl.trim()
+                        : null
+        );
+
+        perfil.setGithubUrl(
+                githubUrl != null && !githubUrl.isBlank()
+                        ? githubUrl.trim()
+                        : null
+        );
 
         perfilRepository.save(perfil);
 

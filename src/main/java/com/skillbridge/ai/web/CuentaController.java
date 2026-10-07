@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -155,6 +156,34 @@ public class CuentaController {
     }
 
     /**
+     * Devuelve la fotografía de CUALQUIER usuario por su ID.
+     * Se usa en la tabla de colaboradores del RM y en perfiles públicos.
+     */
+    @GetMapping("/perfil/foto/{usuarioId}")
+    public ResponseEntity<byte[]> obtenerFotoPorId(@PathVariable Long usuarioId) {
+        try {
+            Usuario usuario = cuentaService.obtenerFoto(usuarioId);
+            if (!usuario.tieneFotoPerfil()) {
+                return ResponseEntity.notFound().build();
+            }
+            MediaType mediaType;
+            try {
+                mediaType = MediaType.parseMediaType(usuario.getFotoPerfilTipo());
+            } catch (Exception ex) {
+                mediaType = MediaType.IMAGE_JPEG;
+            }
+            return ResponseEntity.ok()
+                    .contentType(mediaType)
+                    .cacheControl(CacheControl.noCache())
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                    .body(usuario.getFotoPerfil());
+        } catch (OperacionInvalidaException ex) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
+    /**
      * Sube o reemplaza la fotografia del usuario autenticado.
      */
     @PostMapping("/cuenta/foto")
@@ -231,6 +260,8 @@ public class CuentaController {
             @RequestParam(required = false) String cargo,
             @RequestParam(required = false) String biografia,
             @RequestParam(defaultValue = "0") int experienciaAnios,
+            @RequestParam(required = false) String linkedinUrl,
+            @RequestParam(required = false) String githubUrl,
             @RequestParam String volver,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
@@ -247,6 +278,8 @@ public class CuentaController {
                     cargo,
                     biografia,
                     experienciaAnios,
+                    linkedinUrl,
+                    githubUrl,
                     sesion.getUsuarioId()
             );
 

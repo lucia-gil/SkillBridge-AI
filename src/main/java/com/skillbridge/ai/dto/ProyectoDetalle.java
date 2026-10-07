@@ -32,6 +32,8 @@ public class ProyectoDetalle {
     private String razonCancelacion;
     private List<IntegranteAnterior> equipoAnterior = List.of();
     private List<HistorialEquipoFila> historial = List.of();
+    private String githubUrl;
+    private List<ArchivoProyectoFila> archivos = List.of();
 
     public ProyectoDetalle(Long id, String nombre, String descripcion, List<String> tecnologias, String estadoCrudo,
                             String fechaInicioLabel, String fechaFinLabel, String fechaInicioIso, String fechaFinIso,
@@ -159,4 +161,10 @@ public class ProyectoDetalle {
     public void setHistorial(List<HistorialEquipoFila> v) { this.historial = v != null ? v : List.of(); }
     /** "PM 1 · Colaboradores 3/4" para el encabezado de la pestaña Equipo. */
     public long getPmsActivos() { return equipo.stream().filter(m -> "project_manager".equals(m.getRolEnProyectoCrudo())).count(); }
+
+    public String getGithubUrl() { return githubUrl; }
+    public void setGithubUrl(String v) { this.githubUrl = v; }
+
+    public List<ArchivoProyectoFila> getArchivos() { return archivos; }
+    public void setArchivos(List<ArchivoProyectoFila> v) { this.archivos = v != null ? v : List.of(); }
 }

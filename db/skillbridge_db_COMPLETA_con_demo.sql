@@ -1775,3 +1775,4 @@ VALUES (@pid_portal_andes, @pid_ana, 'Conexión a RDS rechazada desde la instanc
 --
 --   TODAS las cuentas nuevas usan la contraseña: admin123
 -- =====================================================================
+

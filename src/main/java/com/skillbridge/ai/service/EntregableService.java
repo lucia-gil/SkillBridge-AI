@@ -141,7 +141,7 @@ public class EntregableService {
             if (Roles.COLABORADOR.equals(a.getRolEnProyecto())) {
                 notificacionService.crear(a.getPerfilId(), "entregable_nuevo", "Nuevo entregable: " + e.getTitulo(),
                         "En \"" + proyecto.getNombre() + "\" · cierra el " + fechaCierre.toLocalDate() + ".",
-                        "proyectos.html");
+                        "entregables.html?proyectoId=" + proyectoId);
             }
         }
         auditoriaService.registrar(actorUsuarioId, "ENTREGABLE_CREADO", "entregable", e.getId(), null, null,
@@ -260,7 +260,7 @@ public class EntregableService {
 
         notificacionService.crear(en.getPerfilId(), "entregable_revisado", "Tu entrega fue revisada: " + e.getTitulo(),
                 calificacion != null ? "Calificación: " + calificacion + "/" + e.getPuntajeMaximo() : "El PM dejó un comentario.",
-                "proyectos.html");
+                "entregables.html?proyectoId=" + e.getProyectoId());
         auditoriaService.registrar(actorUsuarioId, "ENTREGA_CALIFICADA", "entrega", en.getId(), null, null,
                 e.getTitulo() + " · " + (calificacion != null ? calificacion + "/" + e.getPuntajeMaximo() : "sin nota"));
     }

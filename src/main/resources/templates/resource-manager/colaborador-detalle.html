@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/layout.css">
-<link rel="stylesheet" href="/css/polish.css">
+    <link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
 <div class="app-shell">
@@ -22,12 +22,23 @@
             <!-- Encabezado tipo CV -->
             <section class="card card-pad">
                 <div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">
-                    <span class="avatar avatar-lg" style="background:var(--navy-700);" th:text="${#strings.substring(perfil.usuario.nombreCompleto,0,1)}">N</span>
+                    <img th:if="${perfil.usuario.tieneFotoPerfil()}" th:src="@{'/perfil/foto/' + ${perfil.usuario.id}}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;" th:alt="${perfil.usuario.nombreCompleto}">
+                    <span th:unless="${perfil.usuario.tieneFotoPerfil()}" class="avatar avatar-lg" style="background:var(--navy-700);" th:text="${#strings.substring(perfil.usuario.nombreCompleto,0,1)}">N</span>
                     <div style="flex:1; min-width:220px;">
                         <h2 style="font-size:var(--fs-lg);" th:text="${perfil.usuario.nombreCompleto}">Nombre</h2>
                         <p class="text-tertiary" th:text="${perfil.cargo} + ' · ' + ${perfil.usuario.correo}">Cargo · correo</p>
-                        <span class="badge" th:classappend="${!perfil.usuario.activo} ? 'badge-red' : (${perfil.estado == 'activo'} ? 'badge-green' : 'badge-amber')"
-                              th:text="${!perfil.usuario.activo} ? 'Cuenta suspendida' : (${perfil.estado == 'activo'} ? 'Disponible' : 'No disponible')" style="margin-top:var(--space-2);">Estado</span>
+                        <div style="display:flex; align-items:center; gap:var(--space-3); margin-top:var(--space-2); flex-wrap:wrap;">
+                            <span class="badge" th:classappend="${!perfil.usuario.activo} ? 'badge-red' : (${perfil.estado == 'activo'} ? 'badge-green' : 'badge-amber')"
+                                  th:text="${!perfil.usuario.activo} ? 'Cuenta suspendida' : (${perfil.estado == 'activo'} ? 'Disponible' : 'No disponible')">Estado</span>
+                            <a th:if="${perfil.linkedinUrl != null and !perfil.linkedinUrl.isBlank()}" th:href="${perfil.linkedinUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); color:var(--text-secondary); text-decoration:none;">
+                                <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                                LinkedIn
+                            </a>
+                            <a th:if="${perfil.githubUrl != null and !perfil.githubUrl.isBlank()}" th:href="${perfil.githubUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); color:var(--text-secondary); text-decoration:none;">
+                                <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                                GitHub
+                            </a>
+                        </div>
                     </div>
                     <div style="text-align:center;">
                         <div style="font-size:var(--fs-xl); font-weight:700; color:var(--navy-700);" th:text="${ocupacion} + '%'">0%</div>
@@ -46,6 +57,25 @@
                 </div>
             </section>
 
+            <!-- Proyectos activos -->
+            <section class="card card-pad" style="margin-top:var(--space-6);">
+                <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Proyectos activos</h3>
+                <div th:if="${proyectosActivos.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Sin proyectos activos actualmente.</div>
+                <div th:each="p : ${proyectosActivos}" class="info-row">
+                    <span class="info-row-label" th:text="${p.nombre}">Proyecto</span>
+                    <span class="info-row-value" th:text="${p.rolLabel} + ' · ' + ${p.cargaPorcentaje} + '%'">Rol · 0%</span>
+                </div>
+            </section>
+
+            <!-- Historial de proyectos -->
+            <section class="card card-pad" style="margin-top:var(--space-6);" th:unless="${historialProyectos.isEmpty()}">
+                <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Historial de proyectos</h3>
+                <div th:each="h : ${historialProyectos}" class="info-row">
+                    <span class="info-row-label" th:text="${h.nombre}">Proyecto</span>
+                    <span class="info-row-value"><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></span>
+                </div>
+            </section>
+
             <!-- Habilidades con certificados y validación -->
             <section class="card card-pad" style="margin-top:var(--space-6);">
                 <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-2);">Habilidades declaradas</h3>
@@ -55,7 +85,8 @@
 
                 <div th:each="h : ${habilidades}" style="border:1px solid var(--border-subtle); border-radius:var(--radius-control); padding:var(--space-4); margin-bottom:var(--space-3);">
                     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-3);">
-                        <div>
+                        <div style="display:flex; align-items:center; gap:var(--space-2);">
+                            <span class="tech-logo-sm" th:attr="data-tech-logo=${h.nombre}"></span>
                             <strong th:text="${h.nombre}">Habilidad</strong>
                             <span class="text-tertiary" style="font-size:var(--fs-xs);" th:text="'(' + ${h.categoriaNombre} + ' · ' + ${h.nivelLabel} + ')'">(Categoría · Nivel)</span>
                         </div>
@@ -64,20 +95,15 @@
                                 th:attr="data-validar-habilidad=${h.habilidadId}, data-habilidad-nombre=${h.nombre}">Validar</button>
                     </div>
 
-                    <!-- Certificados de respaldo (Opción A: link externo) -->
+                    <!-- Certificados de respaldo -->
                     <div style="margin-top:var(--space-3);">
                         <div th:if="${h.certificados.isEmpty()}" class="callout warn" style="margin:0;">
                             <span class="callout-body" style="font-size:var(--fs-xs);">Sin constancia adjunta — esta validación se basaría solo en criterio del Resource Manager, no en evidencia documental.</span>
                         </div>
-                        <div class="cert-links" th:unless="${h.certificados.isEmpty()}">
-                          <th:block th:each="cert : ${h.certificados}">
-                            <a th:if="${cert.tieneArchivo}" class="cert-chip" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" title="Abrir PDF">
-                              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${cert.nombreArchivo}">certificado.pdf</span>
-                            </a>
-                            <a th:if="${cert.tieneEnlace()}" class="cert-chip is-link" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:title="${cert.urlArchivo}">
-                              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-external-link"></use></svg><span th:text="${cert.enlaceEtiqueta()}">enlace</span>
-                            </a>
-                          </th:block>
+                        <div th:each="cert : ${h.certificados}" style="display:flex; align-items:center; gap:6px; font-size:var(--fs-xs); margin-bottom:4px;">
+                            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg>
+                            <a th:if="${cert.tieneArchivo}" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                            <a th:unless="${cert.tieneArchivo}" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
                         </div>
                     </div>
                 </div>
@@ -91,11 +117,21 @@
 <script src="/js/dropdown.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
+<script src="/js/tech-icons.js"></script>
 <script th:inline="javascript">
     window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
     var PERFIL_ID = /*[[${perfil.id}]]*/ 0;
 
     document.addEventListener("DOMContentLoaded", function () {
+        // Renderizar logos de tecnologías en habilidades
+        document.querySelectorAll("[data-tech-logo]").forEach(function (el) {
+            var name = el.getAttribute("data-tech-logo");
+            if (window.SBAI && window.SBAI.techIcons) {
+                var html = window.SBAI.techIcons.logo(name);
+                if (html) { el.innerHTML = html; }
+            }
+        });
+
         var submitForm = window.SBAI.submitForm;
         document.querySelectorAll("[data-validar-habilidad]").forEach(function (btn) {
             btn.addEventListener("click", function () {
@@ -118,4 +154,4 @@
 <script src="/js/battery-progress.js"></script>
 <script src="/js/mobile-nav.js"></script>
 </body>
-</html>
+</html>

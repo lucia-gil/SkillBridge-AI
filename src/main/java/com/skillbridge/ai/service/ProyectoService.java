@@ -20,6 +20,8 @@ import com.skillbridge.ai.repository.PerfilRepository;
 import com.skillbridge.ai.repository.PropuestaAsignacionRepository;
 import com.skillbridge.ai.dto.IntegranteAnterior;
 import com.skillbridge.ai.model.PropuestaAsignacion;
+import com.skillbridge.ai.repository.ArchivoProyectoRepository;
+import com.skillbridge.ai.dto.ArchivoProyectoFila;
 import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
@@ -62,12 +64,14 @@ public class ProyectoService {
     private final ConfiguracionService configuracionService;
     private final ObjectMapper objectMapper;
     private final PropuestaAsignacionRepository propuestaRepository;
+    private final ArchivoProyectoRepository archivoProyectoRepository;
 
     public ProyectoService(ProyectoRepository proyectoRepository, AsignacionRepository asignacionRepository,
                             PerfilRepository perfilRepository, EntregableRepository entregableRepository,
                             ForoPublicacionRepository foroPublicacionRepository, AuditoriaService auditoriaService,
                             NotificacionService notificacionService, ConfiguracionService configuracionService,
-                            ObjectMapper objectMapper, PropuestaAsignacionRepository propuestaRepository) {
+                            ObjectMapper objectMapper, PropuestaAsignacionRepository propuestaRepository,
+                            ArchivoProyectoRepository archivoProyectoRepository) {
         this.proyectoRepository = proyectoRepository;
         this.asignacionRepository = asignacionRepository;
         this.perfilRepository = perfilRepository;
@@ -78,6 +82,7 @@ public class ProyectoService {
         this.configuracionService = configuracionService;
         this.objectMapper = objectMapper;
         this.propuestaRepository = propuestaRepository;
+        this.archivoProyectoRepository = archivoProyectoRepository;
     }
 
     // ───────────────────────── Lectura ─────────────────────────
@@ -125,6 +130,14 @@ public class ProyectoService {
         if ("en_pausa".equals(p.getEstado()) || estaCerrado(p)) {
             detalle.setEquipoAnterior(equipoAnterior(p));
         }
+        // v8: GitHub URL y archivos de contexto.
+        detalle.setGithubUrl(p.getGithubUrl());
+        List<ArchivoProyectoFila> archivos = archivoProyectoRepository
+                .findByProyectoIdOrderByFechaSubidaDesc(p.getId()).stream()
+                .map(a -> new ArchivoProyectoFila(a.getId(), a.getNombre(), a.getTipo(),
+                        a.getFechaSubida() != null ? formatear(a.getFechaSubida().toLocalDate()) : "—"))
+                .collect(Collectors.toList());
+        detalle.setArchivos(archivos);
         return detalle;
     }
 
@@ -315,7 +328,7 @@ public class ProyectoService {
     @Transactional
     public Proyecto crear(String nombre, String descripcion, List<String> tecnologias, LocalDate fechaInicio,
                            LocalDate fechaFinEstimada, int colaboradoresRequeridos, Long pmPerfilId,
-                           Long actorUsuarioId) {
+                           Long actorUsuarioId, String githubUrl) {
         if (nombre == null || nombre.isBlank()) {
             throw new OperacionInvalidaException("Ingresa un nombre para el proyecto.");
         }
@@ -346,7 +359,7 @@ public class ProyectoService {
             throw new OperacionInvalidaException(pm.getUsuario().getNombreCompleto()
                     + " no puede liderar proyectos: solo un Miembro activo (sin rol de Administrador o Resource Manager) puede ser Project Manager.");
         }
-        exigirCapacidad(pm, CARGA_PM_POR_DEFECTO, true);
+        exigirCapacidad(pm, CARGA_PM_POR_DEFECTO);
         int disponibles = contarColaboradoresDisponibles(pmPerfilId);
         if (colaboradoresRequeridos < 0) {
             throw new OperacionInvalidaException("La cantidad de colaboradores requeridos no puede ser negativa.");
@@ -364,6 +377,9 @@ public class ProyectoService {
         p.setColaboradoresRequeridos(colaboradoresRequeridos);
         p.setFechaInicio(fechaInicio);
         p.setFechaFinEstimada(fechaFinEstimada);
+        if (githubUrl != null && !githubUrl.isBlank()) {
+            p.setGithubUrl(githubUrl.trim());
+        }
         p = proyectoRepository.save(p);
 
         // Nota de integridad del esquema v4: el PM se registra vía asignaciones,
@@ -547,8 +563,8 @@ public class ProyectoService {
                         throw new OperacionInvalidaException("No se puede reabrir: el PM " + pm.getPerfil().getUsuario().getNombreCompleto()
                                 + " quedaría con " + total + "% de carga (límite " + limite + "%). El Resource Manager debe cambiar el PM o rebalancear su carga.");
                     }
-                    if (asignacionRepository.contarProyectosVigentesDePerfil(pm.getPerfilId()) >= MAXIMO_PROYECTOS_PM) {
-                        throw new OperacionInvalidaException("No se puede reabrir: el PM ya está en el máximo de proyectos vigentes para Project Manager (" + MAXIMO_PROYECTOS_PM + ").");
+                    if (asignacionRepository.contarProyectosVigentesDePerfil(pm.getPerfilId()) >= maximoProyectosConfigurado()) {
+                        throw new OperacionInvalidaException("No se puede reabrir: el PM ya está en el máximo de proyectos vigentes configurado.");
                     }
                 }
                 String accion = "en_pausa".equals(anterior) ? "PROYECTO_REANUDADO"
@@ -671,7 +687,7 @@ public class ProyectoService {
      */
     @Transactional
     public void editarProyecto(Long proyectoId, String nombre, String descripcion, List<String> tecnologias,
-                                LocalDate fechaInicio, LocalDate fechaFinEstimada, Long actorUsuarioId) {
+                                LocalDate fechaInicio, LocalDate fechaFinEstimada, String githubUrl, Long actorUsuarioId) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         if (nombre == null || nombre.trim().isEmpty()) {
@@ -701,6 +717,7 @@ public class ProyectoService {
         p.setTecnologias(serializarTecnologias(tecnologias));
         p.setFechaInicio(fechaInicio);
         p.setFechaFinEstimada(fechaFinEstimada);
+        p.setGithubUrl(githubUrl != null && !githubUrl.isBlank() ? githubUrl.trim() : null);
         proyectoRepository.save(p);
         auditoriaService.registrar(actorUsuarioId, "PROYECTO_EDITADO", "proyecto", proyectoId, null, null,
                 "Datos del proyecto \"" + p.getNombre() + "\" actualizados.");
@@ -866,7 +883,7 @@ public class ProyectoService {
             // Entra de fuera con la dedicación estándar de PM: debe tener
             // capacidad (en un proyecto cerrado su carga no cuenta hasta que
             // se reabra, y reabrir vuelve a validarla).
-            exigirCapacidad(nuevoPm, CARGA_PM_POR_DEFECTO, true);
+            exigirCapacidad(nuevoPm, CARGA_PM_POR_DEFECTO);
         }
 
         String nombreNuevo = nuevoPm.getUsuario().getNombreCompleto();
@@ -960,8 +977,8 @@ public class ProyectoService {
     public static final int CARGA_PM_POR_DEFECTO = 20;
     /** Tope duro de carga (modelo v7): nadie supera el 100%. */
     public static final int LIMITE_CARGA_MAXIMO = 100;
-    /** Máximo de proyectos vigentes simultáneos para un Project Manager (más alto que el de colaborador). */
-    public static final int MAXIMO_PROYECTOS_PM = 6;
+    /** Máximo de proyectos vigentes simultáneos para un PM (valor fijo). */
+    public static final int MAXIMO_PROYECTOS_PM = 3;
 
     /**
      * ¿Puede esta persona participar en proyectos? Cuenta y perfil activos y
@@ -981,17 +998,13 @@ public class ProyectoService {
      * simultáneos de Configuración, ambos sobre la carga EFECTIVA).
      */
     private void exigirCapacidad(Perfil perfil, int dedicacion) {
-        exigirCapacidad(perfil, dedicacion, false);
-    }
-
-    private void exigirCapacidad(Perfil perfil, int dedicacion, boolean esPm) {
         int limiteCarga = limiteCargaConfigurado();
-        int maximoProyectos = esPm ? MAXIMO_PROYECTOS_PM : maximoProyectosConfigurado();
+        int maximoProyectos = maximoProyectosConfigurado();
         String nombre = perfil.getUsuario().getNombreCompleto();
         long vigentes = asignacionRepository.contarProyectosVigentesDePerfil(perfil.getId());
         if (vigentes >= maximoProyectos) {
             throw new OperacionInvalidaException(nombre + " ya está en " + vigentes
-                    + " proyecto(s) vigente(s), el máximo " + (esPm ? "para Project Manager es " : "configurado es ") + maximoProyectos + ".");
+                    + " proyecto(s) vigente(s), el máximo configurado es " + maximoProyectos + ".");
         }
         int cargaActual = sumarCargaActivaSegura(perfil.getId());
         if (cargaActual + dedicacion > limiteCarga) {

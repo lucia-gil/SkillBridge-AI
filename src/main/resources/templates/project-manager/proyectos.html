@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
-<link rel="stylesheet" href="/css/kpi-hero.css">
 <link rel="stylesheet" href="/css/proyecto-form.css">
 </head>
 <body>
@@ -19,48 +18,36 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <section class="kpi-hero">
-        <div class="kpi-hero-head">
-          <div>
-            <h2 class="kpi-hero-title">Mis proyectos</h2>
-            <p class="kpi-hero-sub">Distribución por estado</p>
+      <div class="kpi-grid">
+        <div class="kpi-tile accent-blue">
+          <div class="kpi-tile-icon blue">
+            <svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg>
           </div>
+          <span class="kpi-tile-label">En planificacion</span>
+          <span class="kpi-tile-value" th:text="${kpiPlanificacion}">0</span>
         </div>
-        <div class="kpi-hero-grid">
-          <article class="hero-card">
-            <div class="hero-card-top">
-              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
-              <span class="hero-card-label">En planificacion</span>
-            </div>
-            <div class="hero-card-value" th:text="${kpiPlanificacion}">0</div>
-            <p class="hero-card-meta"></p>
-          </article>
-          <article class="hero-card">
-            <div class="hero-card-top">
-              <span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></span>
-              <span class="hero-card-label">Activos</span>
-            </div>
-            <div class="hero-card-value" th:text="${kpiActivos}">0</div>
-            <p class="hero-card-meta"></p>
-          </article>
-          <article class="hero-card">
-            <div class="hero-card-top">
-              <span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span>
-              <span class="hero-card-label">En pausa</span>
-            </div>
-            <div class="hero-card-value" th:text="${kpiEnPausa}">0</div>
-            <p class="hero-card-meta"></p>
-          </article>
-          <article class="hero-card">
-            <div class="hero-card-top">
-              <span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></span>
-              <span class="hero-card-label">Cancelados</span>
-            </div>
-            <div class="hero-card-value" th:text="${kpiCancelados}">0</div>
-            <p class="hero-card-meta"></p>
-          </article>
+        <div class="kpi-tile accent-green">
+          <div class="kpi-tile-icon green">
+            <svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Activos</span>
+          <span class="kpi-tile-value" th:text="${kpiActivos}">0</span>
         </div>
-      </section>
+        <div class="kpi-tile accent-amber">
+          <div class="kpi-tile-icon amber">
+            <svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg>
+          </div>
+          <span class="kpi-tile-label">En pausa</span>
+          <span class="kpi-tile-value" th:text="${kpiEnPausa}">0</span>
+        </div>
+        <div class="kpi-tile accent-red">
+          <div class="kpi-tile-icon red">
+            <svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Cancelados</span>
+          <span class="kpi-tile-value" th:text="${kpiCancelados}">0</span>
+        </div>
+      </div>
 
       <section class="card">
         <div class="table-toolbar">
@@ -139,6 +126,43 @@
                 <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
                 <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
                 <div class="info-row"><span class="info-row-label">Colaboradores</span><span class="info-row-value" th:text="${d.colaboradoresAsignados} + ' de ' + ${d.colaboradoresRequeridos} + ' requeridos'">0</span></div>
+
+                <!-- GitHub -->
+                <div class="info-row" th:if="${d.githubUrl != null and !d.githubUrl.isBlank()}">
+                  <span class="info-row-label">Repositorio</span>
+                  <span class="info-row-value">
+                    <a th:href="${d.githubUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none;">
+                      <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                      <span th:text="${d.githubUrl}">https://github.com/…</span>
+                    </a>
+                  </span>
+                </div>
+
+                <!-- Archivos adjuntos del proyecto -->
+                <div th:if="${!d.archivos.isEmpty()}" style="margin-top:var(--space-4);">
+                  <h4 style="font-size:var(--fs-sm); font-weight:var(--fw-semibold); margin-bottom:var(--space-2);">Archivos de contexto</h4>
+                  <div th:each="a : ${d.archivos}" style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border-subtle); font-size:var(--fs-xs);">
+                    <svg class="icon icon-sm"><use th:href="'/img/icons.svg#icon-' + ${a.icono}"></use></svg>
+                    <a th:href="@{'/archivos-proyecto/' + ${a.id}}" target="_blank" rel="noopener" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" th:text="${a.nombre}">archivo.pdf</a>
+                    <span class="text-tertiary" th:text="${a.fechaSubidaLabel}">fecha</span>
+                    <form th:action="@{'/project-manager/proyectos/' + ${d.id} + '/archivos/' + ${a.id} + '/eliminar'}" method="post" style="margin:0;">
+                      <button type="submit" class="btn-icon danger" title="Eliminar archivo" style="padding:2px;" onclick="return confirm('¿Eliminar este archivo?')">
+                        <svg class="icon icon-sm"><use href="/img/icons.svg#icon-trash"></use></svg>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                <!-- Subir archivo -->
+                <div style="margin-top:var(--space-4);">
+                  <form th:action="@{'/project-manager/proyectos/' + ${d.id} + '/archivos'}" method="post" enctype="multipart/form-data" style="display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap;">
+                    <input type="file" name="archivo" accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.xls,.xlsx,.pptx,.txt,.zip" class="input" style="font-size:var(--fs-xs); max-width:280px;">
+                    <button type="submit" class="btn btn-secondary btn-sm">
+                      <svg class="icon icon-sm"><use href="/img/icons.svg#icon-arrow-up"></use></svg>Subir archivo
+                    </button>
+                    <span class="field-hint" style="font-size:var(--fs-xs);">Máx. 10 MB por archivo · PDF, imágenes, documentos</span>
+                  </form>
+                </div>
               </div>
 
               <div class="pt-panel" data-tab-panel="equipo" hidden>
@@ -202,7 +226,7 @@
                   th:attr="data-project-id=${d.id}, data-nombre=${d.nombre}, data-descripcion=${d.descripcion},
                            data-tecnologias=${d.tecnologiasCsv},
                            data-fecha-inicio=${d.fechaInicioIso}, data-fecha-fin=${d.fechaFinIso},
-                           data-estado=${d.estadoCrudo}"></template>
+                           data-estado=${d.estadoCrudo}, data-github-url=${d.githubUrl}"></template>
       </div>
 
     </main>
@@ -277,6 +301,11 @@ document.addEventListener("DOMContentLoaded", function () {
       '</div>' +
       '<div class="dr-presets" id="' + pref + '-atajos"></div>' +
       '<div class="dr-summary" id="' + pref + '-resumen" aria-live="polite"></div>' +
+      '<div class="field"><label class="field-label" for="' + pref + '-github">Repositorio GitHub (opcional)</label>' +
+        '<div style="display:flex; align-items:center; gap:8px;">' +
+        '<svg style="width:20px; height:20px; flex-shrink:0; color:var(--text-tertiary);" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>' +
+        '<input class="input" id="' + pref + '-github" type="url" placeholder="https://github.com/org/repo" value="' + escHtmlB(d.githubUrl) + '">' +
+        '</div></div>' +
       (conColaboradores
         ? '<div class="field"><label class="field-label" for="' + pref + '-colab">Colaboradores requeridos</label>' +
           '<input class="input" type="number" min="0" max="' + disponibles + '" value="0" id="' + pref + '-colab">' +
@@ -352,7 +381,8 @@ document.addEventListener("DOMContentLoaded", function () {
           descripcion: backdrop.querySelector("#ep-desc").value,
           tecnologias: form.tech.getValues().join(","),
           fechaInicio: backdrop.querySelector("#ep-inicio").value,
-          fechaFinEstimada: backdrop.querySelector("#ep-fin").value
+          fechaFinEstimada: backdrop.querySelector("#ep-fin").value,
+          githubUrl: backdrop.querySelector("#ep-github").value.trim()
         });
       });
     });
@@ -475,7 +505,8 @@ document.addEventListener("DOMContentLoaded", function () {
         tecnologias: form.tech.getValues().join(","),
         fechaInicio: backdrop.querySelector("#np-inicio").value,
         fechaFinEstimada: backdrop.querySelector("#np-fin").value,
-        colaboradoresRequeridos: colab
+        colaboradoresRequeridos: colab,
+        githubUrl: backdrop.querySelector("#np-github").value.trim()
       });
     });
   });

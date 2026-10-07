@@ -53,7 +53,7 @@
             <tbody id="colaboradores-body">
             <tr th:each="c : ${colaboradores}" data-colaborador-row>
               <td class="cell-person">
-                <span class="avatar avatar-sm" th:text="${c.iniciales}">MR</span>
+                <img th:if="${c.tieneFoto}" th:src="@{'/perfil/foto/' + ${c.usuarioId}}" width="28" height="28" style="width:28px;height:28px;min-width:28px;border-radius:50%;object-fit:cover;display:block;" th:alt="${c.nombre}">                <span th:unless="${c.tieneFoto}" class="avatar avatar-sm" th:text="${c.iniciales}">MR</span>
                 <span class="cell-person-text"><span class="cell-person-name" th:text="${c.nombre}">Nombre</span><span class="cell-person-sub" th:text="${c.correo}">correo</span></span>
               </td>
               <td th:text="${c.cargo}">Cargo</td>

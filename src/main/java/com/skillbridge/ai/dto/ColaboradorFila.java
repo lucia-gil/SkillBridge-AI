@@ -22,9 +22,12 @@ public class ColaboradorFila {
     private final int ocupacion;
     private final String estado;
     private final List<HabilidadPerfilFila> habilidades;
+    private final boolean tieneFoto;
+    private final Long usuarioId;
 
     public ColaboradorFila(Long perfilId, String nombre, String correo, String cargo,
-                           int ocupacion, String estado, List<HabilidadPerfilFila> habilidades) {
+                           int ocupacion, String estado, List<HabilidadPerfilFila> habilidades,
+                           boolean tieneFoto, Long usuarioId) {
         this.perfilId = perfilId;
         this.nombre = nombre;
         this.iniciales = InicialesUtil.de(nombre);
@@ -33,6 +36,8 @@ public class ColaboradorFila {
         this.ocupacion = ocupacion;
         this.estado = estado;
         this.habilidades = habilidades;
+        this.tieneFoto = tieneFoto;
+        this.usuarioId = usuarioId;
     }
 
     public Long getPerfilId() {
@@ -78,6 +83,9 @@ public class ColaboradorFila {
     public List<HabilidadPerfilFila> getHabilidades() {
         return habilidades;
     }
+
+    public boolean isTieneFoto() { return tieneFoto; }
+    public Long getUsuarioId() { return usuarioId; }
 
     /** Las 3 de mayor nivel, solo para mostrar como badges en la fila de la tabla. */
     public List<HabilidadPerfilFila> getHabilidadesTop() {
