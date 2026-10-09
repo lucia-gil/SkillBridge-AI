@@ -309,7 +309,14 @@ public class TalentMatchingService {
     }
 
     private String nombreDe(Long perfilId) {
-        return perfilRepository.findById(perfilId)
+        // buscarConUsuario() (join fetch), NO findById(): proponerVarios() a
+        // proposito no es @Transactional (cada proponerManual corre en su
+        // propia transaccion via self(), ver comentario de self()), asi que
+        // para cuando se llega aqui ya no hay sesion de Hibernate abierta -
+        // con findById(), perfil.getUsuario() (lazy) revienta con
+        // LazyInitializationException. Mismo problema/arreglo documentado en
+        // PerfilRepository.buscarConUsuario() y en NotificacionService.
+        return perfilRepository.buscarConUsuario(perfilId)
                 .map(x -> x.getUsuario() != null ? x.getUsuario().getNombreCompleto() : "La persona")
                 .orElse("La persona");
     }

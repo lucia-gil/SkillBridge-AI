@@ -394,8 +394,12 @@
   function createDateRange(o) {
     var inicio = o.inicio, fin = o.fin, resumen = o.resumen;
     var minDias = o.diasMinimos || 7;
+    var maxDias = o.diasMaximos || 1095;
+    var diasMaxInicio = o.diasMaximoInicio || 365;
+    var limiteInicio = sumarDias(o.minInicio || aIso(new Date()), diasMaxInicio);
     var aviso = "";            // mensaje temporal (ej. ajuste automático)
     if (o.minInicio) inicio.min = o.minInicio;
+    inicio.max = limiteInicio;
 
     var ATAJOS = [["2 semanas", 14, 0], ["1 mes", 0, 1], ["3 meses", 0, 3], ["6 meses", 0, 6]];
     if (o.atajos) {
@@ -437,8 +441,8 @@
     }
 
     function actualizar() {
-      if (inicio.value) fin.min = sumarDias(inicio.value, minDias);
-      else fin.removeAttribute("min");
+      if (inicio.value) { fin.min = sumarDias(inicio.value, minDias); fin.max = sumarDias(inicio.value, maxDias); }
+      else { fin.removeAttribute("min"); fin.removeAttribute("max"); }
       if (o.atajos) o.atajos.querySelectorAll(".dr-preset").forEach(function (b, i) {
         var a = ATAJOS[i];
         var destino = inicio.value ? (a[2] ? sumarMeses(inicio.value, a[2]) : sumarDias(inicio.value, a[1])) : null;
@@ -447,7 +451,7 @@
       if (!resumen) return;
       var html, tono = "";
       if (!inicio.value && !fin.value) {
-        html = "Elige el inicio y la entrega esperada (mínimo " + minDias + " días entre ambas).";
+        html = "Elige el inicio y la entrega esperada (entre " + minDias + " días y " + Math.round(maxDias / 365) + " años).";
       } else if (!inicio.value) {
         html = "Falta la fecha de inicio."; tono = "warn";
       } else if (!fin.value) {
@@ -456,6 +460,8 @@
         var d = diasEntre(inicio.value, fin.value);
         if (d < minDias) {
           html = "La entrega debe ser al menos " + minDias + " días después del inicio (desde el " + fechaCorta(fin.min) + ")."; tono = "error";
+        } else if (d > maxDias) {
+          html = "La entrega no puede ser más de " + Math.round(maxDias / 365) + " años después del inicio (hasta el " + fechaCorta(fin.max) + ")."; tono = "error";
         } else {
           html = '<span class="dr-sum-main">Duración: <strong>' + duracionTexto(d) + "</strong></span>" +
             '<span class="dr-sum-sep">·</span><span>Entrega: <strong>' + fechaCorta(fin.value) + "</strong></span>";
@@ -497,10 +503,15 @@
         limpiar(inicio); limpiar(fin);
         if (!inicio.value) { marcar(inicio, "Elige la fecha de inicio."); return { campo: inicio, mensaje: "Elige la fecha de inicio." }; }
         if (o.minInicio && inicio.value < o.minInicio) { marcar(inicio, "No puede ser anterior a hoy."); return { campo: inicio, mensaje: "La fecha de inicio no puede ser anterior a hoy." }; }
+        if (inicio.value > limiteInicio) { marcar(inicio, "No puede planificarse a más de " + Math.round(diasMaxInicio / 365) + " año(s) desde hoy."); return { campo: inicio, mensaje: "La fecha de inicio no puede planificarse a más de " + Math.round(diasMaxInicio / 365) + " año(s) desde hoy." }; }
         if (!fin.value) { marcar(fin, "Elige la fecha de entrega esperada."); return { campo: fin, mensaje: "Elige la fecha de entrega esperada." }; }
         if (diasEntre(inicio.value, fin.value) < minDias) {
           marcar(fin, "Debe ser al menos " + minDias + " días después del inicio.");
           return { campo: fin, mensaje: "Debe haber al menos " + minDias + " días entre el inicio y la entrega." };
+        }
+        if (diasEntre(inicio.value, fin.value) > maxDias) {
+          marcar(fin, "No puede ser más de " + Math.round(maxDias / 365) + " años después del inicio.");
+          return { campo: fin, mensaje: "La duración no puede superar los " + Math.round(maxDias / 365) + " años." };
         }
         return null;
       },

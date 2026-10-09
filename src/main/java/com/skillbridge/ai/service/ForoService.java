@@ -353,6 +353,20 @@ public class ForoService {
         f.setEtiquetas(ForoClasificadorService.escribirEtiquetasJson(resolverEtiquetas(etiquetasTexto, f.getTitulo(), f.getContenido())));
         ForoPublicacion guardado = foroPublicacionRepository.save(f);
         guardarAdjuntos(guardado.getId(), archivosValidos, enlacesValidos);
+
+        // Aviso al resto del equipo del proyecto (no al autor): antes solo se
+        // notificaba una RESPUESTA a un hilo, nunca la creacion del hilo en si,
+        // asi que nadie se enteraba de un hilo nuevo hasta que alguien mas
+        // entraba al foro por su cuenta. Tipo "info" porque no tiene
+        // preferencia configurable todavia (ver CODIGO_A_TIPO_EVENTO en
+        // NotificacionService) - siempre se manda, igual que foro_respuesta.
+        String enlaceHilo = "foro-hilo.html?id=" + guardado.getId();
+        for (Asignacion a : asignacionRepository.listarEquipoDeProyecto(proyectoId, "activa")) {
+            if (!a.getPerfilId().equals(perfilId)) {
+                notificacionService.crear(a.getPerfilId(), "info", "Nuevo hilo: " + guardado.getTitulo(),
+                        "Se abrió un hilo nuevo en el foro del proyecto.", enlaceHilo);
+            }
+        }
         return guardado;
     }
 

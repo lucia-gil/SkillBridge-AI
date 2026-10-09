@@ -11,6 +11,12 @@ import java.util.Optional;
 public interface PropuestaAsignacionRepository extends JpaRepository<PropuestaAsignacion, Long> {
     boolean existsByProyectoIdAndCandidatoPerfilIdAndEstado(Long proyectoId, Long candidatoPerfilId, String estado);
 
+    // Borrado en cascada manual: fk_prop_proyecto NO tiene ON DELETE CASCADE,
+    // asi que ProyectoService.eliminar() debe vaciar esta tabla para el
+    // proyecto ANTES de borrar la fila de proyectos (mismo patron que
+    // AsignacionRepository.deleteByProyectoId).
+    void deleteByProyectoId(Long proyectoId);
+
     // Propuestas pendientes de un proyecto: el PM no puede proponer más
     // personas que vacantes libres descontando las que ya esperan al RM.
     long countByProyectoIdAndEstado(Long proyectoId, String estado);

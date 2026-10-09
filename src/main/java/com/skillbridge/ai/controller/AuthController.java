@@ -150,6 +150,44 @@ public class AuthController {
         return "auth/registro";
     }
 
+    // ───────────────────────── Recuperar contraseña ─────────────────────────
+
+    @GetMapping("/auth/recuperar-password.html")
+    public String recuperarPasswordForm() {
+        return "auth/recuperar-password";
+    }
+
+    @PostMapping("/auth/recuperar-password.html")
+    public String recuperarPassword(@RequestParam String correo, RedirectAttributes redirectAttributes) {
+        authService.solicitarRecuperacion(correo);
+        // Mismo mensaje exista o no el correo (no revelar que correos estan
+        // registrados) - ver AuthService.solicitarRecuperacion().
+        redirectAttributes.addFlashAttribute("enviado", true);
+        redirectAttributes.addFlashAttribute("correoIntentado", correo);
+        return "redirect:/auth/recuperar-password.html";
+    }
+
+    @GetMapping("/auth/restablecer-password.html")
+    public String restablecerPasswordForm(@RequestParam(required = false) String token, Model model) {
+        model.addAttribute("token", token);
+        model.addAttribute("tokenValido", authService.tokenDeRecuperacionValido(token));
+        return "auth/restablecer-password";
+    }
+
+    @PostMapping("/auth/restablecer-password.html")
+    public String restablecerPassword(@RequestParam String token,
+                                      @RequestParam String contrasena,
+                                      @RequestParam String contrasena2,
+                                      RedirectAttributes redirectAttributes) {
+        String error = authService.restablecerContrasena(token, contrasena, contrasena2);
+        if (error != null) {
+            redirectAttributes.addFlashAttribute("error", error);
+            return "redirect:/auth/restablecer-password.html?token=" + token;
+        }
+        redirectAttributes.addFlashAttribute("exito", "Contraseña actualizada. Ya puedes iniciar sesión.");
+        return "redirect:/auth/login.html";
+    }
+
     // Límite de verificaciones por IP: evita que alguien use el endpoint para
     // averiguar en masa qué correos están autorizados.
     private static final int MAX_VERIFICACIONES = 30;

@@ -15,11 +15,39 @@
   .report-hero h1{font-size:var(--fs-xl);margin-bottom:6px}.report-hero p{font-size:var(--fs-sm);color:rgba(255,255,255,.72);max-width:620px}
   .report-actions{display:flex;gap:var(--space-3);flex-wrap:wrap}.report-actions .btn{background:white;border-color:rgba(255,255,255,.25)}
   .report-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:var(--space-3);align-items:start}.report-filters>.btn{margin-top:22px}.report-filters .field{margin:0}.report-filters .field-label{font-size:var(--fs-xs)}
-  .status-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-3)}.status-item{padding:var(--space-4);border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-sunken)}
-  .status-count{display:block;font-size:var(--fs-xl);font-weight:700;color:var(--navy-700)}.status-label{font-size:var(--fs-xs);color:var(--text-tertiary)}
   .report-table .progress-inline{min-width:145px}.report-note{display:flex;gap:var(--space-2);align-items:flex-start;color:var(--text-tertiary);font-size:var(--fs-xs);line-height:1.5}
   @media(max-width:1050px){.report-filters{grid-template-columns:1fr 1fr}.report-filters .btn{width:100%}}
   @media(max-width:700px){.report-hero{align-items:flex-start;flex-direction:column}.report-filters{grid-template-columns:1fr}.report-actions{width:100%}.report-actions .btn{flex:1}}
+
+  /* ── Gráficas de "Resumen por estado" + "Avance por proyecto": CSS puro (conic-gradient / anchos),
+     calculadas en el servidor a partir de los mismos datos del reporte, sin librerías externas. ── */
+  .report-charts-grid{display:flex;gap:var(--space-6);align-items:center}
+  .donut-wrap{display:flex;align-items:center;gap:var(--space-5);flex:0 0 auto}
+  .avance-mini-chart-wrap{flex:1;min-width:0}
+  .donut-chart{width:126px;height:126px;border-radius:50%;position:relative;flex:none;box-shadow:inset 0 0 0 1px var(--border-subtle)}
+  .donut-center{position:absolute;inset:16px;background:var(--surface);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut-value{font-size:var(--fs-xl);font-weight:700;color:var(--navy-700);line-height:1}
+  .donut-label{font-size:9.5px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .donut-legend{display:flex;flex-direction:column;gap:7px;min-width:0}
+  .donut-legend-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs)}
+  .donut-legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .donut-legend-label{color:var(--text-secondary);white-space:nowrap}
+  .donut-legend-value{color:var(--text-tertiary);font-variant-numeric:tabular-nums;margin-left:auto;padding-left:var(--space-3)}
+
+  .avance-mini-chart{display:flex;flex-direction:column;gap:10px}
+  .avance-mini-row{display:grid;grid-template-columns:170px 1fr 36px;gap:var(--space-3);align-items:center}
+  .avance-mini-label{font-size:var(--fs-xs);color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .avance-mini-track{height:8px;border-radius:999px;background:var(--surface-sunken);overflow:hidden}
+  .avance-mini-fill{height:100%;border-radius:999px;background:var(--navy-700)}
+  .avance-mini-fill.badge-green{background:var(--green-fg)}
+  .avance-mini-fill.badge-amber{background:var(--amber-fg)}
+  .avance-mini-fill.badge-red{background:var(--red-fg)}
+  .avance-mini-fill.badge-blue{background:var(--blue-fg)}
+  .avance-mini-fill.badge-neutral{background:var(--navy-700)}
+  .avance-mini-value{font-size:10.5px;color:var(--text-tertiary);text-align:right;font-variant-numeric:tabular-nums}
+  .avance-mini-more{font-size:var(--fs-xs);color:var(--text-tertiary);margin:2px 0 0}
+  .report-charts-divider{width:1px;align-self:stretch;background:var(--border-subtle)}
+  @media(max-width:900px){.report-charts-grid{flex-direction:column;align-items:stretch;gap:var(--space-5)}.donut-wrap{justify-content:center}.report-charts-divider{display:none}}
 </style>
 </head>
 <body>
@@ -28,6 +56,16 @@
   <div class="main-content">
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content page-content-wide">
+
+      <section class="card card-pad">
+        <form class="report-filters" method="get" action="reportes.html">
+          <div class="field"><span class="field-label">Proyectos</span><select class="select" name="proyectoId" multiple data-multiselect data-placeholder="Todos los proyectos" data-noun="proyectos"><option th:each="p : ${proyectosDisponibles}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${proyectoId != null and proyectoId.contains(p.id)}">Proyecto</option></select></div>
+          <label class="field"><span class="field-label">Estado</span><select class="select" name="estado"><option value="">Todos</option><option value="planificacion" th:selected="${estado == 'planificacion'}">Planificación</option><option value="activo" th:selected="${estado == 'activo'}">Activo</option><option value="en_pausa" th:selected="${estado == 'en_pausa'}">En pausa</option><option value="completado" th:selected="${estado == 'completado'}">Completado</option><option value="cancelado" th:selected="${estado == 'cancelado'}">Cancelado</option></select></label>
+          <label class="field"><span class="field-label">Inicio desde</span><input class="input" type="date" name="desde" th:value="${desde}"></label>
+          <label class="field"><span class="field-label">Inicio hasta</span><input class="input" type="date" name="hasta" th:value="${hasta}"></label>
+          <button class="btn btn-primary" type="submit"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg>Aplicar</button>
+        </form>
+      </section>
 
       <section class="report-hero">
         <div>
@@ -40,21 +78,11 @@
         </div>
       </section>
 
-      <section class="card card-pad">
-        <form class="report-filters" method="get" action="reportes.html">
-          <div class="field"><span class="field-label">Proyectos</span><select class="select" name="proyectoId" multiple data-multiselect data-placeholder="Todos los proyectos" data-noun="proyectos"><option th:each="p : ${proyectosDisponibles}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${proyectoId != null and proyectoId.contains(p.id)}">Proyecto</option></select></div>
-          <label class="field"><span class="field-label">Estado</span><select class="select" name="estado"><option value="">Todos</option><option value="planificacion" th:selected="${estado == 'planificacion'}">Planificación</option><option value="activo" th:selected="${estado == 'activo'}">Activo</option><option value="en_pausa" th:selected="${estado == 'en_pausa'}">En pausa</option><option value="completado" th:selected="${estado == 'completado'}">Completado</option><option value="cancelado" th:selected="${estado == 'cancelado'}">Cancelado</option></select></label>
-          <label class="field"><span class="field-label">Inicio desde</span><input class="input" type="date" name="desde" th:value="${desde}"></label>
-          <label class="field"><span class="field-label">Inicio hasta</span><input class="input" type="date" name="hasta" th:value="${hasta}"></label>
-          <button class="btn btn-primary" type="submit"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg>Aplicar</button>
-        </form>
-      </section>
-
       <section class="kpi-hero">
         <div class="kpi-hero-head">
           <div>
             <h2 class="kpi-hero-title">Resultados filtrados</h2>
-            <p class="kpi-hero-sub">Según los filtros aplicados abajo</p>
+            <p class="kpi-hero-sub">Según los filtros aplicados arriba</p>
           </div>
         </div>
         <div class="kpi-hero-grid">
@@ -94,10 +122,39 @@
       </section>
 
       <section class="card card-pad">
-        <div class="page-section-header" style="margin-bottom:var(--space-4)"><div><h2 class="page-section-title">Resumen por estado</h2><p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:3px">La misma distribución se incluye en PDF y Excel.</p></div><span class="label-mono" th:text="'Generado ' + ${datos.generado}">Generado</span></div>
-        <div class="status-summary">
-          <div class="status-item" th:each="e : ${datos.porEstado}"><span class="status-count" th:text="${e.value}">0</span><span class="status-label" th:text="${e.key}">Estado</span></div>
-          <div class="status-item" th:if="${datos.porEstado.isEmpty()}"><span class="status-count">0</span><span class="status-label">Sin resultados</span></div>
+        <div class="page-section-header" style="margin-bottom:var(--space-5)"><div><h2 class="page-section-title">Resumen por estado y avance</h2><p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:3px">La misma distribución se incluye en PDF y Excel.</p></div><span class="label-mono" th:text="'Generado ' + ${datos.generado}">Generado</span></div>
+
+        <div class="report-charts-grid">
+          <div class="donut-wrap">
+            <div class="donut-chart" th:style="'background: conic-gradient(' + ${datos.conicGradient} + ')'">
+              <div class="donut-center">
+                <span class="donut-value" th:text="${datos.totalProyectos}">0</span>
+                <span class="donut-label">proyecto(s)</span>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="donut-legend-item" th:each="s : ${datos.segmentos}">
+                <span class="donut-legend-dot" th:style="'background:' + ${s.color}"></span>
+                <span class="donut-legend-label" th:text="${s.label}">Estado</span>
+                <span class="donut-legend-value" th:text="${s.cantidad} + ' · ' + ${s.porcentajeRedondeado} + '%'">0 · 0%</span>
+              </div>
+              <div class="donut-legend-item" th:if="${datos.segmentos.isEmpty()}"><span class="donut-legend-label text-tertiary">Sin resultados</span></div>
+            </div>
+          </div>
+
+          <div class="report-charts-divider"></div>
+
+          <div class="avance-mini-chart-wrap">
+          <div class="avance-mini-chart">
+            <div class="avance-mini-row" th:each="f, it : ${datos.filas}" th:if="${it.index < 6}">
+              <span class="avance-mini-label" th:text="${f.proyecto}">Proyecto</span>
+              <div class="avance-mini-track"><div class="avance-mini-fill" th:classappend="${f.situacionBadgeClass}" th:style="'width:' + ${f.avance} + '%'"></div></div>
+              <span class="avance-mini-value" th:text="${f.avance} + '%'">0%</span>
+            </div>
+            <p class="avance-mini-more" th:if="${datos.filas.size() > 6}" th:text="${'+' + (datos.filas.size() - 6) + ' proyecto(s) más en la tabla de abajo'}">+ más</p>
+            <p class="avance-mini-more" th:if="${datos.filas.isEmpty()}">Sin proyectos para graficar.</p>
+          </div>
+          </div>
         </div>
       </section>
 

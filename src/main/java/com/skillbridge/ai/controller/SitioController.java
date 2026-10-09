@@ -60,18 +60,8 @@ public class SitioController {
         );
     }
 
-    @GetMapping("/auth/recuperar-password.html")
-    public String recuperarPassword() {
-        return "auth/recuperar-password";
-    }
-
-    // Vista separada a la que llega el enlace enviado por correo. Sin
-    // backend de tokens real todavia (esta demo no envia correos), así que
-    // no valida ningun parametro; solo sirve la plantilla.
-    @GetMapping("/auth/restablecer-password.html")
-    public String restablecerPassword() {
-        return "auth/restablecer-password";
-    }
+    // recuperar-password.html / restablecer-password.html: se movieron a
+    // AuthController (necesitan AuthService real para tokens y correo).
 
     // Unico mock que le queda a Administrador: el chatbot de IA esta fuera
     // de alcance por pedido explicito, aunque el resto del rol es real.

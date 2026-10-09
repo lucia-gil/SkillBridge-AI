@@ -341,14 +341,22 @@ public class ProyectoService {
         if (fechaInicio.isBefore(LocalDate.now())) {
             throw new OperacionInvalidaException("La fecha de inicio no puede ser anterior a la fecha actual.");
         }
+        if (fechaInicio.isAfter(LocalDate.now().plusDays(INICIO_MAXIMO_DIAS_A_FUTURO))) {
+            throw new OperacionInvalidaException("La fecha de inicio no puede planificarse a más de "
+                    + (INICIO_MAXIMO_DIAS_A_FUTURO / 365) + " año desde hoy.");
+        }
         if (fechaFinEstimada == null) {
             throw new OperacionInvalidaException("La fecha de fin estimada es obligatoria.");
         }
         if (fechaFinEstimada.isBefore(fechaInicio)) {
             throw new OperacionInvalidaException("La fecha de fin estimada no puede ser anterior al inicio.");
         }
-        if (ChronoUnit.DAYS.between(fechaInicio, fechaFinEstimada) < 7) {
-            throw new OperacionInvalidaException("Debe haber al menos 7 días de diferencia entre la fecha de inicio y la fecha de fin.");
+        long duracionCrear = ChronoUnit.DAYS.between(fechaInicio, fechaFinEstimada);
+        if (duracionCrear < DURACION_MINIMA_DIAS) {
+            throw new OperacionInvalidaException("Debe haber al menos " + DURACION_MINIMA_DIAS + " días de diferencia entre la fecha de inicio y la fecha de fin.");
+        }
+        if (duracionCrear > DURACION_MAXIMA_DIAS) {
+            throw new OperacionInvalidaException("La duración no puede superar los " + (DURACION_MAXIMA_DIAS / 365) + " años (" + DURACION_MAXIMA_DIAS + " días). Para proyectos más largos, divídelo en varios proyectos.");
         }
         Perfil pm = perfilRepository.findById(pmPerfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona un Project Manager válido."));
@@ -434,11 +442,21 @@ public class ProyectoService {
         }
         String nombre = p.getNombre();
         String razon = p.getRazonCancelacion();
+        propuestaRepository.deleteByProyectoId(proyectoId);
         asignacionRepository.deleteByProyectoId(proyectoId);
         proyectoRepository.delete(p);
         auditoriaService.registrar(actorUsuarioId, "PROYECTO_ELIMINADO", "proyecto", proyectoId, null, null,
                 AuditoriaService.conMotivo("Proyecto \"" + nombre + "\" eliminado (estaba cancelado"
                         + (razon != null && !razon.isBlank() ? " por: " + razon : "") + ")", motivoLimpio));
+
+        // Antes nadie se enteraba de un proyecto eliminado salvo revisando
+        // Auditoria a mano. Se avisa a los Resource Manager (visibilidad del
+        // area, igual que con una propuesta de asignacion) - no hay equipo
+        // al que avisar porque eliminar() ya exige 0 colaboradores activos.
+        for (Perfil rm : perfilRepository.listarActivosPorRolOrganizacional(Roles.RESOURCE_MANAGER)) {
+            notificacionService.crear(rm.getId(), "info", "Proyecto eliminado: " + nombre,
+                    "Motivo: " + motivoLimpio, null);
+        }
     }
 
     /**
@@ -703,14 +721,26 @@ public class ProyectoService {
         if (fechaInicio == null) {
             throw new OperacionInvalidaException("La fecha de inicio es obligatoria.");
         }
+        // No se exige fechaInicio >= hoy aqui a proposito (editar un proyecto
+        // ya en curso debe poder conservar su fecha de inicio pasada), pero
+        // el limite a futuro SI aplica igual que en crear() - ver comentario
+        // de INICIO_MAXIMO_DIAS_A_FUTURO.
+        if (fechaInicio.isAfter(LocalDate.now().plusDays(INICIO_MAXIMO_DIAS_A_FUTURO))) {
+            throw new OperacionInvalidaException("La fecha de inicio no puede planificarse a más de "
+                    + (INICIO_MAXIMO_DIAS_A_FUTURO / 365) + " año desde hoy.");
+        }
         if (fechaFinEstimada == null) {
             throw new OperacionInvalidaException("La fecha de fin estimada es obligatoria.");
         }
         if (fechaFinEstimada.isBefore(fechaInicio)) {
             throw new OperacionInvalidaException("La fecha de fin estimada no puede ser anterior al inicio.");
         }
-        if (ChronoUnit.DAYS.between(fechaInicio, fechaFinEstimada) < 7) {
-            throw new OperacionInvalidaException("Debe haber al menos 7 días de diferencia entre la fecha de inicio y la fecha de fin.");
+        long duracionEditar = ChronoUnit.DAYS.between(fechaInicio, fechaFinEstimada);
+        if (duracionEditar < DURACION_MINIMA_DIAS) {
+            throw new OperacionInvalidaException("Debe haber al menos " + DURACION_MINIMA_DIAS + " días de diferencia entre la fecha de inicio y la fecha de fin.");
+        }
+        if (duracionEditar > DURACION_MAXIMA_DIAS) {
+            throw new OperacionInvalidaException("La duración no puede superar los " + (DURACION_MAXIMA_DIAS / 365) + " años (" + DURACION_MAXIMA_DIAS + " días). Para proyectos más largos, divídelo en varios proyectos.");
         }
         p.setNombre(nombre.trim());
         p.setDescripcion(descripcion != null && !descripcion.isBlank() ? descripcion.trim() : null);
@@ -972,6 +1002,30 @@ public class ProyectoService {
     }
 
     // ───────────────────────── Helpers ─────────────────────────
+
+    /**
+     * Rango de duracion permitido entre fecha de inicio y fecha de fin
+     * estimada (crear() y editarProyecto()). El minimo evita proyectos de
+     * unos pocos dias que no tiene sentido trackear con entregables/foros/
+     * AI Talent Matching; el maximo evita el caso real detectado en la
+     * demo (un proyecto de mas de 1000 años) - un proyecto de software que
+     * dura mas de esto en SkillBridge AI deberia partirse en varios
+     * proyectos en vez de seguir siendo "uno solo".
+     */
+    public static final long DURACION_MINIMA_DIAS = 7;
+    public static final long DURACION_MAXIMA_DIAS = 1095; // 3 años
+
+    /**
+     * Cuanto se puede planificar un inicio A FUTURO desde hoy (distinto de
+     * DURACION_MAXIMA_DIAS, que es sobre cuanto dura el proyecto UNA VEZ que
+     * empieza). Sin este limite alguien puede crear un proyecto que arranca
+     * dentro de 1000 años: la fecha de inicio ya no se valida solo contra
+     * "no antes de hoy" sino tambien contra un horizonte razonable, porque
+     * al crear el proyecto ya se compromete un PM y la disponibilidad de
+     * colaboradores que calcula TalentMatchingService EN ESTE MOMENTO - esa
+     * disponibilidad no significa nada planificada a mas de un año vista.
+     */
+    public static final long INICIO_MAXIMO_DIAS_A_FUTURO = 365; // 1 año
 
     /** Dedicación estándar con la que entra un Project Manager. */
     public static final int CARGA_PM_POR_DEFECTO = 20;

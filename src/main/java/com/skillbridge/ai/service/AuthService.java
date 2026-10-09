@@ -10,15 +10,20 @@ import com.skillbridge.ai.repository.CorreoAutorizadoRepository;
 import com.skillbridge.ai.repository.HabilidadRepository;
 import com.skillbridge.ai.repository.PerfilHabilidadRepository;
 import com.skillbridge.ai.repository.PerfilRepository;
+import com.skillbridge.ai.repository.TokenRecuperacionPasswordRepository;
 import com.skillbridge.ai.repository.UsuarioRepository;
+import com.skillbridge.ai.model.TokenRecuperacionPassword;
 import com.skillbridge.ai.util.PasswordPolicy;
 import com.skillbridge.ai.util.Roles;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +67,14 @@ public class AuthService {
     private final JdbcTemplate jdbcTemplate;
     /** Bean BCrypt de SecurityConfig (Clase 6.1). */
     private final PasswordEncoder passwordEncoder;
+    private final TokenRecuperacionPasswordRepository tokenRecuperacionRepository;
+    private final EmailService emailService;
+
+    @Value("${app.base-url:}")
+    private String baseUrl;
+
+    /** Vigencia de un enlace de "olvide mi contraseña" (ver recuperar-password.html). */
+    private static final long RECUPERACION_MINUTOS = 30;
 
     private final ConcurrentHashMap<String, int[]> intentosFallidos = new ConcurrentHashMap<>();
 
@@ -74,7 +87,9 @@ public class AuthService {
                         ConfiguracionService configuracionService,
                         NotificacionService notificacionService,
                         JdbcTemplate jdbcTemplate,
-                        PasswordEncoder passwordEncoder) {
+                        PasswordEncoder passwordEncoder,
+                        TokenRecuperacionPasswordRepository tokenRecuperacionRepository,
+                        EmailService emailService) {
         this.passwordEncoder = passwordEncoder;
         this.usuarioRepository = usuarioRepository;
         this.perfilRepository = perfilRepository;
@@ -85,6 +100,8 @@ public class AuthService {
         this.configuracionService = configuracionService;
         this.notificacionService = notificacionService;
         this.jdbcTemplate = jdbcTemplate;
+        this.tokenRecuperacionRepository = tokenRecuperacionRepository;
+        this.emailService = emailService;
     }
 
     /**
@@ -399,5 +416,92 @@ public class AuthService {
 
     private String limpiar(String s) {
         return s != null ? s.trim() : null;
+    }
+
+    // ───────────────────────── Recuperar contraseña ─────────────────────────
+
+    /**
+     * Pide un enlace de "olvide mi contraseña". Si el correo no existe en el
+     * sistema, el metodo NO lanza error ni avisa nada distinto - la pantalla
+     * siempre dice "si el correo existe, te llegara un enlace", para no
+     * revelar a un atacante que correos estan registrados (enumeracion de
+     * usuarios). Cualquier token anterior del mismo usuario queda invalidado.
+     */
+    @Transactional
+    public void solicitarRecuperacion(String correoCrudo) {
+        String correo = correoCrudo == null ? "" : correoCrudo.trim().toLowerCase();
+        if (correo.isBlank()) return;
+        Optional<Usuario> ou = usuarioRepository.findByCorreoIgnoreCase(correo);
+        if (ou.isEmpty()) return;
+        Usuario usuario = ou.get();
+
+        tokenRecuperacionRepository.deleteByUsuarioId(usuario.getId());
+
+        String token = generarToken();
+        TokenRecuperacionPassword t = new TokenRecuperacionPassword();
+        t.setUsuarioId(usuario.getId());
+        t.setToken(token);
+        t.setFechaCreacion(LocalDateTime.now());
+        t.setFechaExpiracion(LocalDateTime.now().plusMinutes(RECUPERACION_MINUTOS));
+        t.setUsado(false);
+        tokenRecuperacionRepository.save(t);
+
+        String ruta = "/auth/restablecer-password.html?token=" + token;
+        String link = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl + ruta : ruta;
+        emailService.enviarNotificacion(usuario.getCorreo(), "Recupera tu contraseña de SkillBridge AI",
+                "Restablece tu contraseña",
+                "Recibimos una solicitud para restablecer tu contraseña. Este enlace es valido por "
+                        + RECUPERACION_MINUTOS + " minutos. Si no fuiste tu, ignora este correo: tu contraseña actual sigue funcionando.",
+                link, "Restablecer contraseña");
+    }
+
+    /** true si el token existe, no fue usado y todavia no vencio (para pintar el formulario o el error en restablecer-password.html). */
+    public boolean tokenDeRecuperacionValido(String token) {
+        if (token == null || token.isBlank()) return false;
+        return tokenRecuperacionRepository.findByToken(token)
+                .filter(t -> !t.isUsado() && t.getFechaExpiracion().isAfter(LocalDateTime.now()))
+                .isPresent();
+    }
+
+    /**
+     * Aplica la nueva contraseña si el token sigue siendo valido. Devuelve
+     * null si todo salio bien, o el mensaje de error listo para mostrar en
+     * el formulario si no (igual que el resto de validaciones de este
+     * servicio - ver registrar()).
+     */
+    @Transactional
+    public String restablecerContrasena(String token, String nuevaContrasena, String nuevaContrasena2) {
+        Optional<TokenRecuperacionPassword> ot = token == null ? Optional.empty() : tokenRecuperacionRepository.findByToken(token);
+        if (ot.isEmpty() || ot.get().isUsado() || ot.get().getFechaExpiracion().isBefore(LocalDateTime.now())) {
+            return "Este enlace ya no es válido. Solicita uno nuevo desde \"¿Olvidaste tu contraseña?\".";
+        }
+        if (nuevaContrasena == null || nuevaContrasena.isEmpty()) {
+            return "La contraseña es obligatoria.";
+        }
+        String errorPwd = PasswordPolicy.validar(nuevaContrasena);
+        if (errorPwd != null) return errorPwd;
+        if (nuevaContrasena2 == null || !nuevaContrasena.equals(nuevaContrasena2)) {
+            return "Las contraseñas no coinciden.";
+        }
+
+        TokenRecuperacionPassword t = ot.get();
+        Optional<Usuario> ou = usuarioRepository.findById(t.getUsuarioId());
+        if (ou.isEmpty()) return "El enlace ya no es válido.";
+        Usuario usuario = ou.get();
+        usuario.setContrasenaHash(passwordEncoder.encode(nuevaContrasena));
+        usuarioRepository.save(usuario);
+
+        t.setUsado(true);
+        tokenRecuperacionRepository.save(t);
+
+        auditoriaService.registrar(usuario.getId(), "CONTRASENA_RESTABLECIDA", "usuario", usuario.getId(), null, null,
+                "Restablecimiento via enlace de \"olvide mi contraseña\" (" + usuario.getCorreo() + ")");
+        return null;
+    }
+
+    private String generarToken() {
+        byte[] datos = new byte[32];
+        new SecureRandom().nextBytes(datos);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(datos);
     }
 }
