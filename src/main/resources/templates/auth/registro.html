@@ -1,36 +1,42 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Crear cuenta · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+<link rel="icon" type="image/png" href="/img/logo-icon.png">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/auth-center.css">
 </head>
 <body>
+<button type="button" id="theme-toggle-btn" class="btn btn-secondary btn-icon-only" aria-label="Cambiar a modo oscuro" style="position:fixed; top:var(--space-4); right:var(--space-4); z-index:var(--z-topbar);"><svg class="icon"><use href="/img/icons.svg#icon-monitor"></use></svg></button>
 
-<div class="auth-shell">
-  <aside class="auth-aside">
-    <div class="auth-aside-top">
-      <div class="auth-aside-brand">
-        <span class="sidebar-brand-mark"><svg class="icon"><use href="../../static/img/icons.svg#icon-logo"></use></svg></span>
-        <span class="sidebar-brand-text">SkillBridge AI</span>
+
+<!-- Mismo layout centrado que login / recuperar / restablecer (auth-center.css). -->
+<div class="auth-center-page auth-center-page-tall">
+  <a class="auth-corner-back" th:href="@{/bienvenida.html}">
+    <svg class="icon"><use href="/img/icons.svg#icon-arrow-left"></use></svg>
+    Volver al inicio
+  </a>
+
+    <div class="auth-card card auth-card-wizard">
+      <a class="auth-back-link" href="login.html"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-arrow-left"></use></svg>Volver a iniciar sesión</a>
+
+      <div class="auth-card-header">
+        <img src="/img/logo-horizontal-tight.png" alt="SkillBridge AI">
       </div>
-      <h1 class="auth-aside-headline">Crea tu perfil y deja que el sistema encuentre tus proyectos.</h1>
-      <p class="auth-aside-sub">Tres pasos: datos corporativos, tus habilidades y nivel, y la validación de tu manager. Tu rol final lo asigna el Administrador.</p>
-    </div>
-    <p class="auth-aside-footer">Solo se admiten correos del dominio nexacorp.com.</p>
-  </aside>
 
-  <main class="auth-main">
-    <div class="auth-card auth-card-wide">
-      <a class="auth-back-link" href="login.html"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-arrow-left"></use></svg>Inicia sesión</a>
       <h2 class="auth-card-title">Crear cuenta</h2>
-      <p class="auth-card-sub">Crea tu perfil y deja que el sistema encuentre tus proyectos.</p>
+      <p class="auth-card-sub">Tres pasos: datos corporativos, tus habilidades y nivel, y la confirmación. Tu rol lo asigna el Administrador.</p>
 
-      <div class="wizard-steps" style="margin-top:var(--space-8);">
+      <div th:if="${errores != null and errores['_global'] != null}" th:text="${errores['_global']}"
+           style="background:var(--red-bg); border:1px solid var(--red-border); color:var(--red-fg-strong); padding:10px 14px; border-radius:8px; margin-top:var(--space-5); font-size:var(--fs-sm);"></div>
+
+      <div class="wizard-steps">
         <div class="wizard-step active" data-step-indicator="1">
           <span class="wizard-step-dot">1</span><span class="wizard-step-label">Datos corporativos</span>
           <span class="wizard-step-line"></span>
@@ -40,35 +46,40 @@
           <span class="wizard-step-line"></span>
         </div>
         <div class="wizard-step" data-step-indicator="3">
-          <span class="wizard-step-dot">3</span><span class="wizard-step-label">Validación del manager</span>
+          <span class="wizard-step-dot">3</span><span class="wizard-step-label">Confirmación</span>
         </div>
       </div>
 
       <p class="label-mono" id="step-label" style="margin-bottom:var(--space-4);">PASO 1 DE 3</p>
 
+      <form id="registro-form" th:action="@{/auth/registro.html}" method="post">
+      <input type="hidden" id="habilidades-json" name="habilidadesJson" value="[]">
+
       <!-- ================= PASO 1 ================= -->
       <section class="wizard-panel active" data-panel="1">
-        <p class="field-hint" style="margin-bottom:var(--space-5);">Solo se admiten correos del dominio nexacorp.com.</p>
+        <p class="field-hint" style="margin-bottom:var(--space-5);">Usa el correo al que te llegó la invitación: solo pueden registrarse los correos que un Administrador autorizó.</p>
 
         <div class="field-row">
-          <div class="field"><label class="field-label" for="reg-nombres">Nombres</label>
-            <input class="input" id="reg-nombres" placeholder="Ricardo" value="Ricardo">
-            <div class="field-error">Escribe tus nombres.</div>
+          <div class="field" th:classappend="${errores != null and errores['nombres'] != null} ? 'has-error'">
+            <label class="field-label" for="reg-nombres">Nombres</label>
+            <input class="input" id="reg-nombres" name="nombres" placeholder="Ricardo" th:value="${valNombres} ?: ''">
+            <div class="field-error" th:if="${errores != null and errores['nombres'] != null}" style="display:flex;" th:text="${errores['nombres']}">Escribe tus nombres.</div>
           </div>
-          <div class="field"><label class="field-label" for="reg-apellidos">Apellidos</label>
-            <input class="input" id="reg-apellidos" placeholder="Bastos" value="Bastos">
-            <div class="field-error">Escribe tus apellidos.</div>
+          <div class="field" th:classappend="${errores != null and errores['apellidos'] != null} ? 'has-error'">
+            <label class="field-label" for="reg-apellidos">Apellidos</label>
+            <input class="input" id="reg-apellidos" name="apellidos" placeholder="Bastos" th:value="${valApellidos} ?: ''">
+            <div class="field-error" th:if="${errores != null and errores['apellidos'] != null}" style="display:flex;" th:text="${errores['apellidos']}">Escribe tus apellidos.</div>
           </div>
         </div>
 
-        <div class="field" id="field-reg-email">
-          <label class="field-label" for="reg-email">Correo corporativo</label>
-          <input class="input" type="email" id="reg-email" placeholder="nombre.apellido@nexacorp.com" value="ricardo.bastos@nexacorp.com">
-          <label class="checkbox-row" style="margin-top:2px;">
-            <input type="checkbox" id="reg-domain-check" disabled>
-            <span class="checkbox-label label-mono" id="reg-domain-label" style="color:var(--green-fg);">DOMINIO VÁLIDO</span>
-          </label>
-          <div class="field-error">Usa un correo @nexacorp.com.</div>
+        <div class="field" id="field-reg-email" th:classappend="${errores != null and errores['correo'] != null} ? 'has-error'">
+          <label class="field-label" for="reg-email">Correo de tu invitación</label>
+          <input class="input" type="email" id="reg-email" name="correo" placeholder="El correo donde recibiste la invitación" th:value="${valCorreo} ?: ''">
+          <div class="reg-email-status" id="reg-email-status" data-estado="vacio" aria-live="polite">
+            <span class="reg-email-status-icon" aria-hidden="true"></span>
+            <span id="reg-domain-label" th:text="${desdeInvitacion} ? 'Verificando el correo de tu invitación…' : 'Escribe el correo de tu invitación'">Escribe el correo de tu invitación</span>
+          </div>
+          <div class="field-error" id="reg-email-server-error" th:if="${errores != null and errores['correo'] != null}" style="display:flex;" th:text="${errores['correo']}">Este correo no está autorizado.</div>
         </div>
 
         <div class="field-row">
@@ -77,20 +88,26 @@
               <option>Plataforma</option><option>Ingeniería de Software</option><option>Delivery</option>
               <option>Datos</option><option>Diseño</option><option>Calidad</option><option>TI Corporativa</option>
             </select>
+            <p class="field-hint">Solo referencial: no forma parte del esquema de datos todavía.</p>
           </div>
           <div class="field"><label class="field-label" for="reg-cargo">Cargo</label>
-            <input class="input" id="reg-cargo" placeholder="Platform Engineer" value="Platform Engineer">
+            <input class="input" id="reg-cargo" name="cargo" placeholder="Platform Engineer" th:value="${valCargo} ?: ''">
           </div>
         </div>
 
         <div class="field-row">
-          <div class="field"><label class="field-label" for="reg-pass">Contraseña</label>
-            <div class="input-wrap"><input class="input" type="password" id="reg-pass" placeholder="••••••••••••">
+          <div class="field" th:classappend="${errores != null and errores['contrasena'] != null} ? 'has-error'">
+            <label class="field-label" for="reg-pass">Contraseña</label>
+            <div class="input-wrap"><input class="input" type="password" id="reg-pass" name="contrasena" placeholder="••••••••••••">
               <button type="button" class="input-action" data-toggle-password="reg-pass">Mostrar</button></div>
+            <div class="field-error" th:if="${errores != null and errores['contrasena'] != null}" style="display:flex;" th:text="${errores['contrasena']}">Contraseña inválida.</div>
           </div>
-          <div class="field"><label class="field-label" for="reg-pass2">Confirmar contraseña</label>
-            <div class="input-wrap"><input class="input" type="password" id="reg-pass2" placeholder="••••••••••••">
+          <div class="field" th:classappend="${errores != null and errores['contrasena2'] != null} ? 'has-error'">
+            <label class="field-label" for="reg-pass2">Confirmar contraseña</label>
+            <div class="input-wrap"><input class="input" type="password" id="reg-pass2" name="contrasena2" placeholder="••••••••••••">
               <button type="button" class="input-action" data-toggle-password="reg-pass2">Mostrar</button></div>
+            <div class="field-error" th:if="${errores != null and errores['contrasena2'] != null}" style="display:flex;" th:text="${errores['contrasena2']}">Las contraseñas no coinciden.</div>
+          <div class="pwd-tools"><button type="button" class="btn btn-secondary btn-sm" data-generar-password data-target="#reg-pass,#reg-pass2">Generar contraseña segura</button></div>
           </div>
         </div>
 
@@ -99,13 +116,13 @@
           <span class="pw-strength-label" id="pw-strength-label">SEGURIDAD DE LA CONTRASEÑA</span>
           <div class="pw-checklist">
             <div class="pw-check unmet" data-check="len">
-              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="../../static/img/icons.svg#icon-check"></use></svg></span>12 caracteres</div>
+              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="/img/icons.svg#icon-check"></use></svg></span>12 caracteres</div>
             <div class="pw-check unmet" data-check="upnum">
-              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="../../static/img/icons.svg#icon-check"></use></svg></span>Mayúscula y número</div>
+              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="/img/icons.svg#icon-check"></use></svg></span>Mayúscula y número</div>
             <div class="pw-check unmet" data-check="special">
-              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="../../static/img/icons.svg#icon-check"></use></svg></span>Símbolo especial</div>
+              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="/img/icons.svg#icon-check"></use></svg></span>Símbolo especial</div>
             <div class="pw-check unmet" data-check="match">
-              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="../../static/img/icons.svg#icon-check"></use></svg></span>Las contraseñas coinciden</div>
+              <span class="check-dot"><svg class="icon" style="width:9px;height:9px;"><use href="/img/icons.svg#icon-check"></use></svg></span>Las contraseñas coinciden</div>
           </div>
         </div>
 
@@ -134,31 +151,24 @@
             </select>
           </div>
           <button type="button" class="btn btn-secondary" id="add-skill-btn" style="height:44px;">
-            <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Agregar</button>
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar</button>
         </div>
 
         <div id="skills-added" style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin:var(--space-5) 0;"></div>
-        <div class="field-error" id="skills-error" style="margin-bottom:var(--space-4);">Agrega al menos una habilidad para continuar.</div>
+        <div class="field-error" id="skills-error" th:text="${errores != null and errores['habilidades'] != null} ? ${errores['habilidades']} : 'Agrega al menos una habilidad para continuar.'"
+             th:style="${errores != null and errores['habilidades'] != null} ? 'display:flex;margin-bottom:var(--space-4);' : 'margin-bottom:var(--space-4);'">Agrega al menos una habilidad para continuar.</div>
 
         <div class="btn-group" style="margin-top:var(--space-4); justify-content:space-between;">
           <button type="button" class="btn btn-secondary" data-go-step="1">Volver</button>
-          <button type="button" class="btn btn-primary" data-go-step="3">Continuar a validación</button>
+          <button type="button" class="btn btn-primary" data-go-step="3">Continuar a confirmación</button>
         </div>
       </section>
 
       <!-- ================= PASO 3 ================= -->
       <section class="wizard-panel" data-panel="3">
         <div class="callout info" style="margin-bottom:var(--space-6);">
-          <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-info"></use></svg></span>
-          <span class="callout-body">Tu rol en la plataforma lo asigna el Administrador después de aprobar esta solicitud. Mientras tanto, puedes explorar SkillBridge AI con un usuario de referencia.</span>
-        </div>
-
-        <div class="field"><label class="field-label" for="reg-manager">Manager que valida tu ingreso</label>
-          <select class="select" id="reg-manager">
-            <option>Javier Molina — Project Manager</option>
-            <option>Paula Vega — Resource Manager</option>
-            <option>Ana Villalba — Administradora de plataforma</option>
-          </select>
+          <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-info"></use></svg></span>
+          <span class="callout-body">Tu rol en la plataforma lo asigna el Administrador después de crear tu cuenta. Al confirmar, tu cuenta queda activa de inmediato para que puedas iniciar sesión.</span>
         </div>
 
         <div class="card" style="margin:var(--space-5) 0;">
@@ -168,47 +178,104 @@
 
         <div class="btn-group" style="justify-content:space-between;">
           <button type="button" class="btn btn-secondary" data-go-step="2">Volver</button>
-          <button type="button" class="btn btn-primary" id="submit-registration">Enviar solicitud</button>
+          <button type="submit" class="btn btn-primary" id="submit-registration">Crear mi cuenta</button>
         </div>
       </section>
 
+      </form>
+
     </div>
-  </main>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script>
+<script th:inline="javascript">
+  var ERROR_HABILIDADES = /*[[${errores != null and errores['habilidades'] != null}]]*/ false;
+</script>
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/modal.js"></script>
+<script th:inline="javascript">
 document.addEventListener("DOMContentLoaded", function () {
   var addedSkills = [];
-
-  document.querySelectorAll("[data-toggle-password]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var input = document.getElementById(btn.dataset.togglePassword);
-      var show = input.type === "password";
-      input.type = show ? "text" : "password";
-      btn.textContent = show ? "Ocultar" : "Mostrar";
-    });
-  });
-
-  /* ---- Dominio válido reactivo ---- */
+  /* ---- Correo autorizado (consulta correos_autorizados en la BD) ----
+     Ya no se valida por dominio: puede registrarse exactamente el correo
+     que autorizó un Administrador (el que recibió la invitación). La
+     consulta es solo ayuda visual: AuthService.registrar vuelve a validar
+     todo al enviar el formulario. */
   var emailInput = document.getElementById("reg-email");
-  function checkDomain() {
-    var ok = /@nexacorp\.com$/i.test(emailInput.value.trim());
-    document.getElementById("reg-domain-check").checked = ok;
-    var label = document.getElementById("reg-domain-label");
-    label.textContent = ok ? "DOMINIO VÁLIDO" : "DOMINIO NO VÁLIDO";
-    label.style.color = ok ? "var(--green-fg)" : "var(--red-fg)";
-    document.getElementById("field-reg-email").classList.toggle("has-error", !ok);
-    return ok;
-  }
-  emailInput.addEventListener("input", checkDomain);
-  checkDomain();
+  var emailStatus = document.getElementById("reg-email-status");
+  var emailLabel = document.getElementById("reg-domain-label");
+  var FORMATO_CORREO = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/i;
+  var MENSAJES_CORREO = {
+    vacio: "Escribe el correo de tu invitación",
+    formato: "Escribe un correo con formato válido",
+    verificando: "Verificando…",
+    autorizado: "Correo autorizado: puedes crear tu cuenta",
+    no_autorizado: "Este correo no está autorizado. Usa el correo al que te llegó la invitación.",
+    registrado: "Ya existe una cuenta con este correo.",
+    limite: "Demasiadas consultas. Espera unos minutos.",
+    error: "No pudimos verificar el correo ahora. Se validará al crear la cuenta."
+  };
+  var cacheCorreos = {};
+  var estadoCorreo = "vacio";
+  var correoVerificado = "";
+  var temporizadorCorreo = null;
 
-  /* ---- Medidor de fuerza de contraseña ---- */
+  function pintarCorreo(estado) {
+    estadoCorreo = estado;
+    emailStatus.dataset.estado = estado;
+    emailLabel.textContent = MENSAJES_CORREO[estado] || "";
+    if (estado === "registrado") {
+      var a = document.createElement("a");
+      a.href = "login.html"; a.textContent = " Inicia sesión";
+      emailLabel.appendChild(a);
+    }
+    // El mensaje del servidor (si volvió de un intento fallido) se reemplaza por el estado en vivo.
+    var errorServidor = document.getElementById("reg-email-server-error");
+    if (errorServidor && estado !== "verificando" && estado !== "error") errorServidor.style.display = "none";
+    var conError = estado === "formato" || estado === "no_autorizado" || estado === "registrado";
+    document.getElementById("field-reg-email").classList.toggle("has-error", conError);
+  }
+
+  /** Devuelve una promesa con el estado del correo actual (usa caché por correo). */
+  function verificarCorreo() {
+    var valor = emailInput.value.trim().toLowerCase();
+    if (!valor) { pintarCorreo("vacio"); return Promise.resolve("vacio"); }
+    if (!FORMATO_CORREO.test(valor)) { pintarCorreo("formato"); return Promise.resolve("formato"); }
+    if (cacheCorreos[valor]) { correoVerificado = valor; pintarCorreo(cacheCorreos[valor]); return Promise.resolve(cacheCorreos[valor]); }
+    pintarCorreo("verificando");
+    return fetch("/auth/registro/verificar-correo?correo=" + encodeURIComponent(valor), {
+      headers: { "Accept": "application/json" }, credentials: "same-origin"
+    }).then(function (r) { return r.json(); })
+      .then(function (data) {
+        var estado = MENSAJES_CORREO[data.estado] ? data.estado : "error";
+        if (estado !== "limite") cacheCorreos[valor] = estado;
+        // Si mientras tanto la persona siguió escribiendo, no pisar el estado nuevo.
+        if (emailInput.value.trim().toLowerCase() === valor) { correoVerificado = valor; pintarCorreo(estado); }
+        return estado;
+      })
+      .catch(function () {
+        if (emailInput.value.trim().toLowerCase() === valor) pintarCorreo("error");
+        return "error";
+      });
+  }
+
+  emailInput.addEventListener("input", function () {
+    clearTimeout(temporizadorCorreo);
+    var valor = emailInput.value.trim();
+    if (!valor) { pintarCorreo("vacio"); return; }
+    pintarCorreo(FORMATO_CORREO.test(valor) ? "verificando" : "formato");
+    if (FORMATO_CORREO.test(valor)) temporizadorCorreo = setTimeout(verificarCorreo, 450);
+  });
+  emailInput.addEventListener("blur", function () { clearTimeout(temporizadorCorreo); if (emailInput.value.trim()) verificarCorreo(); });
+  if (emailInput.value.trim()) verificarCorreo();
+
+  /* ---- Medidor de fuerza de contraseña ----
+     Las 4 casillas (12 caracteres, mayúscula+número, símbolo, coinciden) se
+     exigen TODAS para avanzar (antes solo pedía 2 de 4, lo que dejaba pasar
+     al paso 2 contraseñas que el servidor iba a rechazar igual: el
+     checklist prometía 4 requisitos pero solo exigía la mitad). */
   var passInput = document.getElementById("reg-pass");
   var pass2Input = document.getElementById("reg-pass2");
   function evalPassword() {
@@ -223,7 +290,7 @@ document.addEventListener("DOMContentLoaded", function () {
     wrap.dataset.level = String(level);
     var labels = ["MUY DÉBIL", "DÉBIL", "MEDIA", "FUERTE", "MUY FUERTE"];
     document.getElementById("pw-strength-label").textContent = "SEGURIDAD DE LA CONTRASEÑA — " + labels[level];
-    return { lenOk: lenOk, upNumOk: upNumOk, matchOk: matchOk, level: level };
+    return { lenOk: lenOk, upNumOk: upNumOk, specialOk: specialOk, matchOk: matchOk, level: level };
   }
   function setCheck(name, ok) {
     var el = document.querySelector('[data-check="' + name + '"]');
@@ -249,7 +316,7 @@ document.addEventListener("DOMContentLoaded", function () {
     el.innerHTML = addedSkills.map(function (s, i) {
       return '<span class="skill-pill" data-level="' + s.nivel + '">' + s.nombre + " · " + s.nivel +
         ' <button type="button" data-remove-skill="' + i + '" style="background:none;border:none;cursor:pointer;color:inherit;padding:0;margin-left:4px;">' +
-        '<svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></span>';
+        '<svg class="icon icon-sm"><use href="/img/icons.svg#icon-x"></use></svg></button></span>';
     }).join("");
     el.querySelectorAll("[data-remove-skill]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -271,15 +338,30 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   /* ---- Navegación entre pasos ---- */
+  var correoListo = false;
   function goStep(n) {
+    if (n === 2 && !correoListo) {
+      verificarCorreo().then(function (estado) {
+        if (estado === "no_autorizado" || estado === "registrado" || estado === "formato" || estado === "vacio") {
+          SBAI.toast.show(estado === "registrado" ? "Ya existe una cuenta con este correo. Inicia sesión."
+            : "Usa el correo autorizado al que te llegó la invitación.", { type: "error" });
+          emailInput.focus();
+          return;
+        }
+        // "autorizado", o "error"/"limite" (no se bloquea: el servidor valida al enviar).
+        correoListo = true;
+        goStep(2);
+        correoListo = false;
+      });
+      return;
+    }
     if (n === 2) {
       var nombresOk = document.getElementById("reg-nombres").value.trim().length > 0;
       var apellidosOk = document.getElementById("reg-apellidos").value.trim().length > 0;
-      var domainOk = checkDomain();
       var pw = evalPassword();
       var policyOk = document.getElementById("reg-policy").checked;
-      if (!nombresOk || !apellidosOk || !domainOk || !pw.matchOk || pw.level < 2 || !policyOk) {
-        SBAI.toast.show("Completa los datos corporativos, una contraseña segura y acepta la política para continuar.", { type: "error" });
+      if (!nombresOk || !apellidosOk || !pw.lenOk || !pw.upNumOk || !pw.specialOk || !pw.matchOk || !policyOk) {
+        SBAI.toast.show("Completa tus datos, una contraseña que cumpla los 4 requisitos y acepta la política para continuar.", { type: "error" });
         return;
       }
     }
@@ -305,8 +387,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var nombre = document.getElementById("reg-nombres").value + " " + document.getElementById("reg-apellidos").value;
     var html = '<div class="info-row"><span class="info-row-label">Nombre</span><span class="info-row-value">' + nombre + '</span></div>' +
       '<div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value">' + emailInput.value + '</span></div>' +
-      '<div class="info-row"><span class="info-row-label">Área</span><span class="info-row-value">' + document.getElementById("reg-area").value + '</span></div>' +
-      '<div class="info-row"><span class="info-row-label">Cargo</span><span class="info-row-value">' + document.getElementById("reg-cargo").value + '</span></div>' +
+      '<div class="info-row"><span class="info-row-label">Cargo</span><span class="info-row-value">' + (document.getElementById("reg-cargo").value || "—") + '</span></div>' +
       '<div class="info-row"><span class="info-row-label">Habilidades</span><span class="info-row-value">' + addedSkills.map(function (s) { return s.nombre + " (" + s.nivel + ")"; }).join(", ") + '</span></div>';
     document.getElementById("summary-body").innerHTML = html;
   }
@@ -315,11 +396,25 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", function () { goStep(Number(btn.dataset.goStep)); });
   });
 
-  document.getElementById("submit-registration").addEventListener("click", function () {
-    SBAI.toast.show("Solicitud enviada a " + document.getElementById("reg-manager").value.split(" — ")[0] + ". Te avisaremos cuando el Administrador asigne tu rol.", { type: "success" });
-    setTimeout(function () { SBAI.modal.openRolePicker(); }, 500);
+  // Justo antes de que el navegador envíe el <form>, se serializan las
+  // habilidades declaradas (en memoria) al input oculto que sí viaja al
+  // servidor.
+  document.getElementById("registro-form").addEventListener("submit", function (e) {
+    if (!addedSkills.length) {
+      e.preventDefault();
+      goStep(2);
+      SBAI.toast.show("Agrega al menos una habilidad para continuar.", { type: "error" });
+      return;
+    }
+    document.getElementById("habilidades-json").value = JSON.stringify(addedSkills);
   });
+
+  // Si el servidor devolvió un error de habilidades (formulario reenviado
+  // tras una validacion fallida), saltar directo al paso 2 para que se vea.
+  if (ERROR_HABILIDADES) goStep(2);
 });
 </script>
+<script src="/js/theme-toggle.js"></script>
+<script src="/js/password-generator.js"></script>
 </body>
 </html>

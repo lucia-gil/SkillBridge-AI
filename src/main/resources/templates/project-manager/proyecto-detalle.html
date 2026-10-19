@@ -4,19 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Núcleo Retail · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
+<script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
+
 <div class="app-shell">
   <aside class="sidebar" id="sbai-sidebar"></aside>
   <div class="main-content">
     <header class="topbar" id="sbai-topbar"></header>
     <main class="page-content" id="page-content">
 
-      <a href="proyectos.html" class="breadcrumb"><svg class="icon icon-sm" style="vertical-align:-3px;"><use href="../../static/img/icons.svg#icon-arrow-left"></use></svg> Proyectos <span class="sep">›</span> <span class="current">PRJ-NR-2026</span></a>
+      <a href="proyectos.html" class="breadcrumb"><svg class="icon icon-sm" style="vertical-align:-3px;"><use href="/img/icons.svg#icon-arrow-left"></use></svg> Proyectos <span class="sep">›</span> <span class="current">PRJ-NR-2026</span></a>
 
       <section class="card card-pad" style="margin-top:var(--space-4);">
         <div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">
@@ -32,7 +35,7 @@
           </div>
           <div class="btn-group">
             <button type="button" class="btn btn-secondary" id="edit-project-btn">Editar</button>
-            <a href="ai-talent-matching.html" class="btn btn-primary"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-search-check"></use></svg>Buscar talento con IA</a>
+            <a href="ai-talent-matching.html" class="btn btn-primary"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-search-check"></use></svg>Buscar talento con IA</a>
           </div>
         </div>
       </section>
@@ -60,12 +63,12 @@
         <div style="display:flex; flex-direction:column; gap:var(--space-6);">
           <section class="card">
             <div class="card-header"><div class="card-header-text"><h2>Equipo asignado</h2></div>
-              <button type="button" class="btn btn-primary btn-sm" id="add-team-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Asignar</button></div>
+              <button type="button" class="btn btn-primary btn-sm" id="add-team-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Asignar</button></div>
             <div class="card-body-flush" id="equipo-asignado"></div>
           </section>
 
           <section class="callout ai">
-            <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-sparkles"></use></svg></span>
+            <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></span>
             <span class="callout-body"><span class="callout-title">Resumen IA del proyecto</span><span id="resumen-ia"></span></span>
           </section>
         </div>
@@ -75,14 +78,15 @@
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/command-palette.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/shell.js"></script>
+<script src="/js/theme-toggle.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   var cfg = SBAI.shell.init({ role: "project-manager", active: "proyectos.html", title: "Núcleo Retail", subtitle: "Proyectos › PRJ-NR-2026" });
@@ -123,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("add-team-btn").addEventListener("click", function () {
     var options = MOCK.collaborators.map(function (c) { return '<option value="' + c.nombre + '">' + c.nombre + " — " + c.cargo + "</option>"; }).join("");
     var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Asignar colaborador</h2><p>Núcleo Retail</p></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
       '<div class="modal-body"><div class="field"><label class="field-label">Colaborador</label><select class="select" id="assign-collab">' + options + '</select></div>' +
       '<div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" id="assign-pct" value="20" min="5" max="100" step="5"></div></div>' +
       '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-assign">Asignar</button></div></div>';

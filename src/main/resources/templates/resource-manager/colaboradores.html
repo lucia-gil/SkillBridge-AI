@@ -1,58 +1,88 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Colaboradores · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colaboradores · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <section class="card" style="display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2)); overflow:hidden;">
-        <div class="table-toolbar" style="flex-shrink:0;">
-          <div class="card-header-icon-row">
-            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
-            <div>
-              <strong id="collab-count"></strong>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="collab-subtitle"></p>
-            </div>
+      <section class="card">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${colaboradores.size()} + ' colaboradores en esta vista'">0 colaboradores</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Directorio completo del equipo</p>
           </div>
           <div class="table-filters">
-            <input type="text" class="input" placeholder="Buscar por nombre…" id="collab-search" style="width:200px; height:38px; font-size:var(--fs-xs);">
-            <select class="select" id="celula-filter">
-              <option value="todos">Célula: todas</option><option>Andes</option><option>Aurora</option><option>Retail</option><option>Interno</option>
+            <select class="select" id="filtro-habilidad" onchange="aplicarFiltros()">
+              <option value="">Habilidad: todas</option>
+              <option th:each="h : ${catalogoHabilidades}"
+                      th:value="${h.id}"
+                      th:text="${h.nombre} + ' (' + ${h.categoria.nombre} + ')'"
+                      th:selected="${habilidadIdSeleccionada != null and habilidadIdSeleccionada == h.id}">
+              </option>
             </select>
-            <select class="select" id="estado-filter">
-              <option value="todos">Estado: todos</option><option>Activo</option><option>Bloqueado</option>
+            <select class="select" id="filtro-estado" onchange="aplicarFiltros()">
+              <option value="">Estado: todos</option>
+              <option value="activo" th:selected="${estadoSeleccionado == 'activo'}">Disponible</option>
+              <option value="inactivo" th:selected="${estadoSeleccionado == 'inactivo'}">No disponible</option>
+              <option value="cuenta_suspendida" th:selected="${estadoSeleccionado == 'cuenta_suspendida'}">Cuenta suspendida</option>
             </select>
           </div>
         </div>
 
-        <div class="table-scroll-wrap">
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead class="sticky-head"><tr><th>Colaborador</th><th>Cargo</th><th>Célula</th><th>Ocupación</th><th>Estado</th><th>Último acceso</th><th>Acciones</th></tr></thead>
-              <tbody id="collab-body"></tbody>
-            </table>
-          </div>
-          <div class="state-panel" id="collab-empty" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
-            <span class="state-panel-title">Sin colaboradores con estos filtros</span>
-            <span class="state-panel-desc">Ajusta la búsqueda, la célula o el estado.</span>
-          </div>
+        <div th:if="${colaboradores.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+          <span class="state-panel-title">Sin colaboradores con estos filtros</span>
+          <span class="state-panel-desc">Ajusta la habilidad o el estado seleccionado.</span>
         </div>
 
-        <div class="table-footer" style="flex-shrink:0;">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="collab-pagination-count"></span>
-          <div class="pagination" id="collab-pagination-controls"></div>
+        <div class="table-scroll" th:unless="${colaboradores.isEmpty()}">
+          <table class="data-table">
+            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Habilidades principales</th><th>Ocupación</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="colaboradores-body">
+            <tr th:each="c : ${colaboradores}" data-colaborador-row>
+              <td class="cell-person">
+                <img th:if="${c.tieneFoto}" th:src="@{'/perfil/foto/' + ${c.usuarioId}}" width="28" height="28" style="width:28px;height:28px;min-width:28px;border-radius:50%;object-fit:cover;display:block;" th:alt="${c.nombre}">                <span th:unless="${c.tieneFoto}" class="avatar avatar-sm" th:text="${c.iniciales}">MR</span>
+                <span class="cell-person-text"><span class="cell-person-name" th:text="${c.nombre}">Nombre</span><span class="cell-person-sub" th:text="${c.correo}">correo</span></span>
+              </td>
+              <td th:text="${c.cargo}">Cargo</td>
+              <td>
+                <span th:each="h : ${c.habilidadesTop}" class="badge badge-neutral" style="margin-right:4px;" th:text="${h.nombre}">Skill</span>
+                <span th:if="${c.habilidadesTop.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin habilidades declaradas</span>
+              </td>
+              <td>
+                <div class="progress-inline" style="min-width:100px;">
+                  <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${c.ocupacion > 100} ? 'red' : (${c.ocupacion >= 90} ? 'amber' : '')" th:style="'width:' + ${c.ocupacion > 100 ? 100 : c.ocupacion} + '%;'"></div></div>
+                  <span class="progress-value" th:text="${c.ocupacion} + '%'">0%</span>
+                </div>
+              </td>
+              <td><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span></td>
+              <td class="cell-actions">
+                <a th:href="@{/resource-manager/colaboradores/{id}(id=${c.perfilId})}">Ver perfil</a>
+                <!-- Modelo v7: el RM gestiona la DISPONIBILIDAD del perfil para proyectos;
+                     la cuenta (acceso a la plataforma) la gestiona el Administrador. -->
+                <button type="button" th:if="${c.estado == 'activo' and c.perfilId != miPerfilId}" class="danger" th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}">Marcar no disponible</button>
+                <button type="button" th:if="${c.estado == 'inactivo'}" th:attr="data-reactivar=${c.perfilId}, data-nombre=${c.nombre}">Marcar disponible</button>
+                <span class="text-tertiary" style="font-size:var(--fs-xs);" th:if="${c.estado == 'cuenta_suspendida'}">La reactiva el Administrador</span>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer" th:unless="${colaboradores.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="colaboradores-visible-count">0</span> de <span id="colaboradores-total-count">0</span> colaboradores</span>
+          <div class="pagination"><button class="page-btn" id="colaboradores-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="colaboradores-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="colaboradores-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
       </section>
 
@@ -60,142 +90,94 @@
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "resource-manager", active: "colaboradores.html", title: "Colaboradores", subtitle: "Catálogo operativo de " + MOCK.collaborators.length + " colaboradores evaluados" });
-  if (!cfg) return;
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 
-  document.getElementById("collab-subtitle").textContent = "Catálogo operativo · " + MOCK.meta.stats.colaboradores + " colaboradores en la plataforma";
-
-  function estadoBadge(e) { return e === "Bloqueado" ? "badge-red" : "badge-green"; }
-  function occClass(v) { return v > 100 ? "red" : v >= 90 ? "amber" : ""; }
-
-  var PAGE_SIZE = 6;
-  var currentPage = 1;
-
-  function getFiltered() {
-    var q = document.getElementById("collab-search").value.trim().toLowerCase();
-    var celula = document.getElementById("celula-filter").value;
-    var estado = document.getElementById("estado-filter").value;
-    return MOCK.collaborators.filter(function (c) {
-      if (q && (c.nombre + " " + c.cargo).toLowerCase().indexOf(q) === -1) return false;
-      if (celula !== "todos" && c.celula !== celula) return false;
-      if (estado !== "todos" && c.estado !== estado) return false;
-      return true;
-    });
+  function aplicarFiltros() {
+    var habilidadId = document.getElementById("filtro-habilidad").value;
+    var estado = document.getElementById("filtro-estado").value;
+    var params = new URLSearchParams();
+    if (habilidadId) params.set("habilidadId", habilidadId);
+    if (estado) params.set("estado", estado);
+    window.location.href = "/resource-manager/colaboradores.html" + (params.toString() ? "?" + params.toString() : "");
   }
 
-  function rowHtml(c, i) {
-    return '<tr data-f-estado="' + c.estado + '" style="animation-delay:' + (i * 30) + 'ms;">' +
-      '<td class="cell-person"><span class="avatar avatar-sm">' + c.iniciales + '</span><span class="cell-person-text"><span class="cell-person-name">' + c.nombre + '</span><span class="cell-person-sub">' + c.correo + '</span></span></td>' +
-      "<td>" + c.cargo + "</td><td>" + c.celula + "</td>" +
-      '<td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill ' + occClass(c.ocupacionProm) + '" data-target="' + Math.min(c.ocupacionProm, 100) + '" style="width:0%;"></div></div><span class="progress-value">' + c.ocupacionProm + '%</span></div></td>' +
-      '<td><span class="badge ' + estadoBadge(c.estado) + '">' + c.estado + '</span></td>' +
-      "<td class=\"text-tertiary\" style=\"font-size:var(--fs-xs);\">" + c.ultimoAcceso + "</td>" +
-      '<td class="cell-actions"><button type="button" data-view-collab="' + c.nombre + '">Ver perfil</button>' +
-      (c.estado === "Activo" ? '<button type="button" class="danger" data-suspend-collab="' + c.nombre + '">Suspender</button>' : '<button type="button" data-reactivate-collab="' + c.nombre + '">Reactivar</button>') +
-      "</td></tr>";
-  }
+  document.addEventListener("DOMContentLoaded", function () {
+    var submitForm = window.SBAI.submitForm;
 
-  function wireRowActions() {
-    document.querySelectorAll("[data-view-collab]").forEach(function (btn) {
+    document.querySelectorAll("[data-suspender]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var c = MOCK.findCollaborator(btn.dataset.viewCollab);
-        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>' + c.nombre + '</h2><p>' + c.cargo + ' · Célula ' + c.celula + '</p></div>' +
-          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-          '<div class="modal-body"><div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value">' + c.correo + '</span></div>' +
-          '<div class="info-row"><span class="info-row-label">Ocupación promedio</span><span class="info-row-value mono">' + c.ocupacionProm + '%</span></div>' +
-          '<div class="info-row"><span class="info-row-label">Último acceso</span><span class="info-row-value">' + c.ultimoAcceso + '</span></div>' +
-          '<p class="label-mono" style="margin:var(--space-4) 0 var(--space-2);">Habilidades principales</p>' +
-          '<div style="display:flex; flex-wrap:wrap; gap:var(--space-2);">' + c.skillsTop.map(function (s) { return '<span class="badge badge-neutral">' + s + "</span>"; }).join("") + '</div></div>' +
-          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button><a href="ai-talent-matching.html" class="btn btn-primary">Buscar vacante con IA</a></div></div>';
-        SBAI.modal.open(html);
-      });
-    });
-    document.querySelectorAll("[data-suspend-collab]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var nombre = btn.dataset.suspendCollab;
         SBAI.modal.confirm({
-          title: "¿Suspender a " + nombre + "?", desc: "Perderá acceso a la plataforma hasta que se reactive su cuenta.",
-          confirmLabel: "Suspender", variant: "destructive",
-          onConfirm: function () {
-            MOCK.findCollaborator(nombre).estado = "Bloqueado";
-            SBAI.toast.show("<strong>" + nombre + "</strong> fue suspendido.", { type: "success" });
-            render();
+          title: "¿Marcar a " + btn.dataset.nombre + " como no disponible?",
+          desc: "Deja de aparecer para asignaciones y propuestas hasta que lo vuelvas a marcar disponible. Sigue pudiendo iniciar sesión; su historial se conserva.",
+          variant: "warning", icon: "icon-user-x",
+          subject: { nombre: btn.dataset.nombre },
+          // Modelo v7: un perfil suspendido no sigue en proyectos.
+          consequences: [
+            "Si colabora en proyectos, esas asignaciones se finalizan y su carga se libera.",
+            "Si lidera algún proyecto, no se podrá suspender hasta usar “Cambiar PM” en Asignaciones."
+          ],
+          reason: { label: "Motivo", required: true, placeholder: "Ej.: licencia prolongada.",
+            presets: ["Licencia prolongada", "Terminó su contrato", "Solicitud del área"] },
+          confirmLabel: "Marcar no disponible", cancelLabel: "Volver",
+          onConfirm: function (d) {
+            submitForm("/resource-manager/colaboradores/" + btn.dataset.suspender + "/estado", { nuevoEstado: "inactivo", motivo: d.motivo });
           }
         });
       });
     });
-    document.querySelectorAll("[data-reactivate-collab]").forEach(function (btn) {
+
+    document.querySelectorAll("[data-reactivar]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var nombre = btn.dataset.reactivateCollab;
-        MOCK.findCollaborator(nombre).estado = "Activo";
-        SBAI.toast.show("<strong>" + nombre + "</strong> fue reactivado.", { type: "success" });
-        render();
+        submitForm("/resource-manager/colaboradores/" + btn.dataset.reactivar + "/estado", { nuevoEstado: "activo" });
       });
     });
-  }
 
-  function renderPagination(total, totalPages) {
-    var countEl = document.getElementById("collab-pagination-count");
-    var controlsEl = document.getElementById("collab-pagination-controls");
-    if (total === 0) { countEl.textContent = ""; controlsEl.innerHTML = ""; return; }
-    var start = (currentPage - 1) * PAGE_SIZE + 1;
-    var end = Math.min(currentPage * PAGE_SIZE, total);
-    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " colaboradores";
-    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
-    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
-    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
-    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
-    controlsEl.innerHTML = html;
-    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
-    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
-    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
-    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
-  }
+    // Paginación en el cliente: los filtros de Habilidad/Estado ya recargan
+    // la página contra el servidor (aplicarFiltros()), asi que aqui solo
+    // hace falta paginar la lista que el servidor ya devolvio filtrada -
+    // no hace falta filtrar de nuevo en JS.
+    var rows = Array.from(document.querySelectorAll("[data-colaborador-row]"));
+    if (rows.length) {
+      var pageSize = 6;
+      var page = 1;
+      var visibleCount = document.getElementById("colaboradores-visible-count");
+      var totalCount = document.getElementById("colaboradores-total-count");
+      var pageLabel = document.getElementById("colaboradores-page-label");
+      var previous = document.getElementById("colaboradores-prev");
+      var next = document.getElementById("colaboradores-next");
 
-  function render() {
-    var filtered = getFiltered();
-    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+      function render() {
+        var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+        page = Math.min(page, pages);
+        var visible = rows.slice((page - 1) * pageSize, page * pageSize);
+        rows.forEach(function (row) { row.hidden = true; });
+        visible.forEach(function (row) { row.hidden = false; });
+        visibleCount.textContent = visible.length;
+        totalCount.textContent = rows.length;
+        pageLabel.textContent = "Página " + page + " de " + pages;
+        previous.disabled = page === 1;
+        next.disabled = page === pages;
+      }
 
-    document.getElementById("collab-count").textContent = filtered.length + " colaborador" + (filtered.length === 1 ? "" : "es") + " en esta vista";
-    document.getElementById("collab-body").innerHTML = pageItems.map(rowHtml).join("");
-    document.getElementById("collab-empty").hidden = filtered.length !== 0;
-    document.querySelector(".table-scroll table").hidden = filtered.length === 0;
-
-    document.querySelectorAll(".progress-bar-fill[data-target]").forEach(function (bar, i) {
-      setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 80 + i * 40);
-    });
-
-    wireRowActions();
-    renderPagination(filtered.length, totalPages);
-  }
-
-  document.getElementById("collab-search").addEventListener("input", function () { currentPage = 1; render(); });
-  document.getElementById("celula-filter").addEventListener("change", function () { currentPage = 1; render(); });
-  document.getElementById("estado-filter").addEventListener("change", function () { currentPage = 1; render(); });
-
-  render();
-
-  var params = new URLSearchParams(window.location.search);
-  var buscar = params.get("buscar");
-  if (buscar) {
-    document.getElementById("collab-search").value = buscar;
-    currentPage = 1;
-    render();
-    SBAI.toast.show("Filtrado por <strong>" + buscar + "</strong> desde la búsqueda global.");
-  }
-});
+      previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+      next.addEventListener("click", function () {
+        var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+        if (page < pages) { page++; render(); }
+      });
+      render();
+    }
+  });
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
 </html>

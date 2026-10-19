@@ -1,0 +1,175 @@
+package com.skillbridge.ai.model;
+
+import jakarta.persistence.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+/**
+ * Mapea "proyectos" (RF03). "tecnologias" es la columna JSON del esquema
+ * (lista libre de strings, ej. ["React","Node"]) - se mapea como String con
+ * el JSON ya serializado; ProyectoService la lee/escribe con ObjectMapper,
+ * igual que se hace con las habilidades declaradas en el registro.
+ *
+ * No existe columna de "% de avance" en el esquema: la UI la calcula como
+ * un heuristico de tiempo transcurrido entre fecha_inicio y
+ * fecha_fin_estimada (ver ProyectoService.avanceHeuristico), documentado
+ * para no confundirlo con un dato real de progreso de tareas.
+ */
+@Entity
+@Table(name = "proyectos")
+public class Proyecto {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "nombre", nullable = false, length = 150)
+    private String nombre;
+
+    @Column(name = "descripcion", columnDefinition = "TEXT")
+    private String descripcion;
+
+    @Column(name = "tecnologias", columnDefinition = "json")
+    private String tecnologias;
+
+    @Column(name = "estado", nullable = false, length = 20)
+    private String estado = "planificacion";
+
+    @Column(name = "colaboradores_requeridos", nullable = false)
+    private Integer colaboradoresRequeridos = 0;
+
+    @Column(name = "fecha_inicio", nullable = false)
+    private LocalDate fechaInicio;
+
+    @Column(name = "fecha_fin_estimada")
+    private LocalDate fechaFinEstimada;
+
+    @Column(name = "fecha_creacion", insertable = false, updatable = false)
+    private LocalDateTime fechaCreacion;
+
+    @Column(name = "razon_cancelacion", columnDefinition = "TEXT")
+    private String razonCancelacion;
+
+    // Modelo v7 (fase 2): pausar = el equipo sale del proyecto; se exigen
+    // motivo y fecha estimada de reanudación. Columnas creadas por
+    // InicializadorEsquemaV7 / migracion_v7_consistencia_roles.sql.
+    @Column(name = "fecha_pausa")
+    private LocalDate fechaPausa;
+
+    @Column(name = "motivo_pausa", length = 500)
+    private String motivoPausa;
+
+    @Column(name = "fecha_reanudacion_estimada")
+    private LocalDate fechaReanudacionEstimada;
+
+    @Column(name = "github_url", length = 500)
+    private String githubUrl;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public String getTecnologias() {
+        return tecnologias;
+    }
+
+    public void setTecnologias(String tecnologias) {
+        this.tecnologias = tecnologias;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public Integer getColaboradoresRequeridos() {
+        return colaboradoresRequeridos;
+    }
+
+    public void setColaboradoresRequeridos(Integer colaboradoresRequeridos) {
+        this.colaboradoresRequeridos = colaboradoresRequeridos;
+    }
+
+    public LocalDate getFechaInicio() {
+        return fechaInicio;
+    }
+
+    public void setFechaInicio(LocalDate fechaInicio) {
+        this.fechaInicio = fechaInicio;
+    }
+
+    public LocalDate getFechaFinEstimada() {
+        return fechaFinEstimada;
+    }
+
+    public void setFechaFinEstimada(LocalDate fechaFinEstimada) {
+        this.fechaFinEstimada = fechaFinEstimada;
+    }
+
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+
+    public String getRazonCancelacion() {
+        return razonCancelacion;
+    }
+
+    public void setRazonCancelacion(String razonCancelacion) {
+        this.razonCancelacion = razonCancelacion;
+    }
+
+    public LocalDate getFechaPausa() {
+        return fechaPausa;
+    }
+
+    public void setFechaPausa(LocalDate fechaPausa) {
+        this.fechaPausa = fechaPausa;
+    }
+
+    public String getMotivoPausa() {
+        return motivoPausa;
+    }
+
+    public void setMotivoPausa(String motivoPausa) {
+        this.motivoPausa = motivoPausa;
+    }
+
+    public LocalDate getFechaReanudacionEstimada() {
+        return fechaReanudacionEstimada;
+    }
+
+    public void setFechaReanudacionEstimada(LocalDate fechaReanudacionEstimada) {
+        this.fechaReanudacionEstimada = fechaReanudacionEstimada;
+    }
+
+    public String getGithubUrl() {
+        return githubUrl;
+    }
+
+    public void setGithubUrl(String githubUrl) {
+        this.githubUrl = githubUrl;
+    }
+}

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<!--
+  fragments/estado-proyecto.html — Sección "Estado del proyecto" del modal de
+  detalle (Administrador y Project Manager). Modelo v7, fase 2:
+   - Solo ofrece las transiciones permitidas (ProyectoService.TRANSICIONES).
+   - En pausa: muestra motivo y fecha estimada de reanudación (y si ya venció).
+   - Completado/Cancelado: solo "Reabrir" (vuelve a Planificación).
+   - Deja en atributos data-* lo que necesita proyecto-acciones.js:
+     colaboradores activos (para avisar quién sale) y equipo anterior (para
+     "Reincorporar" al reanudar/reabrir).
+  Uso: <th:block th:replace="~{fragments/estado-proyecto :: estado(${d})}"></th:block>
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="estado(d)">
+  <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Estado del proyecto</h3>
+
+  <span hidden th:attr="data-colaboradores-activos=${d.colaboradoresAsignados}"></span>
+  <div hidden data-equipo-anterior>
+    <span th:each="m : ${d.equipoAnterior}"
+          th:attr="data-perfil=${m.perfilId()}, data-nombre=${m.nombre()}, data-cargo=${m.cargo()},
+                   data-carga-anterior=${m.cargaAnterior()}, data-carga-actual=${m.cargaActual()},
+                   data-con-capacidad=${m.conCapacidad()}, data-motivo=${m.motivo()}"></span>
+  </div>
+
+  <!-- En pausa: motivo y reanudación estimada -->
+  <div class="callout warn" style="margin-bottom:var(--space-3);" th:if="${d.estadoCrudo == 'en_pausa'}">
+    <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
+    <span class="callout-body">
+      <strong>En pausa</strong><span th:if="${d.fechaPausaLabel != null}" th:text="' desde el ' + ${d.fechaPausaLabel}"></span>.
+      <th:block th:if="${d.fechaReanudacionLabel != null}">
+        Reanudación estimada: <strong th:text="${d.fechaReanudacionLabel}">--</strong>
+        <span class="badge badge-red" th:if="${d.reanudacionVencida}" style="margin-left:4px;">Vencida</span>.
+      </th:block>
+      <span th:if="${d.motivoPausa != null}" th:text="' Motivo: ' + ${d.motivoPausa}">Motivo</span>
+      <span class="text-tertiary" style="display:block; margin-top:4px;" th:text="${d.equipoAnterior.isEmpty()} ? 'No había colaboradores al pausar.' : ${d.equipoAnterior.size()} + ' persona(s) del equipo anterior se pueden reincorporar al reanudar.'">Equipo</span>
+    </span>
+  </div>
+
+  <!-- Cerrado: razón (si fue cancelado) y solo "Reabrir" -->
+  <th:block th:if="${d.cerrado}">
+    <div class="callout info" style="margin-bottom:var(--space-3);">
+      <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-info"></use></svg></span>
+      <span class="callout-body">
+        <span th:text="${d.estadoCrudo == 'cancelado'} ? 'Proyecto cancelado.' : 'Proyecto completado.'">Cerrado.</span>
+        <span th:if="${d.razonCancelacion != null}" th:text="' Razón: ' + ${d.razonCancelacion}"></span>
+        El equipo pasó al historial. Puedes reabrirlo: vuelve a Planificación con su Project Manager y podrás proponer reincorporar al equipo anterior.
+      </span>
+    </div>
+    <div class="btn-group" style="justify-content:flex-end;">
+      <button type="button" class="btn btn-secondary btn-sm" th:attr="data-cambiar-estado=${d.id}, data-estado-destino='planificacion', data-estado-actual=${d.estadoCrudo}">
+        <svg class="icon icon-sm"><use href="/img/icons.svg#icon-arrow-left"></use></svg>Reabrir proyecto
+      </button>
+    </div>
+  </th:block>
+
+  <!-- Vigente: solo transiciones permitidas -->
+  <div class="field-row" th:unless="${d.cerrado}">
+    <div class="field">
+      <select class="select" data-field="estado" th:attr="data-actual=${d.estadoCrudo}">
+        <th:block th:if="${d.estadoCrudo == 'en_pausa'}">
+          <option value="en_pausa" selected>En pausa (estado actual)</option>
+          <option value="activo">Reanudar → Activo</option>
+          <option value="planificacion">Reanudar → Planificación</option>
+        </th:block>
+        <th:block th:unless="${d.estadoCrudo == 'en_pausa'}">
+          <option value="planificacion" th:selected="${d.estadoCrudo == 'planificacion'}">Planificación</option>
+          <option value="activo" th:selected="${d.estadoCrudo == 'activo'}">Activo</option>
+          <option value="en_pausa">Pausar…</option>
+        </th:block>
+        <option value="completado">Completar…</option>
+        <option value="cancelado">Cancelar…</option>
+      </select>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" th:attr="data-cambiar-estado=${d.id}" style="align-self:flex-start;">Guardar estado</button>
+  </div>
+</th:block>
+</body>
+</html>

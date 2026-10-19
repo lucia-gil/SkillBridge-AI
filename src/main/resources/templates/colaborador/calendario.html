@@ -1,215 +1,776 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calendario · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendario · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/calendario.css">
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <section class="card" style="margin-bottom:var(--space-5);">
-        <div class="table-toolbar">
-          <div class="segmented" id="tipo-tabs">
-            <button type="button" class="segmented-btn active" data-tipo="todos">Todos</button>
-            <button type="button" class="segmented-btn" data-tipo="reunion">Reuniones</button>
-            <button type="button" class="segmented-btn" data-tipo="entregable">Entregables</button>
-            <button type="button" class="segmented-btn" data-tipo="hito">Hitos</button>
+      <div class="cal-layout">
+
+        <!-- ── Calendario (mes / semana) ── -->
+        <section class="card cal-main" aria-label="Calendario de eventos">
+          <div class="cal-header">
+            <div class="cal-header-row">
+              <div class="cal-nav">
+                <button type="button" class="btn btn-secondary btn-sm" id="cal-hoy">Hoy</button>
+                <button type="button" class="cal-nav-btn" id="cal-prev" aria-label="Periodo anterior">
+                  <svg class="icon"><use href="/img/icons.svg#icon-chevron-left"></use></svg>
+                </button>
+                <button type="button" class="cal-nav-btn" id="cal-next" aria-label="Periodo siguiente">
+                  <svg class="icon"><use href="/img/icons.svg#icon-chevron-right"></use></svg>
+                </button>
+                <h2 class="cal-title" id="cal-title" aria-live="polite">—</h2>
+              </div>
+              <div class="segmented" id="vista-tabs" role="tablist" aria-label="Vista del calendario">
+                <button type="button" class="segmented-btn active" data-vista="mes">Mes</button>
+                <button type="button" class="segmented-btn" data-vista="semana">Semana</button>
+              </div>
+            </div>
+            <div class="cal-header-row">
+              <div class="segmented cal-tipo-tabs" id="tipo-tabs" aria-label="Filtrar por tipo">
+                <button type="button" class="segmented-btn active" data-tipo="todos">Todos</button>
+                <button type="button" class="segmented-btn" data-tipo="reunion"><span class="cal-dot cal-toned" data-tipo="reunion"></span>Reuniones</button>
+                <button type="button" class="segmented-btn" data-tipo="entregable"><span class="cal-dot cal-toned" data-tipo="entregable"></span>Entregables</button>
+                <button type="button" class="segmented-btn" data-tipo="hito"><span class="cal-dot cal-toned" data-tipo="hito"></span>Hitos</button>
+              </div>
+              <div class="cal-filters">
+                <select class="select" id="proyecto-filter" aria-label="Filtrar por proyecto">
+                  <option value="todos">Todos mis proyectos</option>
+                  <option th:each="p : ${proyectos}" th:value="${p.nombre()}" th:text="${p.nombre()}">Proyecto</option>
+                </select>
+                <button type="button" class="btn btn-primary btn-sm" id="new-event-btn" th:if="${!proyectos.isEmpty()}">
+                  <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo evento</button>
+              </div>
+            </div>
           </div>
-          <select class="select" id="proyecto-filter" style="max-width:220px;">
-            <option value="todos">Todos mis proyectos</option>
-          </select>
-        </div>
-      </section>
+          <div id="cal-body"></div>
+        </section>
 
-      <div id="agenda-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:var(--space-5);"></div>
+        <!-- ── Panel del día seleccionado ── -->
+        <aside class="card cal-side" id="cal-side" aria-label="Agenda del día">
+          <div class="cal-side-inner">
+            <div class="cal-side-head">
+              <div>
+                <div class="cal-side-weekday" id="side-weekday">—</div>
+                <h3 class="cal-side-date" id="side-date">—</h3>
+                <div class="cal-side-count" id="side-count">—</div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="side-add" th:if="${!proyectos.isEmpty()}">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar</button>
+            </div>
+            <div class="cal-side-list" id="side-list"></div>
+            <div class="cal-side-summary" id="side-summary"></div>
+          </div>
+        </aside>
 
-      <div class="state-panel" id="agenda-empty" hidden>
-        <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-calendar"></use></svg></span>
-        <span class="state-panel-title">Sin eventos con este filtro</span>
-        <span class="state-panel-desc">Prueba con otro tipo o proyecto.</span>
       </div>
 
-      <div id="agenda-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:var(--space-6);">
-        <span class="text-tertiary" style="font-size:var(--fs-xs);" id="agenda-pagination-count"></span>
-        <div class="pagination" id="agenda-pagination-controls"></div>
+      <!-- Datos de los eventos (no visibles): el calendario se arma en el
+           navegador a partir de estos atributos, y los modales de detalle /
+           edición los leen igual que antes. -->
+      <div id="eventos-data" hidden>
+        <span th:each="e : ${eventos}" data-evento
+              th:attr="data-tipo=${e.tipoCodigo}, data-proyecto=${e.proyectoNombre},
+                       data-id=${e.id}, data-proyecto-id=${e.proyectoId}, data-titulo=${e.titulo},
+                       data-descripcion=${e.descripcion} ?: '', data-ubicacion=${e.ubicacion} ?: '',
+                       data-enlace=${e.enlaceVirtual} ?: '', data-audiencia=${e.audienciaCodigo},
+                       data-fecha-iso=${e.fechaInicioIso}, data-tipo-nombre=${e.tipoNombre},
+                       data-audiencia-label=${e.audienciaLabel}, data-estado=${e.estado},
+                       data-fecha-label=${e.fechaLabel}, data-hora-label=${e.horaLabel},
+                       data-ubicacion-label=${e.ubicacionLabel} ?: '',
+                       data-puede-gestionar=${e.puedeGestionar}"></span>
       </div>
 
     </main>
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "colaborador", active: "calendario.html", title: "Calendario", subtitle: "Eventos de tus proyectos actuales" });
-  if (!cfg) return;
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+  var NUEVO_URL = /*[[${nuevoUrl}]]*/ "/colaborador/calendario/nuevo";
+  var EDITAR_BASE_URL = "/colaborador/calendario/";
+  var ELIMINAR_BASE_URL = "/colaborador/calendario/";
+  var PROYECTOS = /*[[${proyectos}]]*/ [];
+  var TIPOS_EVENTO = /*[[${tiposEvento}]]*/ [];
+  var TIPOS_AUDIENCIA = /*[[${tiposAudiencia}]]*/ [];
 
-  var MIS_PROYECTOS = ["Portal Andes", "App Móvil Aurora", "Núcleo Retail"];
-  var PAGE_SIZE = 6;
-  var currentPage = 1;
-  var activeTipo = "todos";
-  var activeProyecto = "todos";
+  // Arman las opciones del <select> a partir de los catalogos reales
+  // (tipos_evento / tipos_audiencia) en vez de tenerlas escritas a mano -
+  // si el Administrador agrega un tipo nuevo desde su panel, aparece aqui
+  // solo, sin tocar este archivo.
+  function tipoOptions() {
+    return TIPOS_EVENTO.map(function (t) {
+      return '<option value="' + t.codigo + '">' + t.nombre + '</option>';
+    }).join("");
+  }
+  function audienciaOptions() {
+    return TIPOS_AUDIENCIA.map(function (t) {
+      return '<option value="' + t.codigo + '">' + t.nombre + '</option>';
+    }).join("");
+  }
+  function horaDropdownItems() {
+    var out = "";
+    for (var h = 0; h < 24; h++) {
+      var v = (h < 10 ? "0" : "") + h;
+      out += '<button type="button" class="dropdown-item" data-hora-value="' + v + '" style="justify-content:center; padding:6px 4px;">' + v + '</button>';
+    }
+    return out;
+  }
+  function minutoOptions() {
+    return ["00", "15", "30", "45"].map(function (m) {
+      return '<option value="' + m + '">' + m + '</option>';
+    }).join("");
+  }
 
-  document.getElementById("proyecto-filter").innerHTML += MIS_PROYECTOS.map(function (p) {
-    return '<option value="' + p + '">' + p + "</option>";
-  }).join("");
+  document.addEventListener("DOMContentLoaded", function () {
+    var submitForm = window.SBAI.submitForm;
 
-  var MESES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-  var DIAS = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+    // ───────── Utilidades de fecha ─────────
+    var MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    var MESES_CORTO = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    var DIAS_CORTO = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+    var DIAS_LARGO = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-  function fmtHora(d) { var h = d.getHours(), m = d.getMinutes(); var ap = h >= 12 ? "PM" : "AM"; var h12 = h % 12 || 12; return h12 + (m ? ":" + String(m).padStart(2, "0") : "") + " " + ap; }
-  function fmtFechaLarga(d) { return DIAS[d.getDay()] + " " + d.getDate() + " " + MESES[d.getMonth()]; }
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+    function keyOf(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+    function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+    function inicioSemana(d) { return addDays(d, -((d.getDay() + 6) % 7)); }
+    function capitalizar(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+    function fechaDeKey(k) { var p = k.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
 
-  // Solo eventos de MIS proyectos, respetando la regla de audiencia:
-  // Mariana es colaboradora (no PM), así que no ve eventos "solo_pm".
-  function getVisibleEvents() {
-    return MOCK.projectEvents.filter(function (e) {
-      if (MIS_PROYECTOS.indexOf(e.proyecto) === -1) return false;
-      if (e.audiencia === "solo_pm") return false;
-      return true;
+    function escaparHtml(texto) {
+      var div = document.createElement("div");
+      div.textContent = texto || "";
+      return div.innerHTML;
+    }
+    function icono(nombre) {
+      return '<svg class="icon"><use href="/img/icons.svg#' + nombre + '"></use></svg>';
+    }
+    var ICONO_TIPO = { entregable: "icon-download", hito: "icon-target", reunion: "icon-users" };
+    var CLASE_TIPO = { entregable: "badge-red", hito: "badge-green", reunion: "badge-blue" };
+    var CLASE_ESTADO = { cumplido: "badge-green", atrasado: "badge-red", cancelado: "badge-neutral" };
+
+    // ───────── Eventos (leidos de #eventos-data) ─────────
+    var eventos = Array.prototype.slice.call(document.querySelectorAll("#eventos-data [data-evento]"))
+            .map(function (el) {
+              var iso = el.dataset.fechaIso || "";
+              var partes = iso.split("T");
+              return {
+                el: el,
+                iso: iso,
+                key: partes[0],
+                hora: (partes[1] || "").slice(0, 5),
+                tipo: el.dataset.tipo,
+                proyecto: el.dataset.proyecto
+              };
+            })
+            .filter(function (e) { return /^\d{4}-\d{2}-\d{2}$/.test(e.key); })
+            .sort(function (a, b) { return a.iso < b.iso ? -1 : (a.iso > b.iso ? 1 : 0); });
+    eventos.forEach(function (e, i) { e.idx = i; });
+
+    var hoy = new Date();
+    var hoyKey = keyOf(hoy);
+    var cursor = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    var vista = "mes";
+    var tipoActivo = "todos";
+    var proyectoActivo = "todos";
+    var puedeCrear = !!document.getElementById("new-event-btn");
+
+    function filtrados() {
+      return eventos.filter(function (e) {
+        return (tipoActivo === "todos" || e.tipo === tipoActivo) &&
+                (proyectoActivo === "todos" || e.proyecto === proyectoActivo);
+      });
+    }
+    function agruparPorDia(lista) {
+      var mapa = {};
+      lista.forEach(function (e) { (mapa[e.key] = mapa[e.key] || []).push(e); });
+      return mapa;
+    }
+    function claseEstado(e) { return e.el.dataset.estado ? " is-" + e.el.dataset.estado : ""; }
+
+    // ───────── Render principal ─────────
+    var body = document.getElementById("cal-body");
+
+    function render() {
+      var lista = filtrados();
+      var mapa = agruparPorDia(lista);
+      if (vista === "mes") renderMes(mapa); else renderSemana(mapa);
+      renderPanel(mapa, lista);
+      renderResumen(lista);
+    }
+
+    function renderMes(mapa) {
+      var y = cursor.getFullYear(), m = cursor.getMonth();
+      var primero = new Date(y, m, 1);
+      var inicio = inicioSemana(primero);
+      var offset = (primero.getDay() + 6) % 7;
+      var diasMes = new Date(y, m + 1, 0).getDate();
+      var total = Math.ceil((offset + diasMes) / 7) * 7;
+      var seleccion = keyOf(cursor);
+
+      document.getElementById("cal-title").textContent = capitalizar(MESES[m]) + " " + y;
+
+      var html = '<div class="cal-weekdays">' + DIAS_CORTO.map(function (d) { return "<span>" + d + "</span>"; }).join("") + "</div>";
+      html += '<div class="cal-grid" role="grid">';
+      for (var i = 0; i < total; i++) {
+        var d = addDays(inicio, i);
+        var k = keyOf(d);
+        var del = mapa[k] || [];
+        var clases = "cal-cell" +
+                (d.getMonth() !== m ? " is-outside" : "") +
+                (k === hoyKey ? " is-today" : "") +
+                (k === seleccion ? " is-selected" : "") +
+                (i >= total - 7 ? " is-last-row" : "");
+        var etiqueta = d.getDate() + " de " + MESES[d.getMonth()] + ", " + (del.length ? del.length + (del.length === 1 ? " evento" : " eventos") : "sin eventos");
+        html += '<div class="' + clases + '" data-day="' + k + '" role="gridcell" tabindex="0" aria-label="' + etiqueta + '">';
+        html += '<div class="cal-cell-head"><span class="cal-daynum">' + d.getDate() + "</span></div>";
+        var max = del.length > 3 ? 2 : 3;
+        del.slice(0, max).forEach(function (e) {
+          html += '<button type="button" class="cal-chip cal-toned' + claseEstado(e) + '" data-tipo="' + escaparHtml(e.tipo) + '" data-ev-idx="' + e.idx + '" title="' + escaparHtml(e.hora + " · " + e.el.dataset.titulo) + '">' +
+                  '<span class="cal-chip-time">' + e.hora + '</span><span class="cal-chip-title">' + escaparHtml(e.el.dataset.titulo) + "</span></button>";
+        });
+        if (del.length > max) {
+          html += '<button type="button" class="cal-more" data-more="' + k + '">+' + (del.length - max) + " más</button>";
+        }
+        if (del.length) {
+          html += '<div class="cal-dots">' + del.slice(0, 4).map(function (e) {
+            return '<span class="cal-dot cal-toned" data-tipo="' + escaparHtml(e.tipo) + '"></span>';
+          }).join("") + "</div>";
+        }
+        html += "</div>";
+      }
+      html += "</div>";
+      body.innerHTML = html;
+    }
+
+    // ───────── Vista semanal (cuadrícula de horas, tipo Google Calendar) ─────────
+    // Cada evento se ubica según su hora de inicio. La vista solo recibe la
+    // hora de inicio (no la de fin), así que cada bloque dura DURACION_MIN.
+    // Si dos eventos se cruzan, se reparten el ancho del día lado a lado.
+    var HORA_PX = 48;
+    var DURACION_MIN = 60;
+    var semanaVisible = null; // para conservar el scroll al cambiar de día dentro de la misma semana
+
+    function minutosDe(e) {
+      var p = (e.hora || "00:00").split(":");
+      return (+p[0] || 0) * 60 + (+p[1] || 0);
+    }
+
+    // Agrupa eventos que se solapan y les asigna un carril (columna) dentro del grupo.
+    function asignarCarriles(lista) {
+      var grupos = [], actual = [], finGrupo = -1;
+      lista.forEach(function (e) {
+        var ini = minutosDe(e);
+        if (actual.length && ini >= finGrupo) { grupos.push(actual); actual = []; finGrupo = -1; }
+        actual.push(e);
+        finGrupo = Math.max(finGrupo, ini + DURACION_MIN);
+      });
+      if (actual.length) grupos.push(actual);
+      var res = [];
+      grupos.forEach(function (g) {
+        var finesCarril = [];
+        var asignados = g.map(function (e) {
+          var ini = minutosDe(e), c = 0;
+          while (c < finesCarril.length && finesCarril[c] > ini) c++;
+          finesCarril[c] = ini + DURACION_MIN;
+          return { e: e, ini: ini, carril: c };
+        });
+        res.push({ eventos: asignados, total: finesCarril.length });
+      });
+      return res;
+    }
+
+    // Como Google Calendar: los eventos que se cruzan se ven lado a lado.
+    // Cuántos caben depende del ancho real de cada día (3 en pantallas
+    // grandes, menos en laptops); si hay más, se muestra un "+N" a la
+    // derecha que abre la lista completa del día en el panel.
+    var ANCHO_MIN_CARRIL = 55;
+    var RESERVA_MAS = 32; // px para el botón "+N"
+
+    function maxCarriles() {
+      // la cuadrícula nunca mide menos de 640px (en celular se desplaza en horizontal)
+      var col = (Math.max(body.clientWidth || 900, 640) - 56) / 7;
+      return Math.max(1, Math.min(3, Math.floor(col / ANCHO_MIN_CARRIL)));
+    }
+
+    function bloqueEvento(a, carril, nVis, reserva, estrecho) {
+      var e = a.e;
+      var alto = Math.max(Math.min(DURACION_MIN, 1440 - a.ini), 30) * HORA_PX / 60 - 2;
+      var base = "(100% - " + reserva + "px) / " + nVis;
+      return '<button type="button" class="cal-tg-event cal-toned' + claseEstado(e) + (estrecho ? " is-narrow" : "") +
+              '" data-tipo="' + escaparHtml(e.tipo) + '" data-ev-idx="' + e.idx + '"' +
+              ' style="top:' + (a.ini * HORA_PX / 60) + "px;height:" + alto + "px;left:calc(" + base + " * " + carril + " + 2px);width:calc(" + base + ' - 4px)"' +
+              ' title="' + escaparHtml(e.hora + " · " + e.el.dataset.titulo + " · " + e.proyecto) + '">' +
+              '<span class="cal-tg-event-title">' + escaparHtml(e.el.dataset.titulo) + "</span>" +
+              '<span class="cal-tg-event-meta">' + e.hora + " · " + escaparHtml(e.proyecto) + "</span></button>";
+    }
+
+    function renderSemana(mapa) {
+      var inicio = inicioSemana(cursor);
+      var fin = addDays(inicio, 6);
+      var seleccion = keyOf(cursor);
+      var semanaKey = keyOf(inicio);
+      var titulo = inicio.getMonth() === fin.getMonth()
+              ? inicio.getDate() + " – " + fin.getDate() + " " + MESES_CORTO[fin.getMonth()] + " " + fin.getFullYear()
+              : inicio.getDate() + " " + MESES_CORTO[inicio.getMonth()] + (inicio.getFullYear() !== fin.getFullYear() ? " " + inicio.getFullYear() : "") +
+              " – " + fin.getDate() + " " + MESES_CORTO[fin.getMonth()] + " " + fin.getFullYear();
+      document.getElementById("cal-title").textContent = titulo;
+
+      // Scroll: se conserva si seguimos en la misma semana; si no, se lleva
+      // al primer evento de la semana (o a las 07:00 si no hay ninguno).
+      var scrollPrevio = document.getElementById("cal-week-scroll");
+      var conservar = scrollPrevio && semanaVisible === semanaKey ? scrollPrevio.scrollTop : null;
+      var primerMin = null;
+      var maxVis = maxCarriles();
+
+      var cabecera = '<div class="cal-tg-head"><div class="cal-tg-gutter"></div>';
+      var columnas = "";
+      for (var i = 0; i < 7; i++) {
+        var d = addDays(inicio, i);
+        var k = keyOf(d);
+        var del = mapa[k] || [];
+        var estado = (k === hoyKey ? " is-today" : "") + (k === seleccion ? " is-selected" : "");
+        var etiqueta = DIAS_LARGO[d.getDay()] + " " + d.getDate() + " de " + MESES[d.getMonth()] +
+                ", " + (del.length ? del.length + (del.length === 1 ? " evento" : " eventos") : "sin eventos");
+
+        cabecera += '<div class="cal-tg-dayhead' + estado + '" data-day="' + k + '" tabindex="0" aria-label="' + etiqueta + '">' +
+                '<span class="cal-tg-dow">' + DIAS_CORTO[i] + '</span><span class="cal-daynum">' + d.getDate() + "</span>" +
+                (del.length ? '<span class="cal-tg-count">' + del.length + "</span>" : "") + "</div>";
+
+        columnas += '<div class="cal-tg-day' + estado + '" data-day="' + k + '">';
+        asignarCarriles(del).forEach(function (grupo) {
+          var desborde = grupo.total > maxVis;
+          var nVis = desborde ? Math.max(1, maxVis - 1) : grupo.total;
+          var reserva = desborde ? RESERVA_MAS : 0;
+          var estrecho = nVis > 1 || desborde;
+          var ocultos = [];
+          grupo.eventos.forEach(function (a) {
+            if (primerMin === null || a.ini < primerMin) primerMin = a.ini;
+            if (a.carril >= nVis) { ocultos.push(a); return; }
+            columnas += bloqueEvento(a, a.carril, nVis, reserva, estrecho);
+          });
+          if (ocultos.length) {
+            var desde = Math.min.apply(null, ocultos.map(function (a) { return a.ini; }));
+            columnas += '<button type="button" class="cal-tg-more" data-more="' + k + '"' +
+                    ' style="top:' + (desde * HORA_PX / 60) + "px;right:2px;width:" + (RESERVA_MAS - 4) + 'px"' +
+                    ' title="Ver los ' + ocultos.length + ' eventos restantes en el panel">+' + ocultos.length + "</button>";
+          }
+        });
+        if (k === hoyKey) {
+          var ahora = new Date();
+          columnas += '<div class="cal-tg-now" style="top:' + ((ahora.getHours() * 60 + ahora.getMinutes()) * HORA_PX / 60) + 'px"></div>';
+        }
+        columnas += "</div>";
+      }
+      cabecera += "</div>";
+
+      var horas = '<div class="cal-tg-hours">';
+      for (var h = 1; h < 24; h++) {
+        horas += '<span style="top:' + (h * HORA_PX) + 'px">' + pad(h) + ":00</span>";
+      }
+      horas += "</div>";
+
+      body.innerHTML = '<div class="cal-tg" style="--hora-px:' + HORA_PX + 'px">' +
+              '<div class="cal-tg-scroll" id="cal-week-scroll">' +
+              '<div class="cal-tg-inner">' + cabecera +
+              '<div class="cal-tg-grid">' + horas + columnas + "</div>" +
+              "</div>" +
+              "</div></div>";
+
+      var scroll = document.getElementById("cal-week-scroll");
+      scroll.scrollTop = conservar !== null ? conservar
+              : Math.max(0, ((primerMin !== null ? Math.min(primerMin, 7 * 60) : 7 * 60) - 30) * HORA_PX / 60);
+      semanaVisible = semanaKey;
+    }
+
+    // ───────── Panel del día seleccionado ─────────
+    function renderPanel(mapa, todos) {
+      var k = keyOf(cursor);
+      var del = mapa[k] || [];
+      var proximos = todos.filter(function (e) { return e.key > k; }).slice(0, 4);
+      var esHoy = k === hoyKey;
+      var weekday = document.getElementById("side-weekday");
+      weekday.textContent = DIAS_LARGO[cursor.getDay()] + (esHoy ? " · Hoy" : "");
+      weekday.classList.toggle("is-today", esHoy);
+      document.getElementById("side-date").textContent = cursor.getDate() + " de " + MESES[cursor.getMonth()] + " " + cursor.getFullYear();
+      document.getElementById("side-count").textContent = del.length === 0 ? "Sin eventos agendados"
+              : (del.length === 1 ? "1 evento agendado" : del.length + " eventos agendados");
+
+      var lista = document.getElementById("side-list");
+      var html;
+      if (!del.length) {
+        var desc = !PROYECTOS.length ? "No tienes proyectos donde crear eventos."
+                : (puedeCrear ? "Usa \"Agregar\" para programar uno en este día." : "Elige otro día en el calendario.");
+        html = '<div class="cal-side-empty"><span class="state-panel-icon">' + icono("icon-calendar") + "</span>" +
+                "<strong>Día libre</strong><span>" + escaparHtml(desc) + "</span></div>";
+      } else {
+        html = del.map(function (e) {
+          var d = e.el.dataset;
+          var meta = escaparHtml(d.proyecto) + (d.ubicacionLabel ? " · " + escaparHtml(d.ubicacionLabel) : "");
+          var acciones = d.puedeGestionar === "true"
+                  ? '<div class="cal-agenda-actions">' +
+                  '<button type="button" class="cal-icon-btn" data-action="editar" data-ev-idx="' + e.idx + '" title="Editar evento" aria-label="Editar evento">' + icono("icon-edit") + "</button>" +
+                  '<button type="button" class="cal-icon-btn danger" data-action="eliminar" data-ev-idx="' + e.idx + '" title="Eliminar evento" aria-label="Eliminar evento">' + icono("icon-trash") + "</button>" +
+                  "</div>"
+                  : "<span></span>";
+          return '<article class="cal-agenda-item cal-toned' + claseEstado(e) + '" data-tipo="' + escaparHtml(e.tipo) + '" data-ev-idx="' + e.idx + '" tabindex="0">' +
+                  '<span class="cal-agenda-time">' + e.hora + "</span>" +
+                  '<div class="cal-agenda-body">' +
+                  '<span class="cal-agenda-type">' + icono(ICONO_TIPO[e.tipo] || "icon-calendar") + escaparHtml(d.tipoNombre) + "</span>" +
+                  '<div class="cal-agenda-title">' + escaparHtml(d.titulo) + "</div>" +
+                  '<div class="cal-agenda-meta">' + meta + "</div>" +
+                  '<div class="cal-agenda-badges">' +
+                  '<span class="badge ' + (CLASE_ESTADO[d.estado] || "badge-blue") + '">' + escaparHtml(d.estado) + "</span>" +
+                  (d.audiencia === "solo_pm" ? '<span class="badge badge-neutral">Solo PM</span>' : "") +
+                  "</div>" +
+                  "</div>" + acciones +
+                  "</article>";
+        }).join("");
+      }
+
+      if (proximos.length) {
+        html += '<div class="cal-upcoming"><div class="cal-upcoming-title">Próximos eventos</div>' +
+                proximos.map(function (e) {
+                  var f = fechaDeKey(e.key);
+                  return '<button type="button" class="cal-upcoming-item cal-toned' + claseEstado(e) + '" data-tipo="' + escaparHtml(e.tipo) + '" data-goto="' + e.key + '">' +
+                          '<span class="cal-upcoming-date"><strong>' + f.getDate() + "</strong>" + MESES_CORTO[f.getMonth()] + "</span>" +
+                          '<span class="cal-upcoming-body"><span class="cal-upcoming-name">' + escaparHtml(e.el.dataset.titulo) + "</span>" +
+                          '<span class="cal-upcoming-meta">' + e.hora + " · " + escaparHtml(e.proyecto) + "</span></span>" +
+                          "</button>";
+                }).join("") + "</div>";
+      }
+      lista.innerHTML = html;
+    }
+
+    // ───────── Resumen del periodo visible ─────────
+    function renderResumen(lista) {
+      var desde, hasta, titulo;
+      if (vista === "mes") {
+        desde = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+        hasta = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+        titulo = "Resumen de " + MESES[cursor.getMonth()];
+      } else {
+        desde = inicioSemana(cursor);
+        hasta = addDays(desde, 6);
+        titulo = "Resumen de la semana";
+      }
+      var kDesde = keyOf(desde), kHasta = keyOf(hasta);
+      var periodo = lista.filter(function (e) { return e.key >= kDesde && e.key <= kHasta; });
+      var conteo = {};
+      var atrasados = 0;
+      periodo.forEach(function (e) {
+        conteo[e.tipo] = (conteo[e.tipo] || 0) + 1;
+        if (e.el.dataset.estado === "atrasado") atrasados++;
+      });
+      var tipos = TIPOS_EVENTO.length ? TIPOS_EVENTO : [
+        { codigo: "reunion", nombre: "Reunión" }, { codigo: "entregable", nombre: "Entregable" }, { codigo: "hito", nombre: "Hito" }
+      ];
+      var html = '<div class="cal-summary-title">' + escaparHtml(titulo) + "</div>";
+      tipos.forEach(function (t) {
+        html += '<div class="cal-summary-row"><span class="cal-dot cal-toned" data-tipo="' + escaparHtml(t.codigo) + '"></span>' +
+                escaparHtml(t.nombre) + "<strong>" + (conteo[t.codigo] || 0) + "</strong></div>";
+      });
+      if (atrasados) {
+        html += '<div class="cal-summary-row is-alert">' + icono("icon-alert-circle").replace('class="icon"', 'class="icon icon-sm"') +
+                "Atrasados<strong>" + atrasados + "</strong></div>";
+      }
+      document.getElementById("side-summary").innerHTML = html;
+    }
+
+    var temporizadorResize = null;
+    window.addEventListener("resize", function () {
+      if (vista !== "semana") return;
+      clearTimeout(temporizadorResize);
+      temporizadorResize = setTimeout(render, 150);
     });
-  }
 
-  function getFiltered() {
-    var list = getVisibleEvents();
-    if (activeTipo !== "todos") list = list.filter(function (e) { return e.tipo === activeTipo; });
-    if (activeProyecto !== "todos") list = list.filter(function (e) { return e.proyecto === activeProyecto; });
-    list.sort(function (a, b) { return new Date(a.fechaInicio) - new Date(b.fechaInicio); });
-    return list;
-  }
-
-  function eventCardHtml(e) {
-    var meta = MOCK.eventTypeMeta[e.tipo];
-    var d = new Date(e.fechaInicio);
-    var lugar = e.enlaceVirtual ? "Virtual" : (e.ubicacion || "Sin ubicación");
-    return '<div class="event-card" data-open-event="' + e.id + '">' +
-      '<div class="event-card-date ' + meta.accent + '"><span class="event-card-date-day">' + d.getDate() + '</span><span class="event-card-date-month">' + MESES[d.getMonth()] + '</span></div>' +
-      '<div class="event-card-body">' +
-      '<div class="event-card-top"><span class="agenda-item-icon ' + meta.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + meta.icon + '"></use></svg></span>' +
-      '<span class="badge ' + MOCK.eventStatusBadge[e.estado] + '">' + e.estado + '</span></div>' +
-      '<div class="event-card-title">' + e.titulo + '</div>' +
-      '<div class="event-card-meta">' + e.proyecto + ' · ' + lugar + '</div>' +
-      '<div class="event-card-time">' + fmtFechaLarga(d) + ' · ' + fmtHora(d) + '</div>' +
-      '</div></div>';
-  }
-
-  function renderPagination(total, totalPages) {
-    var countEl = document.getElementById("agenda-pagination-count");
-    var controlsEl = document.getElementById("agenda-pagination-controls");
-    var wrapEl = document.getElementById("agenda-pagination");
-    if (total === 0) { wrapEl.hidden = true; return; }
-    wrapEl.hidden = false;
-    var start = (currentPage - 1) * PAGE_SIZE + 1;
-    var end = Math.min(currentPage * PAGE_SIZE, total);
-    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " eventos";
-    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
-    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
-    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
-    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
-    controlsEl.innerHTML = html;
-    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
-    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
-    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
-    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
-  }
-
-  function render() {
-    var filtered = getFiltered();
-    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-    document.getElementById("agenda-grid").innerHTML = pageItems.map(eventCardHtml).join("");
-    document.getElementById("agenda-empty").hidden = filtered.length !== 0;
-    document.getElementById("agenda-grid").hidden = filtered.length === 0;
-
-    document.querySelectorAll("[data-open-event]").forEach(function (card) {
-      card.addEventListener("click", function () { openEventModal(card.dataset.openEvent); });
-    });
-    renderPagination(filtered.length, totalPages);
-  }
-
-  function commentHtml(c) {
-    return '<div class="event-comment"><span class="avatar avatar-sm">' + c.iniciales + '</span>' +
-      '<div class="event-comment-body"><span class="event-comment-author">' + c.autor + '</span><span class="event-comment-time">' + c.tiempo + '</span>' +
-      '<div class="event-comment-text">' + c.contenido + "</div></div></div>";
-  }
-
-  function openEventModal(id) {
-    var e = MOCK.findEvent(id);
-    var meta = MOCK.eventTypeMeta[e.tipo];
-    var d = new Date(e.fechaInicio);
-    var comments = MOCK.eventComments[id] || [];
-    var lugarHtml = e.enlaceVirtual
-      ? '<a href="' + e.enlaceVirtual + '" target="_blank" rel="noopener">' + e.enlaceVirtual + " ↗</a>"
-      : (e.ubicacion || "Sin ubicación registrada");
-
-    var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-      '<div class="modal-header"><div><h2>' + e.titulo + '</h2><p>' + e.proyecto + ' · ' + fmtFechaLarga(d) + ' · ' + fmtHora(d) + '</p></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body">' +
-      '<div style="display:flex; gap:var(--space-2); flex-wrap:wrap; margin-bottom:var(--space-5);">' +
-      '<span class="badge badge-neutral">' + meta.label + '</span>' +
-      '<span class="badge ' + MOCK.eventStatusBadge[e.estado] + '">' + e.estado + '</span>' +
-      (e.audiencia !== "todos" ? '<span class="agenda-item-audience">Solo PM</span>' : "") +
-      '</div>' +
-      '<div class="info-row"><span class="info-row-label">Lugar / enlace</span><span class="info-row-value">' + lugarHtml + '</span></div>' +
-      '<div class="info-row"><span class="info-row-label">Creado por</span><span class="info-row-value">' + e.creadoPor + '</span></div>' +
-      (e.descripcion ? '<p class="text-secondary" style="margin-top:var(--space-4); line-height:1.6;">' + e.descripcion + '</p>' : "") +
-      '<h3 style="font-size:var(--fs-sm); margin:var(--space-6) 0 var(--space-3);">Comentarios</h3>' +
-      '<div id="event-comments">' + (comments.length ? comments.map(commentHtml).join("") : '<p class="text-tertiary" style="font-size:var(--fs-xs);">Todavía no hay comentarios.</p>') + '</div>' +
-      '<div class="field" style="margin-top:var(--space-4);">' +
-      '<textarea class="input" id="new-comment" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="Escribe un comentario…"></textarea>' +
-      '</div>' +
-      '<div style="display:flex; justify-content:flex-end;"><button type="button" class="btn btn-primary btn-sm" id="add-comment-btn">Comentar</button></div>' +
-      '</div></div>';
-
-    var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#add-comment-btn").addEventListener("click", function () {
-      var ta = backdrop.querySelector("#new-comment");
-      var text = ta.value.trim();
-      if (!text) return;
-      MOCK.eventComments[id] = MOCK.eventComments[id] || [];
-      MOCK.eventComments[id].push({ autor: "Mariana Ruiz", iniciales: "MR", contenido: text, tiempo: "ahora" });
-      backdrop.querySelector("#event-comments").innerHTML = MOCK.eventComments[id].map(commentHtml).join("");
-      ta.value = "";
-      SBAI.toast.show("Comentario publicado.", { type: "success" });
-    });
-  }
-
-  document.querySelectorAll("#tipo-tabs [data-tipo]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      document.querySelectorAll("#tipo-tabs [data-tipo]").forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      activeTipo = btn.dataset.tipo;
-      currentPage = 1;
+    // ───────── Navegación y filtros ─────────
+    function seleccionar(key) {
+      cursor = fechaDeKey(key);
+      render();
+    }
+    document.getElementById("cal-hoy").addEventListener("click", function () {
+      cursor = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
       render();
     });
-  });
-  document.getElementById("proyecto-filter").addEventListener("change", function (e) {
-    activeProyecto = e.target.value;
-    currentPage = 1;
+    function mover(paso) {
+      if (vista === "semana") {
+        cursor = addDays(cursor, 7 * paso);
+      } else {
+        var y = cursor.getFullYear(), m = cursor.getMonth() + paso;
+        var destino = new Date(y, m, 1);
+        cursor = (destino.getFullYear() === hoy.getFullYear() && destino.getMonth() === hoy.getMonth())
+                ? new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()) : destino;
+      }
+      render();
+    }
+    document.getElementById("cal-prev").addEventListener("click", function () { mover(-1); });
+    document.getElementById("cal-next").addEventListener("click", function () { mover(1); });
+
+    document.querySelectorAll("#vista-tabs [data-vista]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#vista-tabs [data-vista]").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        vista = btn.dataset.vista;
+        render();
+      });
+    });
+    document.querySelectorAll("#tipo-tabs [data-tipo]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#tipo-tabs [data-tipo]").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        tipoActivo = btn.dataset.tipo;
+        render();
+      });
+    });
+    var proyFilter = document.getElementById("proyecto-filter");
+    if (proyFilter) proyFilter.addEventListener("change", function () { proyectoActivo = this.value; render(); });
+
+    // Clic en un evento abre su detalle; clic en un día lo selecciona.
+    body.addEventListener("click", function (ev) {
+      var evBtn = ev.target.closest("[data-ev-idx]");
+      var dia = ev.target.closest("[data-day]");
+      if (evBtn) {
+        var e = eventos[+evBtn.dataset.evIdx];
+        if (dia && dia.dataset.day !== keyOf(cursor)) seleccionar(dia.dataset.day);
+        abrirModalDetalle(e.el);
+        return;
+      }
+      if (dia) seleccionar(dia.dataset.day);
+    });
+    body.addEventListener("keydown", function (ev) {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      if (ev.target.matches("[data-day]")) { ev.preventDefault(); seleccionar(ev.target.dataset.day); }
+    });
+
+    var sideList = document.getElementById("side-list");
+    sideList.addEventListener("click", function (ev) {
+      var ir = ev.target.closest("[data-goto]");
+      if (ir) { seleccionar(ir.dataset.goto); return; }
+      var accion = ev.target.closest("[data-action]");
+      if (accion) {
+        var target = eventos[+accion.dataset.evIdx].el;
+        if (accion.dataset.action === "editar") abrirModalEditar(target); else confirmarEliminar(target);
+        return;
+      }
+      var item = ev.target.closest(".cal-agenda-item");
+      if (item) abrirModalDetalle(eventos[+item.dataset.evIdx].el);
+    });
+    sideList.addEventListener("keydown", function (ev) {
+      if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches(".cal-agenda-item")) {
+        ev.preventDefault();
+        abrirModalDetalle(eventos[+ev.target.dataset.evIdx].el);
+      }
+    });
+
+    // ───────── Nuevo evento ─────────
+    // Mismo formulario de siempre; si se abre desde el panel del día, la
+    // fecha llega precargada con el día seleccionado.
+    function abrirModalNuevo(diaInicial) {
+      var opts = PROYECTOS.map(function (p) { return '<option value="' + p.id + '">' + p.nombre + '</option>'; }).join("");
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+              '<div class="modal-header"><div><h2>Nuevo evento</h2><p>Se agrega al calendario del equipo del proyecto.</p></div>' +
+              '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+              '<div class="modal-body">' +
+              '<div class="field-row"><div class="field"><label class="field-label">Proyecto</label><select class="select" id="ev-proj">' + opts + '</select></div>' +
+              '<div class="field"><label class="field-label">Tipo</label><select class="select" id="ev-tipo">' + tipoOptions() + '</select></div></div>' +
+              '<div class="field"><label class="field-label">Titulo</label><input class="input" id="ev-titulo" placeholder="Daily de sprint, Entrega v1..."></div>' +
+              '<div class="field-row"><div class="field"><label class="field-label">Fecha y hora</label><div style="display:flex; gap:6px;"><input class="input" type="date" id="ev-fecha-dia" value="' + (diaInicial || "") + '" style="flex:1; min-width:0; padding-left:8px; padding-right:4px;"><div class="dropdown" style="flex:0 0 auto;"><button type="button" class="input" data-dropdown-trigger="ev-hora-dd" style="width:58px; padding:0 8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><span data-hora-label>00</span><svg class="icon" style="width:14px; height:14px;"><use href="/img/icons.svg#icon-chevron-down"></use></svg></button><div class="dropdown-panel" data-dropdown-panel="ev-hora-dd" style="max-height:210px; overflow-y:auto; min-width:58px; padding:4px;">' + horaDropdownItems() + '</div><input type="hidden" id="ev-fecha-hora" value="00"></div><select class="select" id="ev-fecha-min" style="width:64px; flex:0 0 auto;">' + minutoOptions() + '</select></div></div>' +
+              '<div class="field"><label class="field-label">Audiencia</label><select class="select" id="ev-aud">' + audienciaOptions() + '</select></div></div>' +
+              '<div class="field-row"><div class="field"><label class="field-label">Ubicacion (opcional)</label><input class="input" id="ev-ubic" placeholder="Sala 3 / Oficina"></div>' +
+              '<div class="field"><label class="field-label">Enlace virtual (opcional)</label><input class="input" id="ev-enlace" placeholder="https://meet..."></div></div>' +
+              '<div class="field"><label class="field-label">Descripcion (opcional)</label><textarea class="input" id="ev-desc" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);"></textarea></div>' +
+              '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ev-confirm">Crear evento</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      if (window.SBAI.dropdown) window.SBAI.dropdown.init(document);
+      backdrop.querySelectorAll("[data-hora-value]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          backdrop.querySelector("#ev-fecha-hora").value = btn.dataset.horaValue;
+          backdrop.querySelector('[data-dropdown-trigger="ev-hora-dd"] [data-hora-label]').textContent = btn.dataset.horaValue;
+          window.SBAI.dropdown.close("ev-hora-dd");
+        });
+      });
+      backdrop.querySelector("#ev-confirm").addEventListener("click", function () {
+        var titulo = backdrop.querySelector("#ev-titulo").value.trim();
+        var dia = backdrop.querySelector("#ev-fecha-dia").value;
+        var hora = backdrop.querySelector("#ev-fecha-hora").value;
+        var minuto = backdrop.querySelector("#ev-fecha-min").value;
+        var fecha = dia ? (dia + "T" + hora + ":" + minuto) : "";
+        if (!titulo) { SBAI.toast.show("Escribe un titulo.", { type: "error" }); return; }
+        if (!dia) { SBAI.toast.show("Selecciona la fecha y hora.", { type: "error" }); return; }
+        submitForm(NUEVO_URL, {
+          proyectoId: backdrop.querySelector("#ev-proj").value,
+          tipo: backdrop.querySelector("#ev-tipo").value,
+          titulo: titulo,
+          fechaInicio: fecha,
+          audiencia: backdrop.querySelector("#ev-aud").value,
+          ubicacion: backdrop.querySelector("#ev-ubic").value,
+          enlace: backdrop.querySelector("#ev-enlace").value,
+          descripcion: backdrop.querySelector("#ev-desc").value
+        });
+      });
+    }
+    var newBtn = document.getElementById("new-event-btn");
+    if (newBtn) newBtn.addEventListener("click", function () { abrirModalNuevo(keyOf(cursor)); });
+    var sideAdd = document.getElementById("side-add");
+    if (sideAdd) sideAdd.addEventListener("click", function () { abrirModalNuevo(keyOf(cursor)); });
+
+    // ───────── Editar / Eliminar evento ─────────
+    // Comparte el mismo formulario (fecha con hora en dropdown + minutos)
+    // que "Nuevo evento", pero sin el <select> de proyecto: un evento no
+    // cambia de proyecto al editarse, solo sus datos.
+    function abrirModalEditar(card) {
+      var d = card.dataset;
+      var partes = (d.fechaIso || "").split("T"); // "2026-09-20T08:30" -> ["2026-09-20","08:30"]
+      var dia = partes[0] || "";
+      var horaMin = (partes[1] || "00:00").split(":");
+      var hora = horaMin[0] || "00";
+      var minuto = horaMin[1] || "00";
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+              '<div class="modal-header"><div><h2>Editar evento</h2><p>' + d.proyecto + '</p></div>' +
+              '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+              '<div class="modal-body">' +
+              '<div class="field"><label class="field-label">Tipo</label><select class="select" id="ed-tipo">' + tipoOptions() + '</select></div>' +
+              '<div class="field"><label class="field-label">Titulo</label><input class="input" id="ed-titulo" value="' + (d.titulo || "").replace(/"/g, "&quot;") + '"></div>' +
+              '<div class="field-row"><div class="field"><label class="field-label">Fecha y hora</label><div style="display:flex; gap:6px;"><input class="input" type="date" id="ed-fecha-dia" value="' + dia + '" style="flex:1; min-width:0; padding-left:8px; padding-right:4px;"><div class="dropdown" style="flex:0 0 auto;"><button type="button" class="input" data-dropdown-trigger="ed-hora-dd" style="width:58px; padding:0 8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;"><span data-hora-label>' + hora + '</span><svg class="icon" style="width:14px; height:14px;"><use href="/img/icons.svg#icon-chevron-down"></use></svg></button><div class="dropdown-panel" data-dropdown-panel="ed-hora-dd" style="max-height:210px; overflow-y:auto; min-width:58px; padding:4px;">' + horaDropdownItems() + '</div><input type="hidden" id="ed-fecha-hora" value="' + hora + '"></div><select class="select" id="ed-fecha-min" style="width:64px; flex:0 0 auto;">' + minutoOptions() + '</select></div></div>' +
+              '<div class="field"><label class="field-label">Audiencia</label><select class="select" id="ed-aud">' + audienciaOptions() + '</select></div></div>' +
+              '<div class="field-row"><div class="field"><label class="field-label">Ubicacion (opcional)</label><input class="input" id="ed-ubic" value="' + (d.ubicacion || "").replace(/"/g, "&quot;") + '" placeholder="Sala 3 / Oficina"></div>' +
+              '<div class="field"><label class="field-label">Enlace virtual (opcional)</label><input class="input" id="ed-enlace" value="' + (d.enlace || "").replace(/"/g, "&quot;") + '" placeholder="https://meet..."></div></div>' +
+              '<div class="field"><label class="field-label">Descripcion (opcional)</label><textarea class="input" id="ed-desc" rows="2" style="height:auto; padding:var(--space-3) var(--space-4);">' + (d.descripcion || "") + '</textarea></div>' +
+              '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ed-confirm">Guardar cambios</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      if (window.SBAI.dropdown) window.SBAI.dropdown.init(document);
+      backdrop.querySelector("#ed-tipo").value = d.tipo;
+      backdrop.querySelector("#ed-aud").value = d.audiencia;
+      backdrop.querySelectorAll("[data-hora-value]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          backdrop.querySelector("#ed-fecha-hora").value = btn.dataset.horaValue;
+          backdrop.querySelector('[data-dropdown-trigger="ed-hora-dd"] [data-hora-label]').textContent = btn.dataset.horaValue;
+          window.SBAI.dropdown.close("ed-hora-dd");
+        });
+      });
+      backdrop.querySelector("#ed-confirm").addEventListener("click", function () {
+        var titulo = backdrop.querySelector("#ed-titulo").value.trim();
+        var diaVal = backdrop.querySelector("#ed-fecha-dia").value;
+        var horaVal = backdrop.querySelector("#ed-fecha-hora").value;
+        var minutoVal = backdrop.querySelector("#ed-fecha-min").value;
+        var fecha = diaVal ? (diaVal + "T" + horaVal + ":" + minutoVal) : "";
+        if (!titulo) { SBAI.toast.show("Escribe un titulo.", { type: "error" }); return; }
+        if (!diaVal) { SBAI.toast.show("Selecciona la fecha y hora.", { type: "error" }); return; }
+        submitForm(EDITAR_BASE_URL + d.id + "/editar", {
+          tipo: backdrop.querySelector("#ed-tipo").value,
+          titulo: titulo,
+          fechaInicio: fecha,
+          audiencia: backdrop.querySelector("#ed-aud").value,
+          ubicacion: backdrop.querySelector("#ed-ubic").value,
+          enlace: backdrop.querySelector("#ed-enlace").value,
+          descripcion: backdrop.querySelector("#ed-desc").value
+        });
+      });
+    }
+
+    function confirmarEliminar(card) {
+      SBAI.modal.confirm({
+        title: "¿Eliminar \"" + card.dataset.titulo + "\"?",
+        desc: "Esta accion no se puede deshacer.",
+        confirmLabel: "Eliminar", variant: "destructive",
+        onConfirm: function () { submitForm(ELIMINAR_BASE_URL + card.dataset.id + "/eliminar", {}); }
+      });
+    }
+
+    // ───────── Ver detalle del evento ─────────
+    // Modal de solo lectura con TODOS los datos: fecha, hora, ubicacion/enlace,
+    // audiencia y descripcion completa.
+    function esUrl(texto) {
+      return /^https?:\/\//i.test(texto || "");
+    }
+
+    function abrirModalDetalle(card) {
+      var d = card.dataset;
+      var claseEstado = CLASE_ESTADO[d.estado] || "badge-blue";
+      var puedeGestionar = d.puedeGestionar === "true";
+
+      var filas = "";
+      filas += '<div class="event-detail-row">' + icono("icon-calendar") +
+              '<div class="event-detail-row-body"><span class="event-detail-label">Fecha y hora</span>' +
+              '<span class="event-detail-value">' + escaparHtml(d.fechaLabel) + ' · ' + escaparHtml(d.horaLabel) + '</span></div></div>';
+      if (d.ubicacion) {
+        filas += '<div class="event-detail-row">' + icono("icon-pin") +
+                '<div class="event-detail-row-body"><span class="event-detail-label">Ubicacion</span>' +
+                '<span class="event-detail-value">' + escaparHtml(d.ubicacion) + '</span></div></div>';
+      }
+      if (d.enlace) {
+        var valorEnlace = esUrl(d.enlace)
+                ? '<a href="' + escaparHtml(d.enlace) + '" target="_blank" rel="noopener">' + escaparHtml(d.enlace) + '</a>'
+                : escaparHtml(d.enlace);
+        filas += '<div class="event-detail-row">' + icono("icon-external-link") +
+                '<div class="event-detail-row-body"><span class="event-detail-label">Enlace virtual</span>' +
+                '<span class="event-detail-value">' + valorEnlace + '</span></div></div>';
+      }
+      filas += '<div class="event-detail-row">' + icono("icon-users") +
+              '<div class="event-detail-row-body"><span class="event-detail-label">Audiencia</span>' +
+              '<span class="event-detail-value">' + escaparHtml(d.audienciaLabel) + '</span></div></div>';
+
+      var descripcionHtml = d.descripcion
+              ? '<div class="event-detail-desc-text">' + escaparHtml(d.descripcion) + '</div>'
+              : '<div class="event-detail-desc-text text-tertiary">Sin descripcion.</div>';
+
+      var botonesFooter = '<button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>';
+      if (puedeGestionar) {
+        botonesFooter += '<button type="button" class="btn btn-destructive-solid" id="det-eliminar">Eliminar</button>' +
+                '<button type="button" class="btn btn-primary" id="det-editar">Editar</button>';
+      }
+
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+              '<div class="modal-header"><div><h2>' + escaparHtml(d.titulo) + '</h2><p>' + escaparHtml(d.proyecto) + '</p></div>' +
+              '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar">' + icono("icon-x") + '</button></div>' +
+              '<div class="modal-body">' +
+              '<div class="event-detail-badges">' +
+              '<span class="badge ' + (CLASE_TIPO[d.tipo] || "badge-blue") + '">' + escaparHtml(d.tipoNombre) + '</span>' +
+              '<span class="badge ' + claseEstado + '">' + escaparHtml(d.estado) + '</span>' +
+              (d.audiencia === "solo_pm" ? '<span class="badge badge-neutral">Solo PM</span>' : '') +
+              '</div>' +
+              '<div class="event-detail-rows">' + filas + '</div>' +
+              '<span class="event-detail-desc-label">Descripcion</span>' + descripcionHtml +
+              '</div><div class="modal-footer">' + botonesFooter + '</div></div>';
+
+      var backdrop = SBAI.modal.open(html);
+      if (puedeGestionar) {
+        backdrop.querySelector("#det-editar").addEventListener("click", function () {
+          SBAI.modal.closeTop();
+          abrirModalEditar(card);
+        });
+        backdrop.querySelector("#det-eliminar").addEventListener("click", function () {
+          SBAI.modal.closeTop();
+          confirmarEliminar(card);
+        });
+      }
+    }
+
     render();
   });
-
-  render();
-});
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
 </body>
 </html>

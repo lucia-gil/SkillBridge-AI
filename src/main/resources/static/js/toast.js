@@ -28,10 +28,18 @@
     var icon = opts.icon || ICONS[type] || ICONS.default;
     var el = document.createElement("div");
     el.className = "toast" + (type !== "default" ? " " + type : "");
+    // Antes esto usaba window.SBAI.state.STATIC (variable que solo existia
+    // en el mock viejo con sessionStorage, cargando state.js). Las paginas
+    // reales de Thymeleaf ya no cargan ese script, asi que state quedaba
+    // undefined y toda la funcion fallaba en silencio - ningun toast se
+    // mostraba, ni de exito ni de error, en NINGUNA pagina real del
+    // sistema (PM incluido). Se cambia a ruta absoluta fija "/img/...",
+    // igual que ya usan todos los iconos del resto de las plantillas
+    // reales (ver, por ejemplo, fragments/topbar.html).
     el.innerHTML =
-      '<svg class="icon toast-icon"><use href="' + window.SBAI.state.STATIC + 'img/icons.svg#' + icon + '"></use></svg>' +
-      '<div class="toast-text">' + message + "</div>" +
-      '<button type="button" class="toast-close" aria-label="Cerrar"><svg class="icon icon-sm"><use href="' + window.SBAI.state.STATIC + 'img/icons.svg#icon-x"></use></svg></button>';
+        '<svg class="icon toast-icon"><use href="/img/icons.svg#' + icon + '"></use></svg>' +
+        '<div class="toast-text">' + message + "</div>" +
+        '<button type="button" class="toast-close" aria-label="Cerrar"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-x"></use></svg></button>';
     region().appendChild(el);
 
     var timer = setTimeout(function () { dismiss(el); }, opts.duration || 4200);

@@ -1,71 +1,264 @@
 <!DOCTYPE html>
 <!--
-  fragments/topbar.html — Referencia 1:1 del topbar generado hoy por
-  static/js/shell.js (función topbarHtml). Modelo esperado del
-  controlador: "title", "subtitle", "unreadCount", "notifications"
-  (últimas 4), "user". Ver fragments/sidebar.html para el porqué de que
-  hoy viva en JS en vez de vía fetch().
+  fragments/topbar.html
 -->
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
+
 <header class="topbar" th:fragment="topbar">
+
+  <!-- Token CSRF de Spring Security para formularios/fetch armados por JS -->
+  <th:block th:replace="~{fragments/seguridad :: csrf}"></th:block>
+
+  <!-- MENÚ (solo celular / pantallas angostas) -->
+  <button type="button" class="topbar-icon-btn topbar-menu-btn" data-action="toggle-sidebar" aria-label="Abrir menú de navegación">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+
   <div class="topbar-heading">
     <span class="topbar-title" th:text="${title}">Título</span>
-    <!-- Siempre se renderiza, incluso vacío: varias vistas (p. ej.
-         notificaciones.html) fijan el subtítulo por JS después de cargar
-         el shell, y necesitan el <span> presente en el DOM desde el
-         inicio. Antes tenía th:if="${subtitle}", lo que rompía esas
-         vistas cuando el controlador no enviaba subtítulo. -->
     <span class="topbar-subtitle" th:text="${subtitle} ?: ''">Subtítulo</span>
   </div>
 
-  <button type="button" class="topbar-search" data-open-command-palette>
-    <svg class="icon"><use href="/img/icons.svg#icon-search"></use></svg>
-    <span>Buscar colaboradores, proyectos o habilidades…</span>
-    <kbd>⌘K</kbd>
-  </button>
+
+  <!-- BUSCADOR GLOBAL PREDICTIVO (desde 2 letras) -->
+
+  <div class="gs" data-global-search role="search">
+    <label class="gs-field">
+      <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
+      <input type="text" class="gs-input" placeholder="Buscar colaboradores, proyectos o habilidades…"
+             autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-label="Buscar en SkillBridge AI">
+      <button type="button" class="gs-clear" hidden aria-label="Limpiar búsqueda">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <kbd>Ctrl K</kbd>
+    </label>
+    <div class="gs-panel" role="listbox" hidden></div>
+  </div>
+
+
+  <!-- ACCIONES -->
 
   <div class="topbar-actions">
-    <a class="topbar-ai-btn" href="asistente-ia.html">
-      <svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg>
-      <span>Asistente IA</span>
+
+
+    <!-- VER COMO (modelo v7): un Miembro que lidera proyectos alterna entre
+         su vista Project Manager y su vista Colaborador. Cada vista muestra
+         solo los proyectos de ese papel, con sus permisos. -->
+    <!-- sec:authorize (thymeleaf-extras-springsecurity6): solo se pinta si el
+         usuario tiene la autoridad project_manager, es decir, es Miembro y
+         lidera al menos un proyecto (ver security/SesionSegura.autoridades). -->
+    <nav class="segmented view-switch" sec:authorize="hasAuthority('project_manager')" aria-label="Ver como">
+      <span class="view-switch-label">Ver como</span>
+      <a class="segmented-btn" href="/project-manager/inicio.html"
+         th:classappend="${vistaActualEsPm} ? 'active'"
+         th:attr="aria-current=${vistaActualEsPm} ? 'page' : null">Project Manager</a>
+      <a class="segmented-btn" href="/colaborador/inicio.html"
+         th:classappend="${!vistaActualEsPm} ? 'active'"
+         th:attr="aria-current=${!vistaActualEsPm} ? 'page' : null">Colaborador</a>
+    </nav>
+
+    <!-- ASISTENTE IA -->
+
+    <a
+            class="topbar-ai-btn"
+            href="asistente-ia.html">
+
+      <svg class="icon">
+        <use href="/img/icons.svg#icon-sparkles"></use>
+      </svg>
+
+      <span>
+        Asistente IA
+      </span>
+
     </a>
 
-    <div class="dropdown">
-      <button type="button" class="topbar-icon-btn" data-dropdown-trigger="notif-panel" aria-label="Notificaciones">
-        <svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg>
-        <span class="counter-badge" th:if="${unreadCount > 0}" th:text="${unreadCount}">0</span>
-      </button>
-      <div class="dropdown-panel notif-panel align-right" data-dropdown-panel="notif-panel">
-        <div class="notif-panel-header">
-          <h3>Notificaciones</h3>
-          <button type="button" class="btn btn-tertiary btn-sm" data-action="mark-all-read-quick">Marcar leídas</button>
-        </div>
-        <div class="notif-panel-list">
-          <!-- th:each="n : ${notifications}" -->
-          <div class="notif-item" th:classappend="${n.leida} ? '' : 'unread'" th:each="n : ${notifications}">
-            <span class="notif-item-icon" th:classappend="${n.tipo}">
-              <svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${n.icon}"></use></svg>
-            </span>
-            <span class="notif-item-body">
-              <span class="notif-item-title" th:text="${n.titulo}">Título</span>
-              <span class="notif-item-desc" th:text="${n.desc}">Descripción</span>
-              <span class="notif-item-time" th:text="${n.hora}">00:00</span>
-            </span>
-          </div>
-        </div>
-        <div class="notif-panel-footer"><a href="notificaciones.html">Ver todas las notificaciones →</a></div>
-      </div>
-    </div>
+
+    <!-- TEMA CLARO / OSCURO -->
+
+    <button
+            type="button"
+            class="topbar-icon-btn"
+            id="theme-toggle-btn"
+            aria-label="Cambiar a modo oscuro">
+
+      <svg class="icon">
+        <use href="/img/icons.svg#icon-monitor"></use>
+      </svg>
+
+    </button>
+
+
+    <!-- NOTIFICACIONES -->
 
     <div class="dropdown">
-      <button type="button" class="topbar-user-btn" data-dropdown-trigger="user-menu-topbar">
-        <span class="avatar avatar-sm" th:text="${user.iniciales}">MR</span>
-        <svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-down"></use></svg>
+
+      <button
+              type="button"
+              class="topbar-icon-btn"
+              data-dropdown-trigger="notif-panel"
+              aria-label="Notificaciones">
+
+        <svg class="icon">
+          <use href="/img/icons.svg#icon-bell"></use>
+        </svg>
+
+        <span
+                class="counter-badge"
+                th:if="${unreadCount > 0}"
+                th:text="${unreadCount}">
+          0
+        </span>
+
       </button>
-      <div th:replace="~{fragments/modals :: user-menu('user-menu-topbar', 'align-right')}"></div>
+
+
+      <div
+              class="dropdown-panel notif-panel align-right"
+              data-dropdown-panel="notif-panel">
+
+        <div class="notif-panel-header">
+
+          <h3>
+            Notificaciones
+          </h3>
+
+          <button
+                  type="button"
+                  class="btn btn-tertiary btn-sm"
+                  data-action="mark-all-read-quick">
+
+            Marcar leídas
+
+          </button>
+
+        </div>
+
+
+        <div class="notif-panel-list">
+
+          <div
+                  class="notif-item"
+                  th:classappend="${n.leida} ? '' : 'unread'"
+                  th:each="n : ${notifications}">
+
+            <span
+                    class="notif-item-icon"
+                    th:classappend="${n.iconClass}">
+
+              <svg class="icon icon-sm">
+
+                <use th:href="@{'/img/icons.svg#' + ${n.iconId}}"></use>
+
+              </svg>
+
+            </span>
+
+
+            <span class="notif-item-body">
+
+              <span
+                      class="notif-item-title"
+                      th:text="${n.titulo}">
+                Título
+              </span>
+
+              <span
+                      class="notif-item-desc"
+                      th:text="${n.detalle}">
+                Descripción
+              </span>
+
+              <span
+                      class="notif-item-time"
+                      th:text="${n.fechaLabel}">
+                00:00
+              </span>
+
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="notif-panel-footer">
+
+          <a href="notificaciones.html">
+            Ver todas las notificaciones →
+          </a>
+
+        </div>
+
+      </div>
+
     </div>
+
+
+    <!-- USUARIO -->
+
+    <div class="dropdown">
+
+      <button
+              type="button"
+              class="topbar-user-btn"
+              data-dropdown-trigger="user-menu-topbar"
+              aria-label="Menú de usuario">
+
+
+        <!-- FOTO -->
+
+        <span class="topbar-user-avatar">
+
+          <img
+                  th:if="${user.tieneFoto}"
+                  th:src="@{/perfil/foto}"
+                  th:alt="${user.nombre}"
+                  class="topbar-user-photo">
+
+
+          <!-- FALLBACK: INICIALES -->
+
+          <span
+                  th:unless="${user.tieneFoto}"
+                  class="avatar avatar-sm"
+                  th:text="${user.iniciales}">
+            LG
+          </span>
+
+        </span>
+
+
+        <!-- NOMBRE -->
+
+        <span
+                class="topbar-user-name"
+                th:text="${user.nombre}">
+          Nombre
+        </span>
+
+
+        <!-- FLECHA -->
+
+        <svg class="icon icon-sm">
+          <use href="/img/icons.svg#icon-chevron-down"></use>
+        </svg>
+
+      </button>
+
+
+      <!-- MENÚ EXISTENTE -->
+
+      <div
+              th:replace="~{fragments/modals :: user-menu('user-menu-topbar', 'align-right')}">
+      </div>
+
+    </div>
+
   </div>
+
 </header>
+
 </body>
 </html>

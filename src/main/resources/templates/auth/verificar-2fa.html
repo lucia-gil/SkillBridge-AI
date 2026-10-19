@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificación en dos pasos · SkillBridge AI</title>
+  <link rel="icon" type="image/png" href="/img/logo-icon.png">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/auth-center.css">
+
+  <!--
+    Login rediseñado: sin panel lateral azul. Solo la card centrada sobre
+    un fondo gris claro (--canvas), en línea con el minimalismo del
+    landing (publico/landing.html). Estilos con alcance local a esta
+    página para no afectar registro.html / recuperar-password.html, que
+    siguen usando el layout de dos columnas por ahora.
+  -->
+  <style>
+    .login-page {
+      min-height: 100vh;
+      background: var(--canvas);
+      background-image:
+              radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 60%),
+              radial-gradient(circle at 1px 1px, rgba(22,33,58,0.06) 1px, transparent 0);
+      background-size: 100% 100%, 22px 22px;
+      background-position: center -10%, 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-6);
+      position: relative;
+    }
+
+    .login-back-link {
+      position: fixed;
+      top: var(--space-6);
+      left: var(--space-6);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-medium);
+      color: var(--text-secondary);
+      z-index: 5;
+    }
+    .login-back-link:hover { color: var(--text-primary); }
+    .login-back-link .icon { width: 16px; height: 16px; }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-3);
+      padding: var(--space-8);
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .input-wrap .input {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-default);
+      padding: var(--space-3) var(--space-4);
+      transition: box-shadow var(--dur-fast), border-color var(--dur-fast);
+    }
+
+    .input-wrap .input:focus {
+      border-color: #8B5CF6;
+      box-shadow: 0 0 0 4px rgba(139,92,246,0.16);
+      outline: none;
+    }
+
+    .auth-card-header {
+      text-align: center;
+      margin-bottom: var(--space-6);
+    }
+    .auth-card-header img {
+      height: 34px;
+      width: auto;
+      object-fit: contain;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .auth-card-title,
+    .auth-card-sub {
+      text-align: center;
+    }
+    .auth-card-sub { margin-bottom: var(--space-6); }
+
+    .auth-card-body .field-row a {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .auth-card .btn-primary {
+      background: linear-gradient(135deg, #8B5CF6 0%, #22D3EE 100%);
+      border: none;
+      box-shadow: 0 4px 14px rgba(139,92,246,0.28);
+    }
+    .auth-card .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+    .auth-card .btn-primary:active:not(:disabled) { filter: brightness(0.96); }
+
+    .auth-divider { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-6) 0; }
+    .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
+    .auth-divider span { font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); color: var(--text-tertiary); text-transform: uppercase; }
+
+    @media (max-width: 480px) {
+      .login-back-link { position: absolute; top: var(--space-4); left: var(--space-4); }
+      .auth-card { padding: var(--space-6); }
+    }
+  </style>
+</head>
+<body>
+<div class="login-page">
+  <a class="login-back-link" th:href="@{/auth/login.html}">
+    <svg class="icon"><use href="/img/icons.svg#icon-arrow-left"></use></svg>
+    Volver a iniciar sesión
+  </a>
+  <div class="auth-card card">
+    <div class="auth-card-header"><img src="/img/logo-horizontal-tight.png" alt="SkillBridge AI"></div>
+    <h2 class="auth-card-title">Verificación en dos pasos</h2>
+    <p class="auth-card-sub">Abre tu app autenticadora e ingresa el código de 6 dígitos de SkillBridge AI.</p>
+
+    <div th:if="${error}" th:text="${error}"
+         style="background:var(--red-bg); border:1px solid var(--red-border); color:var(--red-fg-strong); padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
+
+    <form class="auth-card-body" th:action="@{/auth/verificar-2fa.html}" method="post" autocomplete="off">
+      <div class="field">
+        <label class="field-label" for="otp">Código de verificación</label>
+        <input class="input otp-input" style="max-width:none; width:100%;" type="text" id="otp" name="codigo" inputmode="numeric"
+               autocomplete="one-time-code" maxlength="6" placeholder="000000" required autofocus>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:var(--space-4);">Verificar y entrar</button>
+      <p style="text-align:center; margin-top:var(--space-5); font-size:var(--fs-xs); color:var(--text-tertiary);">
+        El código cambia cada 30 segundos. Tienes 5 intentos y 5 minutos para completar este paso.
+      </p>
+    </form>
+  </div>
+</div>
+<script>
+  document.getElementById("otp").addEventListener("input", function (e) { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
+</script>
+<script src="/js/theme-toggle.js"></script>
+</body>
+</html>

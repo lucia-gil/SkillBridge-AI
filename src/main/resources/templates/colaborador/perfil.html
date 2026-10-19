@@ -1,78 +1,145 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi perfil · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi perfil · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="detail-grid">
-        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+      <div class="detail-grid" style="align-items:stretch;">
+        <div style="display:flex; flex-direction:column; gap:var(--space-6); height:100%;">
 
-          <section class="card profile-card">
-            <div class="profile-header-banner"></div>
-            <div class="card-body" id="perfil-header"></div>
+          <section class="card card-pad">
+            <div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">
+              <span class="account-photo-large">
+                <img th:if="${user.tieneFoto}" th:src="@{/perfil/foto}" th:alt="${resumen.nombreCompleto}">
+                <span th:unless="${user.tieneFoto}" class="avatar avatar-lg" style="background:var(--navy-700);" th:text="${resumen.iniciales}">MR</span>
+              </span>
+              <div style="flex:1; min-width:200px;">
+                <h2 style="font-size:var(--fs-lg);" th:text="${resumen.nombreCompleto}">Nombre</h2>
+                <p class="text-tertiary" style="margin-top:2px;" th:text="${resumen.cargo}">Cargo</p>
+                <div style="display:flex; gap:var(--space-2); margin-top:var(--space-3); flex-wrap:wrap;">
+                  <span class="badge badge-green" th:text="'DISPONIBLE ' + ${resumen.disponibilidadPorcentaje} + '%'">DISPONIBLE 0%</span>
+                  <span class="badge badge-blue" th:text="${resumen.rolLabel}">Rol</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:var(--space-3); margin-top:var(--space-3);" th:if="${!resumen.linkedinUrl.isEmpty() or !resumen.githubUrl.isEmpty()}">
+                  <a th:if="${!resumen.linkedinUrl.isEmpty()}" th:href="${resumen.linkedinUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); color:var(--text-secondary); text-decoration:none;">
+                    <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    LinkedIn
+                  </a>
+                  <a th:if="${!resumen.githubUrl.isEmpty()}" th:href="${resumen.githubUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); color:var(--text-secondary); text-decoration:none;">
+                    <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                    GitHub
+                  </a>
+                </div>
+              </div>
+            </div>
           </section>
 
-          <section class="card">
+          <section class="card" style="flex:1; display:flex; flex-direction:column;">
             <div class="card-header">
-              <div class="card-header-icon-row">
-                <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
-                <div class="card-header-text"><h2>Habilidades y nivel de dominio</h2><p>Escala global: Básico · Intermedio · Avanzado · Experto</p></div>
-              </div>
-              <button type="button" class="btn btn-primary btn-sm" id="add-skill-open">
-                <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Agregar habilidad</button>
+              <div class="card-header-text"><h2>Habilidades y nivel de dominio</h2><p>Escala global: Básico · Intermedio · Avanzado · Experto</p></div>
+              <button type="button" class="btn btn-primary btn-sm" id="add-skill-btn">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar habilidad</button>
             </div>
             <div class="card-body">
-              <div style="display:flex; flex-wrap:wrap; gap:var(--space-3);" id="skills-list"></div>
-            </div>
-          </section>
+              <div th:if="${habilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no declaraste ninguna habilidad.</div>
 
-          <section class="card">
-            <div class="card-header">
-              <div class="card-header-icon-row">
-                <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
-                <div class="card-header-text"><h2>Historial de proyectos</h2></div>
+              <div id="skills-list">
+                <div th:each="h : ${habilidades}" data-habilidad-row style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+                  <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:var(--space-2);">
+                      <span class="tech-logo-sm" th:attr="data-tech-logo=${h.nombre}"></span>
+                      <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
+                            th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
+                    </div>
+                    <span th:if="${h.validada}" class="badge badge-green" style="margin-left:6px;">Validada por RM</span>
+
+                    <!-- Certificado ya cargado: link externo o PDF subido (se sirve por /certificados/{id}/archivo) -->
+                    <div th:if="${h.tieneCertificado}" th:each="cert : ${h.certificados}" style="margin-top:6px; font-size:var(--fs-xs);">
+                      <svg class="icon icon-sm" style="vertical-align:-2px;"><use href="/img/icons.svg#icon-file-text"></use></svg>
+                      <a th:if="${cert.tieneArchivo}" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                      <a th:unless="${cert.tieneArchivo}" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:text="${cert.nombreArchivo}">certificado.pdf</a>
+                    </div>
+                    <div th:unless="${h.tieneCertificado}" class="text-tertiary" style="margin-top:6px; font-size:var(--fs-xs);">Sin constancia adjunta</div>
+                  </div>
+
+                  <div class="cell-actions" style="flex:0 0 auto; flex-wrap:wrap; justify-content:flex-end;">
+                    <button type="button" data-editar-nivel
+                            th:attr="data-id=${h.habilidadId}, data-nombre=${h.nombre}, data-nivel-label=${h.nivelLabel}">Editar nivel</button>
+                    <button type="button" data-editar-cert
+                            th:attr="data-id=${h.habilidadId}, data-cert-nombre=${h.certificados.isEmpty() ? '' : h.certificados[0].nombreArchivo}, data-cert-url=${h.certificados.isEmpty() ? '' : h.certificados[0].urlArchivo}, data-cert-tiene-archivo=${h.certificados.isEmpty() ? false : h.certificados[0].tieneArchivo}, data-cert-id=${h.certificados.isEmpty() ? '' : h.certificados[0].id}"
+                            th:text="${h.tieneCertificado} ? 'Editar constancia' : 'Agregar constancia'">Editar constancia</button>
+                    <button type="button" class="danger" data-eliminar-habilidad
+                            th:attr="data-id=${h.habilidadId}, data-nombre=${h.nombre}">Eliminar</button>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="table-scroll">
-              <table class="data-table">
-                <thead><tr><th>Proyecto</th><th>Cliente</th><th>Rol</th><th>Periodo</th><th>Estado</th></tr></thead>
-                <tbody id="historial-body"></tbody>
-              </table>
+              <div class="table-footer" th:unless="${habilidades.isEmpty()}">
+                <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="skills-visible-count">0</span> de <span id="skills-total-count">0</span> habilidades</span>
+                <div class="pagination"><button class="page-btn" id="skills-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="skills-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="skills-next" type="button" aria-label="Página siguiente">›</button></div>
+              </div>
             </div>
           </section>
         </div>
 
         <div style="display:flex; flex-direction:column; gap:var(--space-6);">
           <section class="card card-pad">
-            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
-              <span class="card-header-icon amber"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-zap"></use></svg></span>
-              <h3 style="font-size:var(--fs-md);">Carga de trabajo</h3>
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Carga de trabajo</h3>
+            <div class="progress-inline" style="margin-bottom:var(--space-2);">
+              <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${cargaActiva > 100} ? 'amber' : ''" th:style="'width:' + ${cargaActiva > 100 ? 100 : cargaActiva} + '%;'"></div></div>
+              <span class="progress-value" th:text="${cargaActiva} + '%'">0%</span>
             </div>
-            <div class="progress-inline" style="margin-bottom:var(--space-2);"><div class="progress-bar"><div class="progress-bar-fill amber" style="width:0%;" id="carga-bar" data-target="80"></div></div><span class="progress-value">80%</span></div>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);">dentro del límite (100%)</p>
-            <div class="info-row"><span class="info-row-label">Portal Andes</span><span class="info-row-value">45%</span></div>
-            <div class="info-row"><span class="info-row-label">App Móvil Aurora</span><span class="info-row-value">35%</span></div>
-            <div class="info-row"><span class="info-row-label">Capacidad libre</span><span class="info-row-value" style="color:var(--green-fg);">20%</span></div>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);" th:text="${cargaActiva > 100} ? 'sobre el límite' : 'dentro del límite (100%)'">dentro del límite</p>
+            <div th:if="${proyectosActivos.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin proyectos activos.</div>
+            <div class="info-row" th:each="p : ${proyectosActivos}">
+              <span class="info-row-label" th:text="${p.nombre}">Proyecto</span>
+              <span class="info-row-value" th:text="${p.cargaPorcentaje} + '%'">0%</span>
+            </div>
+            <div class="info-row" th:if="${!proyectosActivos.isEmpty() and cargaActiva < 100}">
+              <span class="info-row-label">Capacidad libre</span>
+              <span class="info-row-value" style="color:var(--green-fg);" th:text="${100 - cargaActiva} + '%'">0%</span>
+            </div>
           </section>
 
           <section class="card card-pad">
-            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
-              <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-user"></use></svg></span>
-              <h3 style="font-size:var(--fs-md);">Datos de colaborador</h3>
+            <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Datos de colaborador</h3>
+            <div class="info-row"><span class="info-row-label">Cargo</span><span class="info-row-value" th:text="${resumen.cargo}">—</span></div>
+            <div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value" th:text="${resumen.correo}">—</span></div>
+            <div class="info-row"><span class="info-row-label">Disponibilidad</span><span class="info-row-value" th:text="${resumen.disponibilidadPorcentaje} + '%'">0%</span></div>
+            <div class="info-row"><span class="info-row-label">Experiencia</span><span class="info-row-value" th:text="${resumen.experienciaAnios} + ' años'">0 años</span></div>
+            <div class="info-row"><span class="info-row-label">Alta en la plataforma</span><span class="info-row-value" th:text="${resumen.cuentaDesdeLabel}">—</span></div>
+            <p class="field-hint" style="margin-top:var(--space-4);">Para editar cargo, biografía o contraseña ve a <a href="mi-cuenta.html">Mi cuenta</a>.</p>
+          </section>
+
+          <section class="card">
+            <div class="card-header"><div class="card-header-text"><h2>Historial de proyectos</h2></div></div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead><tr><th>Proyecto</th><th>Rol</th><th>Periodo</th><th>Dedicación</th><th>Estado</th></tr></thead>
+                <tbody>
+                <tr th:if="${historial.isEmpty()}"><td colspan="5" class="text-tertiary" style="text-align:center; padding:var(--space-6);">Todavía no tienes asignaciones registradas.</td></tr>
+                <tr th:each="h : ${historial}">
+                  <td class="cell-primary" th:text="${h.nombre}">Proyecto</td>
+                  <td th:text="${h.rolLabel}">Rol</td>
+                  <td th:text="${h.periodoLabel}">Periodo</td>
+                  <td class="mono" th:text="${h.cargaPorcentaje} + '%'">0%</td>
+                  <td><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></td>
+                </tr>
+                </tbody>
+              </table>
             </div>
-            <div id="perfil-info-rows"></div>
           </section>
         </div>
       </div>
@@ -81,75 +148,192 @@
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "colaborador", active: "perfil.html", title: "Mi perfil", subtitle: "Colaboradores › Mariana Ruiz" });
-  if (!cfg) return;
-  var u = MOCK.roleUsers.colaborador;
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+  var CATALOGO_HABILIDADES = /*[[${catalogoHabilidades}]]*/ [];
+  document.addEventListener("DOMContentLoaded", function () {
+    var submitForm = window.SBAI.submitForm;
 
-  document.getElementById("perfil-header").innerHTML =
-    '<span class="avatar avatar-lg profile-avatar-ring" style="background:var(--navy-700);">' + u.iniciales + '</span>' +
-    '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:var(--space-5); flex-wrap:wrap; margin-left:92px;">' +
-    '<div style="min-width:200px;"><h2 style="font-size:var(--fs-lg);">' + u.nombre + '</h2>' +
-    '<p class="text-tertiary" style="margin-top:2px;">' + u.cargo + " · " + u.celula + '</p>' +
-    '<div style="display:flex; gap:var(--space-2); margin-top:var(--space-3);"><span class="badge badge-green">DISPONIBLE ' + u.disponibilidad + '%</span><span class="badge badge-blue">' + u.rolLabel + '</span></div></div>' +
-    '<button type="button" class="btn btn-secondary btn-sm" id="change-photo-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-camera"></use></svg>Cambiar foto</button>' +
-    "</div>";
-  document.getElementById("change-photo-btn").addEventListener("click", function () {
-    SBAI.toast.show("Selecciona una imagen desde tu equipo (deshabilitado en esta demo).");
-  });
+    // Igual que submitForm, pero para cuando hay que mandar un archivo real
+    // (multipart/form-data) - mueve el <input type="file"> ya elegido por el
+    // usuario dentro de un form nuevo, para no perder el FileList al armarlo
+    // dinamicamente (un input hidden no puede llevar un archivo).
+    function submitFormConArchivo(action, fields, fileInputEl) {
+      var form = document.createElement("form");
+      form.method = "POST";
+      form.action = action;
+      form.enctype = "multipart/form-data";
+      Object.keys(fields || {}).forEach(function (k) {
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = k;
+        input.value = fields[k] == null ? "" : fields[k];
+        form.appendChild(input);
+      });
+      fileInputEl.name = "archivo";
+      form.appendChild(fileInputEl);
+      document.body.appendChild(form);
+      form.submit();
+    }
 
-  // Anima la barra de carga de trabajo de 0 al valor real al cargar la página
-  var cargaBar = document.getElementById("carga-bar");
-  requestAnimationFrame(function () {
-    setTimeout(function () { cargaBar.style.width = cargaBar.dataset.target + "%"; }, 80);
-  });
-
-  document.getElementById("perfil-info-rows").innerHTML = [
-    ["ID colaborador", u.id], ["Área", u.area], ["Ubicación", u.ubicacion],
-    ["Ingreso", "12 feb 2022"], ["Manager", u.manager], ["Correo", u.correo]
-  ].map(function (r) { return '<div class="info-row"><span class="info-row-label">' + r[0] + '</span><span class="info-row-value">' + r[1] + "</span></div>"; }).join("");
-
-  function renderSkills() {
-    document.getElementById("skills-list").innerHTML = MOCK.marianaSkills.map(function (s, i) {
-      return '<span class="skill-pill" data-level="' + s.nivel + '" style="animation-delay:' + (i * 45) + 'ms;">' + s.nombre + " · " + s.nivel + ' <span style="opacity:.65;">(' + s.anios + ')</span></span>';
-    }).join("");
-  }
-  renderSkills();
-
-  document.getElementById("historial-body").innerHTML = MOCK.marianaHistorial.map(function (h) {
-    var badgeCls = { "En curso": "badge-blue", "En riesgo": "badge-amber", "Cerrado": "badge-neutral" }[h.estado] || "badge-neutral";
-    return "<tr><td class=\"cell-primary\">" + h.proyecto + "</td><td>" + h.cliente + "</td><td>" + h.rol + "</td><td>" + h.periodo + "</td>" +
-      '<td><span class="badge ' + badgeCls + '">' + h.estado + "</span></td></tr>";
-  }).join("");
-
-  document.getElementById("add-skill-open").addEventListener("click", function () {
-    var options = MOCK.skillsCatalog.map(function (s) { return '<option value="' + s.nombre + '">' + s.nombre + "</option>"; }).join("");
-    var html = '<div class="modal" role="dialog" aria-modal="true">' +
-      '<div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia, pendiente de validación.</p></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Habilidad</label><select class="select" id="new-skill-name">' + options + '</select></div>' +
-      '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
-    var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#confirm-add-skill").addEventListener("click", function () {
-      var nombre = backdrop.querySelector("#new-skill-name").value;
-      var nivel = backdrop.querySelector("#new-skill-level").value;
-      MOCK.marianaSkills.push({ nombre: nombre, nivel: nivel, anios: "nuevo" });
-      renderSkills();
-      SBAI.modal.close(backdrop);
-      SBAI.toast.show("<strong>" + nombre + "</strong> agregada a tu perfil como " + nivel + ".", { type: "success" });
+    // Renderizar logos de tecnologías en habilidades
+    document.querySelectorAll("[data-tech-logo]").forEach(function (el) {
+      var name = el.getAttribute("data-tech-logo");
+      if (window.SBAI && window.SBAI.techIcons) {
+        var html = window.SBAI.techIcons.logo(name);
+        if (html) { el.innerHTML = html; }
+      }
     });
+
+    document.getElementById("add-skill-btn").addEventListener("click", function () {
+      var options = CATALOGO_HABILIDADES.map(function (h) { return '<option value="' + h.id + '">' + h.nombre + '</option>'; }).join("");
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia.</p></div>' +
+              '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+              '<div class="modal-body"><div class="field"><label class="field-label">Habilidad</label><select class="select" id="new-skill-id">' + options + '</select></div>' +
+              '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div>' +
+              '<div class="field"><label class="field-label">Constancia de respaldo (opcional)</label>' +
+              '<input class="input" type="url" id="new-skill-cert-url" placeholder="Link a tu certificado (Drive, Coursera, LinkedIn Learning...)">' +
+              '<p class="field-hint">Un link ayuda a que el Resource Manager valide tu habilidad más rápido, pero no es obligatorio.</p></div>' +
+              '<div class="field"><label class="field-label">Nombre del archivo (opcional)</label><input class="input" type="text" id="new-skill-cert-name" placeholder="Ej. certificado-react.pdf"></div>' +
+              '<div class="field"><label class="field-label">O sube el PDF directamente (opcional)</label>' +
+              '<input class="input" type="file" id="new-skill-cert-file" accept="application/pdf">' +
+              '<p class="field-hint">Si subes un PDF, se usa en vez del link. Máximo 5 MB.</p></div>' +
+              '</div>' +
+              '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#confirm-add-skill").addEventListener("click", function () {
+        var habilidadId = backdrop.querySelector("#new-skill-id").value;
+        if (!habilidadId) { SBAI.toast.show("Selecciona una habilidad del catálogo.", { type: "error" }); return; }
+        var fields = {
+          habilidadId: habilidadId,
+          nivel: backdrop.querySelector("#new-skill-level").value,
+          urlArchivo: backdrop.querySelector("#new-skill-cert-url").value,
+          nombreArchivo: backdrop.querySelector("#new-skill-cert-name").value
+        };
+        var fileInput = backdrop.querySelector("#new-skill-cert-file");
+        if (fileInput.files && fileInput.files[0]) {
+          submitFormConArchivo("/colaborador/perfil/habilidades", fields, fileInput);
+        } else {
+          submitForm("/colaborador/perfil/habilidades", fields);
+        }
+      });
+    });
+    document.querySelectorAll("[data-editar-cert]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var habilidadId = btn.dataset.id;
+        var nombreActual = btn.dataset.certNombre || "";
+        var urlActual = btn.dataset.certUrl || "";
+        var tieneArchivoActual = btn.dataset.certTieneArchivo === "true";
+        var certId = btn.dataset.certId || "";
+        var avisoArchivo = tieneArchivoActual
+                ? '<p class="field-hint">Ya tienes un PDF subido (<a href="/certificados/' + certId + '/archivo" target="_blank" rel="noopener">verlo</a>). Sube uno nuevo para reemplazarlo.</p>'
+                : "";
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Constancia de habilidad</h2></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body">' +
+                '<div class="field"><label class="field-label">Link</label><input class="input" type="url" id="edit-cert-url" value="' + urlActual + '" placeholder="Link a tu certificado"></div>' +
+                '<div class="field"><label class="field-label">Nombre del archivo</label><input class="input" type="text" id="edit-cert-name" value="' + nombreActual + '" placeholder="Ej. certificado.pdf"></div>' +
+                '<div class="field"><label class="field-label">O sube el PDF directamente (opcional)</label>' +
+                '<input class="input" type="file" id="edit-cert-file" accept="application/pdf">' +
+                avisoArchivo +
+                '</div>' +
+                '<p class="field-hint">Deja el link vacío, no subas archivo, y guarda para quitar la constancia.</p>' +
+                '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-edit-cert">Guardar</button></div></div>';
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelector("#confirm-edit-cert").addEventListener("click", function () {
+          var fields = {
+            urlArchivo: backdrop.querySelector("#edit-cert-url").value,
+            nombreArchivo: backdrop.querySelector("#edit-cert-name").value
+          };
+          var fileInput = backdrop.querySelector("#edit-cert-file");
+          if (fileInput.files && fileInput.files[0]) {
+            submitFormConArchivo("/colaborador/perfil/habilidades/" + habilidadId + "/certificado", fields, fileInput);
+          } else {
+            submitForm("/colaborador/perfil/habilidades/" + habilidadId + "/certificado", fields);
+          }
+        });
+      });
+    });
+
+    // ───────── Editar nivel / Eliminar habilidad declarada ─────────
+    document.querySelectorAll("[data-editar-nivel]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var habilidadId = btn.dataset.id;
+        var nivelActual = btn.dataset.nivelLabel || "Básico";
+        var opciones = ["Básico", "Intermedio", "Avanzado", "Experto"];
+        var opcionesHtml = opciones.map(function (o) {
+          return '<option' + (o === nivelActual ? ' selected' : '') + '>' + o + '</option>';
+        }).join("");
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar nivel</h2><p>' + btn.dataset.nombre + '</p></div>' +
+                '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+                '<div class="modal-body"><div class="field"><label class="field-label">Nivel</label><select class="select" id="edit-nivel-select">' + opcionesHtml + '</select></div>' +
+                '<p class="field-hint">Si cambias el nivel, la validación previa del Resource Manager (si la tenías) se pierde y debe volver a revisarse.</p></div>' +
+                '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-edit-nivel">Guardar</button></div></div>';
+        var backdrop = SBAI.modal.open(html);
+        backdrop.querySelector("#confirm-edit-nivel").addEventListener("click", function () {
+          submitForm("/colaborador/perfil/habilidades/" + habilidadId + "/nivel", {
+            nivel: backdrop.querySelector("#edit-nivel-select").value
+          });
+        });
+      });
+    });
+
+    document.querySelectorAll("[data-eliminar-habilidad]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var habilidadId = btn.dataset.id;
+        SBAI.modal.confirm({
+          title: "¿Eliminar \"" + btn.dataset.nombre + "\" de tu perfil?",
+          desc: "Se quitará la habilidad y su constancia de respaldo, si tenías una. Esta acción no se puede deshacer.",
+          confirmLabel: "Eliminar", variant: "destructive",
+          onConfirm: function () { submitForm("/colaborador/perfil/habilidades/" + habilidadId + "/eliminar", {}); }
+        });
+      });
+    });
+
+    // Paginación en el cliente: mismo patron que las demas tablas
+    // (colaboradores/ocupacion del RM) - se muestran de a 6.
+    var skillRows = Array.from(document.querySelectorAll("[data-habilidad-row]"));
+    if (skillRows.length) {
+      var pageSize = 6;
+      var page = 1;
+      var visibleCount = document.getElementById("skills-visible-count");
+      var totalCount = document.getElementById("skills-total-count");
+      var pageLabel = document.getElementById("skills-page-label");
+      var previous = document.getElementById("skills-prev");
+      var next = document.getElementById("skills-next");
+
+      function render() {
+        var pages = Math.max(1, Math.ceil(skillRows.length / pageSize));
+        page = Math.min(page, pages);
+        var visible = skillRows.slice((page - 1) * pageSize, page * pageSize);
+        skillRows.forEach(function (row) { row.hidden = true; });
+        visible.forEach(function (row) { row.hidden = false; });
+        visibleCount.textContent = visible.length;
+        totalCount.textContent = skillRows.length;
+        pageLabel.textContent = "Página " + page + " de " + pages;
+        previous.disabled = page === 1;
+        next.disabled = page === pages;
+      }
+
+      previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+      next.addEventListener("click", function () {
+        var pages = Math.max(1, Math.ceil(skillRows.length / pageSize));
+        if (page < pages) { page++; render(); }
+      });
+      render();
+    }
   });
-});
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tabla-acciones.js"></script>
+<script src="/js/tech-icons.js"></script>
 </body>
 </html>

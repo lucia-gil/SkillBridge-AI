@@ -1,0 +1,179 @@
+/*
+  proyecto-form.css — Campo de tecnologías con chips (SBAI.techInput) y
+  rango de fechas (SBAI.dateRange) de los formularios de proyecto
+  (project-manager/proyectos.html y administrador/proyectos.html).
+  Solo usa variables de tokens.css: respeta el tema claro/oscuro.
+  Los chips reutilizan .tech-chip / .tech-chip-logo de polish.css.
+*/
+
+/* ============ Campo de tecnologías ============ */
+.ti { position: relative; }
+.ti-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: text;
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+}
+.ti-box:hover { border-color: var(--border-strong); }
+.ti.is-focus .ti-box { border-color: var(--blue-accent); box-shadow: var(--shadow-focus); }
+.ti.is-shake .ti-box { animation: ti-shake 0.32s var(--ease-standard); border-color: var(--red-fg); }
+@keyframes ti-shake { 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
+
+.ti-chips { display: contents; }
+.ti-chip { padding: 3px 4px 3px 4px; gap: 6px; animation: ti-pop 0.16s var(--ease-standard); }
+@keyframes ti-pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.ti-chip > span:not(.tech-chip-logo) { padding-right: 2px; }
+.ti-chip.is-legacy { border-style: dashed; background: var(--surface); color: var(--text-secondary); }
+.ti-chip.is-armed { border-color: var(--red-fg); background: var(--red-bg); color: var(--red-fg); }
+.ti-remove {
+  width: 18px; height: 18px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+.ti-remove svg { width: 11px; height: 11px; }
+.ti-remove:hover { background: var(--red-bg); color: var(--red-fg); }
+.ti-remove:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+.ti-input {
+  flex: 1 1 140px;
+  min-width: 120px;
+  height: 30px;
+  padding: 0 4px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+}
+.ti .ti-input:focus,
+.ti .ti-input:focus-visible { border: none; outline: none; box-shadow: none; background: transparent; }
+.ti-input::placeholder { color: var(--text-tertiary); }
+
+/* Sugerencias: en el flujo (no flotante) para que nunca quede cortado por el scroll del modal. */
+.ti-panel {
+  margin-top: 6px;
+  max-height: 248px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  animation: ti-drop 0.14s var(--ease-standard);
+}
+@keyframes ti-drop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.ti-group {
+  position: sticky;
+  top: -4px;
+  z-index: 1;
+  padding: 8px 10px 4px;
+  background: var(--surface);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  color: var(--text-tertiary);
+}
+.ti-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.ti-opt.is-active { background: var(--navy-100); }
+.ti-opt .tech-chip-logo { width: 22px; height: 22px; }
+.ti-opt-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ti-opt-name mark { background: none; color: var(--blue-fg); font-weight: var(--fw-semibold); }
+.ti-opt-cat { flex-shrink: 0; font-size: var(--fs-2xs); color: var(--text-tertiary); }
+.ti-empty { display: flex; flex-direction: column; gap: 4px; padding: 12px 10px; font-size: var(--fs-sm); color: var(--text-secondary); }
+.ti-empty span { font-size: var(--fs-xs); color: var(--text-tertiary); }
+
+.ti-meta { display: flex; justify-content: space-between; gap: var(--space-3); margin-top: 6px; font-size: var(--fs-xs); color: var(--text-tertiary); }
+.ti-hint.is-error { color: var(--red-fg); }
+.ti-hint.is-warn { color: var(--amber-fg); }
+.ti-hint.is-info { color: var(--text-secondary); }
+.ti-count { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.ti-count.is-full { color: var(--amber-fg); font-weight: var(--fw-semibold); }
+
+/* ============ Rango de fechas ============ */
+.dr-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: calc(var(--space-2) * -1) 0 var(--space-3); }
+.dr-presets-label { font-size: var(--fs-xs); color: var(--text-tertiary); margin-right: 2px; }
+.dr-preset {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+}
+.dr-preset:hover { background: var(--navy-100); color: var(--text-primary); }
+.dr-preset:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.dr-preset.is-active { border-color: var(--blue-accent); background: var(--blue-bg); color: var(--blue-fg); }
+
+.dr-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
+.dr-summary > .icon { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; color: var(--text-tertiary); }
+.dr-sum-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.dr-sum-text strong { color: var(--text-primary); font-weight: var(--fw-semibold); }
+.dr-sum-sep { color: var(--border-strong); }
+.dr-sum-note { flex-basis: 100%; font-size: var(--fs-xs); color: var(--blue-fg); }
+.dr-summary.is-ok { border-color: var(--green-border); background: var(--green-bg); }
+.dr-summary.is-ok > .icon { color: var(--green-fg); }
+.dr-summary.is-warn { border-color: var(--amber-border); background: var(--amber-bg); color: var(--amber-fg); }
+.dr-summary.is-warn > .icon { color: var(--amber-fg); }
+.dr-summary.is-error { border-color: var(--red-border); background: var(--red-bg); color: var(--red-fg); }
+.dr-summary.is-error > .icon { color: var(--red-fg); }
+
+/* ============ Ajustes del modal de proyecto ============ */
+.pf-section-title { margin: var(--space-2) 0 var(--space-3); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-tertiary); }
+.pf-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.pf-label-row .field-hint { margin: 0; }
+.pf-legacy-note { margin: calc(var(--space-2) * -1) 0 var(--space-4); }
+.field .field-error { margin-top: 2px; }
+
+/* .btn-secondary global usa texto navy: en tema oscuro no se lee. */
+:root[data-theme="dark"] .pf-modal .btn-secondary { color: var(--text-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ti-chip, .ti-panel, .ti.is-shake .ti-box { animation: none; }
+}
+
+/* Selector de UNA habilidad (habilidad-picker.js): el valor elegido se ve
+   como un select normal (logo + nombre + flecha), sin chip ni "x". */
+.hp-value { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 30px; padding: 0 4px; cursor: pointer; }
+.hp-value .tech-chip-logo { width: 24px; height: 24px; }
+.hp-value-name { font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text-primary); }
+.hp-value-cat { font-size: var(--fs-2xs); color: var(--text-tertiary); padding: 2px 8px; border-radius: var(--radius-full); background: var(--surface-sunken); }
+.hp-value-caret { margin-left: auto; color: var(--text-tertiary); }
+.ti.hp-has-value .ti-box { cursor: pointer; }
+.ti.hp-has-value .ti-box:hover .hp-value-caret { color: var(--text-primary); }

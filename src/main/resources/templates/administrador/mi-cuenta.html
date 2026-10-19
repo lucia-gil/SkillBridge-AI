@@ -1,182 +1,673 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi cuenta · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
-</head>
-<body>
-<div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
-  <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
-    <main class="page-content" id="page-content">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 
-      <section class="card profile-card">
-        <div class="profile-header-banner"></div>
-        <div class="card-body" id="account-header"></div>
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+  <title>
+    Mi cuenta · SkillBridge AI
+  </title>
+
+  <link
+          rel="stylesheet"
+          href="/css/tokens.css">
+
+  <link
+          rel="stylesheet"
+          href="/css/base.css">
+
+  <link
+          rel="stylesheet"
+          href="/css/components.css">
+
+  <link
+          rel="stylesheet"
+          href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+
+</head>
+
+
+<body>
+
+<div class="app-shell">
+
+  <div
+          th:replace="~{fragments/sidebar :: sidebar}">
+  </div>
+
+
+  <div class="main-content">
+
+    <div
+            th:replace="~{fragments/topbar :: topbar}">
+    </div>
+
+
+    <main
+            class="page-content"
+            id="page-content">
+
+
+      <!-- PERFIL -->
+
+      <section class="card card-pad account-hero">
+
+        <div
+                style="
+              display:flex;
+              align-items:center;
+              gap:var(--space-5);
+              flex-wrap:wrap;
+            ">
+
+
+          <!-- FOTO ACTUAL / INICIALES -->
+
+          <span
+                  class="account-photo-large">
+
+            <img
+                    th:if="${user.tieneFoto}"
+                    th:src="@{/perfil/foto}"
+                    th:alt="${resumen.nombreCompleto}">
+
+            <span
+                    th:unless="${user.tieneFoto}"
+                    class="avatar avatar-lg"
+                    style="background:var(--navy-700);"
+                    th:text="${resumen.iniciales}">
+              LG
+            </span>
+
+          </span>
+
+
+          <div
+                  style="
+                flex:1;
+                min-width:200px;
+              ">
+
+            <h2
+                    style="font-size:var(--fs-lg);"
+                    th:text="${resumen.nombreCompleto}">
+              Nombre
+            </h2>
+
+            <p
+                    class="text-tertiary"
+                    th:text="${resumen.cargo}">
+              Cargo
+            </p>
+
+            <span
+                    class="badge badge-blue"
+                    style="margin-top:var(--space-2);"
+                    th:text="${resumen.rolLabel}">
+              Rol
+            </span>
+            <div class="account-meta">
+              <span class="account-chip"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-mail"></use></svg><span th:text="${resumen.correo}">correo</span></span>
+              <span class="account-chip"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-calendar"></use></svg><span th:text="'Miembro desde ' + ${resumen.cuentaDesdeLabel}">desde</span></span>
+              <span class="account-chip"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-briefcase"></use></svg><span th:text="${resumen.experienciaAnios} + (${resumen.experienciaAnios} == 1 ? ' año de experiencia' : ' años de experiencia')">exp</span></span>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- FOTO -->
+
+        <div
+                style="
+              margin-top:var(--space-6);
+              padding-top:var(--space-5);
+              border-top:1px solid var(--border-subtle);
+            ">
+
+          <h3
+                  style="
+                font-size:var(--fs-md);
+                margin-bottom:var(--space-2);
+              ">
+
+            Fotografía de perfil
+
+          </h3>
+
+
+          <p
+                  class="field-hint"
+                  style="
+                margin-bottom:var(--space-4);
+              ">
+
+            Usa una imagen JPG, JPEG o PNG de hasta 5 MB.
+
+          </p>
+
+
+          <form
+                  method="post"
+                  enctype="multipart/form-data"
+                  th:action="@{/cuenta/foto}">
+
+            <input
+                    type="hidden"
+                    name="volver"
+                    th:value="${volver}">
+
+
+            <div
+                    style="
+                  display:flex;
+                  align-items:center;
+                  gap:var(--space-3);
+                  flex-wrap:wrap;
+                ">
+
+              <input
+                      id="foto"
+                      type="file"
+                      name="foto"
+                      accept="image/jpeg,image/png"
+                      class="input"
+                      style="max-width:360px;"
+                      required>
+
+
+              <button
+                      type="submit"
+                      class="btn btn-primary">
+
+                Guardar fotografía
+
+              </button>
+
+            </div>
+
+          </form>
+
+
+          <form
+                  th:if="${user.tieneFoto}"
+                  method="post"
+                  th:action="@{/cuenta/foto/eliminar}"
+                  data-confirm-title="¿Quitar tu foto de perfil?"
+                  data-confirm-desc="Volverás a ver tus iniciales en lugar de la foto. Puedes subir otra cuando quieras."
+                  data-confirm-label="Quitar foto"
+                  style="margin-top:var(--space-3);">
+
+            <input
+                    type="hidden"
+                    name="volver"
+                    th:value="${volver}">
+
+
+            <button
+                    type="submit"
+                    class="btn btn-secondary">
+
+              Eliminar fotografía
+
+            </button>
+
+          </form>
+
+        </div>
+
       </section>
 
-      <div class="callout info" id="scope-callout" style="margin-top:var(--space-6);">
-        <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-shield"></use></svg></span>
-        <span class="callout-body"><span class="callout-title">Alcance de tu rol</span><span id="scope-text"></span>
-        <br><span style="font-size:var(--fs-xs); opacity:.85;">Como Administrador, todos los cambios que realices quedan registrados en Auditoría.</span></span>
+
+      <!-- ALCANCE -->
+
+      
+
+
+      <!-- DATOS -->
+
+      <div
+              class="detail-grid"
+              style="margin-top:var(--space-6);">
+
+
+        <div
+                style="
+              display:flex;
+              flex-direction:column;
+              gap:var(--space-6);
+            ">
+
+
+          <section class="card card-pad">
+
+            <h3
+                    style="
+                  font-size:var(--fs-md);
+                  margin-bottom:var(--space-5);
+                ">
+
+              Datos personales
+
+            </h3>
+
+
+            <p
+                    class="field-hint"
+                    style="margin-bottom:var(--space-5);">
+
+              El nombre visible y el correo los administra tu
+              cuenta de usuario y no se editan aquí.
+
+            </p>
+
+
+            <form
+                    method="post"
+                    th:action="@{/cuenta/datos}">
+
+              <input
+                      type="hidden"
+                      name="volver"
+                      th:value="${volver}">
+
+
+              <div class="field-row">
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Nombre visible
+                  </label>
+
+                  <input
+                          class="input"
+                          th:value="${resumen.nombreCompleto}"
+                          disabled>
+
+                </div>
+
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Cargo
+                  </label>
+
+                  <input
+                          class="input"
+                          name="cargo"
+                          th:value="${resumen.cargo}">
+
+                </div>
+
+              </div>
+
+
+              <div class="field-row">
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Correo corporativo
+                  </label>
+
+                  <input
+                          class="input"
+                          th:value="${resumen.correo}"
+                          disabled>
+
+                  <span class="field-hint">
+                    No editable
+                  </span>
+
+                </div>
+
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Años de experiencia
+                  </label>
+
+                  <input
+                          class="input"
+                          type="number"
+                          min="0"
+                          max="60"
+                          name="experienciaAnios"
+                          th:value="${resumen.experienciaAnios}">
+
+                </div>
+
+              </div>
+
+
+              <div class="field">
+
+                <label class="field-label">
+                  Biografía
+                </label>
+
+                <textarea
+                        class="input"
+                        name="biografia"
+                        rows="3"
+                        style="
+                      height:auto;
+                      padding:var(--space-3) var(--space-4);
+                    "
+                        th:text="${resumen.biografia}">
+                </textarea>
+
+              </div>
+
+
+              <div
+                      class="btn-group"
+                      style="justify-content:flex-end;">
+
+                <button
+                        type="submit"
+                        class="btn btn-primary">
+
+                  Guardar cambios
+
+                </button>
+
+              </div>
+
+            </form>
+
+          </section>
+
+
+          <!-- CONTRASEÑA -->
+
+          <section class="card card-pad">
+
+            <h3 style="font-size:var(--fs-md);">
+              Cambiar contraseña
+            </h3>
+
+
+            <form
+                    method="post"
+                    th:action="@{/cuenta/contrasena}"
+                    id="pass-form">
+
+              <input
+                      type="hidden"
+                      name="volver"
+                      th:value="${volver}">
+
+
+              <div
+                      class="field"
+                      style="margin-top:var(--space-5);">
+
+                <label class="field-label">
+                  Contraseña actual
+                </label>
+
+                <input
+                        class="input"
+                        type="password"
+                        name="actual"
+                        placeholder="••••••••••">
+
+              </div>
+
+
+              <div class="field-row">
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Nueva contraseña
+                  </label>
+
+                  <input
+                          class="input"
+                          type="password"
+                          id="pwd-nueva" name="nueva"
+                          placeholder="••••••••••••">
+
+                </div>
+
+
+                <div class="field">
+
+                  <label class="field-label">
+                    Repetir nueva
+                  </label>
+
+                  <input
+                          class="input"
+                          type="password"
+                          id="pwd-nueva2" name="nueva2"
+                          placeholder="••••••••••••">
+
+                </div>
+
+              </div>
+
+
+              <p
+                      class="field-hint"
+                      style="margin-bottom:var(--space-4);">
+
+                Mínimo 12 caracteres, con mayúscula,
+                número y símbolo especial.
+
+              </p>
+
+
+              <div class="pwd-tools">
+                <button type="button" class="btn btn-secondary btn-sm" data-generar-password data-target="#pwd-nueva,#pwd-nueva2">Generar contraseña segura</button>
+              </div>
+
+              <div class="btn-group">
+
+                <button
+                        type="submit"
+                        class="btn btn-primary">
+
+                  Actualizar contraseña
+
+                </button>
+
+              </div>
+
+            </form>
+
+          </section>
+
+          <!-- DOBLE FACTOR (TOTP) -->
+          <section class="card card-pad" id="twofa-card">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); flex-wrap:wrap;">
+              <h3 style="font-size:var(--fs-md);">Verificación en dos pasos</h3>
+              <span class="badge badge-neutral" data-2fa-estado>Cargando…</span>
+            </div>
+            <p class="field-hint" style="margin:var(--space-2) 0 var(--space-4);">
+              Además de tu contraseña, se pedirá un código de 6 dígitos de una app autenticadora
+              (Google Authenticator, Microsoft Authenticator, Authy, 1Password).
+            </p>
+            <div class="btn-group" data-2fa-acciones>
+              <button type="button" class="btn btn-primary" data-2fa-activar hidden>Activar verificación en dos pasos</button>
+              <button type="button" class="btn btn-secondary" data-2fa-desactivar hidden>Desactivar</button>
+            </div>
+            <div data-2fa-setup hidden style="margin-top:var(--space-5);">
+              <div class="twofa-card">
+                <div class="twofa-qr" data-2fa-qr aria-label="Código QR para tu app autenticadora"></div>
+                <div>
+                  <p style="font-size:var(--fs-sm); margin-bottom:var(--space-2);"><strong>1.</strong> Escanea el QR con tu app. Si no puedes, escribe esta clave manualmente:</p>
+                  <div class="twofa-secret" data-2fa-secreto></div>
+                  <p style="font-size:var(--fs-sm); margin:var(--space-4) 0 var(--space-2);"><strong>2.</strong> Escribe el código de 6 dígitos que muestra la app:</p>
+                  <input class="input otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+                  <div class="btn-group" style="margin-top:var(--space-3);"><button type="button" class="btn btn-primary" data-2fa-confirmar>Confirmar y activar</button></div>
+                </div>
+              </div>
+            </div>
+            <div data-2fa-off hidden style="margin-top:var(--space-5);">
+              <p style="font-size:var(--fs-sm); margin-bottom:var(--space-2);">Para desactivarlo, escribe un código vigente de tu app:</p>
+              <input class="input otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+              <div class="btn-group" style="margin-top:var(--space-3);"><button type="button" class="btn btn-secondary" data-2fa-confirmar-off>Confirmar desactivación</button></div>
+            </div>
+          </section>
+
+
+        </div>
+
+
+        <!-- SESIÓN -->
+
+        <div class="account-aside"
+                style="
+              display:flex;
+              flex-direction:column;
+              gap:var(--space-6);
+            ">
+          <!-- RESUMEN (RG-222: la columna derecha ya no queda vacía) -->
+          <section class="card card-pad account-summary">
+            <h3 class="account-aside-title">Resumen de tu cuenta</h3>
+            <div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value account-mail" th:text="${resumen.correo}" th:title="${resumen.correo}">correo</span></div>
+            <div class="info-row"><span class="info-row-label">Experiencia</span><span class="info-row-value" th:text="${resumen.experienciaAnios} + (${resumen.experienciaAnios} == 1 ? ' año' : ' años')">0 años</span></div>
+            <div class="info-row" style="flex-direction:column;align-items:stretch;gap:6px;"><span class="info-row-label">Disponibilidad declarada</span>
+              <div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${resumen.disponibilidadPorcentaje} + '%;'"></div></div><span class="progress-value" th:text="${resumen.disponibilidadPorcentaje} + '%'">0%</span></div>
+            </div>
+          </section>
+
+          <div
+              class="callout info account-role"
+              >
+
+        <span class="callout-icon">
+
+          <svg class="icon">
+
+            <use
+                    href="/img/icons.svg#icon-shield-check">
+            </use>
+
+          </svg>
+
+        </span>
+
+
+        <span class="callout-body">
+
+          <span class="callout-title">
+            Alcance de tu rol
+          </span>
+
+          Como Administrador tienes acceso completo a Usuarios,
+          Habilidades, Proyectos, Reportes, Auditoría y Configuración.
+
+          <br>
+
+          <span
+                  style="
+                font-size:var(--fs-xs);
+                opacity:.85;
+              ">
+
+            Todos los cambios que realices quedan registrados
+            en Auditoría.
+
+          </span>
+
+        </span>
+
       </div>
 
-      <div class="detail-grid" style="margin-top:var(--space-6);">
-        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
+          <!-- ACCESOS RÁPIDOS -->
           <section class="card card-pad">
-            <div class="card-header-icon-row" style="margin-bottom:var(--space-5);">
-              <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-user"></use></svg></span>
-              <div><h3 style="font-size:var(--fs-md);">Datos personales</h3><p class="field-hint">El nombre visible se actualiza en toda la plataforma.</p></div>
-            </div>
-            <div class="field-row">
-              <div class="field"><label class="field-label">Nombre visible</label><input class="input" id="acc-nombre"></div>
-              <div class="field"><label class="field-label">Cargo</label><input class="input" id="acc-cargo"></div>
-            </div>
-            <div class="field-row">
-              <div class="field"><label class="field-label">Correo corporativo</label><input class="input" id="acc-correo" disabled>
-                <span class="field-hint">No editable</span></div>
-              <div class="field"><label class="field-label">Teléfono</label><input class="input" id="acc-telefono"></div>
-            </div>
-            <div class="field-row">
-              <div class="field"><label class="field-label">Área</label>
-                <select class="select" id="acc-area"><option>Ingeniería de Software</option><option>Delivery</option><option>Datos</option><option>Diseño</option><option>Calidad</option><option>Plataforma</option><option>TI Corporativa</option></select></div>
-              <div class="field"><label class="field-label">Rol en la plataforma</label><input class="input" id="acc-rol" disabled>
-                <span class="field-hint">Rol máximo del sistema</span></div>
-            </div>
-            <div class="btn-group" style="justify-content:flex-end;">
-              <button type="button" class="btn btn-secondary" id="acc-cancel">Cancelar</button>
-              <button type="button" class="btn btn-primary" id="acc-save">Guardar cambios</button>
-            </div>
+            <h3 class="account-aside-title">Accesos rápidos</h3>
+            <nav class="account-links"><a class="account-link" th:href="@{/administrador/usuarios.html}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg><span>Usuarios y roles</span><svg class="icon icon-sm account-link-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a><a class="account-link" th:href="@{/administrador/auditoria.html}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-shield"></use></svg><span>Auditoría</span><svg class="icon icon-sm account-link-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a><a class="account-link" th:href="@{/administrador/configuracion.html}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-settings"></use></svg><span>Configuración</span><svg class="icon icon-sm account-link-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a><a class="account-link" th:href="@{/administrador/notificaciones.html}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-bell"></use></svg><span>Notificaciones</span><svg class="icon icon-sm account-link-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></nav>
           </section>
 
+          
+
           <section class="card card-pad">
-            <div class="card-header-icon-row" style="margin-bottom:var(--space-5);">
-              <span class="card-header-icon red"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-lock"></use></svg></span>
-              <div><h3 style="font-size:var(--fs-md);">Cambiar contraseña</h3><p class="field-hint">Último cambio: 15 jul 2026</p></div>
+
+            <h3
+                    style="
+                  font-size:var(--fs-md);
+                  margin-bottom:var(--space-4);
+                ">
+
+              Sesión
+
+            </h3>
+
+
+            <div class="info-row">
+
+              <span class="info-row-label">
+                Cuenta creada
+              </span>
+
+              <span
+                      class="info-row-value"
+                      th:text="${resumen.cuentaDesdeLabel}">
+                —
+              </span>
+
             </div>
-            <div class="field"><label class="field-label">Contraseña actual</label><input class="input" type="password" id="pass-actual" placeholder="••••••••••"></div>
-            <div class="field-row">
-              <div class="field"><label class="field-label">Nueva contraseña</label><input class="input" type="password" id="pass-nueva" placeholder="••••••••••••"></div>
-              <div class="field"><label class="field-label">Repetir nueva</label><input class="input" type="password" id="pass-repetir" placeholder="••••••••••••"></div>
-            </div>
-            <p class="field-hint" style="margin-bottom:var(--space-4);">Mínimo 10 caracteres, una mayúscula y un número. No repitas tus últimas 3.</p>
-            <div class="btn-group">
-              <button type="button" class="btn btn-primary" id="pass-update">Actualizar contraseña</button>
-              <button type="button" class="btn btn-tertiary" id="logout-all">Cerrar sesión en todos los dispositivos</button>
-            </div>
+
+
+            <button
+                    type="button"
+                    class="btn btn-destructive btn-sm btn-block"
+                    style="margin-top:var(--space-4);"
+                    data-action="logout">
+
+              Cerrar sesión
+
+            </button>
+
           </section>
+
         </div>
 
-        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
-          <section class="card card-pad">
-            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
-              <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-monitor"></use></svg></span>
-              <h3 style="font-size:var(--fs-md);">Sesiones activas</h3>
-            </div>
-            <div class="info-row"><span class="info-row-label"><svg class="icon icon-sm" style="vertical-align:-3px; margin-right:6px;"><use href="../../static/img/icons.svg#icon-monitor"></use></svg>Chrome · macOS</span><span class="badge badge-green">SESIÓN ACTUAL</span></div>
-            <div class="info-row"><span class="info-row-label"><svg class="icon icon-sm" style="vertical-align:-3px; margin-right:6px;"><use href="../../static/img/icons.svg#icon-monitor"></use></svg>Edge · Windows 11</span><span class="info-row-value text-tertiary" style="font-size:var(--fs-xs);">HACE 6 DÍAS</span></div>
-            <button type="button" class="btn btn-destructive btn-sm btn-block" style="margin-top:var(--space-4);" id="close-sessions-btn">Cerrar las demás sesiones</button>
-          </section>
-
-          <section class="card card-pad">
-            <div class="card-header-icon-row" style="margin-bottom:var(--space-2);">
-              <span class="card-header-icon red"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-shield"></use></svg></span>
-              <h3 style="font-size:var(--fs-md);">Seguridad</h3>
-            </div>
-            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Doble factor de autenticación</span></div><label class="toggle"><input type="checkbox" checked data-sec="2fa"><span class="toggle-track"></span></label></div>
-            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Avisarme de inicios de sesión nuevos</span></div><label class="toggle"><input type="checkbox" checked data-sec="avisar"><span class="toggle-track"></span></label></div>
-            <div class="toggle-row"><div class="toggle-row-text"><span class="toggle-row-title">Permitir que el asistente IA use mi historial</span></div><label class="toggle"><input type="checkbox" checked data-sec="ia-historial"><span class="toggle-track"></span></label></div>
-          </section>
-        </div>
       </div>
 
     </main>
+
   </div>
+
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var role = "administrador";
-  var cfg = SBAI.shell.init({ role: role, active: "", title: "Mi cuenta", subtitle: "Datos personales y seguridad" });
-  if (!cfg) return;
 
-  var u = MOCK.roleUsers.admin;
-  document.getElementById("account-header").innerHTML =
-    '<span class="avatar avatar-lg profile-avatar-ring" style="background:var(--navy-700);">' + u.iniciales + '</span>' +
-    '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:var(--space-5); flex-wrap:wrap; margin-left:92px;">' +
-    '<div style="min-width:200px;"><h2 style="font-size:var(--fs-lg);">' + u.nombre + '</h2><p class="text-tertiary">' + u.cargo + '</p>' +
-    '<span class="badge badge-blue" style="margin-top:var(--space-2);">' + u.rolLabel + '</span></div>' +
-    '<button type="button" class="btn btn-secondary btn-sm" id="change-photo-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-camera"></use></svg>Cambiar foto de perfil</button>' +
-    "</div>";
-  document.getElementById("change-photo-btn").addEventListener("click", function () { SBAI.toast.show("Selecciona una imagen desde tu equipo (deshabilitado en esta demo)."); });
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/topbar-actions.js"></script>
 
-  document.getElementById("scope-text").textContent = " " + u.alcanceRol;
-  document.getElementById("acc-nombre").value = u.nombre;
-  document.getElementById("acc-cargo").value = u.cargo;
-  document.getElementById("acc-correo").value = u.correo;
-  document.getElementById("acc-telefono").value = u.telefono;
-  document.getElementById("acc-area").value = u.area;
-  document.getElementById("acc-rol").value = u.rolLabel;
 
-  document.getElementById("acc-save").addEventListener("click", function () {
-    SBAI.toast.show("Cambios guardados en tu perfil.", { type: "success" });
-  });
-  document.getElementById("acc-cancel").addEventListener("click", function () {
-    document.getElementById("acc-nombre").value = u.nombre;
-    document.getElementById("acc-cargo").value = u.cargo;
-    document.getElementById("acc-telefono").value = u.telefono;
-    SBAI.toast.show("Cambios descartados.");
-  });
+<script th:inline="javascript">
 
-  document.getElementById("pass-update").addEventListener("click", function () {
-    var actual = document.getElementById("pass-actual").value;
-    var nueva = document.getElementById("pass-nueva").value;
-    var rep = document.getElementById("pass-repetir").value;
-    if (!actual || nueva.length < 10 || nueva !== rep) {
-      SBAI.toast.show("Revisa tu contraseña actual y que la nueva tenga al menos 10 caracteres y coincida.", { type: "error" });
-      return;
-    }
-    document.getElementById("pass-actual").value = document.getElementById("pass-nueva").value = document.getElementById("pass-repetir").value = "";
-    SBAI.toast.show("Contraseña actualizada correctamente.", { type: "success" });
-  });
+  window.SBAI_FLASH = {
+    exito: /*[[${exito}]]*/ null,
+    error: /*[[${error}]]*/ null
+  };
 
-  document.getElementById("logout-all").addEventListener("click", function () {
-    SBAI.modal.confirm({
-      title: "¿Cerrar sesión en todos los dispositivos?",
-      desc: "Se cerrará tu sesión actual también. Tendrás que volver a iniciar sesión.",
-      confirmLabel: "Cerrar todas",
-      variant: "destructive",
-      onConfirm: function () { SBAI.state.clearSession(); window.location.href = SBAI.state.LOGIN_PATH; }
-    });
-  });
-
-  document.getElementById("close-sessions-btn").addEventListener("click", function () {
-    SBAI.toast.show("Se cerró la sesión de Edge · Windows 11.", { type: "success" });
-  });
-
-  document.querySelectorAll("[data-sec]").forEach(function (input) {
-    var key = "sec_" + role + "_" + input.dataset.sec;
-    input.checked = SBAI.state.getToggle(key, input.checked);
-    input.addEventListener("change", function () {
-      SBAI.state.setToggle(key, input.checked);
-      SBAI.toast.show(input.checked ? "Opción activada." : "Opción desactivada.");
-    });
-  });
-});
 </script>
+
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/password-generator.js"></script>
+<script src="/js/vendor-qrcode.js"></script>
+<script src="/js/twofa.js"></script>
+<script src="/js/foto-perfil.js"></script>
 </body>
 </html>

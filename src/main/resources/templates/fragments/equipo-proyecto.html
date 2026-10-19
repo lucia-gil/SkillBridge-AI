@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!--
+  fragments/equipo-proyecto.html — Pestaña "Equipo" del detalle de un proyecto
+  (modelo v7, fase 5). Tabla compacta con el PM fijado arriba, contadores,
+  buscador y paginación (ui-kit.js), igual para Administrador y Project Manager.
+
+  Parámetros:
+    d         ProyectoDetalle
+    acciones  true = muestra "Finalizar" en los colaboradores (vista PM);
+              false = solo lectura (vista Administrador).
+  Uso: <th:block th:replace="~{fragments/equipo-proyecto :: tabla(${d}, false)}"></th:block>
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="tabla(d, acciones)">
+  <div class="team-head">
+    <span class="team-stat"><b th:text="${d.pmsActivos}">1</b> PM</span>
+    <span class="team-stat"><b th:text="${d.colaboradoresAsignados} + '/' + ${d.colaboradoresRequeridos}">0/0</b> colaboradores</span>
+    <span class="team-stat" th:classappend="${d.vacantes > 0} ? 'is-warn'"><b th:text="${d.vacantes}">0</b> vacante(s)</span>
+  </div>
+
+  <div class="mini-block" data-mini data-page-size="6">
+    <label class="mini-search" th:if="${d.equipo.size() > 6}">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
+      <input type="search" data-mini-search placeholder="Buscar en el equipo…" autocomplete="off">
+    </label>
+    <div th:if="${d.equipo.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs); padding:var(--space-3) 0;">Sin integrantes todavía.</div>
+    <table class="data-table mini-table" th:unless="${d.equipo.isEmpty()}" data-mini-table>
+      <thead><tr><th>Integrante</th><th>Rol</th><th style="text-align:right;">Dedicación</th><th th:if="${acciones}"></th></tr></thead>
+      <tbody>
+        <!-- PM primero, luego colaboradores -->
+        <tr th:each="m : ${d.equipo}" th:if="${m.rolEnProyectoCrudo == 'project_manager'}" data-mini-row class="is-pinned"
+            th:attr="data-buscar=${m.nombre + ' ' + m.correo}, data-miembro-perfil=${m.perfilId}">
+          <td class="cell-person"><span class="avatar avatar-sm" th:text="${m.iniciales}">AB</span>
+            <span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">correo</span></span></td>
+          <td><span class="badge badge-blue">Project Manager</span></td>
+          <td class="mono" style="text-align:right;" th:text="${m.cargaPorcentaje} + '%'">0%</td>
+          <td th:if="${acciones}" class="cell-actions"><span class="text-tertiary" style="font-size:var(--fs-xs);">Lidera</span></td>
+        </tr>
+        <tr th:each="m : ${d.equipo}" th:if="${m.rolEnProyectoCrudo == 'colaborador'}" data-mini-row
+            th:attr="data-buscar=${m.nombre + ' ' + m.correo}, data-miembro-perfil=${m.perfilId}">
+          <td class="cell-person"><span class="avatar avatar-sm" th:text="${m.iniciales}">AB</span>
+            <span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">correo</span></span></td>
+          <td><span class="badge badge-neutral">Colaborador</span></td>
+          <td class="mono" style="text-align:right;" th:text="${m.cargaPorcentaje} + '%'">0%</td>
+          <td th:if="${acciones}" class="cell-actions">
+            <button type="button" class="danger" th:attr="data-finalizar-asignacion=${m.asignacionId},data-nombre=${m.nombre}">Finalizar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="text-tertiary" data-mini-empty hidden style="font-size:var(--fs-xs); padding:var(--space-3) 0;">Nadie coincide con la búsqueda.</div>
+    <div class="mini-pag" data-mini-pag></div>
+  </div>
+</th:block>
+
+<!-- Pestaña "Historial": asignaciones pasadas del proyecto (Administrador). -->
+<th:block th:fragment="historial(d)">
+  <div th:if="${d.historial.isEmpty()}" class="state-panel" style="padding:var(--space-6) 0;">
+    <span class="state-panel-title">Todavía no hay historial</span>
+    <span class="state-panel-desc">Aquí aparecen quienes ya salieron del proyecto (finalizados, pausas, cierres o cambios de PM).</span>
+  </div>
+  <div class="mini-block" data-mini data-page-size="8" th:unless="${d.historial.isEmpty()}">
+    <label class="mini-search" th:if="${d.historial.size() > 8}">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
+      <input type="search" data-mini-search placeholder="Buscar en el historial…" autocomplete="off">
+    </label>
+    <table class="data-table mini-table" data-mini-table>
+      <thead><tr><th>Persona</th><th>Rol</th><th>Periodo</th><th style="text-align:right;">Ded.</th><th>Salida</th></tr></thead>
+      <tbody>
+        <tr th:each="h : ${d.historial}" data-mini-row th:attr="data-buscar=${h.nombre()}">
+          <td class="cell-person"><span class="avatar avatar-sm" th:text="${h.iniciales()}">AB</span><span class="cell-person-name" th:text="${h.nombre()}">Nombre</span></td>
+          <td style="font-size:var(--fs-xs);" th:text="${h.rolLabel()}">Rol</td>
+          <td class="text-tertiary" style="font-size:var(--fs-xs); white-space:nowrap;" th:text="${h.periodo()}">periodo</td>
+          <td class="mono" style="text-align:right;" th:text="${h.cargaPorcentaje()} + '%'">0%</td>
+          <td><span class="badge" th:classappend="${h.estadoBadgeClass()}" th:text="${h.estadoLabel()}">Finalizada</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="text-tertiary" data-mini-empty hidden style="font-size:var(--fs-xs); padding:var(--space-3) 0;">Nadie coincide con la búsqueda.</div>
+    <div class="mini-pag" data-mini-pag></div>
+  </div>
+</th:block>
+</body>
+</html>

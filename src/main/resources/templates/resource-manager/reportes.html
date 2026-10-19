@@ -1,75 +1,136 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reportes · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/kpi-hero.css">
+<style>
+  .report-export{display:flex;gap:var(--space-2);flex-wrap:wrap}
+  .report-filter-bar{display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(200px,1.4fr) minmax(180px,1fr) auto;gap:var(--space-3);padding:0 var(--space-5) var(--space-4);align-items:start}
+  .report-filter-bar .field{margin:0}.report-filter-bar .field-label{font-size:var(--fs-xs)}
+  .range-wrap{display:flex;align-items:center;gap:var(--space-3);height:38px}.range-wrap input{flex:1;accent-color:var(--navy-700)}.range-wrap .mono{min-width:42px;text-align:right;font-size:var(--fs-xs)}
+  @media(max-width:900px){.report-filter-bar{grid-template-columns:1fr 1fr}}@media(max-width:600px){.report-filter-bar{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title">Ocupación del equipo</h2>
+            <p class="kpi-hero-sub">Indicadores generales de carga</p>
+          </div>
+        </div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></span>
+              <span class="hero-card-label">OCUPACIÓN PROMEDIO</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiOcupacionPromedio} + '%'">0%</div>
+            <p class="hero-card-meta">carga media del equipo</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
+              <span class="hero-card-label">SOBRE-ASIGNADOS</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiSobreAsignados}">0</div>
+            <p class="hero-card-meta" th:classappend="${kpiSobreAsignados > 0} ? 'down' : 'up'" th:text="${kpiSobreAsignados > 0} ? 'requieren acción' : 'nadie supera el 100%'">requieren acción</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-user-check"></use></svg></span>
+              <span class="hero-card-label">COLABORADORES EVALUADOS</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiColaboradoresEvaluados}">0</div>
+            <p class="hero-card-meta">con asignaciones activas</p>
+          </article>
+        </div>
+      </section>
 
-      <div class="detail-grid" style="margin-top:var(--space-6);">
-        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
-          <section class="card card-pad">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
-              <div class="card-header-icon-row">
-                <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-bar-chart"></use></svg></span>
-                <div>
-                  <h2 style="font-size:var(--fs-md);">Evolución de ocupación</h2>
-                  <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="evo-subtitle"></p>
+      <section class="card card-pad" style="margin-top:var(--space-6);">
+        <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Habilidades más demandadas</h3>
+        <div th:if="${topHabilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
+        <div th:each="s : ${topHabilidades}" class="rank-row" style="padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+            <span class="rank-name" style="font-size:var(--fs-sm); font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
+            <div data-escala="ranking" class="progress-bar" th:attr="data-etiqueta=${s.vacantes()} + ' persona(s)'"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
+          </div>
+      </section>
+
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
+          <div>
+            <strong>Ocupación por colaborador</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Suma de dedicaciones activas por colaborador, en todos sus proyectos</p>
+          </div>
+          <div class="report-export" th:unless="${ocupacion.isEmpty()}">
+            <button type="button" class="btn btn-secondary btn-sm" id="rm-export-csv"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar CSV</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="rm-export-pdf"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg>Exportar PDF</button>
+          </div>
+        </div>
+        <!-- RG-218: filtros del reporte (se aplican también a lo que se exporta) -->
+        <div class="report-filter-bar" th:unless="${ocupacion.isEmpty()}">
+          <label class="field"><span class="field-label">Buscar</span><input type="search" class="input" id="rm-f-q" placeholder="Nombre o cargo…" autocomplete="off"></label>
+          <div class="field"><span class="field-label">Estado de carga</span>
+            <select class="select" id="rm-f-estado" multiple data-multiselect data-placeholder="Todos los estados" data-noun="estados">
+              <option value="Sobre-asignado">Sobre-asignado (&gt; 100%)</option>
+              <option value="Al límite">Al límite (90–100%)</option>
+              <option value="Óptimo">Óptimo (60–89%)</option>
+              <option value="Subutilizado">Subutilizado (&lt; 60%)</option>
+            </select>
+          </div>
+          <label class="field"><span class="field-label">Ocupación mínima</span>
+            <span class="range-wrap"><input type="range" id="rm-f-min" min="0" max="150" step="5" value="0"><span class="mono" id="rm-f-min-label">0%</span></span>
+          </label>
+          <button type="button" class="btn btn-tertiary btn-sm" id="rm-f-clear" style="align-self:end;">Limpiar filtros</button>
+        </div>
+
+        <div th:if="${ocupacion.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-layers"></use></svg></span>
+          <span class="state-panel-title">Todavía no hay asignaciones activas</span>
+          <span class="state-panel-desc">Cuando se registren asignaciones desde "Asignaciones", aparecerán aquí.</span>
+        </div>
+
+        <div class="table-scroll" th:unless="${ocupacion.isEmpty()}">
+          <table class="data-table">
+            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación</th><th>Estado</th></tr></thead>
+            <tbody id="reportes-ocupacion-body">
+            <tr th:each="o : ${ocupacion}" data-reportes-ocupacion-row th:attr="data-nombre=${o.nombre},data-cargo=${o.cargo},data-carga=${o.promedio},data-estado=${o.estadoLabel}">
+              <td class="cell-person">
+                <span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span>
+                <span class="cell-person-name" th:text="${o.nombre}">Nombre</span>
+              </td>
+              <td th:text="${o.cargo}">Cargo</td>
+              <td>
+                <div data-escala="carga" class="progress-inline" style="min-width:110px;">
+                  <div class="progress-bar">
+                    <div class="progress-bar-fill"
+                         th:style="'width:' + ${#numbers.formatDecimal(o.promedio > 100 ? 100 : o.promedio, 1, 0)} + '%;'"></div>
+                  </div>
+                  <span class="progress-value" th:text="${o.promedio} + '%'">0%</span>
                 </div>
-              </div>
-              <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-download"></use></svg>Exportar</button>
-            </div>
-            <div class="bar-chart" id="evo-chart" style="position:relative;"></div>
-          </section>
-
-          <section class="card card-pad">
-            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
-              <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
-              <h3 style="font-size:var(--fs-md);">Reuniones de esta semana</h3>
-            </div>
-            <div id="meetings-list"></div>
-          </section>
+              </td>
+              <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
+            </tr>
+            </tbody>
+          </table>
         </div>
-
-        <section class="card card-pad">
-          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
-            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
-            <h3 style="font-size:var(--fs-md);">Habilidades más demandadas</h3>
-          </div>
-          <div id="skills-demand"></div>
-        </section>
-      </div>
-
-      <section class="card" style="margin-top:var(--space-6); display:flex; flex-direction:column; max-height:520px; overflow:hidden;">
-        <div class="card-header" style="flex-shrink:0;">
-          <div class="card-header-icon-row">
-            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
-            <div class="card-header-text"><h2>Ocupación por colaborador</h2><p>Promedio de las últimas 6 semanas</p></div>
-          </div>
-        </div>
-        <div class="table-scroll-wrap">
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead class="sticky-head"><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación promedio</th><th>Estado</th></tr></thead>
-              <tbody id="detail-body"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="table-footer" style="flex-shrink:0;">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="detail-pagination-count"></span>
-          <div class="pagination" id="detail-pagination-controls"></div>
+        <div class="state-panel" id="rm-f-empty" hidden><span class="state-panel-title">Ningún colaborador coincide con los filtros</span><span class="state-panel-desc">Ajusta la búsqueda, el estado o la ocupación mínima.</span></div>
+        <div class="table-footer" th:unless="${ocupacion.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="reportes-ocupacion-visible-count">0</span> de <span id="reportes-ocupacion-total-count">0</span> colaboradores</span>
+          <div class="pagination"><button class="page-btn" id="reportes-ocupacion-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="reportes-ocupacion-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="reportes-ocupacion-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
       </section>
 
@@ -77,156 +138,130 @@
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "resource-manager", active: "reportes.html", title: "Reportes", subtitle: "Ocupación y demanda de habilidades · Q3 2026" });
-  if (!cfg) return;
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/multiselect.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+  document.addEventListener("DOMContentLoaded", function () {
+    // Paginación + filtros en el cliente (RG-218). Lo exportado (CSV/PDF)
+    // usa exactamente las filas que pasan los filtros.
+    var rows = Array.from(document.querySelectorAll("[data-reportes-ocupacion-row]"));
+    if (!rows.length) return;
 
-  var r = MOCK.rmReport;
-  document.getElementById("evo-subtitle").textContent = "Últimos 6 meses · meta " + r.meta + "% · pasa el mouse o toca una barra";
+    var pageSize = 8;
+    var page = 1;
+    var visibleCount = document.getElementById("reportes-ocupacion-visible-count");
+    var totalCount = document.getElementById("reportes-ocupacion-total-count");
+    var pageLabel = document.getElementById("reportes-ocupacion-page-label");
+    var previous = document.getElementById("reportes-ocupacion-prev");
+    var next = document.getElementById("reportes-ocupacion-next");
+    var fq = document.getElementById("rm-f-q"), fe = document.getElementById("rm-f-estado");
+    var fmin = document.getElementById("rm-f-min"), fminLabel = document.getElementById("rm-f-min-label");
+    var empty = document.getElementById("rm-f-empty");
 
-  // --- Dato real de eventos_proyecto: reuniones programadas esta semana ---
-  // Semana de referencia: lun 17 ago - dom 23 ago 2026 (contiene el "hoy"
-  // de la demo, martes 18 ago). Cuenta todas las reuniones de la
-  // plataforma, no solo las de un PM puntual, porque el Resource Manager
-  // ve carga a nivel de toda la empresa.
-  var weekStart = new Date(2026, 7, 17);
-  var weekEnd = new Date(2026, 7, 24);
-  var reunionesSemana = MOCK.projectEvents.filter(function (e) {
-    if (e.tipo !== "reunion") return false;
-    var d = new Date(e.fechaInicio);
-    return d >= weekStart && d < weekEnd;
-  }).length;
+    function norm(t) { return (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
+    function estados() { return Array.from(fe.selectedOptions).map(function (o) { return o.value; }); }
+    function filtradas() {
+      var q = norm(fq.value), es = estados(), min = Number(fmin.value);
+      return rows.filter(function (r) {
+        return (!q || norm(r.dataset.nombre + " " + r.dataset.cargo).indexOf(q) !== -1)
+          && (!es.length || es.indexOf(r.dataset.estado) !== -1)
+          && Number(r.dataset.carga) >= min;
+      });
+    }
 
-  document.getElementById("kpi-grid").innerHTML = [
-    { label: "OCUPACIÓN PROMEDIO", value: r.ocupacionPromedio + "%", meta: "meta " + r.meta + "%", cls: "warn", icon: "icon-layers", accent: "amber" },
-    { label: "SOBRE-ASIGNADOS", value: r.sobreAsignados, meta: "requieren acción", cls: "down", icon: "icon-user-x", accent: "red" },
-    { label: "CAPACIDAD LIBRE", value: r.capacidadLibre + " h", meta: "próximas 6 semanas", icon: "icon-zap", accent: "blue" },
-    { label: "SOLICITUDES PENDIENTES", value: r.solicitudesPendientes, meta: r.vencenHoy + " vencen hoy", cls: "warn", icon: "icon-bell", accent: "amber" },
-    { label: "REUNIONES ESTA SEMANA", value: reunionesSemana, meta: "capacidad no disponible para trabajo", icon: "icon-users", accent: "violet" }
-  ].map(function (k) {
-    return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>';
-  }).join("");
+    function render() {
+      var f = filtradas();
+      var pages = Math.max(1, Math.ceil(f.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = f.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      visibleCount.textContent = visible.length;
+      totalCount.textContent = f.length;
+      empty.hidden = f.length !== 0;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
 
-  var META = r.meta;
-  var maxEvo = 100;
-  function evoBarColor(pct) {
-    if (pct >= META) return "var(--green-fg)";
-    if (pct >= META - 15) return "var(--amber-fg)";
-    return "var(--red-fg)";
-  }
-  document.getElementById("evo-chart").innerHTML = r.evolucion.map(function (m, i) {
-    var prev = i > 0 ? r.evolucion[i - 1].pct : null;
-    var delta = prev !== null ? m.pct - prev : null;
-    var deltaHtml = delta !== null
-      ? '<div class="bar-chart-delta ' + (delta >= 0 ? "up" : "down") + '">' + (delta >= 0 ? "▲" : "▼") + " " + Math.abs(delta) + "pts</div>"
-      : '<div class="bar-chart-delta" style="visibility:hidden;">▲ 0pts</div>';
-    return '<div class="bar-chart-col" data-mes="' + m.mes + '" data-pct="' + m.pct + '"><span class="bar-chart-value">' + m.pct + '%</span>' +
-      '<div class="bar-chart-track"><div class="bar-chart-fill" data-target-h="' + Math.round((m.pct / maxEvo) * 100) + '" style="height:0%; background:' + evoBarColor(m.pct) + ';"></div></div>' +
-      '<span class="bar-chart-label">' + m.mes + '</span>' + deltaHtml + "</div>";
-  }).join("");
-
-  var chartEl = document.getElementById("evo-chart");
-  var trackEl = chartEl.querySelector(".bar-chart-track");
-  var chartRect = chartEl.getBoundingClientRect();
-  var trackRect = trackEl.getBoundingClientRect();
-  var metaTopPx = (trackRect.top - chartRect.top) + trackRect.height * (1 - META / 100);
-  var metaLine = document.createElement("div");
-  metaLine.className = "bar-chart-meta-line";
-  metaLine.style.top = metaTopPx + "px";
-  metaLine.innerHTML = '<span class="bar-chart-meta-label">Meta ' + META + '%</span>';
-  chartEl.appendChild(metaLine);
-
-  document.querySelectorAll(".bar-chart-fill[data-target-h]").forEach(function (bar, i) {
-    setTimeout(function () { bar.style.height = bar.dataset.targetH + "%"; }, 100 + i * 70);
-  });
-  document.querySelectorAll(".bar-chart-col").forEach(function (col) {
-    col.addEventListener("click", function () {
-      var mes = col.dataset.mes, pct = col.dataset.pct;
-      var faltan = META - pct;
-      SBAI.toast.show("<strong>" + mes + "</strong>: " + pct + "% de ocupación promedio" + (faltan > 0 ? " · " + faltan + " pts bajo la meta (" + META + "%)" : " · sobre la meta"), { icon: "icon-bar-chart" });
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var pages = Math.max(1, Math.ceil(filtradas().length / pageSize));
+      if (page < pages) { page++; render(); }
     });
+    fq.addEventListener("input", function () { page = 1; render(); });
+    fe.addEventListener("change", function () { page = 1; render(); });
+    fmin.addEventListener("input", function () { fminLabel.textContent = fmin.value + "%"; page = 1; render(); });
+    document.getElementById("rm-f-clear").addEventListener("click", function () {
+      fq.value = ""; fmin.value = 0; fminLabel.textContent = "0%";
+      Array.from(fe.options).forEach(function (o) { o.selected = false; });
+      var ms = fe.closest(".ms-wrap");
+      if (ms) ms.querySelectorAll(".ms-option input").forEach(function (c) { c.checked = false; });
+      fe.dispatchEvent(new Event("change"));
+      page = 1; render();
+    });
+
+    function descripcionFiltros() {
+      var p = [];
+      if (fq.value.trim()) p.push("búsqueda “" + fq.value.trim() + "”");
+      if (estados().length) p.push("estado: " + estados().join(", "));
+      if (Number(fmin.value) > 0) p.push("ocupación ≥ " + fmin.value + "%");
+      return p.length ? p.join(" · ") : "sin filtros";
+    }
+    var hoy = new Date().toISOString().slice(0, 10);
+
+    // CSV con BOM para que Excel respete las tildes; separador ";" (Excel en español).
+    document.getElementById("rm-export-csv").addEventListener("click", function () {
+      var f = filtradas();
+      if (!f.length) return window.SBAI.toast.show("No hay filas para exportar con estos filtros.", { type: "error" });
+      var cel = function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
+      var lineas = [ ["Colaborador", "Cargo", "Ocupación (%)", "Estado"].map(cel).join(";")];
+      f.forEach(function (r) { lineas.push([r.dataset.nombre, r.dataset.cargo, r.dataset.carga, r.dataset.estado].map(cel).join(";")); });
+      var blob = new Blob(["\uFEFF" + lineas.join("\r\n")], { type: "text/csv;charset=utf-8" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "skillbridge-ocupacion-" + hoy + ".csv";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      window.SBAI.toast.show("CSV exportado (" + f.length + " colaboradores).", { type: "success" });
+    });
+
+    // PDF: documento de impresión limpio (sin menú) con las filas filtradas;
+    // el navegador ofrece "Guardar como PDF".
+    document.getElementById("rm-export-pdf").addEventListener("click", function () {
+      var f = filtradas();
+      if (!f.length) return window.SBAI.toast.show("No hay filas para exportar con estos filtros.", { type: "error" });
+      var esc = function (t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; };
+      var kpis = Array.from(document.querySelectorAll(".kpi-tile")).map(function (k) {
+        return "<div class='k'><span>" + esc(k.querySelector(".kpi-tile-label").textContent) + "</span><b>" + esc(k.querySelector(".kpi-tile-value").textContent) + "</b></div>";
+      }).join("");
+      var filas = f.map(function (r) {
+        var c = Number(r.dataset.carga), col = c > 100 ? "#c0392b" : (c >= 90 ? "#c98a12" : "#1f8a5b");
+        return "<tr><td>" + esc(r.dataset.nombre) + "</td><td>" + esc(r.dataset.cargo) + "</td><td><div class='bar'><i style='width:" + Math.min(100, c) + "%;background:" + col + "'></i></div> " + c + "%</td><td>" + esc(r.dataset.estado) + "</td></tr>";
+      }).join("");
+      var w = window.open("", "_blank");
+      if (!w) return window.SBAI.toast.show("Permite las ventanas emergentes para exportar el PDF.", { type: "error" });
+      w.document.write("<!doctype html><html lang='es'><head><meta charset='utf-8'><title>Reporte de ocupación · SkillBridge AI</title><style>" +
+        "body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f1f42;margin:32px}h1{font-size:20px;margin:0 0 4px}p{color:#5b6b85;font-size:12px;margin:0 0 18px}" +
+        ".ks{display:flex;gap:12px;margin-bottom:18px}.k{flex:1;border:1px solid #dfe6f1;border-radius:12px;padding:10px 14px}.k span{display:block;font-size:10px;color:#5b6b85;letter-spacing:.04em}.k b{font-size:20px}" +
+        "table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#5b6b85;border-bottom:2px solid #0f1f42;padding:8px}" +
+        "td{padding:8px;border-bottom:1px solid #e6ebf3}.bar{display:inline-block;width:90px;height:7px;background:#edf1f7;border-radius:9px;overflow:hidden;vertical-align:middle}.bar i{display:block;height:100%}" +
+        "@page{margin:14mm}</style></head><body><h1>Reporte de ocupación del equipo</h1><p>SkillBridge AI · generado el " + hoy + " · " + esc(descripcionFiltros()) + " · " + f.length + " colaborador(es)</p>" +
+        "<div class='ks'>" + kpis + "</div><table><thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación</th><th>Estado</th></tr></thead><tbody>" + filas + "</tbody></table>" +
+        "<script>window.onload=function(){setTimeout(function(){window.print()},150)}<\/script></body></html>");
+      w.document.close();
+    });
+
+    render();
   });
-
-  // Detalle de las reuniones que ya contamos en el KPI: mismo filtro,
-  // ahora mostrado fila por fila para dar contexto al número.
-  var DIAS = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
-  var reunionesDetalle = MOCK.projectEvents.filter(function (e) {
-    if (e.tipo !== "reunion") return false;
-    var d = new Date(e.fechaInicio);
-    return d >= weekStart && d < weekEnd;
-  }).sort(function (a, b) { return new Date(a.fechaInicio) - new Date(b.fechaInicio); });
-
-  document.getElementById("meetings-list").innerHTML = reunionesDetalle.length
-    ? reunionesDetalle.map(function (e) {
-        var d = new Date(e.fechaInicio);
-        var h = d.getHours(), m = d.getMinutes();
-        var hora = (h % 12 || 12) + (m ? ":" + String(m).padStart(2, "0") : "") + (h >= 12 ? " PM" : " AM");
-        return '<div class="info-row"><span class="info-row-label">' + e.titulo + '<br><span class="text-tertiary" style="font-size:11px;">' + e.proyecto + '</span></span>' +
-          '<span class="info-row-value" style="text-align:right;">' + DIAS[d.getDay()] + ' ' + d.getDate() + '<br><span class="text-tertiary" style="font-size:11px;">' + hora + '</span></span></div>';
-      }).join("")
-    : '<p class="text-tertiary" style="font-size:var(--fs-xs);">Sin reuniones programadas esta semana.</p>';
-
-  var maxDemand = Math.max.apply(null, MOCK.skillsDemand.map(function (s) { return s.vacantes; }));
-  document.getElementById("skills-demand").innerHTML = MOCK.skillsDemand.map(function (s) {
-    return '<div style="margin-bottom:var(--space-3);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;"><span style="font-weight:500;">' + s.nombre + '</span><span class="text-tertiary mono">' + s.vacantes + ' vacantes</span></div>' +
-      '<div class="progress-bar"><div class="progress-bar-fill" data-target="' + Math.round((s.vacantes / maxDemand) * 100) + '" style="width:0%;"></div></div></div>';
-  }).join("");
-  document.querySelectorAll("#skills-demand .progress-bar-fill[data-target]").forEach(function (bar, i) {
-    setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 100 + i * 50);
-  });
-
-  function estadoInfo(v) {
-    if (v > 100) return { cls: "level-over", badge: "badge-red", label: "Sobre-asignado" };
-    if (v >= 90) return { cls: "level-high", badge: "badge-amber", label: "Al límite" };
-    if (v >= 60) return { cls: "level-optimal", badge: "badge-green", label: "Óptimo" };
-    return { cls: "level-low", badge: "badge-neutral", label: "Subutilizado" };
-  }
-
-  var PAGE_SIZE = 8;
-  var currentPage = 1;
-
-  function renderDetailPage() {
-    var list = r.ocupacionPorColaborador;
-    var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    var pageItems = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-    document.getElementById("detail-body").innerHTML = pageItems.map(function (o, i) {
-      var ei = estadoInfo(o.promedio);
-      return '<tr data-f-estado="' + ei.cls + '" style="animation-delay:' + (i * 30) + 'ms;"><td class="cell-person"><span class="avatar avatar-sm">' + o.iniciales + '</span><span class="cell-person-name">' + o.nombre + '</span></td>' +
-        "<td>" + o.cargo + '</td><td class="mono">' + o.promedio + '%</td><td><span class="badge ' + ei.badge + '">' + ei.label + "</span></td></tr>";
-    }).join("");
-
-    var countEl = document.getElementById("detail-pagination-count");
-    var controlsEl = document.getElementById("detail-pagination-controls");
-    var start = list.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
-    var end = Math.min(currentPage * PAGE_SIZE, list.length);
-    countEl.textContent = "Mostrando " + start + "–" + end + " de " + list.length + " colaboradores";
-    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
-    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
-    for (var pnum = 1; pnum <= totalPages; pnum++) html += '<button type="button" class="page-btn' + (pnum === currentPage ? " active" : "") + '" data-page="' + pnum + '">' + pnum + "</button>";
-    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
-    controlsEl.innerHTML = html;
-    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
-    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; renderDetailPage(); } });
-    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; renderDetailPage(); } });
-    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); renderDetailPage(); }); });
-  }
-  renderDetailPage();
-
-  document.getElementById("export-btn").addEventListener("click", function () {
-    SBAI.toast.show("Generando exportable de reportes en PDF…");
-  });
-});
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
 </body>
 </html>

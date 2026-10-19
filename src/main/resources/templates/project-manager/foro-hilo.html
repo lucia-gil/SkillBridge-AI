@@ -1,145 +1,230 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Detalle de hilo · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+<title th:text="${hilo.titulo} + ' · SkillBridge AI'">Hilo · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/foros.css">
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <a href="foros.html" class="breadcrumb"><svg class="icon icon-sm" style="vertical-align:-3px;"><use href="../../static/img/icons.svg#icon-arrow-left"></use></svg> Foros <span class="sep">›</span> <span id="bc-cat"></span> <span class="sep">›</span> <span class="current">Hilo</span></a>
+      <a href="foros.html" class="fr-back">
+        <svg class="icon"><use href="/img/icons.svg#icon-arrow-left"></use></svg>Foros
+        <span class="sep">/</span><span th:text="${hilo.proyectoNombre}">Proyecto</span>
+      </a>
 
-      <div class="detail-grid" style="margin-top:var(--space-5);">
-        <div>
-          <section class="card card-pad">
-            <div style="display:flex; gap:var(--space-2); align-items:center; margin-bottom:var(--space-3);">
-              <span class="badge badge-blue" id="thread-cat"></span>
-              <span class="badge badge-neutral" id="thread-pinned" hidden>FIJADO</span>
-              <span class="text-tertiary label-mono" id="thread-stats"></span>
+      <div class="fr-detail">
+        <div class="fr-detail-main">
+
+          <!-- ── Cabecera del hilo ── -->
+          <section class="card fr-head">
+            <div class="fr-head-badges">
+              <a class="fr-topic-badge" th:if="${hilo.topico != null}" th:classappend="'tone-' + ${hilo.topico.color}"
+                 th:href="@{foros.html(topico=${hilo.topico.codigo})}" th:title="'Ver más hilos de ' + ${hilo.topico.nombre}">
+                <svg class="icon"><use th:href="'/img/icons.svg#' + ${hilo.topico.icono}"></use></svg><span th:text="${hilo.topico.nombre}">Tópico</span>
+              </a>
+              <span class="fr-state-badge" th:classappend="'is-' + ${hilo.estado}">
+                <svg class="icon"><use th:href="${hilo.estado == 'resuelto'} ? '/img/icons.svg#icon-check-circle' : (${hilo.estado == 'sin_responder'} ? '/img/icons.svg#icon-alert-circle' : '/img/icons.svg#icon-message')"></use></svg>
+                <span th:text="${hilo.estado == 'resuelto'} ? 'Resuelto' : (${hilo.estado == 'sin_responder'} ? 'Sin responder' : 'En conversación')">Estado</span>
+              </span>
+              <span class="fr-state-badge is-abierto" th:if="${hilo.esFijado}">
+                <svg class="icon"><use href="/img/icons.svg#icon-pin"></use></svg>Fijado
+              </span>
+              <span class="fr-state-badge is-cerrado" th:unless="${hilo.foroAbierto}">
+                <svg class="icon"><use href="/img/icons.svg#icon-lock"></use></svg>Solo lectura
+              </span>
             </div>
-            <h1 style="font-size:var(--fs-xl); letter-spacing:-0.01em; margin-bottom:var(--space-2);" id="thread-title"></h1>
-            <p class="text-tertiary" style="font-size:var(--fs-sm);" id="thread-meta"></p>
+            <h1 class="fr-head-title" th:text="${hilo.titulo}">Título del hilo</h1>
+            <div class="fr-head-tags" th:unless="${hilo.etiquetas.isEmpty()}">
+              <a class="fr-tag" th:each="e : ${hilo.etiquetas}" th:href="@{foros.html(q=${e})}" th:text="${e}" th:title="'Buscar ' + ${e} + ' en los foros'">tag</a>
+            </div>
+            <div class="fr-head-meta">
+              <span>Abierto por <strong th:text="${hilo.autorNombre}">Autor</strong></span>
+              <span><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg><time th:attr="data-relativo=${hilo.mensajeInicial.fechaIso}" th:text="${hilo.fechaLabel}">fecha</time></span>
+              <span><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg><span th:text="${hilo.respuestas.size()} + (${hilo.respuestas.size() == 1} ? ' respuesta' : ' respuestas')">0 respuestas</span></span>
+              <span><svg class="icon"><use href="/img/icons.svg#icon-eye"></use></svg><span th:text="${hilo.numVistas} + ' vistas'">0 vistas</span></span>
+            </div>
           </section>
 
-          <section class="card" style="margin-top:var(--space-5);">
-            <div class="card-body" id="posts-list"></div>
+          <!-- ── Solución aceptada (atajo) ── -->
+          <div class="fr-solution" th:if="${hilo.solucion != null}">
+            <span class="fr-solution-icon"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span>
+            <div style="min-width:0">
+              <div class="fr-solution-label">Solución aceptada · <span th:text="${hilo.solucion.autorNombre}">Autor</span></div>
+              <p class="fr-solution-text" th:text="${hilo.solucion.contenido}">Texto de la solución</p>
+            </div>
+            <a th:href="'#m-' + ${hilo.solucion.id}" data-ir-a-link th:attr="data-ir-a=${hilo.solucion.id}">Ver respuesta</a>
+          </div>
+
+          <div class="fr-readonly" th:unless="${hilo.foroAbierto}">
+            <svg class="icon"><use href="/img/icons.svg#icon-lock"></use></svg>
+            <span th:text="'Este proyecto está ' + ${hilo.estadoProyecto} + ': el foro quedó en solo lectura. Puedes consultarlo, pero ya no se aceptan respuestas ni ediciones.'">Solo lectura</span>
+          </div>
+
+          <!-- ── Conversación ── -->
+          <section class="card fr-convo" aria-label="Conversación">
+            <div th:replace="~{fragments/foro-mensaje :: mensaje(${hilo.mensajeInicial}, ${hilo})}"></div>
+
+            <div class="fr-divider" th:unless="${hilo.respuestas.isEmpty()}"
+                 th:text="${hilo.respuestas.size()} + (${hilo.respuestas.size() == 1} ? ' respuesta' : ' respuestas')">0 respuestas</div>
+            <div class="fr-no-replies" th:if="${hilo.respuestas.isEmpty()}"
+                 th:text="${hilo.foroAbierto} ? 'Todavía nadie respondió. Si sabes algo que ayude, responde abajo.' : 'Este hilo no tuvo respuestas.'">Sin respuestas</div>
+
+            <th:block th:each="r : ${hilo.respuestas}">
+              <div th:replace="~{fragments/foro-mensaje :: mensaje(${r}, ${hilo})}"></div>
+            </th:block>
           </section>
 
-          <section class="card card-pad" style="margin-top:var(--space-5);">
-            <div style="display:flex; gap:var(--space-3); align-items:flex-start;">
-              <span class="avatar avatar-sm" id="reply-avatar"></span>
-              <div style="flex:1;">
-                <textarea class="input" id="reply-text" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="Escribe tu respuesta como Project Manager…"></textarea>
-                <div style="display:flex; justify-content:flex-end; margin-top:var(--space-3);">
-                  <button type="button" class="btn btn-primary" id="publish-reply-btn">Publicar</button>
+          <!-- ── Responder ── -->
+          <section class="card fr-composer" id="responder" th:if="${hilo.foroAbierto}">
+            <form id="reply-form" method="post" enctype="multipart/form-data"
+                  th:action="${baseUrl} + '/foro-hilo/' + ${hilo.id} + '/responder'">
+              <div class="fr-composer-grid">
+                <span class="avatar" th:text="${user.iniciales}" aria-hidden="true">YO</span>
+                <div style="min-width:0">
+                  <div class="fr-replying" id="replying" hidden>
+                    <div class="fr-replying-body">
+                      <div class="fr-replying-label">Respondiendo a <span data-replying-autor>alguien</span></div>
+                      <div class="fr-replying-text" data-replying-texto></div>
+                    </div>
+                    <button type="button" class="fr-search-clear" style="position:static" id="cancel-reply" aria-label="Dejar de responder a este mensaje">
+                      <svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg>
+                    </button>
+                  </div>
+                  <input type="hidden" name="respuestaA" id="respuestaA">
+                  <textarea class="input fr-textarea" id="reply-text" name="contenido" rows="4" maxlength="10000"
+                            aria-label="Tu respuesta" placeholder="Escribe tu respuesta. Puedes pegar enlaces y adjuntar capturas o documentos."
+                            th:text="${borrador}"></textarea>
+                  <div class="fr-link-row" id="reply-fila-enlace" hidden>
+                    <input class="input" id="reply-enlace" type="url" placeholder="https://…" aria-label="Enlace a adjuntar">
+                    <button type="button" class="btn btn-secondary btn-sm" id="reply-agregar-enlace">Agregar</button>
+                  </div>
+                  <div class="fr-file-chips" id="reply-chips"></div>
+                  <input type="file" name="archivos" id="reply-archivos" multiple hidden>
+                  <div id="reply-enlaces" hidden></div>
+                  <div class="fr-composer-foot">
+                    <div class="fr-attach-bar">
+                      <button type="button" class="fr-attach-btn" id="reply-btn-archivo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>Adjuntar
+                      </button>
+                      <button type="button" class="fr-attach-btn" id="reply-btn-enlace">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Enlace
+                      </button>
+                      <span class="fr-attach-hint" th:text="'Hasta ' + ${maxArchivos} + ' archivos de 5 MB'">Hasta 3 archivos de 5 MB</span>
+                    </div>
+                    <div class="fr-composer-right">
+                      <span class="fr-kbd"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
+                      <button type="submit" class="btn btn-primary" id="publish-reply-btn">Publicar respuesta</button>
+                    </div>
+                  </div>
                 </div>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <!-- ── Barra lateral ── -->
+        <aside class="fr-aside">
+          <section class="card fr-aside-card">
+            <h2 class="fr-aside-title">Resumen del hilo</h2>
+            <div class="fr-stats-grid">
+              <div class="fr-stat"><strong th:text="${hilo.respuestas.size()}">0</strong><span>respuestas</span></div>
+              <div class="fr-stat"><strong th:text="${hilo.participantes.size()}">0</strong><span>participantes</span></div>
+              <div class="fr-stat"><strong th:text="${hilo.numDestacadosTotal}">0</strong><span>marcas de útil</span></div>
+              <div class="fr-stat"><strong th:text="${hilo.numVistas}">0</strong><span>vistas</span></div>
+            </div>
+            <p class="fr-aside-note">Última actividad: <span th:text="${hilo.ultimaActividadLabel}">fecha</span></p>
+            <div class="fr-aside-actions">
+              <a class="btn btn-primary btn-sm" href="#responder" th:if="${hilo.foroAbierto}" id="go-reply">Responder</a>
+              <button type="button" class="btn btn-secondary btn-sm" th:if="${hilo.permiteFijar}"
+                      th:attr="data-fijar=${hilo.id}, data-valor=${!hilo.esFijado}">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-pin"></use></svg>
+                <span th:text="${hilo.esFijado} ? 'Desfijar hilo' : 'Fijar arriba en el foro'">Fijar</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="card fr-aside-card">
+            <h2 class="fr-aside-title">Participantes</h2>
+            <div class="fr-people">
+              <div class="fr-person" th:each="p : ${hilo.participantes}">
+                <span class="avatar" th:text="${p.iniciales()}">AA</span>
+                <span class="fr-person-info">
+                  <span class="fr-person-name" th:text="${p.nombre()}">Nombre</span>
+                  <span class="fr-person-role" th:text="${p.esAutorDelHilo()} ? 'Abrió el hilo' : (${#strings.isEmpty(p.cargo())} ? 'Participante' : ${p.cargo()})">Cargo</span>
+                </span>
+                <span class="fr-person-count" th:text="${p.mensajes()} + (${p.mensajes() == 1} ? ' msj.' : ' msjs.')">1 msj.</span>
               </div>
             </div>
           </section>
-        </div>
 
-        <div style="display:flex; flex-direction:column; gap:var(--space-5);">
-          <section class="card card-pad">
-            <p style="font-size:var(--fs-xs); font-weight:600; margin-bottom:var(--space-2);">Resumen del hilo</p>
-            <p style="font-size:var(--fs-sm); color:var(--text-secondary); line-height:1.6; margin-bottom:var(--space-3);" id="thread-summary"></p>
-            <p class="label-mono" style="margin-bottom:var(--space-2);">Acciones acordadas</p>
-            <ol style="padding-left:18px; display:flex; flex-direction:column; gap:6px; font-size:var(--fs-xs); color:var(--text-secondary);" id="thread-actions"></ol>
-            <p class="text-tertiary" style="font-size:10px; margin-top:var(--space-3); font-family:var(--font-mono);" id="thread-summary-meta"></p>
+          <section class="card fr-aside-card" th:unless="${hilo.adjuntos.isEmpty()}">
+            <h2 class="fr-aside-title">Archivos y enlaces del hilo</h2>
+            <div class="fr-aside-files">
+              <a class="fr-file" th:each="a : ${hilo.adjuntos}" th:classappend="'tone-' + ${a.tono}"
+                 th:href="${a.esEnlace} ? ${a.url} : @{/foros/adjuntos/{id}(id=${a.id})}" target="_blank" rel="noopener noreferrer">
+                <span class="fr-file-ext" th:text="${a.extension}">PDF</span>
+                <span class="fr-file-info">
+                  <span class="fr-file-name" th:text="${a.nombre}">archivo</span>
+                  <span class="fr-file-size" th:text="${a.esEnlace} ? ${a.dominio} : ${a.tamanoLabel}">1 MB</span>
+                </span>
+              </a>
+            </div>
           </section>
 
-          <section class="card card-pad">
-            <p class="label-mono" style="margin-bottom:var(--space-3);">Participantes</p>
-            <div class="avatar-stack" id="participants"></div>
+          <section class="card fr-aside-card">
+            <h2 class="fr-aside-title">Hilos relacionados</h2>
+            <div class="fr-aside-empty" th:if="${hilo.relacionados.isEmpty()}">No hay otros hilos sobre este tema todavía.</div>
+            <div class="fr-related" th:unless="${hilo.relacionados.isEmpty()}">
+              <a th:each="rel : ${hilo.relacionados}" th:href="@{foro-hilo.html(id=${rel.id()})}">
+                <div class="fr-related-title" th:text="${rel.titulo()}">Título</div>
+                <div class="fr-related-meta">
+                  <span class="is-topic" th:if="${rel.mismoTopico()}">Mismo tópico · </span>
+                  <span th:text="${rel.proyectoNombre()} + ' · ' + ${rel.numRespuestas()} + (${rel.numRespuestas() == 1} ? ' respuesta' : ' respuestas')">meta</span>
+                </div>
+              </a>
+            </div>
           </section>
-
-          <section class="card card-pad">
-            <p class="label-mono" style="margin-bottom:var(--space-3);">Hilos relacionados</p>
-            <div id="related-threads" style="display:flex; flex-direction:column; gap:var(--space-3);"></div>
-          </section>
-        </div>
+        </aside>
       </div>
 
     </main>
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "project-manager", active: "foros.html", title: MOCK.threadDetail.titulo, subtitle: "Foros › " + MOCK.threadDetail.categoria });
-  if (!cfg) return;
-
-  var t = MOCK.threadDetail;
-  document.getElementById("bc-cat").textContent = t.categoria;
-  document.getElementById("thread-cat").textContent = t.categoria;
-  document.getElementById("thread-pinned").hidden = !t.fijado;
-  document.getElementById("thread-title").textContent = t.titulo;
-  document.getElementById("thread-meta").textContent = "Abierto por " + t.autor + " · " + t.abierto + " · última actividad " + t.ultimaActividad;
-  document.getElementById("thread-summary").textContent = t.resumenIA;
-  document.getElementById("thread-summary-meta").textContent = t.resumenGeneradoInfo;
-  document.getElementById("thread-actions").innerHTML = t.accionesAcordadas.map(function (a) { return "<li>" + a + "</li>"; }).join("");
-  document.getElementById("participants").innerHTML = t.participantes.map(function (p) { return '<span class="avatar avatar-sm">' + p + "</span>"; }).join("") +
-    (t.participantesExtra ? '<span class="avatar avatar-sm" style="background:var(--surface-sunken); color:var(--text-tertiary);">+' + t.participantesExtra + "</span>" : "");
-  document.getElementById("related-threads").innerHTML = t.hilosRelacionados.map(function (r) {
-    return '<a href="#" style="color:inherit; display:block;"><div style="font-size:var(--fs-xs); font-weight:500;">' + r.titulo + '</div><div class="text-tertiary" style="font-size:10px; margin-top:2px;">' + r.categoria + " · " + r.respuestas + " respuestas</div></a>";
-  }).join("");
-
-  function renderStats() {
-    document.getElementById("thread-stats").textContent = t.posts.length + " RESPUESTAS · " + t.vistas + " VISTAS";
-  }
-
-  function renderPosts() {
-    document.getElementById("posts-list").innerHTML = t.posts.map(function (p) {
-      return '<article class="post">' +
-        '<span class="avatar avatar-sm">' + p.iniciales + '</span>' +
-        '<div class="post-body"><div class="post-author-row"><span class="post-author-name">' + p.autor + '</span><span class="post-author-role">' + p.cargo + '</span>' +
-        (p.aceptada ? '<span class="badge badge-green">✓ RESPUESTA ACEPTADA</span>' : "") +
-        '<span class="text-tertiary" style="font-size:11px; margin-left:auto;">' + p.tiempo + '</span></div>' +
-        '<p class="post-text">' + p.texto + '</p>' +
-        '<div class="post-actions"><button type="button" data-vote><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-thumbs-up"></use></svg>Útil (' + p.util + ')</button>' +
-        '<button type="button">Responder</button><button type="button">Citar</button></div></div></article>';
-    }).join("");
-    document.querySelectorAll("[data-vote]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        if (btn.classList.contains("voted")) return;
-        btn.classList.add("voted");
-        var n = parseInt(btn.textContent.match(/\((\d+)\)/)[1], 10) + 1;
-        btn.innerHTML = '<svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-thumbs-up"></use></svg>Útil (' + n + ')';
-      });
-    });
-  }
-
-  var me = MOCK.roleUsers.pm;
-  document.getElementById("reply-avatar").textContent = me.iniciales;
-  document.getElementById("publish-reply-btn").addEventListener("click", function () {
-    var text = document.getElementById("reply-text").value.trim();
-    if (!text) { SBAI.toast.show("Escribe una respuesta antes de publicar.", { type: "error" }); return; }
-    t.posts.push({ autor: me.nombre, iniciales: me.iniciales, cargo: me.cargo, tiempo: "ahora", util: 0, aceptada: false, texto: text });
-    document.getElementById("reply-text").value = "";
-    renderPosts();
-    renderStats();
-    SBAI.toast.show("Tu respuesta se publicó en el hilo.", { type: "success" });
-  });
-
-  renderStats();
-  renderPosts();
-});
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+window.HILO = {
+  id: /*[[${hilo.id}]]*/ 0,
+  baseUrl: /*[[${baseUrl}]]*/ "/project-manager",
+  titulo: /*[[${hilo.titulo}]]*/ "",
+  topicoCodigo: /*[[${hilo.topico != null ? hilo.topico.codigo : 'general'}]]*/ "general",
+  etiquetas: /*[[${hilo.etiquetasTexto}]]*/ "",
+  topicos: /*[[${topicos}]]*/ [],
+  maxEdiciones: /*[[${hilo.maxEdiciones}]]*/ 3,
+  maxArchivos: /*[[${maxArchivos}]]*/ 3,
+  maxEnlaces: /*[[${maxEnlaces}]]*/ 3
+};
 </script>
+<script src="/js/foro-utils.js"></script>
+<script src="/js/foro-hilo.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
 </body>
 </html>

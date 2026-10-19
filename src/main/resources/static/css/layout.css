@@ -32,12 +32,12 @@
   flex-shrink: 0;
 }
 .sidebar-brand-mark {
-  width: 34px;
-  height: 34px;
+  width: 34px; height: 34px; border-radius: var(--radius-md);
+  background: var(--navy-900);
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  object-fit: contain;
-  display: block;
 }
+.sidebar-brand-mark svg { width: 19px; height: 19px; }
 .sidebar-brand-text { font-size: var(--fs-base); font-weight: var(--fw-semibold); color: white; letter-spacing: -0.01em; }
 
 .sidebar-role-badge {
@@ -98,7 +98,7 @@
   background: none; border: none; text-align: left;
 }
 .sidebar-user:hover { background: rgba(255,255,255,0.06); }
-.sidebar-user-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.sidebar-user-text { flex: 1; min-width: 0; }
 .sidebar-user-name { font-size: var(--fs-xs); font-weight: var(--fw-medium); color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar-user-email { font-size: 11px; color: var(--text-on-navy-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar-user .icon { color: var(--text-on-navy-faint); }
@@ -128,14 +128,14 @@
   padding: 0 var(--space-3);
   height: 40px;
   width: 100%;
-  max-width: 440px;
+  max-width: 360px;
   color: var(--text-tertiary);
   cursor: pointer;
   flex-shrink: 1;
 }
 .topbar-search:hover { border-color: var(--border-strong); }
-.topbar-search span { font-size: var(--fs-sm); flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.topbar-search kbd { font-family: var(--font-mono); font-size: 10px; border: 1px solid var(--border-default); border-radius: 4px; padding: 2px 6px; background: var(--surface); flex-shrink: 0; }
+.topbar-search span { font-size: var(--fs-sm); flex: 1; text-align: left; }
+.topbar-search kbd { font-family: var(--font-mono); font-size: 10px; border: 1px solid var(--border-default); border-radius: 4px; padding: 2px 6px; background: var(--surface); }
 
 .topbar-actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
 .topbar-icon-btn {
@@ -157,11 +157,80 @@
   font-size: var(--fs-sm); font-weight: var(--fw-semibold);
   cursor: pointer;
 }
-.topbar-ai-btn:hover { background: #DDE5F2; }
+.topbar-ai-btn:hover { background: var(--tint-active); }
 .topbar-ai-btn .icon { color: var(--blue-accent-strong); }
-.topbar-ai-icon { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; display: block; }
 
-.topbar-user-btn { display: flex; align-items: center; gap: var(--space-2); background: none; border: none; cursor: pointer; padding: 4px; border-radius: var(--radius-md); }
+:root[data-theme="dark"] .topbar-ai-btn { background: color-mix(in srgb, var(--blue-accent-strong) 22%, var(--surface)); color: color-mix(in srgb, var(--blue-accent-strong) 70%, white); }
+:root[data-theme="dark"] .topbar-ai-btn:hover { background: color-mix(in srgb, var(--blue-accent-strong) 32%, var(--surface)); }
+:root[data-theme="dark"] .topbar-ai-btn .icon { color: color-mix(in srgb, var(--blue-accent-strong) 70%, white); }
+
+/* =========================================================
+   Usuario del topbar
+   ========================================================= */
+
+.topbar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  transition:
+          background-color var(--dur-fast) var(--ease-standard);
+}
+
+.topbar-user-btn:hover {
+  background: var(--surface-sunken);
+}
+
+.topbar-user-avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.topbar-user-photo {
+  display: block;
+
+  width: 32px;
+  height: 32px;
+
+  border-radius: 50%;
+
+  object-fit: cover;
+  object-position: center;
+
+  background: var(--navy-100);
+}
+
+.topbar-user-name {
+  max-width: 150px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+}
+
+.topbar-user-btn > .icon {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
 .topbar-user-btn:hover { background: var(--surface-sunken); }
 
 /* ---- Main content ---- */
@@ -209,74 +278,105 @@
   content: "";
   position: absolute; inset: 0;
   background-image: radial-gradient(circle at 20% 20%, rgba(91,141,239,0.18), transparent 45%),
-    radial-gradient(circle at 85% 75%, rgba(91,141,239,0.14), transparent 40%);
+  radial-gradient(circle at 85% 75%, rgba(91,141,239,0.14), transparent 40%),
+  radial-gradient(circle at 12% 88%, rgba(139,92,246,0.22), transparent 42%),
+  radial-gradient(circle at 92% 8%, rgba(34,211,238,0.18), transparent 40%);
+  pointer-events: none;
+}
+
+/* Halo con el gradiente de marca (mismo púrpura→cian del logo del sidebar),
+   para que login/recuperar-password se sientan parte del mismo rediseño. */
+.auth-aside::after {
+  content: "";
+  position: absolute;
+  width: 480px; height: 480px;
+  right: -160px; bottom: -160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(34,211,238,0.16) 55%, transparent 75%);
+  filter: blur(10px);
   pointer-events: none;
 }
 .auth-aside-top { position: relative; z-index: 1; }
 .auth-aside-brand { display: flex; align-items: center; gap: var(--space-3); }
-.auth-aside-headline { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); line-height: var(--lh-tight); margin: var(--space-10) 0 var(--space-4); max-width: 460px; letter-spacing: -0.01em; }
-.auth-aside-sub { font-size: var(--fs-base); color: rgba(255,255,255,0.72); line-height: var(--lh-relaxed); max-width: 420px; }
-.auth-aside-stats { position: relative; z-index: 1; display: flex; gap: var(--space-3); margin: var(--space-8) 0; flex-wrap: wrap; }
-.auth-stat-pill {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  padding: 10px var(--space-4);
-  border-radius: var(--radius-lg);
-  background: rgba(40, 207, 197, 0.10);
-  border: 1px solid rgba(40, 207, 197, 0.22);
-}
-.auth-stat-pill .auth-aside-stat-value { font-size: var(--fs-lg); font-weight: var(--fw-semibold); color: white; line-height: 1.1; }
-.auth-stat-pill .auth-aside-stat-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: var(--tracking-label); text-transform: uppercase; color: rgba(255,255,255,0.6); margin-top: 2px; }
 
+/* Etiqueta pequeña sobre el titular (antes sin estilos: salía como texto
+   plano del mismo tamaño que el resto del párrafo). */
+.auth-aside-eyebrow {
+  display: inline-block;
+  margin-top: var(--space-8);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: #7EE8DC;
+}
+
+.auth-aside-headline { font-size: clamp(1.9rem, 1.1vw + 1.6rem, 2.6rem); font-weight: var(--fw-semibold); line-height: 1.12; margin: var(--space-4) 0 var(--space-6); max-width: 480px; letter-spacing: -0.02em; }
+.auth-aside-sub { font-size: var(--fs-base); color: rgba(255,255,255,0.72); line-height: var(--lh-relaxed); max-width: 420px; }
+
+/* Lista de features del panel de acceso (antes sin estilos: se veía como
+   texto plano apilado, sin iconos visibles ni separación). */
 .auth-feature-list {
-  position: relative; z-index: 1;
-  display: flex; flex-direction: column; gap: var(--space-4);
-  margin: var(--space-8) 0 0;
-  list-style: none; padding: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 .auth-feature-list li {
-  display: flex; align-items: center; gap: var(--space-3);
-  font-size: var(--fs-sm); font-weight: var(--fw-medium);
-  color: rgba(255, 255, 255, 0.88);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-base);
+  color: rgba(255,255,255,0.82);
 }
 .auth-feature-icon {
-  width: 34px; height: 34px; border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  display: flex; align-items: center; justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.24);
+  color: #22D3EE;
 }
-.auth-feature-icon .icon { color: #28CFC5; }
+.auth-aside-stats { position: relative; z-index: 1; display: flex; gap: var(--space-8); margin: var(--space-10) 0; }
+.auth-aside-stat-value { font-size: var(--fs-xl); font-weight: var(--fw-semibold); }
+.auth-aside-stat-label { font-family: var(--font-mono); font-size: var(--fs-2xs); letter-spacing: var(--tracking-label); text-transform: uppercase; color: rgba(255,255,255,0.5); margin-top: 4px; }
 .auth-aside-footer { position: relative; z-index: 1; font-size: var(--fs-xs); color: rgba(255,255,255,0.45); }
 
 .auth-main {
   display: flex; align-items: center; justify-content: center;
   padding: var(--space-8);
-  background: var(--canvas);
+  background: var(--surface);
 }
-.auth-card { width: 100%; max-width: 420px; }
-.auth-card.card { box-shadow: var(--shadow-2); }
-
-.auth-aside-graphic {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-.auth-aside-eyebrow {
-  position: relative;
-  z-index: 1;
-  display: inline-block;
-  font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: var(--space-6);
-}
-.auth-aside-headline { margin-top: var(--space-3); }
+.auth-card { width: 100%; max-width: 420px; animation: auth-card-in .5s var(--ease-standard) both; }
 .auth-card-wide { max-width: 500px; }
+@keyframes auth-card-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Botón principal y foco de inputs con el gradiente de marca (púrpura→cian),
+   alcance limitado a las vistas de acceso para no afectar el resto de la app. */
+.auth-card .btn-primary {
+  background: linear-gradient(135deg, #8B5CF6 0%, #22D3EE 100%);
+  border: none;
+  box-shadow: 0 4px 14px rgba(139,92,246,0.28);
+}
+.auth-card .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+.auth-card .btn-primary:active:not(:disabled) { filter: brightness(0.96); }
+.auth-card .btn-primary:focus-visible { box-shadow: 0 4px 14px rgba(139,92,246,0.28), var(--shadow-focus); }
+
+.auth-card .input:focus,
+.auth-card .input-wrap .input:focus {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 4px rgba(139,92,246,0.16);
+  outline: none;
+}
 .auth-card-logo-mobile { display: none; align-items: center; gap: var(--space-3); margin-bottom: var(--space-8); }
 @media (max-width: 980px) { .auth-card-logo-mobile { display: flex; } }
 .auth-card-title { font-size: var(--fs-xl); font-weight: var(--fw-semibold); color: var(--text-primary); letter-spacing: -0.01em; }
@@ -290,3 +390,36 @@
 .auth-back-link:hover { color: var(--navy-700); }
 
 .registry-modal-note { display:flex; gap: var(--space-2); align-items:center; justify-content:center; font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: var(--space-4); }
+
+
+/* =========================================================
+   Fotografía de perfil - Mi cuenta
+   ========================================================= */
+
+.account-photo-large {
+  width: 64px;
+  height: 64px;
+
+  flex: 0 0 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+  border-radius: 50%;
+
+  background: var(--navy-700);
+}
+
+.account-photo-large img {
+  width: 64px;
+  height: 64px;
+
+  display: block;
+
+  border-radius: 50%;
+
+  object-fit: cover;
+  object-position: center;
+}

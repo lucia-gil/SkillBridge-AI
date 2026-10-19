@@ -1,69 +1,118 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ocupación del equipo · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ocupación del equipo · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
+  <style>.rb-rol{display:block;font-size:11px;color:var(--text-tertiary);font-weight:400}.rb-input{width:96px;text-align:center}.rb-table{border:1px solid var(--border-subtle);border-radius:var(--radius-md)}</style>
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
-
-      <section class="card card-pad" style="margin-top:var(--space-6);">
-        <div class="card-header-icon-row" style="margin-bottom:2px;">
-          <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-bar-chart"></use></svg></span>
-          <h2 style="font-size:var(--fs-md);">Evolución de la ocupación promedio</h2>
+      <!-- Los 4 KPI se calculan en el Controller contando cuantos
+           colaboradores caen en cada rango de ocupacion -->
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title">¿Cómo está la carga del equipo?</h2>
+            <p class="kpi-hero-sub">Cuántos colaboradores hay en cada rango de dedicación, sumando todos sus proyectos.</p>
+          </div>
+          <a class="kpi-hero-action" href="asignaciones.html"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg><span>Ir a asignaciones</span></a>
         </div>
-        <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5); margin-left:44px;">Últimos 6 meses · meta 85% · pasa el mouse o toca una barra</p>
-        <div class="bar-chart" id="evo-chart" style="position:relative;"></div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-trending-down"></use></svg></span><span class="hero-card-label">Subutilizados</span></div>
+            <div class="hero-card-value" th:text="${subutilizados}">0</div>
+            <p class="hero-card-meta"><b class="tone-blue">&lt; 60%</b> de carga</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span><span class="hero-card-label">Óptimo</span></div>
+            <div class="hero-card-value" th:text="${optimo}">0</div>
+            <p class="hero-card-meta"><b class="tone-green">60%–89%</b> de carga</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span><span class="hero-card-label">Al límite</span></div>
+            <div class="hero-card-value" th:text="${alLimite}">0</div>
+            <p class="hero-card-meta"><b class="tone-amber">90%–100%</b> de carga</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span><span class="hero-card-label">Sobre-asignados</span></div>
+            <div class="hero-card-value" th:text="${sobreAsignados}">0</div>
+            <p class="hero-card-meta"><b class="tone-red">&gt; 100%</b> de carga</p>
+          </article>
+        </div>
       </section>
 
-      <section class="card" style="margin-top:var(--space-6); display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2)); overflow:hidden;">
-        <div class="table-toolbar" style="flex-shrink:0;">
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
           <div>
-            <div class="card-header-icon-row">
-              <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
-              <div>
-                <strong>Ocupación individual</strong>
-                <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Promedio de las últimas 6 semanas por colaborador</p>
-              </div>
-            </div>
-          </div>
-          <div class="table-filters">
-            <select class="select" id="celula-filter">
-              <option value="todos">Célula: todas</option><option>Andes</option><option>Aurora</option><option>Retail</option><option>Interno</option>
-            </select>
-            <select class="select" id="estado-filter">
-              <option value="todos">Estado: todos</option><option value="level-low">Subutilizado</option><option value="level-optimal">Óptimo</option><option value="level-high">Al límite</option><option value="level-over">Sobre-asignado</option>
-            </select>
+            <strong>Ocupación individual</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Suma de dedicaciones activas por colaborador, en todos sus proyectos</p>
           </div>
         </div>
 
-        <div class="table-scroll-wrap">
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead class="sticky-head"><tr><th>Colaborador</th><th>Célula</th><th>Cargo</th><th>Ocupación promedio</th><th>Estado</th><th>Acciones</th></tr></thead>
-              <tbody id="ocup-body"></tbody>
-            </table>
-          </div>
-          <div class="state-panel" id="ocup-empty" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
-            <span class="state-panel-title">Sin colaboradores con estos filtros</span>
-          </div>
+        <div th:if="${ocupacion.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-layers"></use></svg></span>
+          <span class="state-panel-title">Todavía no hay asignaciones activas</span>
+          <span class="state-panel-desc">Cuando se registren asignaciones desde "Asignaciones", aparecerán aquí.</span>
         </div>
 
-        <div class="table-footer" style="flex-shrink:0;">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="ocup-pagination-count"></span>
-          <div class="pagination" id="ocup-pagination-controls"></div>
+        <div class="table-scroll" th:unless="${ocupacion.isEmpty()}">
+          <table class="data-table">
+            <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody id="ocupacion-body">
+            <tr th:each="o : ${ocupacion}" data-ocupacion-row>
+              <td class="cell-person">
+                <span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span>
+                <span class="cell-person-name" th:text="${o.nombre}">Nombre</span>
+              </td>
+              <td th:text="${o.cargo}">Cargo</td>
+              <td>
+                <div class="progress-inline" style="min-width:110px;">
+                  <div class="progress-bar">
+                    <div class="progress-bar-fill"
+                         th:classappend="${o.promedio > 100} ? 'red' : (${o.promedio >= 90} ? 'amber' : '')"
+                         th:style="'width:' + ${#numbers.formatDecimal(o.promedio > 100 ? 100 : o.promedio, 1, 0)} + '%;'"></div>
+                  </div>
+                  <span class="progress-value" th:text="${o.promedio} + '%'">0%</span>
+                </div>
+              </td>
+              <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
+              <td class="cell-actions">
+                <button type="button" th:attr="data-rebalancear=${o.perfilId},data-nombre=${o.nombre},data-carga=${o.promedio}"
+                        th:classappend="${o.promedio > 100} ? 'action-alert'">
+                  <svg class="icon icon-sm"><use href="/img/icons.svg#icon-sliders"></use></svg>
+                  <span th:text="${o.promedio > 100} ? 'Rebalancear' : 'Ajustar carga'">Ajustar carga</span>
+                </button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Asignaciones activas por persona: se clonan en el modal "Rebalancear" -->
+        <div id="rebalancear-templates" hidden>
+          <template th:each="o : ${ocupacion}" th:attr="data-perfil=${o.perfilId}">
+            <tr th:each="a : ${asignacionesPorPerfil.get(o.perfilId)}" th:attr="data-asignacion=${a.asignacionId()},data-carga=${a.carga()},data-pm=${a.esProjectManager()}">
+              <td class="cell-primary"><span th:text="${a.proyecto()}">Proyecto</span><span class="rb-rol" th:text="${a.rolLabel()}">Rol</span></td>
+              <td><input class="input rb-input" type="number" min="1" th:attr="max=${limiteCarga}" th:value="${a.carga()}" aria-label="Dedicación (%)"></td>
+              <td class="cell-actions"><button type="button" data-rb-guardar>Guardar</button><button type="button" class="danger" data-rb-finalizar th:unless="${a.esProjectManager()}">Finalizar</button></td>
+            </tr>
+          </template>
+        </div>
+
+        <div class="table-footer" th:unless="${ocupacion.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="ocupacion-visible-count">0</span> de <span id="ocupacion-total-count">0</span> colaboradores</span>
+          <div class="pagination"><button class="page-btn" id="ocupacion-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="ocupacion-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="ocupacion-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
       </section>
 
@@ -71,165 +120,119 @@
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "resource-manager", active: "ocupacion.html", title: "Ocupación del equipo", subtitle: "Detalle por colaborador y evolución mensual" });
-  if (!cfg) return;
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/proyecto-acciones.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+  document.addEventListener("DOMContentLoaded", function () {
+    // Paginación en el cliente: la lista ya viene completa del servidor,
+    // solo se muestran/ocultan filas de a 6 (mismo patrón que
+    // resource-manager/colaboradores.html).
+    var rows = Array.from(document.querySelectorAll("[data-ocupacion-row]"));
+    if (!rows.length) return;
 
-  var b = MOCK.occupancyBuckets;
-  document.getElementById("kpi-grid").innerHTML = [
-    { label: "SUBUTILIZADOS", value: b.subutilizados, meta: "< 60% de carga", icon: "icon-trending-down", accent: "blue" },
-    { label: "ÓPTIMO", value: b.optimo, meta: "60–89% de carga", cls: "up", icon: "icon-check-circle", accent: "green" },
-    { label: "AL LÍMITE", value: b.alLimite, meta: "90–100% de carga", cls: "warn", icon: "icon-zap", accent: "amber" },
-    { label: "SOBRE-ASIGNADOS", value: b.sobreAsignados, meta: "> 100% de carga", cls: "down", icon: "icon-alert-triangle", accent: "red" }
-  ].map(function (k) {
-    return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>';
-  }).join("");
+    var pageSize = 6;
+    var page = 1;
+    var visibleCount = document.getElementById("ocupacion-visible-count");
+    var totalCount = document.getElementById("ocupacion-total-count");
+    var pageLabel = document.getElementById("ocupacion-page-label");
+    var previous = document.getElementById("ocupacion-prev");
+    var next = document.getElementById("ocupacion-next");
 
-  var META = 85;
-  var maxEvo = 100;
-  function evoBarColor(pct) {
-    if (pct >= META) return "var(--green-fg)";
-    if (pct >= META - 15) return "var(--amber-fg)";
-    return "var(--red-fg)";
-  }
-  document.getElementById("evo-chart").innerHTML = MOCK.occupancyMonthly.map(function (m, i) {
-    var prev = i > 0 ? MOCK.occupancyMonthly[i - 1].pct : null;
-    var delta = prev !== null ? m.pct - prev : null;
-    var deltaHtml = delta !== null
-      ? '<div class="bar-chart-delta ' + (delta >= 0 ? "up" : "down") + '">' + (delta >= 0 ? "▲" : "▼") + " " + Math.abs(delta) + "pts</div>"
-      : '<div class="bar-chart-delta" style="visibility:hidden;">▲ 0pts</div>';
-    return '<div class="bar-chart-col" data-mes="' + m.mes + '" data-pct="' + m.pct + '"><span class="bar-chart-value">' + m.pct + '%</span>' +
-      '<div class="bar-chart-track"><div class="bar-chart-fill" data-target-h="' + Math.round((m.pct / maxEvo) * 100) + '" style="height:0%; background:' + evoBarColor(m.pct) + ';"></div></div>' +
-      '<span class="bar-chart-label">' + m.mes + '</span>' + deltaHtml + "</div>";
-  }).join("");
+    function render() {
+      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = rows.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      visibleCount.textContent = visible.length;
+      totalCount.textContent = rows.length;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+    }
 
-  // Posiciona la línea de meta midiendo el alto real ya renderizado del
-  // track (no un número fijo a ojo), para que quede exacta sin importar
-  // cuánto espacio ocupen los deltas/etiquetas alrededor.
-  var chartEl = document.getElementById("evo-chart");
-  var trackEl = chartEl.querySelector(".bar-chart-track");
-  var chartRect = chartEl.getBoundingClientRect();
-  var trackRect = trackEl.getBoundingClientRect();
-  var metaTopPx = (trackRect.top - chartRect.top) + trackRect.height * (1 - META / 100);
-  var metaLine = document.createElement("div");
-  metaLine.className = "bar-chart-meta-line";
-  metaLine.style.top = metaTopPx + "px";
-  metaLine.innerHTML = '<span class="bar-chart-meta-label">Meta ' + META + '%</span>';
-  chartEl.appendChild(metaLine);
-
-  document.querySelectorAll(".bar-chart-fill[data-target-h]").forEach(function (bar, i) {
-    setTimeout(function () { bar.style.height = bar.dataset.targetH + "%"; }, 100 + i * 70);
-  });
-  document.querySelectorAll(".bar-chart-col").forEach(function (col) {
-    col.addEventListener("click", function () {
-      var mes = col.dataset.mes, pct = col.dataset.pct;
-      var faltan = 85 - pct;
-      SBAI.toast.show("<strong>" + mes + "</strong>: " + pct + "% de ocupación promedio" + (faltan > 0 ? " · " + faltan + " pts bajo la meta (85%)" : " · sobre la meta"), { icon: "icon-bar-chart" });
-    });
-  });
-
-  function levelInfo(v) {
-    if (v > 100) return { cls: "level-over", badge: "badge-red", label: "Sobre-asignado" };
-    if (v >= 90) return { cls: "level-high", badge: "badge-amber", label: "Al límite" };
-    if (v >= 60) return { cls: "level-optimal", badge: "badge-green", label: "Óptimo" };
-    return { cls: "level-low", badge: "badge-neutral", label: "Subutilizado" };
-  }
-
-  var rows = MOCK.occupancyHeatmap.map(function (row) {
-    var c = MOCK.findCollaborator(row.nombre);
-    return { row: row, celula: c ? c.celula : "", li: levelInfo(row.promedio) };
-  });
-
-  var PAGE_SIZE = 6;
-  var currentPage = 1;
-
-  function getFiltered() {
-    var celula = document.getElementById("celula-filter").value;
-    var estado = document.getElementById("estado-filter").value;
-    return rows.filter(function (r) {
-      if (celula !== "todos" && r.celula !== celula) return false;
-      if (estado !== "todos" && r.li.cls !== estado) return false;
-      return true;
-    });
-  }
-
-  function rowHtml(r, i) {
-    var row = r.row, li = r.li;
-    return '<tr data-f-estado="' + li.cls + '" style="animation-delay:' + (i * 30) + 'ms;">' +
-      '<td class="cell-person"><span class="avatar avatar-sm">' + row.iniciales + '</span><span class="cell-person-name">' + row.nombre + '</span></td>' +
-      "<td>" + (r.celula || "—") + "</td><td>" + row.cargo + "</td>" +
-      '<td><div class="progress-inline" style="min-width:110px;"><div class="progress-bar"><div class="progress-bar-fill ' + (row.promedio > 100 ? "red" : row.promedio >= 90 ? "amber" : "") + '" data-target="' + Math.min(row.promedio, 100) + '" style="width:0%;"></div></div><span class="progress-value">' + row.promedio + '%</span></div></td>' +
-      '<td><span class="badge ' + li.badge + '">' + li.label + '</span></td>' +
-      '<td class="cell-actions"><button type="button" data-weekly="' + row.nombre + '">Ver semanas</button>' + (row.promedio > 100 ? '<button type="button" data-rebalance-row="' + row.nombre + '">Rebalancear</button>' : "") + '</td></tr>';
-  }
-
-  function wireRowActions() {
-    document.querySelectorAll("[data-weekly]").forEach(function (btn) {
+    // ---- "Rebalancear" (RG-214): asignaciones activas de la persona en un
+    // modal; se puede bajar la dedicación o finalizar sin salir de aquí.
+    var LIMITE = /*[[${limiteCarga}]]*/ 100;
+    function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; }
+    document.querySelectorAll("[data-rebalancear]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var row = MOCK.occupancyHeatmap.filter(function (r) { return r.nombre === btn.dataset.weekly; })[0];
-        var cells = row.valores.map(function (v, i) { return '<div style="text-align:center;"><div class="label-mono" style="margin-bottom:4px;">' + MOCK.occupancyWeeks[i] + '</div><span class="heatmap-cell ' + levelInfo(v).cls + '">' + v + "</span></div>"; }).join("");
-        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>' + row.nombre + '</h2><p>' + row.cargo + ' · promedio ' + row.promedio + '%</p></div>' +
-          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-          '<div class="modal-body"><div style="display:flex; gap:var(--space-3); justify-content:space-between;">' + cells + '</div></div>' +
-          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
-        SBAI.modal.open(html);
+        var tpl = document.querySelector('#rebalancear-templates template[data-perfil="' + btn.dataset.rebalancear + '"]');
+        var filas = tpl ? tpl.innerHTML : "";
+        var carga = Number(btn.dataset.carga);
+        var exceso = carga - LIMITE;
+        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+          '<div class="modal-header"><div><h2>Rebalancear carga</h2><p>' + esc(btn.dataset.nombre) + ' · carga total <strong class="rb-total">' + carga + '%</strong> (límite ' + LIMITE + '%)</p></div>' +
+          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+          '<div class="modal-body">' +
+          (exceso > 0 ? '<div class="callout warn" style="margin-bottom:var(--space-4)"><span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span><span class="callout-body">Está ' + exceso + ' punto(s) por encima del límite. Baja la dedicación en algún proyecto o finaliza una asignación.</span></div>' : '') +
+          '<div class="table-scroll rb-table"><table class="data-table"><thead><tr><th>Proyecto</th><th style="width:130px">Dedicación (%)</th><th>Acciones</th></tr></thead><tbody>' +
+          (filas.trim() ? filas : '<tr><td colspan="3" class="text-tertiary" style="text-align:center">Sin asignaciones activas.</td></tr>') +
+          '</tbody></table></div>' +
+          '<p class="text-tertiary rb-preview" style="font-size:var(--fs-xs);margin-top:var(--space-3)"></p>' +
+          '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
+        var backdrop = window.SBAI.modal.open(html);
+        var preview = backdrop.querySelector(".rb-preview");
+        function recalcular() {
+          var total = 0;
+          backdrop.querySelectorAll("tr[data-asignacion]").forEach(function (tr) { total += Number(tr.querySelector(".rb-input").value) || 0; });
+          preview.textContent = "Con los valores escritos, la carga total quedaría en " + total + "%" + (total > LIMITE ? " (sigue por encima del límite)." : ".");
+        }
+        backdrop.querySelectorAll(".rb-input").forEach(function (i) { i.addEventListener("input", recalcular); });
+        recalcular();
+        backdrop.querySelectorAll("[data-rb-guardar]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var tr = b.closest("tr");
+            var nuevo = Number(tr.querySelector(".rb-input").value);
+            var antes = Number(tr.dataset.carga);
+            if (!Number.isInteger(nuevo) || nuevo < 1 || nuevo > LIMITE) return window.SBAI.toast.show("La dedicación debe estar entre 1% y " + LIMITE + "%.", { type: "error" });
+            if (nuevo === antes) return window.SBAI.toast.show("No cambiaste la dedicación.", { type: "info" });
+            var proyecto = tr.querySelector(".cell-primary span").textContent;
+            window.SBAI.modal.confirm({
+              title: "¿Cambiar dedicación a " + nuevo + "%?",
+              desc: btn.dataset.nombre + " en “" + proyecto + "”: " + antes + "% → " + nuevo + "%.",
+              variant: "primary", icon: "icon-sliders",
+              reason: { label: "Motivo", required: false, placeholder: "Opcional: queda registrado en Auditoría.", presets: ["Rebalanceo por sobre-asignación", "Cambio de prioridades", "A solicitud del colaborador"] },
+              confirmLabel: "Guardar cambio", cancelLabel: "Volver",
+              onConfirm: function (d) {
+                var datos = { cargaPorcentaje: nuevo };
+                if (d.motivo) datos.motivo = d.motivo;
+                window.SBAI.submitForm("/resource-manager/asignaciones/" + tr.dataset.asignacion + "/dedicacion", datos);
+              }
+            });
+          });
+        });
+        backdrop.querySelectorAll("[data-rb-finalizar]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var tr = b.closest("tr");
+            window.SBAI.proyectoAcciones.finalizarAsignacion({
+              url: "/resource-manager/asignaciones/" + tr.dataset.asignacion + "/finalizar",
+              nombre: btn.dataset.nombre,
+              proyecto: tr.querySelector(".cell-primary span").textContent,
+              extra: { volver: "ocupacion" }
+            });
+          });
+        });
       });
     });
-    document.querySelectorAll("[data-rebalance-row]").forEach(function (btn) {
-      btn.addEventListener("click", function () { SBAI.toast.show("Propuesta de rebalanceo enviada para <strong>" + btn.dataset.rebalanceRow + "</strong>.", { type: "success" }); });
+
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
+      if (page < pages) { page++; render(); }
     });
-  }
-
-  function renderPagination(total, totalPages) {
-    var countEl = document.getElementById("ocup-pagination-count");
-    var controlsEl = document.getElementById("ocup-pagination-controls");
-    if (total === 0) { countEl.textContent = ""; controlsEl.innerHTML = ""; return; }
-    var start = (currentPage - 1) * PAGE_SIZE + 1;
-    var end = Math.min(currentPage * PAGE_SIZE, total);
-    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " colaboradores";
-    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
-    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
-    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
-    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
-    controlsEl.innerHTML = html;
-    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
-    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
-    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
-    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
-  }
-
-  function render() {
-    var filtered = getFiltered();
-    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-    document.getElementById("ocup-body").innerHTML = pageItems.map(rowHtml).join("");
-    document.getElementById("ocup-empty").hidden = filtered.length !== 0;
-    document.querySelector(".table-scroll table").hidden = filtered.length === 0;
-
-    document.querySelectorAll(".progress-bar-fill[data-target]").forEach(function (bar, i) {
-      setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 80 + i * 40);
-    });
-
-    wireRowActions();
-    renderPagination(filtered.length, totalPages);
-  }
-
-  document.getElementById("celula-filter").addEventListener("change", function () { currentPage = 1; render(); });
-  document.getElementById("estado-filter").addEventListener("change", function () { currentPage = 1; render(); });
-
-  render();
-});
+    render();
+  });
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
 </html>

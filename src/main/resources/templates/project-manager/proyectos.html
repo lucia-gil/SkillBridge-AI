@@ -1,151 +1,604 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Proyectos · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/proyecto-form.css">
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <section class="card" style="display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2)); overflow:hidden;">
-        <div class="table-toolbar" style="flex-shrink:0;">
+      <div class="kpi-grid">
+        <div class="kpi-tile accent-blue">
+          <div class="kpi-tile-icon blue">
+            <svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg>
+          </div>
+          <span class="kpi-tile-label">En planificacion</span>
+          <span class="kpi-tile-value" th:text="${kpiPlanificacion}">0</span>
+        </div>
+        <div class="kpi-tile accent-green">
+          <div class="kpi-tile-icon green">
+            <svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Activos</span>
+          <span class="kpi-tile-value" th:text="${kpiActivos}">0</span>
+        </div>
+        <div class="kpi-tile accent-amber">
+          <div class="kpi-tile-icon amber">
+            <svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg>
+          </div>
+          <span class="kpi-tile-label">En pausa</span>
+          <span class="kpi-tile-value" th:text="${kpiEnPausa}">0</span>
+        </div>
+        <div class="kpi-tile accent-red">
+          <div class="kpi-tile-icon red">
+            <svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg>
+          </div>
+          <span class="kpi-tile-label">Cancelados</span>
+          <span class="kpi-tile-value" th:text="${kpiCancelados}">0</span>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="table-toolbar">
           <div>
-            <strong id="proj-count">7 proyectos</strong>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">4 activos · 1 en riesgo · 1 bloqueado · 1 cerrado</p>
+            <strong th:text="${proyectos.size()} + ' proyectos'">0 proyectos</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Proyectos que gestionas como Project Manager</p>
           </div>
           <div class="table-filters">
+            <input type="text" class="input" data-filter-scope="proyectos-pm" data-filter-key="q" placeholder="Buscar por nombre o tecnología…" style="width:230px; height:36px; font-size:var(--fs-xs);">
             <select class="select" data-filter-scope="proyectos-pm" data-filter-key="estado">
-              <option value="todos">Estado: todos</option><option>Activo</option><option>En riesgo</option><option>Planeado</option><option>Bloqueado</option><option>Cerrado</option>
+              <option value="todos">Estado: todos</option>
+              <option value="planificacion">Planificacion</option><option value="activo">Activo</option>
+              <option value="en_pausa">En pausa</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option>
             </select>
-            <select class="select" data-filter-scope="proyectos-pm" data-filter-key="cliente">
-              <option value="todos">Cliente: todos</option>
-            </select>
-            <select class="select" data-filter-scope="proyectos-pm" data-filter-key="tecnologia">
-              <option value="todos">Tecnología: todas</option>
-              <option>Java 21</option><option>React 18</option><option>Kubernetes</option><option>Kafka</option><option>Terraform</option>
-            </select>
-            <button type="button" class="btn btn-primary btn-sm" id="new-project-btn">
-              <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Crear proyecto</button>
+            <button type="button" class="btn btn-primary btn-sm" id="new-project-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo proyecto</button>
           </div>
         </div>
-
-        <div class="table-scroll-wrap">
-        <div class="table-scroll">
+        <div th:if="${proyectos.isEmpty()}" class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+          <span class="state-panel-title">Todavia no gestionas proyectos</span>
+          <span class="state-panel-desc">Crea tu primer proyecto con el boton "Nuevo proyecto".</span>
+        </div>
+        <div data-project-filters="proyectos-pm"></div>
+        <div class="table-scroll" th:unless="${proyectos.isEmpty()}">
           <table class="data-table">
-            <thead class="sticky-head"><tr><th>Proyecto</th><th>Cliente</th><th>PM</th><th>Fechas</th><th>Equipo</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody id="proj-body"></tbody>
+            <thead><tr><th>Proyecto</th><th>Periodo / duración</th><th>Miembros</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              <tr th:each="p : ${proyectos}" data-filter-row="proyectos-pm" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre + ' ' + #strings.listJoin(p.tecnologias, ' '))}">
+                <td class="cell-person">
+                  <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
+                  <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="2"></span></span>
+                </td>
+                <td><span data-periodo th:attr="data-ini=${p.fechaInicioLabel},data-fin=${p.fechaFinLabel}">fechas</span></td>
+                <td><span class="miembros-pill" th:attr="data-n=${p.equipo.size()}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg><span th:text="${p.equipo.size()} + (${p.equipo.size()} == 1 ? ' miembro' : ' miembros')">0 miembros</span></span></td>
+                <td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div><span class="progress-value" th:text="${p.avance} + '%'">0%</span></div></td>
+                <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
+                <td class="cell-actions">
+                  <button type="button" th:attr="data-view-project=${p.id}">Ver detalle</button>
+                  <button type="button" th:attr="data-editar-proyecto=${p.id}">Editar</button>
+                  <button type="button" class="danger" th:attr="data-eliminar-proyecto=${p.id},data-nombre-proyecto=${p.nombre},data-estado-proyecto=${p.estadoCrudo},data-estado-label=${p.estadoLabel}">Eliminar</button>
+                </td>
+              </tr>
+            </tbody>
           </table>
-          <div class="state-panel" data-filter-empty="proyectos-pm" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
-            <span class="state-panel-title">Sin proyectos con estos filtros</span>
-            <span class="state-panel-desc">Ajusta el estado, cliente o tecnología para ver más resultados.</span>
-          </div>
         </div>
+        <div class="state-panel" data-filter-empty="proyectos-pm" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+          <span class="state-panel-title">Sin proyectos con estos filtros</span>
         </div>
-
-        <div class="table-footer" style="flex-shrink:0;">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);">Mostrando <span id="visible-count">7</span> de 27 proyectos</span>
-          <div class="pagination" id="pagination"></div>
+        <div class="table-footer">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="proyectos-pm-visible-count">0</span> de <span id="proyectos-pm-filtered-count">0</span> proyectos</span>
+          <div class="pagination"><button class="page-btn" id="proyectos-pm-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="proyectos-pm-page-label" style="font-size:var(--fs-xs)">Página 1</span><input type="number" id="proyectos-pm-page-jump" min="1" value="1" aria-label="Ir a la página" class="input" style="width:3.4em; text-align:center; font-size:var(--fs-xs); padding:2px 4px;"><button class="page-btn" id="proyectos-pm-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
       </section>
+
+      <!-- Detalle precalculado por proyecto (mismo patron que el panel del admin) -->
+      <div id="project-detail-templates" hidden>
+        <template th:each="d : ${proyectos}" th:attr="data-project-id=${d.id}">
+            <div class="modal-header">
+              <div><h2 th:text="${d.nombre}">Proyecto</h2><p th:text="${d.estadoLabel} + ' · PM: ' + ${d.pmNombre}">Estado</p></div>
+              <button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button>
+            </div>
+            <div class="modal-body">
+              <!-- Modelo v7, fase 5: mismas pestañas que el Administrador. -->
+              <div class="tabs pt-tabs" role="tablist" data-tabs>
+                <button type="button" class="tab-btn active" data-tab="resumen">Resumen</button>
+                <button type="button" class="tab-btn" data-tab="equipo">Equipo <span class="counter-badge" th:text="${d.equipo.size()}">0</span></button>
+                <button type="button" class="tab-btn" data-tab="estado">Estado</button>
+              </div>
+
+              <div class="pt-panel" data-tab-panel="resumen">
+                <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
+                <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
+                  <span data-tech-list th:attr="data-tech-list=${d.tecnologiasCsv}"></span>
+                </div>
+                <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
+                <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
+                <div class="info-row"><span class="info-row-label">Colaboradores</span><span class="info-row-value" th:text="${d.colaboradoresAsignados} + ' de ' + ${d.colaboradoresRequeridos} + ' requeridos'">0</span></div>
+
+                <!-- GitHub -->
+                <div class="info-row" th:if="${d.githubUrl != null and !d.githubUrl.isBlank()}">
+                  <span class="info-row-label">Repositorio</span>
+                  <span class="info-row-value">
+                    <a th:href="${d.githubUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none;">
+                      <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                      <span th:text="${d.githubUrl}">https://github.com/…</span>
+                    </a>
+                  </span>
+                </div>
+
+                <!-- Archivos adjuntos del proyecto -->
+                <div th:if="${!d.archivos.isEmpty()}" style="margin-top:var(--space-4);">
+                  <h4 style="font-size:var(--fs-sm); font-weight:var(--fw-semibold); margin-bottom:var(--space-2);">Archivos de contexto</h4>
+                  <div th:each="a : ${d.archivos}" style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border-subtle); font-size:var(--fs-xs);">
+                    <svg class="icon icon-sm"><use th:href="'/img/icons.svg#icon-' + ${a.icono}"></use></svg>
+                    <a th:href="@{'/archivos-proyecto/' + ${a.id}}" target="_blank" rel="noopener" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" th:text="${a.nombre}">archivo.pdf</a>
+                    <span class="text-tertiary" th:text="${a.fechaSubidaLabel}">fecha</span>
+                    <form th:action="@{'/project-manager/proyectos/' + ${d.id} + '/archivos/' + ${a.id} + '/eliminar'}" method="post" style="margin:0;">
+                      <button type="submit" class="btn-icon danger" title="Eliminar archivo" style="padding:2px;" onclick="return confirm('¿Eliminar este archivo?')">
+                        <svg class="icon icon-sm"><use href="/img/icons.svg#icon-trash"></use></svg>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                <!-- Subir archivo -->
+                <div style="margin-top:var(--space-4);">
+                  <form th:action="@{'/project-manager/proyectos/' + ${d.id} + '/archivos'}" method="post" enctype="multipart/form-data" style="display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap;">
+                    <input type="file" name="archivo" accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.xls,.xlsx,.pptx,.txt,.zip" class="input" style="font-size:var(--fs-xs); max-width:280px;">
+                    <button type="submit" class="btn btn-secondary btn-sm">
+                      <svg class="icon icon-sm"><use href="/img/icons.svg#icon-arrow-up"></use></svg>Subir archivo
+                    </button>
+                    <span class="field-hint" style="font-size:var(--fs-xs);">Máx. 10 MB por archivo · PDF, imágenes, documentos</span>
+                  </form>
+                </div>
+              </div>
+
+              <div class="pt-panel" data-tab-panel="equipo" hidden>
+                <th:block th:replace="~{fragments/equipo-proyecto :: tabla(${d}, true)}"></th:block>
+
+              <!-- Modelo v7: el PM no asigna directo; propone y el Resource Manager aprueba. -->
+              <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-1);">Proponer colaboradores</h3>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-3);">La propuesta llega al Resource Manager, que la aprueba o rechaza. El rol de Project Manager no se asigna desde aquí.</p>
+              <div class="btn-group" style="justify-content:flex-start; margin-bottom:var(--space-5);"
+                   th:if="${d.vacantes > 0 and (d.estadoCrudo == 'planificacion' or d.estadoCrudo == 'activo')}">
+                <!-- Modelo v7, fase 4: selector con búsqueda y filtros, selección múltiple. -->
+                <button type="button" class="btn btn-primary btn-sm btn-assign"
+                        th:attr="data-abrir-selector=${d.id}, data-proyecto-nombre=${d.nombre}">
+                  <svg class="icon icon-sm"><use href="/img/icons.svg#icon-search"></use></svg>Buscar y proponer colaboradores
+                </button>
+                <span class="text-tertiary" style="font-size:var(--fs-xs); align-self:center;" th:text="${d.vacantes} + ' vacante(s)'">vacantes</span>
+              </div>
+              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);"
+                 th:unless="${d.vacantes > 0 and (d.estadoCrudo == 'planificacion' or d.estadoCrudo == 'activo')}"
+                 th:text="${d.vacantes > 0} ? 'Solo se puede proponer personas para proyectos en Planificación o Activo.' : 'El equipo está completo: no hay vacantes para proponer.'">Sin vacantes.</p>
+
+              <!-- Transferir liderazgo: directo, solo a un colaborador del equipo. Cada uno conserva su dedicación. -->
+              <div class="handover-panel" data-handover
+                   th:if="${!d.equipo.?[rolEnProyectoCrudo == 'colaborador'].isEmpty() and d.estadoCrudo != 'completado' and d.estadoCrudo != 'cancelado'}"
+                   th:with="miFila=${d.equipo.^[rolEnProyectoCrudo == 'project_manager']}">
+                <h3>Transferir liderazgo</h3>
+                <p class="text-tertiary" style="font-size:var(--fs-xs);">Cede tu rol de Project Manager a un colaborador de tu equipo. Cada uno conserva su dedicación; si dejas de liderar proyectos, tu vista pasa a ser la de Colaborador.</p>
+                <div class="field" style="margin-top:var(--space-3);"><label class="field-label">Nuevo Project Manager</label>
+                  <select class="select" data-field="nuevoPm">
+                    <option th:each="m : ${d.equipo}" th:if="${m.rolEnProyectoCrudo == 'colaborador'}" th:value="${m.perfilId}" th:text="${m.nombre} + ' · ' + ${m.cargaPorcentaje} + '% en este proyecto'">Colaborador</option>
+                  </select>
+                </div>
+                <label class="handover-check"><input type="checkbox" data-field="mantener" checked>
+                  <span>Seguir en el proyecto como colaborador<span class="handover-hint" style="display:block;">Si lo desmarcas, tu asignación en este proyecto se finaliza.</span></span>
+                </label>
+                <div class="field" data-carga-saliente><label class="field-label">Tu dedicación como colaborador (%)</label>
+                  <input class="input" type="number" min="1" th:attr="max=${limiteCarga}" data-field="cargaSaliente" th:value="${miFila != null} ? ${miFila.cargaPorcentaje} : 20">
+                </div>
+                <div class="btn-group" style="justify-content:flex-end;">
+                  <button type="button" class="btn btn-secondary btn-sm" th:attr="data-transferir=${d.id}">Transferir liderazgo</button>
+                </div>
+              </div>
+
+              </div>
+
+              <div class="pt-panel" data-tab-panel="estado" hidden>
+                <!-- Modelo v7, fase 2: transiciones con efectos (pausa, cierre, reapertura). -->
+                <th:block th:replace="~{fragments/estado-proyecto :: estado(${d})}"></th:block>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <a class="btn btn-secondary" th:href="@{'/project-manager/proyectos/' + ${d.id} + '/entregables.html'}" style="text-decoration:none;">Ver entregables</a>
+              <button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>
+            </div>
+        </template>
+      </div>
+
+      <!-- Datos crudos por proyecto para precargar el modal de "Editar" -->
+      <div id="project-edit-templates" hidden>
+        <template th:each="d : ${proyectos}"
+                  th:attr="data-project-id=${d.id}, data-nombre=${d.nombre}, data-descripcion=${d.descripcion},
+                           data-tecnologias=${d.tecnologiasCsv},
+                           data-fecha-inicio=${d.fechaInicioIso}, data-fecha-fin=${d.fechaFinIso},
+                           data-estado=${d.estadoCrudo}, data-github-url=${d.githubUrl}"></template>
+      </div>
 
     </main>
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+window.SBAI_DISPONIBLES = /*[[${colaboradoresDisponibles}]]*/ 0;
+window.SBAI_CATALOGO_TEC = /*[[${catalogoTecnologias}]]*/ [];
+window.SBAI_MAX_TEC = /*[[${maxTecnologias}]]*/ 12;
 document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "project-manager", active: "proyectos.html", title: "Proyectos", subtitle: "Gestión de proyectos › Listado" });
-  if (!cfg) return;
+  if (window.SBAI.tableFilter) window.SBAI.tableFilter.init(document);
+  var submitForm = window.SBAI.submitForm;
 
-  var estadoBadge = { "Activo": "badge-green", "En riesgo": "badge-amber", "Planeado": "badge-neutral", "Bloqueado": "badge-red", "Cerrado": "badge-neutral" };
-
-  var clienteSelect = document.querySelector('[data-filter-key="cliente"]');
-  var clientes = Array.from(new Set(MOCK.projects.map(function (p) { return p.cliente; })));
-  clientes.forEach(function (c) { clienteSelect.insertAdjacentHTML("beforeend", '<option>' + c + "</option>"); });
-
-  document.getElementById("proj-body").innerHTML = MOCK.projects.map(function (p, i) {
-    return '<tr data-filter-row="proyectos-pm" data-f-estado="' + p.estado + '" data-f-cliente="' + p.cliente + '" data-f-tecnologia="' + p.stack.join(",") + '" style="animation-delay:' + (i * 30) + 'ms;">' +
-      '<td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);">' + p.iniciales + '</span>' +
-      '<span class="cell-person-text"><span class="cell-person-name">' + p.nombre + '</span><span class="cell-person-sub">' + p.codigo + '</span></span></td>' +
-      "<td>" + p.cliente + "</td><td>" + p.pm + "</td>" +
-      "<td>" + p.inicio + " → " + p.fin + "</td><td>" + p.equipo + "</td>" +
-      '<td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" data-target="' + p.avance + '" style="width:0%;"></div></div><span class="progress-value">' + p.avance + '%</span></div></td>' +
-      '<td><span class="badge ' + (estadoBadge[p.estado] || "badge-neutral") + '">' + p.estado + '</span></td>' +
-      '<td class="cell-actions">' + (p.nombre === "Núcleo Retail" ? '<a href="proyecto-detalle.html">Ver detalle</a>' : '<button type="button" data-toast-detail="' + p.nombre + '">Ver detalle</button>') +
-      ' <button type="button" data-edit-project="' + p.nombre + '">Editar</button></td></tr>';
-  }).join("");
-
-  // Anima las barras de avance de 0 al valor real, con un pequeño stagger
-  document.querySelectorAll(".progress-bar-fill[data-target]").forEach(function (bar, i) {
-    setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 150 + i * 40);
-  });
-
-  document.querySelectorAll("[data-toast-detail]").forEach(function (btn) {
-    btn.addEventListener("click", function () { SBAI.toast.show("El detalle completo está disponible para <strong>Núcleo Retail</strong> en esta demo. Los demás proyectos usan el mismo layout."); });
-  });
-  document.querySelectorAll("[data-edit-project]").forEach(function (btn) {
+  document.querySelectorAll("[data-eliminar-proyecto]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var p = MOCK.findProject(btn.dataset.editProject);
-      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar ' + p.nombre + '</h2><p>' + p.codigo + '</p></div>' +
-        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" value="' + p.nombre + '"></div>' +
-        '<div class="field"><label class="field-label">Estado</label><select class="select"><option' + (p.estado === "Activo" ? " selected" : "") + '>Activo</option><option' + (p.estado === "En riesgo" ? " selected" : "") + '>En riesgo</option><option' + (p.estado === "Planeado" ? " selected" : "") + '>Planeado</option><option' + (p.estado === "Bloqueado" ? " selected" : "") + '>Bloqueado</option><option' + (p.estado === "Cerrado" ? " selected" : "") + '>Cerrado</option></select></div></div>' +
-        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" data-modal-close>Guardar cambios</button></div></div>';
-      var backdrop = SBAI.modal.open(html);
-      backdrop.querySelectorAll(".btn-primary").forEach(function (b) { b.addEventListener("click", function () { SBAI.toast.show("Cambios guardados en <strong>" + p.nombre + "</strong>.", { type: "success" }); }); });
+      var id = btn.dataset.eliminarProyecto;
+      SBAI.proyectoAcciones.eliminar({
+        url: "/project-manager/proyectos/" + id + "/eliminar",
+        estadoUrl: "/project-manager/proyectos/" + id + "/estado",
+        nombre: btn.dataset.nombreProyecto,
+        estado: btn.dataset.estadoProyecto,
+        estadoLabel: btn.dataset.estadoLabel
+      });
     });
   });
+
+  function escHtmlB(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function pad2b(n) { return n < 10 ? "0" + n : "" + n; }
+  function diffDiasIsoB(isoA, isoB) {
+    var a = new Date(isoA + "T00:00:00");
+    var b = new Date(isoB + "T00:00:00");
+    return Math.round((b - a) / 86400000);
+  }
+  function sumarDiasIsoB(iso, dias) {
+    var d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + dias);
+    return d.getFullYear() + "-" + pad2b(d.getMonth() + 1) + "-" + pad2b(d.getDate());
+  }
+
+  // ───────── Formulario de proyecto (compartido por "Nuevo" y "Editar") ─────────
+  // Tecnologías: chips con autocompletado contra el Catálogo de habilidades
+  // (SBAI.techInput). Fechas: SBAI.dateRange (la entrega sigue al inicio,
+  // atajos de duración y resumen en vivo). Ambos en /js/proyecto-form.js.
+  function camposProyectoHtml(pref, d, conColaboradores) {
+    var disponibles = window.SBAI_DISPONIBLES || 0;
+    return '' +
+      '<div class="callout danger" id="' + pref + '-error" hidden style="margin-bottom:var(--space-4);">' +
+        '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
+        '<span class="callout-body" id="' + pref + '-error-text"></span>' +
+      '</div>' +
+      '<div class="field"><label class="field-label" for="' + pref + '-nombre">Nombre</label>' +
+        '<input class="input" id="' + pref + '-nombre" maxlength="150" placeholder="Ej.: Portal de clientes" value="' + escHtmlB(d.nombre) + '">' +
+        '<div class="field-error"></div></div>' +
+      '<div class="field"><label class="field-label" for="' + pref + '-desc">Descripción</label>' +
+        '<textarea class="input" id="' + pref + '-desc" rows="3" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="¿Qué se va a construir y para quién?">' + escHtmlB(d.descripcion) + '</textarea></div>' +
+      '<div class="field"><div class="pf-label-row"><label class="field-label" for="' + pref + '-tech-input">Stack tecnológico</label>' +
+        '<span class="field-hint">Del catálogo de habilidades</span></div>' +
+        '<div id="' + pref + '-tech"></div></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label class="field-label" for="' + pref + '-inicio">Inicio</label><input class="input" type="date" id="' + pref + '-inicio" value="' + (d.fechaInicio || "") + '"><div class="field-error"></div></div>' +
+        '<div class="field"><label class="field-label" for="' + pref + '-fin">Entrega esperada</label><input class="input" type="date" id="' + pref + '-fin" value="' + (d.fechaFin || "") + '"><div class="field-error"></div></div>' +
+      '</div>' +
+      '<div class="dr-presets" id="' + pref + '-atajos"></div>' +
+      '<div class="dr-summary" id="' + pref + '-resumen" aria-live="polite"></div>' +
+      '<div class="field"><label class="field-label" for="' + pref + '-github">Repositorio GitHub (opcional)</label>' +
+        '<div style="display:flex; align-items:center; gap:8px;">' +
+        '<svg style="width:20px; height:20px; flex-shrink:0; color:var(--text-tertiary);" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>' +
+        '<input class="input" id="' + pref + '-github" type="url" placeholder="https://github.com/org/repo" value="' + escHtmlB(d.githubUrl) + '">' +
+        '</div></div>' +
+      (conColaboradores
+        ? '<div class="field"><label class="field-label" for="' + pref + '-colab">Colaboradores requeridos</label>' +
+          '<input class="input" type="number" min="0" max="' + disponibles + '" value="0" id="' + pref + '-colab">' +
+          '<span class="field-hint">' + disponibles + ' colaborador(es) disponible(s) en este momento.</span><div class="field-error"></div></div>'
+        : '');
+  }
+
+  function prepararCamposProyecto(backdrop, pref, d, opciones) {
+    var tech = SBAI.techInput.create(backdrop.querySelector("#" + pref + "-tech"), {
+      catalogo: window.SBAI_CATALOGO_TEC || [],
+      valores: (d.tecnologias || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean),
+      max: window.SBAI_MAX_TEC || 12,
+      inputId: pref + "-tech-input"
+    });
+    var fechas = SBAI.dateRange.create({
+      inicio: backdrop.querySelector("#" + pref + "-inicio"),
+      fin: backdrop.querySelector("#" + pref + "-fin"),
+      resumen: backdrop.querySelector("#" + pref + "-resumen"),
+      atajos: backdrop.querySelector("#" + pref + "-atajos"),
+      minInicio: opciones.minInicio || null,
+      diasMinimos: 7
+    });
+    var errorBox = backdrop.querySelector("#" + pref + "-error");
+    var errorText = backdrop.querySelector("#" + pref + "-error-text");
+    var nombreInput = backdrop.querySelector("#" + pref + "-nombre");
+    nombreInput.addEventListener("input", function () { fechas.limpiar(nombreInput); });
+    return {
+      tech: tech,
+      fechas: fechas,
+      error: function (msg) { errorText.textContent = msg; errorBox.hidden = false; errorBox.scrollIntoView({ block: "nearest" }); },
+      ocultarError: function () { errorBox.hidden = true; },
+      /** null si todo está bien; si no, marca el campo y lo enfoca. */
+      validarBase: function () {
+        errorBox.hidden = true;
+        if (!nombreInput.value.trim()) {
+          fechas.marcar(nombreInput, "Ingresa un nombre para el proyecto.");
+          nombreInput.focus();
+          return "nombre";
+        }
+        var f = fechas.validar();
+        if (f) { f.campo.focus(); return "fechas"; }
+        return null;
+      }
+    };
+  }
+
+  document.querySelectorAll("[data-editar-proyecto]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.editarProyecto;
+      var tpl = document.querySelector('#project-edit-templates template[data-project-id="' + id + '"]');
+      if (!tpl) return;
+      var d = tpl.dataset;
+      var sinEntrega = !d.fechaFin;
+      var html = '<div class="modal modal-wide pf-modal" role="dialog" aria-modal="true" aria-labelledby="ep-titulo">' +
+        '<div class="modal-header"><div><h2 id="ep-titulo">Editar proyecto</h2><p>Actualiza los datos de "' + escHtmlB(d.nombre) + '".</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body">' +
+        (sinEntrega ? '<div class="callout warn" style="margin-bottom:var(--space-4);"><span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span>' +
+          '<span class="callout-body">Este proyecto todavía no tiene fecha de entrega. Elígela abajo (puedes usar un atajo de duración) para poder guardar.</span></div>' : '') +
+        camposProyectoHtml("ep", d, false) +
+        // Modelo v7 (fase 2): el estado se cambia desde "Ver detalle" -> "Estado del proyecto",
+        // porque pausar/cerrar/reabrir tienen efectos sobre el equipo.
+        '<p class="field-hint" style="margin-top:var(--space-2);">Para pausar, completar, cancelar o reabrir el proyecto usa <strong>Ver detalle → Estado del proyecto</strong>.</p>' +
+        '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ep-confirm">Guardar cambios</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      var form = prepararCamposProyecto(backdrop, "ep", d, {});
+      if (sinEntrega) setTimeout(function () { backdrop.querySelector("#ep-fin").focus(); }, 60);
+
+      backdrop.querySelector("#ep-confirm").addEventListener("click", function () {
+        if (form.validarBase()) return;
+        submitForm("/project-manager/proyectos/" + id + "/editar", {
+          nombre: backdrop.querySelector("#ep-nombre").value.trim(),
+          descripcion: backdrop.querySelector("#ep-desc").value,
+          tecnologias: form.tech.getValues().join(","),
+          fechaInicio: backdrop.querySelector("#ep-inicio").value,
+          fechaFinEstimada: backdrop.querySelector("#ep-fin").value,
+          githubUrl: backdrop.querySelector("#ep-github").value.trim()
+        });
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-view-project]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.viewProject;
+      var tpl = document.querySelector('#project-detail-templates template[data-project-id="' + id + '"]');
+      if (!tpl) return;
+      var backdrop = SBAI.modal.open('<div class="modal modal-xwide modal-proyecto" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
+      if (SBAI.uiKit) SBAI.uiKit.init(backdrop);
+
+      backdrop.querySelectorAll("[data-finalizar-asignacion]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          SBAI.proyectoAcciones.finalizarAsignacion({
+            url: "/project-manager/asignaciones/" + b.dataset.finalizarAsignacion + "/finalizar",
+            nombre: b.dataset.nombre,
+            proyecto: (backdrop.querySelector("h2") || {}).textContent
+          });
+        });
+      });
+      var abrirSelector = backdrop.querySelector("[data-abrir-selector]");
+      if (abrirSelector && window.SBAI.selectorPersonas) {
+        abrirSelector.addEventListener("click", function () {
+          var pid = abrirSelector.dataset.abrirSelector;
+          window.SBAI.selectorPersonas.abrir({
+            proyecto: abrirSelector.dataset.proyectoNombre || "",
+            endpoint: "/project-manager/proyectos/" + pid + "/candidatos",
+            accion: "/project-manager/proyectos/" + pid + "/proponer-varios",
+            modo: "proponer"
+          });
+        });
+      }
+      // Transferir liderazgo (modelo v7): directo, a un colaborador del equipo.
+      var handover = backdrop.querySelector("[data-handover]");
+      if (handover) {
+        var mantener = handover.querySelector('[data-field="mantener"]');
+        var cargaWrap = handover.querySelector("[data-carga-saliente]");
+        mantener.addEventListener("change", function () { cargaWrap.hidden = !mantener.checked; });
+        handover.querySelector("[data-transferir]").addEventListener("click", function () {
+          var sel = handover.querySelector('[data-field="nuevoPm"]');
+          var nombre = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.split(" · ")[0] : "";
+          var texto = "¿Transferir el liderazgo de \"" + ((backdrop.querySelector("h2") || {}).textContent || "") + "\" a " + nombre + "? " +
+            (mantener.checked ? "Seguirás en el equipo como colaborador." : "Tu asignación en este proyecto se finalizará.");
+          if (!window.confirm(texto)) return;
+          var valores = { nuevoPmPerfilId: sel.value, mantener: mantener.checked ? "true" : "false" };
+          if (mantener.checked) valores.cargaSaliente = handover.querySelector('[data-field="cargaSaliente"]').value;
+          submitForm("/project-manager/proyectos/" + handover.querySelector("[data-transferir]").dataset.transferir + "/transferir-liderazgo", valores);
+        });
+      }
+      var estadoSelect = backdrop.querySelector('[data-field="estado"]');
+      var estadoBtn = backdrop.querySelector("[data-cambiar-estado]");
+      if (estadoBtn) {
+        estadoBtn.addEventListener("click", function () {
+          var proyectoId = estadoBtn.dataset.cambiarEstado;
+          var datos = SBAI.proyectoAcciones.datosDeModal(backdrop);
+          SBAI.proyectoAcciones.cambiarEstado({
+            url: "/project-manager/proyectos/" + proyectoId + "/estado",
+            nombre: (backdrop.querySelector("h2") || {}).textContent,
+            // "Reabrir" no tiene selector: su destino viene en data-estado-destino.
+            actual: estadoSelect ? estadoSelect.getAttribute("data-actual") : estadoBtn.dataset.estadoActual,
+            nuevo: estadoBtn.dataset.estadoDestino || estadoSelect.value,
+            colaboradoresActivos: datos.colaboradoresActivos,
+            equipoAnterior: datos.equipoAnterior
+          });
+        });
+      }
+    });
+  });
+
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function isoHoy() { var d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function sumarDiasIso(iso, dias) {
+    var d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + dias);
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function diffDiasIso(isoA, isoB) {
+    var a = new Date(isoA + "T00:00:00");
+    var b = new Date(isoB + "T00:00:00");
+    return Math.round((b - a) / 86400000);
+  }
 
   document.getElementById("new-project-btn").addEventListener("click", function () {
-    var html = '<div class="modal modal-wide" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Crear proyecto</h2><p>Define los datos base; podrás completar el equipo después.</p></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field-row"><div class="field"><label class="field-label">Nombre del proyecto</label><input class="input" id="np-nombre" placeholder="Nombre"></div>' +
-      '<div class="field"><label class="field-label">Cliente</label><input class="input" id="np-cliente" placeholder="Cliente"></div></div>' +
-      '<div class="field-row"><div class="field"><label class="field-label">Inicio</label><input class="input" type="date"></div><div class="field"><label class="field-label">Fin estimado</label><input class="input" type="date"></div></div></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="create-project-confirm">Crear proyecto</button></div></div>';
+    var hoy = isoHoy();
+    var disponibles = window.SBAI_DISPONIBLES || 0;
+    var html = '<div class="modal modal-wide pf-modal" role="dialog" aria-modal="true" aria-labelledby="np-titulo">' +
+      '<div class="modal-header"><div><h2 id="np-titulo">Nuevo proyecto</h2><p>Serás el Project Manager de este proyecto.</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body">' + camposProyectoHtml("np", {}, true) + '</div>' +
+      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
     var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#create-project-confirm").addEventListener("click", function () {
-      var nombre = backdrop.querySelector("#np-nombre").value.trim() || "Nuevo proyecto";
-      SBAI.modal.close(backdrop);
-      SBAI.toast.show("<strong>" + nombre + "</strong> creado como Planeado. Agrega el equipo desde su detalle.", { type: "success" });
+    var form = prepararCamposProyecto(backdrop, "np", {}, { minInicio: hoy });
+    setTimeout(function () { backdrop.querySelector("#np-nombre").focus(); }, 60);
+
+    var colabInput = backdrop.querySelector("#np-colab");
+    colabInput.addEventListener("input", function () {
+      form.fechas.limpiar(colabInput);
+      if (colabInput.value === "") return;
+      var valor = parseInt(colabInput.value, 10);
+      if (isNaN(valor) || valor < 0) { colabInput.value = 0; return; }
+      if (valor > disponibles) {
+        colabInput.value = disponibles;
+        form.fechas.marcar(colabInput, "Solo hay " + disponibles + " colaborador(es) disponible(s) en este momento.");
+      }
+    });
+
+    backdrop.querySelector("#np-confirm").addEventListener("click", function () {
+      if (form.validarBase()) return;
+      var colab = parseInt(colabInput.value, 10);
+      if (isNaN(colab) || colab < 0 || colab > disponibles) {
+        form.fechas.marcar(colabInput, isNaN(colab) || colab < 0 ? "Ingresa una cantidad válida." : "Solo hay " + disponibles + " colaborador(es) disponible(s).");
+        colabInput.focus();
+        return;
+      }
+      submitForm("/project-manager/proyectos", {
+        nombre: backdrop.querySelector("#np-nombre").value.trim(),
+        descripcion: backdrop.querySelector("#np-desc").value,
+        tecnologias: form.tech.getValues().join(","),
+        fechaInicio: backdrop.querySelector("#np-inicio").value,
+        fechaFinEstimada: backdrop.querySelector("#np-fin").value,
+        colaboradoresRequeridos: colab,
+        githubUrl: backdrop.querySelector("#np-github").value.trim()
+      });
     });
   });
 
-  window.SBAI.tableFilter.registerCustomMatcher("proyectos-pm", "tecnologia", function (row, value) {
-    return row.dataset.fTecnologia.split(",").indexOf(value) !== -1;
-  });
-  window.SBAI.tableFilter.init(document);
+  // Busqueda por nombre + paginacion de la tabla, encima del filtrado de
+  // table-filter.js: no se toca el filtro de Estado (sigue igual), solo se
+  // agrega buscador por nombre y que los resultados que coinciden se
+  // muestren de a 6 (mismo patron que administrador/proyectos.html).
+  (function () {
+    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="proyectos-pm"]'));
+    if (!rows.length) return;
 
-  var pageEl = document.getElementById("pagination");
-  [1, 2, 3, 4].forEach(function (n) {
-    var btn = document.createElement("button");
-    btn.type = "button"; btn.className = "page-btn" + (n === 1 ? " active" : ""); btn.textContent = n;
-    btn.addEventListener("click", function () {
-      document.querySelectorAll(".page-btn").forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      SBAI.toast.show("Página " + n + " simulada — esta demo incluye 7 de los 27 proyectos.");
+    var estadoSelect = document.querySelector('[data-filter-scope="proyectos-pm"][data-filter-key="estado"]');
+    var searchInput = document.querySelector('[data-filter-scope="proyectos-pm"][data-filter-key="q"]');
+    var emptyPanel = document.querySelector('[data-filter-empty="proyectos-pm"]');
+    var visibleCount = document.getElementById("proyectos-pm-visible-count");
+    var filteredCount = document.getElementById("proyectos-pm-filtered-count");
+    var pageLabel = document.getElementById("proyectos-pm-page-label");
+    var previous = document.getElementById("proyectos-pm-prev");
+    var next = document.getElementById("proyectos-pm-next");
+    if (!previous || !next) return;
+    var pageJump = document.getElementById("proyectos-pm-page-jump");
+    var pageSize = 6;
+    var page = 1;
+
+    function normalizarTexto(v) {
+      return (v || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    }
+
+    function matches(row) {
+      var estado = estadoSelect ? estadoSelect.value : "todos";
+      if (estado && estado !== "todos" && row.dataset.fEstado !== estado) return false;
+      var q = searchInput ? normalizarTexto(searchInput.value) : "";
+      if (q && normalizarTexto(row.dataset.fSearch).indexOf(q) === -1) return false;
+      if (window.SBAI.extraRowFilter && !window.SBAI.extraRowFilter("proyectos-pm", row)) return false;
+      return true;
+    }
+
+    function render() {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
+      if (visibleCount) visibleCount.textContent = visible.length;
+      if (filteredCount) filteredCount.textContent = matched.length;
+      if (pageLabel) pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+      if (pageJump) {
+        pageJump.max = pages;
+        if (document.activeElement !== pageJump) pageJump.value = page;
+      }
+    }
+
+    if (estadoSelect) estadoSelect.addEventListener("change", function () { page = 1; render(); });
+    if (searchInput) searchInput.addEventListener("input", function () { page = 1; render(); });
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (page < pages) { page++; render(); }
     });
-    pageEl.appendChild(btn);
-  });
+    if (pageJump) {
+      function irAPagina() {
+        var matched = rows.filter(matches);
+        var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+        var destino = parseInt(pageJump.value, 10);
+        if (isNaN(destino)) return;
+        page = Math.min(Math.max(destino, 1), pages);
+        render();
+      }
+      pageJump.addEventListener("change", irAPagina);
+      pageJump.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); irAPagina(); } });
+    }
+    render();
+  })();
 });
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tech-icons.js"></script>
+<script src="/js/proyecto-form.js"></script>
+<script src="/js/proyecto-acciones.js"></script>
+<script src="/js/selector-personas.js"></script>
+<script src="/js/ui-kit.js"></script>
+<script src="/js/project-ui.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
 </html>

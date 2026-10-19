@@ -1,196 +1,162 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Asignaciones · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asignaciones · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
+  <style>
+    .coverage-cell{min-width:180px}.vacancy-zero{color:var(--green-fg);font-weight:600}.team-modal-table{max-height:330px;overflow:auto;border:1px solid var(--border-subtle);border-radius:var(--radius-card)}
+    .assign-panel{margin-top:var(--space-5);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-subtle);border-radius:var(--radius-md)}
+    @media(max-width:760px){.table-toolbar{align-items:stretch}.table-filters{width:100%}.table-filters .input,.table-filters .select{width:100%}}
+  </style>
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
-
-      <section class="card card-pad" style="margin-top:var(--space-6);">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5); flex-wrap:wrap; gap:var(--space-3);">
-          <div class="card-header-icon-row">
-            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
-            <div>
-              <h2 style="font-size:var(--fs-md);">Tablero de validación</h2>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Arrastra una tarjeta entre columnas para cambiar su estado de validación</p>
-            </div>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title">Cobertura de los proyectos</h2>
+            <p class="kpi-hero-sub">Revisa qué proyectos tienen vacantes y asigna a las personas adecuadas.</p>
           </div>
-          <button type="button" class="btn btn-secondary btn-sm" id="new-request-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Registrar asignación</button>
+          <a class="kpi-hero-action" href="ai-talent-matching.html"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg><span>Solicitudes de PM</span></a>
         </div>
-        <div class="kanban-board" id="kanban-board"></div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span><span class="hero-card-label">Proyectos en la plataforma</span></div>
+            <div class="hero-card-value" th:text="${proyectos.size()}">0</div>
+            <p class="hero-card-meta"><b class="tone-blue">Total</b> gestionado</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span><span class="hero-card-label">Colaboradores asignados</span></div>
+            <div class="hero-card-value" th:text="${totalColaboradores}">0</div>
+            <p class="hero-card-meta"><b class="tone-green">Activos</b> en equipos</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-user"></use></svg></span><span class="hero-card-label">Vacantes pendientes</span></div>
+            <div class="hero-card-value" th:text="${totalVacantes}">0</div>
+            <p class="hero-card-meta" th:if="${totalVacantes > 0}"><b class="tone-amber">Cupos</b> aún por cubrir</p>
+            <p class="hero-card-meta" th:if="${totalVacantes == 0}"><b class="tone-green">Todo cubierto</b> por ahora</p>
+          </article>
+        </div>
       </section>
 
+      <!-- Caso "no hay proyectos todavia" -->
+      <section class="card" th:if="${proyectos.isEmpty()}">
+        <div class="state-panel">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></span>
+          <span class="state-panel-title">Todavía no hay proyectos en la plataforma</span>
+          <span class="state-panel-desc">Cuando un Project Manager cree un proyecto, aparecerá aquí para que puedas asignar colaboradores.</span>
+        </div>
+      </section>
+
+      <!-- Tabla unica paginada: un proyecto por fila, el equipo completo vive
+           en el modal "Ver colaboradores" (mismo patron que
+           project-manager/asignaciones.html) para no saturar la vista
+           principal cuando hay muchos proyectos. -->
+      <section class="card" th:unless="${proyectos.isEmpty()}">
+        <div class="table-toolbar">
+          <div><strong>Proyectos y equipos</strong><p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:2px">Abre un proyecto para registrar o finalizar asignaciones.</p></div>
+          <div class="table-filters">
+            <input class="input" id="assignment-search" type="search" placeholder="Buscar proyecto o integrante..." style="min-width:240px">
+            <select class="select" id="assignment-state"><option value="todos">Todos los estados</option><option value="planificacion">Planificación</option><option value="activo">Activo</option><option value="en_pausa">En pausa</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option></select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Proyecto</th><th>Estado</th><th>Colaboradores</th><th>Cobertura</th><th>Vacantes</th><th>Acción</th></tr></thead>
+            <tbody id="assignment-projects-body">
+            <tr th:each="p : ${proyectos}" data-assignment-row th:attr="data-name=${#strings.toLowerCase(p.nombre)},data-miembros=${#strings.toLowerCase(#strings.listJoin(p.equipo.![nombre], ' | '))},data-state=${p.estadoCrudo}">
+              <td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm);background:var(--navy-700)" th:text="${#strings.substring(p.nombre,0,1)}">P</span><span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span class="cell-person-sub" th:text="'PM: ' + ${p.pmNombre}">PM</span></span></td>
+              <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
+              <td class="mono" th:text="${p.colaboradoresAsignados} + ' de ' + ${p.colaboradoresRequeridos}">0 de 0</td>
+              <td class="coverage-cell"><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:classappend="${p.cupoCompleto} ? 'green' : 'amber'" th:style="'width:' + ${p.coberturaPorcentaje} + '%'"></div></div><span class="progress-value" th:text="${p.coberturaPorcentaje} + '%'">0%</span></div></td>
+              <td><span th:class="${p.vacantes == 0} ? 'vacancy-zero' : 'mono'" th:text="${p.vacantes == 0} ? 'Completo' : ${p.vacantes}">0</span></td>
+              <td><button type="button" class="btn btn-secondary btn-sm" th:attr="data-view-team=${p.id}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg>Ver colaboradores</button></td>
+            </tr>
+            </tbody>
+          </table>
+          <div class="state-panel" id="assignment-empty" hidden><span class="state-panel-title">No hay proyectos con esos filtros</span><span class="state-panel-desc">Prueba con otro nombre o estado.</span></div>
+        </div>
+        <div class="table-footer">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="assignment-visible-count">0</span> de <span id="assignment-filtered-count">0</span> proyectos</span>
+          <div class="pagination"><button class="page-btn" id="assignment-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="assignment-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="assignment-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
+      </section>
+
+      <!-- Un <template> por proyecto: al abrir "Ver colaboradores" se clona
+           su contenido dentro de un modal (ver rm-asignaciones.js). Aqui
+           viven "Registrar asignación", "Finalizar" y "Cambiar PM", que
+           antes estaban todos visibles a la vez en la vista principal. -->
+      <div id="assignment-team-templates" hidden>
+        <template th:each="p : ${proyectos}" th:attr="data-team-project=${p.id}">
+          <div class="modal-header">
+            <div>
+              <h2 th:text="${p.nombre}">Proyecto</h2>
+              <p>
+                <span th:text="${p.colaboradoresAsignados} + ' de ' + ${p.colaboradoresRequeridos} + ' colaboradores asignados'">Equipo</span>
+                · PM: <span th:text="${p.pmNombre}">Sin asignar</span>
+                <button type="button" class="link-btn" th:attr="data-cambiar-pm=${p.id}, data-proyecto-nombre=${p.nombre}, data-vacantes=${p.cerrado ? 0 : p.vacantes}, data-cerrado=${p.cerrado}" style="margin-left:6px;">(cambiar)</button>
+              </p>
+            </div>
+            <button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button>
+          </div>
+          <div class="modal-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)"><div><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span><span class="text-tertiary" style="font-size:var(--fs-xs);margin-left:var(--space-2)" th:text="${p.vacantes} + ' vacante(s) disponible(s)'">Vacantes</span></div><button type="button" class="btn btn-primary btn-sm" data-show-assignment-form th:attr="data-proyecto-id=${p.id}, data-proyecto-nombre=${p.nombre}" th:disabled="${p.cupoCompleto or (p.estadoCrudo != 'planificacion' and p.estadoCrudo != 'activo')}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg><span th:text="${p.estadoCrudo == 'en_pausa'} ? 'Proyecto en pausa' : (${p.cerrado} ? 'Proyecto cerrado' : (${p.cupoCompleto} ? 'Cupo completo' : 'Registrar asignación'))">Registrar asignación</span></button></div>
+
+            <!-- Detalle del proyecto: descripción, stack y requisitos -->
+            <div th:if="${p.descripcion != null and !p.descripcion.isBlank()}" style="background:var(--bg-secondary);border-radius:var(--radius-control);padding:var(--space-4);margin-bottom:var(--space-4);">
+              <h4 style="font-size:var(--fs-sm);margin-bottom:var(--space-2);color:var(--text-secondary);">Descripción del proyecto</h4>
+              <p style="font-size:var(--fs-sm);margin:0;white-space:pre-line;" th:text="${p.descripcion}">Descripción</p>
+            </div>
+            <div th:unless="${p.tecnologias.isEmpty()}" style="margin-bottom:var(--space-4);">
+              <span style="font-size:var(--fs-xs);color:var(--text-tertiary);margin-right:var(--space-2);">Stack:</span>
+              <span th:each="t : ${p.tecnologias}" class="badge badge-neutral" style="margin-right:4px;" th:text="${t}">Tech</span>
+            </div>
+            <div th:if="${p.githubUrl != null and !p.githubUrl.isBlank()}" style="margin-bottom:var(--space-4);font-size:var(--fs-xs);">
+              <svg style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              <a th:href="${p.githubUrl}" target="_blank" rel="noopener" th:text="${p.githubUrl}">GitHub</a>
+            </div>
+
+            <div class="state-panel" th:if="${p.equipo.isEmpty()}"><span class="state-panel-title">Sin colaboradores asignados</span><span class="state-panel-desc">Usa "Registrar asignación" para armar el equipo de este proyecto.</span></div>
+            <div class="team-modal-table" th:unless="${p.equipo.isEmpty()}"><table class="data-table"><thead><tr><th>Integrante</th><th>Rol</th><th>Dedicación</th><th>Acción</th></tr></thead><tbody>
+            <tr th:each="m : ${p.equipo}" th:attr="data-miembro-perfil=${m.perfilId}, data-miembro-rol=${m.rolEnProyectoCrudo}, data-miembro-carga=${m.cargaPorcentaje}, data-miembro-nombre=${m.nombre}"><td class="cell-person"><span class="avatar avatar-sm" th:text="${m.iniciales}">AB</span><span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">Correo</span></span></td><td><span class="badge" th:classappend="${m.rolEnProyectoCrudo == 'project_manager'} ? 'badge-blue' : 'badge-neutral'" th:text="${m.rolLabel}">Rol</span></td><td class="mono" th:text="${m.cargaPorcentaje} + '%'">0%</td><td class="cell-actions"><button type="button" class="danger" th:if="${m.rolEnProyectoCrudo == 'colaborador'}" th:attr="data-finalizar-asignacion=${m.asignacionId}">Finalizar</button><span class="text-tertiary" th:if="${m.rolEnProyectoCrudo == 'project_manager'}">Responsable</span></td></tr>
+            </tbody></table></div>
+
+          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div>
+        </template>
+      </div>
     </main>
   </div>
 </div>
-
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "resource-manager", active: "asignaciones.html", title: "Asignaciones", subtitle: "Vista global de validación de carga" });
-  if (!cfg) return;
-
-  var COLUMNS = [
-    { key: "Sin cubrir", label: "Sin cubrir", desc: "Vacantes pendientes de asignar", accent: "neutral" },
-    { key: "Bloqueada", label: "Bloqueada", desc: "Excede el límite de carga", accent: "red" },
-    { key: "En revisión", label: "En revisión", desc: "Pendiente de validar", accent: "blue" },
-    { key: "Al límite", label: "Al límite", desc: "90–100% de carga", accent: "amber" },
-    { key: "Validada", label: "Validada", desc: "Dentro de los límites", accent: "green" }
-  ];
-  var VISIBLE_PER_COLUMN = 4;
-  var expanded = {}; // columna -> true si ya mostró todo
-
-  function renderKpi() {
-    var counts = { total: MOCK.assignments.length };
-    COLUMNS.forEach(function (c) { counts[c.key] = MOCK.assignments.filter(function (a) { return a.validacion === c.key; }).length; });
-    document.getElementById("kpi-grid").innerHTML = [
-      { label: "TOTAL ASIGNACIONES", value: counts.total, icon: "icon-target", accent: "blue" },
-      { label: "BLOQUEADAS", value: counts["Bloqueada"], cls: "down", icon: "icon-alert-triangle", accent: "red" },
-      { label: "EN REVISIÓN", value: counts["En revisión"], cls: "warn", icon: "icon-search", accent: "amber" },
-      { label: "SIN CUBRIR", value: counts["Sin cubrir"], cls: "warn", icon: "icon-user-x", accent: "amber" }
-    ].map(function (k) {
-      return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>';
-    }).join("");
-  }
-
-  var validCls = { "Validada": "badge-green", "Al límite": "badge-amber", "En revisión": "badge-blue", "Bloqueada": "badge-red", "Sin cubrir": "badge-neutral" };
-
-  function renderBoard() {
-    document.getElementById("kanban-board").innerHTML = COLUMNS.map(function (col) {
-      var items = MOCK.assignments.map(function (a, idx) { return { a: a, idx: idx }; }).filter(function (o) { return o.a.validacion === col.key; });
-      var showAll = !!expanded[col.key];
-      var visibleItems = showAll ? items : items.slice(0, VISIBLE_PER_COLUMN);
-      var restante = items.length - visibleItems.length;
-
-      var cards = visibleItems.map(function (o, i) {
-        var a = o.a;
-        var nombre = a.colaborador || a.vacanteNombre;
-        return '<div class="kanban-card accent-' + col.accent + '" draggable="true" data-idx="' + o.idx + '" style="animation-delay:' + (i * 30) + 'ms;">' +
-          '<div class="kanban-card-top"><span class="avatar avatar-sm" style="width:24px; height:24px; font-size:10px;">' + a.iniciales + '</span><span class="kanban-card-name">' + nombre + '</span></div>' +
-          '<div class="kanban-card-meta"><span>' + a.proyecto + '</span><span class="mono">' + a.dedicacion + '%</span></div>' +
-          '</div>';
-      }).join("") || '<div class="text-tertiary" style="font-size:var(--fs-xs); text-align:center; padding:var(--space-4) 0;">Sin tarjetas</div>';
-
-      var loadMoreHtml = restante > 0
-        ? '<button type="button" class="kanban-load-more" data-expand-col="' + col.key + '">Cargar ' + restante + ' más ↓</button>'
-        : (showAll && items.length > VISIBLE_PER_COLUMN ? '<button type="button" class="kanban-load-more" data-collapse-col="' + col.key + '">Mostrar menos ↑</button>' : "");
-
-      return '<div class="kanban-column accent-' + col.accent + '" data-column="' + col.key + '">' +
-        '<div class="kanban-column-header"><span class="kanban-column-title">' + col.label + ' <span class="text-tertiary mono" style="font-size:11px;">(' + items.length + ')</span></span><span class="kanban-column-sub">' + col.desc + '</span></div>' +
-        '<div class="kanban-column-drop" style="display:flex; flex-direction:column; gap:var(--space-3); min-height:40px;">' + cards + '</div>' +
-        loadMoreHtml +
-        '</div>';
-    }).join("");
-
-    document.querySelectorAll("[data-expand-col]").forEach(function (btn) {
-      btn.addEventListener("click", function (e) { e.stopPropagation(); expanded[btn.dataset.expandCol] = true; renderBoard(); });
-    });
-    document.querySelectorAll("[data-collapse-col]").forEach(function (btn) {
-      btn.addEventListener("click", function (e) { e.stopPropagation(); expanded[btn.dataset.collapseCol] = false; renderBoard(); });
-    });
-
-    wireDragDrop();
-    wireCardClicks();
-  }
-
-  function wireCardClicks() {
-    document.querySelectorAll(".kanban-card").forEach(function (card) {
-      card.addEventListener("click", function () {
-        var a = MOCK.assignments[card.dataset.idx];
-        var nombre = a.colaborador || a.vacanteNombre;
-        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>' + nombre + '</h2><p>' + a.proyecto + ' · ' + a.periodo + '</p></div>' +
-          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-          '<div class="modal-body"><div class="info-row"><span class="info-row-label">Dedicación</span><span class="info-row-value mono">' + a.dedicacion + '%</span></div>' +
-          '<div class="info-row"><span class="info-row-label">Carga total</span><span class="info-row-value mono">' + (a.cargaTotal !== null ? a.cargaTotal + "%" : "—") + '</span></div>' +
-          '<div class="info-row"><span class="info-row-label">Validación actual</span><span class="badge ' + (validCls[a.validacion] || "badge-neutral") + '">' + a.validacion + '</span></div></div>' +
-          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button>' +
-          (a.validacion === "Bloqueada" ? '<button type="button" class="btn btn-primary" id="approve-modal-btn">Aprobar excepción</button>' :
-            a.validacion !== "Validada" ? '<button type="button" class="btn btn-primary" id="validate-modal-btn">Validar</button>' : "") + '</div></div>';
-        var backdrop = SBAI.modal.open(html);
-        var approveBtn = backdrop.querySelector("#approve-modal-btn");
-        var validateBtn = backdrop.querySelector("#validate-modal-btn");
-        if (approveBtn) approveBtn.addEventListener("click", function () {
-          a.validacion = "Al límite"; SBAI.modal.close(backdrop); renderKpi(); renderBoard();
-          SBAI.toast.show("Excepción aprobada para <strong>" + nombre + "</strong>.", { type: "success" });
-        });
-        if (validateBtn) validateBtn.addEventListener("click", function () {
-          a.validacion = "Validada"; SBAI.modal.close(backdrop); renderKpi(); renderBoard();
-          SBAI.toast.show("<strong>" + nombre + "</strong> quedó validado.", { type: "success" });
-        });
-      });
-    });
-  }
-
-  function wireDragDrop() {
-    var dragIdx = null;
-    document.querySelectorAll(".kanban-card").forEach(function (card) {
-      card.addEventListener("dragstart", function () { dragIdx = card.dataset.idx; card.classList.add("dragging"); });
-      card.addEventListener("dragend", function () { card.classList.remove("dragging"); });
-    });
-    document.querySelectorAll(".kanban-column").forEach(function (col) {
-      col.addEventListener("dragover", function (e) { e.preventDefault(); col.classList.add("drop-target"); });
-      col.addEventListener("dragleave", function () { col.classList.remove("drop-target"); });
-      col.addEventListener("drop", function (e) {
-        e.preventDefault();
-        col.classList.remove("drop-target");
-        if (dragIdx === null) return;
-        var a = MOCK.assignments[dragIdx];
-        var newState = col.dataset.column;
-        if (a.validacion === newState) return;
-        var nombre = a.colaborador || a.vacanteNombre;
-        a.validacion = newState;
-        renderKpi();
-        renderBoard();
-        SBAI.toast.show("<strong>" + nombre + "</strong> pasó a <strong>" + newState + "</strong>.", { type: "success" });
-      });
-    });
-  }
-
-  document.getElementById("new-request-btn").addEventListener("click", function () {
-    var collabOptions = MOCK.collaborators.map(function (c) { return "<option>" + c.nombre + "</option>"; }).join("");
-    var projOptions = MOCK.projects.map(function (p) { return "<option>" + p.nombre + "</option>"; }).join("");
-    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Registrar asignación</h2></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Colaborador</label><select class="select" id="nr-collab">' + collabOptions + '</select></div>' +
-      '<div class="field"><label class="field-label">Proyecto</label><select class="select" id="nr-proj">' + projOptions + '</select></div>' +
-      '<div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" id="nr-pct" value="20" min="5" max="100" step="5"></div></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="nr-confirm">Registrar</button></div></div>';
-    var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#nr-confirm").addEventListener("click", function () {
-      var nombre = backdrop.querySelector("#nr-collab").value;
-      var proyecto = backdrop.querySelector("#nr-proj").value;
-      var pct = Number(backdrop.querySelector("#nr-pct").value);
-      var c = MOCK.findCollaborator(nombre);
-      var total = c.ocupacionProm + pct;
-      MOCK.assignments.unshift({ colaborador: nombre, iniciales: c.iniciales, proyecto: proyecto, dedicacion: pct, periodo: "por definir", cargaTotal: total, validacion: total > 100 ? "Bloqueada" : "En revisión" });
-      SBAI.modal.close(backdrop);
-      renderKpi(); renderBoard();
-      SBAI.toast.show("Asignación de <strong>" + nombre + "</strong> registrada en “" + (total > 100 ? "Bloqueada" : "En revisión") + "”.", { type: "success" });
-    });
-  });
-
-  renderKpi();
-  renderBoard();
-});
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/proyecto-acciones.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+  window.SBAI_LIMITE_CARGA = /*[[${limiteCarga}]]*/ 100;
 </script>
+<script src="/js/asignacion-masiva.js"></script>
+<script src="/js/selector-personas.js"></script>
+<script src="/js/rm-asignaciones.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
 </html>

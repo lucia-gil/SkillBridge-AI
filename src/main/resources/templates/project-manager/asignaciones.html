@@ -1,211 +1,141 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Asignaciones · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asignaciones · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/kpi-hero.css">
+  <style>
+    .coverage-cell{min-width:180px}.vacancy-zero{color:var(--green-fg);font-weight:600}.team-modal-table{max-height:330px;overflow:auto;border:1px solid var(--border-subtle);border-radius:var(--radius-card)}
+    .assign-panel{margin-top:var(--space-5);padding:var(--space-5);background:var(--surface-sunken);border:1px solid var(--border-subtle);border-radius:var(--radius-md)}
+    @media(max-width:760px){.table-toolbar{align-items:stretch}.table-filters{width:100%}.table-filters .input,.table-filters .select{width:100%}}
+  </style>
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
-
-      <div class="callout danger" id="overload-callout">
-        <span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
-        <span class="callout-body"><span class="callout-title">Tomás Herrera (120%) supera el límite de carga.</span> La asignación quedó bloqueada hasta que Paula Vega apruebe la excepción.
-          <div class="callout-actions"><button type="button" class="btn btn-secondary btn-sm" id="request-exception-btn">Solicitar excepción</button></div>
-        </span>
-      </div>
-
-      <section class="card" style="display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2)); overflow:hidden;">
-        <div class="table-toolbar" style="flex-shrink:0;">
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
           <div>
-            <strong>Asignaciones de mis proyectos</strong>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" id="asig-subtitle"></p>
-          </div>
-          <div class="table-filters">
-            <select class="select" id="proyecto-filter"><option value="todos">Proyecto: todos</option></select>
-            <select class="select" id="estado-filter">
-              <option value="todos">Estado: todos</option><option>Validada</option><option>Al límite</option><option>En revisión</option><option>Bloqueada</option><option>Sin cubrir</option>
-            </select>
-            <select class="select" id="periodo-filter">
-              <option value="todos">Periodo: todos</option><option value="q3-2026">Q3 2026</option><option value="q4-2026">Q4 2026</option>
-            </select>
-            <button type="button" class="btn btn-primary btn-sm" id="request-assignment-btn">
-              <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Solicitar asignación</button>
+            <h2 class="kpi-hero-title">Cobertura de equipos</h2>
+            <p class="kpi-hero-sub">Vacantes y colaboradores por proyecto</p>
           </div>
         </div>
-
-        <div style="flex:1; min-width:0; overflow-y:auto;">
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead class="sticky-head"><tr><th>Colaborador</th><th>Proyecto</th><th>Dedicación</th><th>Periodo</th><th>Carga total</th><th>Validación</th><th>Acciones</th></tr></thead>
-            <tbody id="asig-body"></tbody>
-          </table>
-          <div class="state-panel" id="asig-empty" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-target"></use></svg></span>
-            <span class="state-panel-title">Sin asignaciones con estos filtros</span>
-          </div>
-        </div>
-        </div>
-
-        <div class="table-footer" style="flex-shrink:0;">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="asig-pagination-count"></span>
-          <div class="pagination" id="asig-pagination-controls"></div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+              <span class="hero-card-label">Proyectos gestionados</span>
+            </div>
+            <div class="hero-card-value" th:text="${proyectos.size()}">0</div>
+            <p class="hero-card-meta">total bajo tu gestión</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+              <span class="hero-card-label">Colaboradores asignados</span>
+            </div>
+            <div class="hero-card-value" th:text="${totalColaboradores}">0</div>
+            <p class="hero-card-meta">personas activas en equipos</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-user-x"></use></svg></span>
+              <span class="hero-card-label">Vacantes pendientes</span>
+            </div>
+            <div class="hero-card-value" th:text="${totalVacantes}">0</div>
+            <p class="hero-card-meta">cupos aún por cubrir</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span>
+              <span class="hero-card-label">Equipos completos</span>
+            </div>
+            <div class="hero-card-value" th:text="${#lists.size(proyectos.?[cupoCompleto])}">0</div>
+            <p class="hero-card-meta" th:text="'de ' + ${proyectos.size()} + ' proyecto(s)'">de 0</p>
+          </article>
         </div>
       </section>
 
+      <section class="card" th:if="${proyectos.isEmpty()}">
+        <div class="state-panel"><span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></span><span class="state-panel-title">No gestionas proyectos todavía</span><span class="state-panel-desc">Crea un proyecto en la sección “Proyectos” para empezar a asignar colaboradores.</span></div>
+      </section>
+
+      <section class="card" th:unless="${proyectos.isEmpty()}">
+        <div class="table-toolbar">
+          <div><strong>Proyectos y equipos</strong><p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:2px">Abre un proyecto para consultar o modificar sus colaboradores.</p></div>
+          <div class="table-filters">
+            <input class="input" id="assignment-search" type="search" placeholder="Buscar proyecto o integrante..." style="min-width:240px">
+            <select class="select" id="assignment-state"><option value="todos">Todos los estados</option><option value="planificacion">Planificación</option><option value="activo">Activo</option><option value="en_pausa">En pausa</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option></select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Proyecto</th><th>Estado</th><th>Colaboradores</th><th>Cobertura</th><th>Vacantes</th><th>Acción</th></tr></thead>
+            <tbody id="assignment-projects-body">
+            <tr th:each="p : ${proyectos}" data-assignment-row th:attr="data-name=${#strings.toLowerCase(p.nombre)},data-miembros=${#strings.toLowerCase(#strings.listJoin(p.equipo.![nombre], ' | '))},data-state=${p.estadoCrudo}">
+              <td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm);background:var(--navy-700)" th:text="${#strings.substring(p.nombre,0,1)}">P</span><span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span class="cell-person-sub" th:text="'PM: ' + ${p.pmNombre}">PM</span></span></td>
+              <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
+              <td class="mono" th:text="${p.colaboradoresAsignados} + ' de ' + ${p.colaboradoresRequeridos}">0 de 0</td>
+              <td class="coverage-cell"><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.coberturaPorcentaje} + '%'"></div></div><span class="progress-value" th:text="${p.coberturaPorcentaje} + '%'">0%</span></div></td>
+              <td><span th:class="${p.vacantes == 0} ? 'vacancy-zero' : 'mono'" th:text="${p.vacantes == 0} ? 'Completo' : ${p.vacantes}">0</span></td>
+              <td><button type="button" class="btn btn-secondary btn-sm" th:attr="data-view-team=${p.id}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg>Ver colaboradores</button></td>
+            </tr>
+            </tbody>
+          </table>
+          <div class="state-panel" id="assignment-empty" hidden><span class="state-panel-title">No hay proyectos con esos filtros</span><span class="state-panel-desc">Prueba con otro nombre o estado.</span></div>
+        </div>
+        <div class="table-footer">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="assignment-visible-count">0</span> de <span id="assignment-filtered-count">0</span> proyectos</span>
+          <div class="pagination"><button class="page-btn" id="assignment-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="assignment-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="assignment-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
+      </section>
+
+      <div id="assignment-team-templates" hidden>
+        <template th:each="p : ${proyectos}" th:attr="data-team-project=${p.id}">
+          <div class="modal-header"><div><h2 th:text="${p.nombre}">Proyecto</h2><p th:text="${p.colaboradoresAsignados} + ' de ' + ${p.colaboradoresRequeridos} + ' colaboradores asignados'">Equipo</p></div><button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>
+          <div class="modal-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)"><div><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span><span class="text-tertiary" style="font-size:var(--fs-xs);margin-left:var(--space-2)" th:text="${p.vacantes} + ' vacante(s) disponible(s)'">Vacantes</span></div><button type="button" class="btn btn-primary btn-sm" data-show-assignment-form th:attr="data-proyecto-id=${p.id}, data-proyecto-nombre=${p.nombre}" th:disabled="${p.cupoCompleto or (p.estadoCrudo != 'planificacion' and p.estadoCrudo != 'activo')}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg><span th:text="${p.estadoCrudo == 'en_pausa'} ? 'Proyecto en pausa' : (${p.cerrado} ? 'Proyecto cerrado' : (${p.cupoCompleto} ? 'Cupo completo' : 'Proponer colaboradores'))">Proponer colaboradores</span></button></div>
+
+            <div class="state-panel" th:if="${p.equipo.isEmpty()}"><span class="state-panel-title">Sin integrantes asignados</span></div>
+            <div class="team-modal-table" th:unless="${p.equipo.isEmpty()}"><table class="data-table"><thead><tr><th>Integrante</th><th>Rol</th><th>Dedicación</th><th>Acción</th></tr></thead><tbody>
+            <tr th:each="m : ${p.equipo}" th:attr="data-miembro-perfil=${m.perfilId}"><td class="cell-person"><span class="avatar avatar-sm" th:text="${m.iniciales}">AB</span><span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">Correo</span></span></td><td><span class="badge" th:classappend="${m.rolEnProyectoCrudo == 'project_manager'} ? 'badge-blue' : 'badge-neutral'" th:text="${m.rolLabel}">Rol</span></td><td class="mono" th:text="${m.cargaPorcentaje} + '%'">0%</td><td class="cell-actions"><button type="button" class="danger" th:if="${m.rolEnProyectoCrudo == 'colaborador'}" th:attr="data-finalizar-asignacion=${m.asignacionId}">Finalizar</button><span class="text-tertiary" th:if="${m.rolEnProyectoCrudo == 'project_manager'}">Tú lideras</span></td></tr>
+            </tbody></table></div>
+
+          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div>
+        </template>
+      </div>
     </main>
   </div>
 </div>
-
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "project-manager", active: "asignaciones.html", title: "Asignaciones de mis proyectos" });
-  if (!cfg) return;
-
-  var kpi = MOCK.assignmentsKpi;
-  document.getElementById("kpi-grid").innerHTML = [
-    { label: "TOTAL ASIGNACIONES", value: kpi.total, icon: "icon-target", accent: "blue" },
-    { label: "VALIDADAS", value: kpi.validadas, icon: "icon-check-circle", accent: "green" },
-    { label: "EN REVISIÓN", value: kpi.enRevision, cls: "warn", icon: "icon-search", accent: "amber" },
-    { label: "BLOQUEADAS POR CARGA", value: kpi.bloqueadas, cls: "down", icon: "icon-alert-triangle", accent: "red" },
-    { label: "VACANTES SIN CUBRIR", value: kpi.vacantes, cls: "warn", icon: "icon-user-x", accent: "amber" }
-  ].map(function (k) {
-    return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>';
-  }).join("");
-
-  var pmProjects = ["Portal Andes", "App Móvil Aurora", "Núcleo Retail", "Motor Cobranzas v2"];
-  var pmAssignments = MOCK.assignments.filter(function (a) { return pmProjects.indexOf(a.proyecto) !== -1; });
-
-  var projSelect = document.getElementById("proyecto-filter");
-  pmProjects.forEach(function (p) { projSelect.insertAdjacentHTML("beforeend", "<option>" + p + "</option>"); });
-
-  var validCls = { "Validada": "badge-green", "Al límite": "badge-amber", "En revisión": "badge-blue", "Bloqueada": "badge-red", "Sin cubrir": "badge-neutral" };
-
-  var PAGE_SIZE = 6;
-  var currentPage = 1;
-
-  function getFiltered() {
-    var proyecto = document.getElementById("proyecto-filter").value;
-    var estado = document.getElementById("estado-filter").value;
-    return pmAssignments.filter(function (a) {
-      if (proyecto !== "todos" && a.proyecto !== proyecto) return false;
-      if (estado !== "todos" && a.validacion !== estado) return false;
-      return true;
-    });
-  }
-
-  function rowHtml(a, i) {
-    var nombre = a.colaborador || a.vacanteNombre;
-    return '<tr data-f-estado="' + a.validacion + '" style="animation-delay:' + (i * 30) + 'ms;">' +
-      '<td class="cell-person"><span class="avatar avatar-sm">' + a.iniciales + '</span><span class="cell-person-name">' + nombre + '</span></td>' +
-      "<td>" + a.proyecto + "</td><td class=\"mono\">" + a.dedicacion + "%</td><td>" + a.periodo + "</td>" +
-      "<td class=\"mono\">" + (a.cargaTotal !== null ? a.cargaTotal + "%" : "—") + "</td>" +
-      '<td><span class="badge ' + (validCls[a.validacion] || "badge-neutral") + '">' + a.validacion + "</span></td>" +
-      '<td class="cell-actions"><button type="button" data-edit-assign="' + nombre + '">Editar</button><button type="button" class="danger" data-release-assign="' + nombre + '">Liberar</button></td></tr>';
-  }
-
-  function renderPagination(total, totalPages) {
-    var countEl = document.getElementById("asig-pagination-count");
-    var controlsEl = document.getElementById("asig-pagination-controls");
-    if (total === 0) { countEl.textContent = ""; controlsEl.innerHTML = ""; return; }
-    var start = (currentPage - 1) * PAGE_SIZE + 1;
-    var end = Math.min(currentPage * PAGE_SIZE, total);
-    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total;
-    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
-    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
-    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
-    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
-    controlsEl.innerHTML = html;
-    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
-    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
-    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
-    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
-  }
-
-  function render() {
-    var filtered = getFiltered();
-    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-    document.getElementById("asig-body").innerHTML = pageItems.map(rowHtml).join("");
-    document.getElementById("asig-empty").hidden = filtered.length !== 0;
-    document.querySelector(".table-scroll table").hidden = filtered.length === 0;
-
-    var bloqueadas = pmAssignments.filter(function (a) { return a.validacion === "Bloqueada"; }).length;
-    var enRevision = pmAssignments.filter(function (a) { return a.validacion === "En revisión"; }).length;
-    document.getElementById("asig-subtitle").textContent = pmAssignments.length + " asignaciones · " + bloqueadas + " bloqueada" + (bloqueadas === 1 ? "" : "s") + " · " + enRevision + " en revisión";
-
-    wireRowActions();
-    renderPagination(filtered.length, totalPages);
-  }
-
-  function wireRowActions() {
-    document.querySelectorAll("[data-edit-assign]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar asignación</h2><p>' + btn.dataset.editAssign + '</p></div>' +
-          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-          '<div class="modal-body"><div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" value="45" min="5" max="100" step="5"></div></div>' +
-          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" data-modal-close>Guardar</button></div></div>';
-        var backdrop = SBAI.modal.open(html);
-        backdrop.querySelector(".btn-primary").addEventListener("click", function () { SBAI.toast.show("Asignación de <strong>" + btn.dataset.editAssign + "</strong> actualizada.", { type: "success" }); });
-      });
-    });
-    document.querySelectorAll("[data-release-assign]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        SBAI.modal.confirm({
-          title: "¿Liberar a " + btn.dataset.releaseAssign + "?", desc: "Se eliminará esta asignación del proyecto.",
-          confirmLabel: "Liberar", variant: "destructive",
-          onConfirm: function () {
-            var row = btn.closest("tr"); row.style.opacity = "0.4";
-            SBAI.toast.show("<strong>" + btn.dataset.releaseAssign + "</strong> fue liberado del proyecto.", { type: "success" });
-          }
-        });
-      });
-    });
-  }
-
-  document.getElementById("proyecto-filter").addEventListener("change", function () { currentPage = 1; render(); });
-  document.getElementById("estado-filter").addEventListener("change", function () { currentPage = 1; render(); });
-  document.getElementById("periodo-filter").addEventListener("change", function () { currentPage = 1; render(); });
-
-  document.getElementById("request-exception-btn").addEventListener("click", function () {
-    SBAI.toast.show("Excepción de carga solicitada a Paula Vega (Resource Manager).", { type: "success" });
-  });
-
-  document.getElementById("request-assignment-btn").addEventListener("click", function () {
-    var collabOptions = MOCK.collaborators.map(function (c) { return "<option>" + c.nombre + "</option>"; }).join("");
-    var projOptions = pmProjects.map(function (p) { return "<option>" + p + "</option>"; }).join("");
-    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Solicitar asignación</h2></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Colaborador</label><select class="select">' + collabOptions + '</select></div>' +
-      '<div class="field"><label class="field-label">Proyecto</label><select class="select">' + projOptions + '</select></div>' +
-      '<div class="field"><label class="field-label">Dedicación (%)</label><input class="input" type="number" value="20" min="5" max="100" step="5"></div></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" data-modal-close>Enviar solicitud</button></div></div>';
-    var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector(".btn-primary").addEventListener("click", function () { SBAI.toast.show("Solicitud enviada al Resource Manager para validación de carga.", { type: "success" }); });
-  });
-
-  render();
-});
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/proyecto-acciones.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH={exito:/*[[${exito}]]*/null,error:/*[[${error}]]*/null};
+  // Modelo v7, fase 4: las personas se buscan en el servidor (selector-personas.js).
+  window.SBAI_LIMITE_CARGA = /*[[${limiteCarga}]]*/ 100;
 </script>
+<script src="/js/asignacion-masiva.js"></script>
+<script src="/js/selector-personas.js"></script>
+<script src="/js/pm-asignaciones.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
 </html>

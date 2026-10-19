@@ -1,217 +1,489 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Usuarios y roles · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/kpi-hero.css">
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
-
-      <section class="card" style="margin-top:var(--space-6); display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2) - 130px); overflow:hidden;">
-        <div class="table-toolbar" style="flex-shrink:0;">
-          <div class="card-header-icon-row">
-            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
-            <div>
-              <strong id="users-count"></strong>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Cuentas con acceso a SkillBridge AI</p>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title">Usuarios</h2>
+            <p class="kpi-hero-sub">Cuentas con acceso a SkillBridge AI</p>
+          </div>
+        </div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+              <span class="hero-card-label">TOTAL USUARIOS</span>
             </div>
+            <div class="hero-card-value" th:text="${kpis.total}">0</div>
+            <p class="hero-card-meta"></p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+              <span class="hero-card-label">MIEMBROS</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpis.sinRol}">0</div>
+            <p class="hero-card-meta">Lideran o colaboran en proyectos</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-user-x"></use></svg></span>
+              <span class="hero-card-label">SUSPENDIDOS</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpis.suspendidos}">0</div>
+            <p class="hero-card-meta"></p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-shield"></use></svg></span>
+              <span class="hero-card-label">ADMINISTRADORES</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpis.administradores}">0</div>
+            <p class="hero-card-meta"></p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${usuarios.size()} + ' usuarios'">0 usuarios</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Cuentas con acceso a SkillBridge AI</p>
           </div>
           <div class="table-filters">
-            <input type="text" class="input" id="users-search" placeholder="Buscar por nombre o correo…" style="width:210px; height:38px; font-size:var(--fs-xs);">
-            <select class="select" id="rol-filter">
-              <option value="todos">Rol: todos</option><option>Colaborador</option><option>Project Manager</option><option>Resource Manager</option><option>Administrador</option>
+            <input type="text" class="input" data-filter-scope="users" data-filter-key="q" placeholder="Buscar por nombre o correo…" style="width:210px; height:38px; font-size:var(--fs-xs);">
+            <select class="select" data-filter-scope="users" data-filter-key="rol">
+              <option value="todos">Rol: todos</option><option>Administrador</option><option>Resource Manager</option><option>Miembro</option>
             </select>
-            <select class="select" id="estado-filter">
+            <select class="select" data-filter-scope="users" data-filter-key="estado">
               <option value="todos">Estado: todos</option><option>Activo</option><option>Bloqueado</option>
             </select>
-            <button type="button" class="btn btn-primary btn-sm" id="invite-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
+            <button type="button" class="btn btn-primary btn-sm" id="invite-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
           </div>
         </div>
-        <div class="table-scroll-wrap">
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead class="sticky-head"><tr><th>Usuario</th><th>Rol</th><th>Área</th><th>Último acceso</th><th>Estado</th><th>Acciones</th></tr></thead>
-              <tbody id="users-body"></tbody>
-            </table>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Cargo</th><th>Cuenta desde</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="users-body">
+              <tr th:each="u : ${usuarios}" th:data-id="${u.id}"
+                  data-filter-row="users" th:attr="data-f-rol=${u.rolLabel}, data-f-estado=${u.estadoLabel}, data-f-search=${#strings.toLowerCase(u.nombreCompleto + ' ' + u.correo)}">
+                <td class="cell-person">
+                  <span class="avatar avatar-sm" th:text="${u.iniciales}">MR</span>
+                  <span class="cell-person-text"><span class="cell-person-name" th:text="${u.nombreCompleto}">Nombre</span><span class="cell-person-sub" th:text="${u.correo}">correo</span></span>
+                </td>
+                <td><span class="badge" th:classappend="${u.rolBadgeClass}" th:text="${u.rolLabel}">Rol</span></td>
+                <td th:text="${u.cargo}">—</td>
+                <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${u.cuentaDesde}">—</td>
+                <td><span class="badge" th:classappend="${u.estadoBadgeClass}" th:text="${u.estadoLabel}">Estado</span></td>
+                <!-- Modelo v7: nadie actúa sobre su propia cuenta; los datos de
+                     participación permiten avisar (o bloquear) antes de cambiar
+                     rol o suspender. -->
+                <td class="cell-actions" th:if="${u.id == usuarioActualId}">
+                  <span class="badge badge-blue">Tu cuenta</span>
+                </td>
+                <td class="cell-actions" th:unless="${u.id == usuarioActualId}"
+                    th:attr="data-lidera=${u.proyectosQueLideraTexto}, data-colabora=${u.asignacionesComoColaboradorTexto}">
+                  <button type="button" data-edit-role
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}, data-rol-crudo=${u.rolOrganizacionalCrudo}">Editar rol</button>
+                  <button type="button" class="danger" th:if="${u.estado == 'activo'}" data-suspend
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}">Suspender</button>
+                  <button type="button" data-reactivate th:if="${u.estado != 'activo'}"
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}">Reactivar</button>
+                  <button type="button" class="danger" data-delete
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}">Eliminar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="state-panel" data-filter-empty="users" hidden>
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+          <span class="state-panel-title">Sin usuarios con estos filtros</span>
+        </div>
+        <div class="table-footer">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="users-visible-count">0</span> de <span id="users-filtered-count">0</span> usuarios</span>
+          <div class="pagination"><button class="page-btn" id="users-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="users-page-label" style="font-size:var(--fs-xs)">Página 1</span><input type="number" id="users-page-jump" min="1" value="1" aria-label="Ir a la página" class="input" style="width:3.4em; text-align:center; font-size:var(--fs-xs); padding:2px 4px;"><button class="page-btn" id="users-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:var(--space-6);">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${correosAutorizados.size()} + ' correos autorizados'">0 correos autorizados</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Lista blanca de registro: solo estos correos pueden completar /registro. "Pendiente" = invitado, aún no se registró.</p>
           </div>
-          <div class="state-panel" id="users-empty" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
-            <span class="state-panel-title">Sin usuarios con estos filtros</span>
+          <div class="table-filters" th:unless="${correosAutorizados.isEmpty()}">
+            <input type="search" class="input" id="correos-search" placeholder="Buscar correo…" autocomplete="off" style="width:220px; height:38px; font-size:var(--fs-xs);">
+            <select class="select" id="correos-estado" style="height:38px; font-size:var(--fs-xs);">
+              <option value="todos">Todos</option><option value="pendiente">Pendientes</option><option value="registrado">Registrados</option>
+            </select>
           </div>
         </div>
-        <div class="table-footer" style="flex-shrink:0;">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="users-pagination-count"></span>
-          <div class="pagination" id="users-pagination-controls"></div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Correo</th><th>Rol al registrarse</th><th>Autorizado el</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              <tr th:each="c : ${correosAutorizados}" data-correo-row th:attr="data-correo=${#strings.toLowerCase(c.correo())},data-estado=${c.utilizado()} ? 'registrado' : 'pendiente'">
+                <td class="cell-primary" th:text="${c.correo()}">correo@nexacorp.com</td>
+                <td><span class="badge" th:classappend="${c.rolAsignado() == null} ? 'badge-neutral' : 'badge-blue'" th:text="${c.rolLabel()}">Miembro</span></td>
+                <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${c.fechaAutorizacion()}">—</td>
+                <td><span class="badge" th:classappend="${c.estadoBadgeClass()}" th:text="${c.estadoLabel()}">Pendiente</span></td>
+                <td class="cell-actions">
+                  <button type="button" th:if="${!c.utilizado()}" data-invite-role
+                          th:attr="data-id=${c.id()}, data-correo=${c.correo()}, data-rol=${c.rolValor()}">Cambiar rol</button>
+                  <button type="button" class="danger" th:if="${!c.utilizado()}" data-revoke-invite
+                          th:attr="data-id=${c.id()}, data-correo=${c.correo()}">Revocar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+        <div class="state-panel" th:if="${correosAutorizados.isEmpty()}">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-mail"></use></svg></span>
+          <span class="state-panel-title">Todavía no se ha invitado a nadie</span>
+        </div>
+        <div class="state-panel" id="correos-empty" hidden><span class="state-panel-title">Ningún correo coincide con el filtro</span></div>
+        <!-- RG-249: paginación de la lista de correos autorizados -->
+        <div class="table-footer" th:unless="${correosAutorizados.isEmpty()}">
+          <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="correos-visible-count">0</span> de <span id="correos-filtered-count">0</span> correos</span>
+          <div class="pagination"><button class="page-btn" id="correos-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="correos-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="correos-next" type="button" aria-label="Página siguiente">›</button></div>
+        </div>
+        <script>
+        (function () {
+          var rows = Array.prototype.slice.call(document.querySelectorAll("[data-correo-row]"));
+          if (!rows.length) return;
+          var q = document.getElementById("correos-search"), est = document.getElementById("correos-estado");
+          var prev = document.getElementById("correos-prev"), next = document.getElementById("correos-next");
+          var label = document.getElementById("correos-page-label"), vacio = document.getElementById("correos-empty");
+          var vis = document.getElementById("correos-visible-count"), fil = document.getElementById("correos-filtered-count");
+          var size = 8, page = 1;
+          function norm(t) { return (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
+          function filtradas() {
+            var t = norm(q.value), e = est.value;
+            return rows.filter(function (r) { return (!t || r.dataset.correo.indexOf(t) !== -1) && (e === "todos" || r.dataset.estado === e); });
+          }
+          function render() {
+            var f = filtradas(), pages = Math.max(1, Math.ceil(f.length / size));
+            page = Math.min(page, pages);
+            var v = f.slice((page - 1) * size, page * size);
+            rows.forEach(function (r) { r.hidden = true; }); v.forEach(function (r) { r.hidden = false; });
+            vis.textContent = v.length; fil.textContent = f.length; vacio.hidden = f.length !== 0;
+            label.textContent = "Página " + page + " de " + pages;
+            prev.disabled = page === 1; next.disabled = page === pages;
+          }
+          q.addEventListener("input", function () { page = 1; render(); });
+          est.addEventListener("change", function () { page = 1; render(); });
+          prev.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+          next.addEventListener("click", function () { page++; render(); });
+          render();
+        })();
+        </script>
       </section>
 
     </main>
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
+<script src="/js/mock-data.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/table-filter.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
 document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "administrador", active: "usuarios.html", title: "Usuarios y roles", subtitle: MOCK.usersTable.length + " cuentas visibles en esta demo" });
-  if (!cfg) return;
+  window.SBAI.dropdown.init(document);
+  window.SBAI.tableFilter.init(document);
 
-  function renderKpi() {
-    var sinRol = MOCK.usersKpi.sinRol, suspendidos = MOCK.usersTable.filter(function (u) { return u.estado === "Bloqueado"; }).length;
-    document.getElementById("kpi-grid").innerHTML = [
-      { label: "TOTAL USUARIOS", value: MOCK.usersKpi.total, icon: "icon-users", accent: "blue" },
-      { label: "SIN ROL ASIGNADO", value: sinRol, cls: "warn", icon: "icon-user-x", accent: "amber" },
-      { label: "SUSPENDIDOS", value: suspendidos, cls: "down", icon: "icon-alert-triangle", accent: "red" },
-      { label: "ADMINISTRADORES", value: MOCK.usersTable.filter(function (u) { return u.rol === "Administrador"; }).length, icon: "icon-shield", accent: "violet" }
-    ].map(function (k) {
-      return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '"></span></div>';
+  document.body.addEventListener("click", function (e) {
+    if (e.target.closest('[data-action="logout"]')) { (window.SBAI && window.SBAI.logout) ? window.SBAI.logout() : window.location.assign("/auth/login.html"); }
+  });
+
+  var exito = /*[[${exito}]]*/ null;
+  var error = /*[[${error}]]*/ null;
+  if (exito) SBAI.toast.show(exito, { type: "success" });
+  if (error) SBAI.toast.show(error, { type: "error" });
+
+  function submitForm(action, fields) {
+    var form = document.createElement("form");
+    form.method = "POST";
+    form.action = action;
+    Object.keys(fields).forEach(function (k) {
+      var input = document.createElement("input");
+      input.type = "hidden"; input.name = k; input.value = fields[k];
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  // Modelo v7: roles organizacionales. "Project Manager" no es un puesto:
+  // un Miembro lidera proyectos concretos.
+  var ROLES = [
+    { value: "NINGUNO", label: "Miembro", desc: "Participa en proyectos: puede liderar unos y colaborar en otros." },
+    { value: "resource_manager", label: "Resource Manager", desc: "Gestiona asignaciones y aprueba propuestas. No participa en proyectos." },
+    { value: "administrador", label: "Administrador", desc: "Gestiona usuarios, catálogos y configuración. No participa en proyectos." }
+  ];
+  function escH(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; }
+  function opcionesRol(actual) {
+    return ROLES.map(function (o) {
+      var sel = actual === o.value || ((!actual || actual === "null") && o.value === "NINGUNO");
+      return '<label class="role-option"><input type="radio" name="rol-opcion" value="' + o.value + '"' + (sel ? " checked" : "") + '>' +
+        '<span><strong>' + o.label + '</strong><span class="role-option-desc">' + o.desc + "</span></span></label>";
     }).join("");
   }
 
-  var rolBadge = { "Administrador": "badge-blue", "Project Manager": "badge-neutral", "Resource Manager": "badge-neutral", "Colaborador": "badge-neutral" };
-  var PAGE_SIZE = 8;
-  var currentPage = 1;
-
-  function getFiltered() {
-    var q = document.getElementById("users-search").value.trim().toLowerCase();
-    var rol = document.getElementById("rol-filter").value;
-    var estado = document.getElementById("estado-filter").value;
-    return MOCK.usersTable.filter(function (u) {
-      if (q && (u.nombre + " " + u.correo).toLowerCase().indexOf(q) === -1) return false;
-      if (rol !== "todos" && u.rol !== rol) return false;
-      if (estado !== "todos" && u.estado !== estado) return false;
-      return true;
-    });
-  }
-
-  function rowHtml(u, i) {
-    return '<tr data-f-estado="' + u.estado + '" style="animation-delay:' + (i * 30) + 'ms;">' +
-      '<td class="cell-person"><span class="avatar avatar-sm">' + u.iniciales + '</span><span class="cell-person-text"><span class="cell-person-name">' + u.nombre + '</span><span class="cell-person-sub">' + u.correo + '</span></span></td>' +
-      '<td><span class="badge ' + (rolBadge[u.rol] || "badge-neutral") + '">' + u.rol + '</span></td><td>' + u.area + '</td>' +
-      '<td class="text-tertiary" style="font-size:var(--fs-xs);">' + u.ultimoAcceso + '</td>' +
-      '<td><span class="badge ' + (u.estado === "Activo" ? "badge-green" : "badge-red") + '">' + u.estado + '</span></td>' +
-      '<td class="cell-actions"><button type="button" data-edit-role="' + u.nombre + '">Editar rol</button>' +
-      (u.estado === "Activo" ? '<button type="button" class="danger" data-suspend-user="' + u.nombre + '">Suspender</button>' : '<button type="button" data-reactivate-user="' + u.nombre + '">Reactivar</button>') + '</td></tr>';
-  }
-
-  function wireRowActions() {
-    document.querySelectorAll("[data-edit-role]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var u = MOCK.usersTable.filter(function (x) { return x.nombre === btn.dataset.editRole; })[0];
-        var opts = ["Colaborador", "Project Manager", "Resource Manager", "Administrador"].map(function (r) { return "<option" + (r === u.rol ? " selected" : "") + ">" + r + "</option>"; }).join("");
-        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar rol</h2><p>' + u.nombre + ' · ' + u.correo + '</p></div>' +
-          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-          '<div class="modal-body"><div class="field"><label class="field-label">Rol</label><select class="select" id="edit-role-select">' + opts + '</select></div>' +
-          '<p class="field-hint">El cambio queda registrado en Auditoría con tu usuario y la hora exacta.</p></div>' +
-          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="save-role-btn">Guardar rol</button></div></div>';
-        var backdrop = SBAI.modal.open(html);
-        backdrop.querySelector("#save-role-btn").addEventListener("click", function () {
-          var nuevo = backdrop.querySelector("#edit-role-select").value;
-          u.rol = nuevo;
-          SBAI.modal.close(backdrop);
-          render();
-          SBAI.toast.show("<strong>" + u.nombre + "</strong> ahora tiene el rol " + nuevo + ".", { type: "success" });
-        });
-      });
-    });
-    document.querySelectorAll("[data-suspend-user]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var nombre = btn.dataset.suspendUser;
-        SBAI.modal.confirm({
-          title: "¿Suspender a " + nombre + "?", desc: "Perderá acceso a la plataforma de inmediato.", confirmLabel: "Suspender", variant: "destructive",
-          onConfirm: function () {
-            MOCK.usersTable.filter(function (u) { return u.nombre === nombre; })[0].estado = "Bloqueado";
-            SBAI.toast.show("<strong>" + nombre + "</strong> fue suspendido.", { type: "success" });
-            renderKpi(); render();
-          }
-        });
-      });
-    });
-    document.querySelectorAll("[data-reactivate-user]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var nombre = btn.dataset.reactivateUser;
-        MOCK.usersTable.filter(function (u) { return u.nombre === nombre; })[0].estado = "Activo";
-        SBAI.toast.show("<strong>" + nombre + "</strong> fue reactivado.", { type: "success" });
-        renderKpi(); render();
-      });
-    });
-  }
-
-  function renderPagination(total, totalPages) {
-    var countEl = document.getElementById("users-pagination-count");
-    var controlsEl = document.getElementById("users-pagination-controls");
-    if (total === 0) { countEl.textContent = ""; controlsEl.innerHTML = ""; return; }
-    var start = (currentPage - 1) * PAGE_SIZE + 1;
-    var end = Math.min(currentPage * PAGE_SIZE, total);
-    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " usuarios";
-    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
-    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
-    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
-    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
-    controlsEl.innerHTML = html;
-    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
-    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
-    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
-    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); }); });
-  }
-
-  function render() {
-    var filtered = getFiltered();
-    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-    document.getElementById("users-count").textContent = filtered.length + " usuario" + (filtered.length === 1 ? "" : "s");
-    document.getElementById("users-body").innerHTML = pageItems.map(rowHtml).join("");
-    document.getElementById("users-empty").hidden = filtered.length !== 0;
-    document.querySelector(".table-scroll table").hidden = filtered.length === 0;
-
-    wireRowActions();
-    renderPagination(filtered.length, totalPages);
-  }
-
-  document.getElementById("users-search").addEventListener("input", function () { currentPage = 1; render(); });
-  document.getElementById("rol-filter").addEventListener("change", function () { currentPage = 1; render(); });
-  document.getElementById("estado-filter").addEventListener("change", function () { currentPage = 1; render(); });
-
   document.getElementById("invite-btn").addEventListener("click", function () {
-    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Se enviará una invitación al correo corporativo</p></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" id="invite-email" placeholder="nombre.apellido@nexacorp.com"></div>' +
-      '<div class="field"><label class="field-label">Rol asignado</label><select class="select" id="invite-role"><option>Colaborador</option><option>Project Manager</option><option>Resource Manager</option><option>Administrador</option></select></div></div>' +
+    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Autoriza el correo y elige con qué rol nacerá su cuenta.</p></div>' +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" id="invite-email" placeholder="correo@dominio.com"></div>' +
+      '<div class="field"><span class="field-label">Rol en la organización</span><div class="role-options">' + opcionesRol("NINGUNO") + '</div></div>' +
+      '<p class="field-hint">Le llegará un correo con el enlace de registro. Al completar sus datos e iniciar sesión verá directamente el panel de su rol. Puedes cambiar el rol mientras la invitación siga pendiente.</p></div>' +
       '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="invite-confirm">Enviar invitación</button></div></div>';
     var backdrop = SBAI.modal.open(html);
     backdrop.querySelector("#invite-confirm").addEventListener("click", function () {
       var correo = backdrop.querySelector("#invite-email").value.trim();
-      if (!correo || !/^[^\s@]+@nexacorp\.com$/i.test(correo)) {
-        SBAI.toast.show("Ingresa un correo corporativo válido (@nexacorp.com).", { type: "error" });
-        return;
-      }
-      SBAI.modal.close(backdrop);
-      SBAI.toast.show("Invitación enviada a <strong>" + correo + "</strong>.", { type: "success" });
+      if (!correo) { SBAI.toast.show("Ingresa un correo.", { type: "error" }); return; }
+      var rol = (backdrop.querySelector('input[name="rol-opcion"]:checked') || {}).value || "NINGUNO";
+      submitForm("/administrador/usuarios/invitar", { correo: correo, rol: rol });
     });
   });
 
-  renderKpi();
-  render();
+  document.querySelectorAll("[data-invite-role]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Rol de la invitación</h2><p>' + escH(btn.dataset.correo) + '</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div class="role-options">' + opcionesRol(btn.dataset.rol) + '</div></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="inv-rol-ok">Guardar</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#inv-rol-ok").addEventListener("click", function () {
+        var rol = (backdrop.querySelector('input[name="rol-opcion"]:checked') || {}).value || "NINGUNO";
+        submitForm("/administrador/usuarios/correos-autorizados/" + btn.dataset.id + "/rol", { rol: rol });
+      });
+    });
+  });
+
+  /** Participación en proyectos de la fila (data-lidera / data-colabora). */
+  function participacion(btn) {
+    var cell = btn.closest("[data-lidera]");
+    var partir = function (t) { return t ? t.split("|").filter(Boolean) : []; };
+    return { lidera: partir(cell && cell.dataset.lidera), colabora: partir(cell && cell.dataset.colabora) };
+  }
+  /** Aviso / bloqueo común para cambiar a rol fijo o suspender. */
+  function avisoProyectos(nombre, part, accion) {
+    if (part.lidera.length) {
+      SBAI.modal.notice
+        ? SBAI.modal.notice({ variant: "warning", title: "Primero hay que cambiar el PM",
+            desc: nombre + " lidera " + part.lidera.join(", ") + ". Antes de " + accion + ", el Resource Manager debe usar “Cambiar PM” en esos proyectos." })
+        : SBAI.toast.show(nombre + " lidera proyectos: primero cambia el PM.", { type: "error" });
+      return null;
+    }
+    return part.colabora.length
+      ? [nombre + " colabora en: " + part.colabora.join(", ") + ".", "Esas asignaciones se finalizarán (quedan en su historial) y su carga se libera."]
+      : [];
+  }
+
+  document.querySelectorAll("[data-revoke-invite]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, correo = btn.dataset.correo;
+      SBAI.modal.confirm({
+        title: "¿Revocar la invitación a \"" + correo + "\"?",
+        desc: "Ese correo ya no podrá completar el registro hasta que se vuelva a invitar.",
+        confirmLabel: "Revocar", variant: "destructive",
+        onConfirm: function () { submitForm("/administrador/usuarios/correos-autorizados/" + id + "/eliminar", {}); }
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-edit-role]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, nombre = btn.dataset.nombre, correo = btn.dataset.correo;
+      var actual = btn.dataset.rolCrudo && btn.dataset.rolCrudo !== "null" ? btn.dataset.rolCrudo : "NINGUNO";
+      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar rol</h2><p>' + escH(nombre) + ' · ' + escH(correo) + '</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div class="role-options">' + opcionesRol(actual) + '</div>' +
+        '<p class="field-hint">El cambio queda en Auditoría. Su sesión abierta toma el rol nuevo en su siguiente clic.</p></div>' +
+        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="save-role-btn">Guardar rol</button></div></div>';
+      var backdrop = SBAI.modal.open(html);
+      backdrop.querySelector("#save-role-btn").addEventListener("click", function () {
+        var rol = (backdrop.querySelector('input[name="rol-opcion"]:checked') || {}).value || "NINGUNO";
+        if (rol === actual) { SBAI.toast.show("Ya tiene ese rol.", {}); return; }
+        var etiqueta = ROLES.filter(function (o) { return o.value === rol; })[0].label;
+        var consecuencias = [];
+        // Miembro -> Admin/RM: deja de participar en proyectos.
+        if (actual === "NINGUNO" && rol !== "NINGUNO") {
+          consecuencias = avisoProyectos(nombre, participacion(btn), "convertirlo en " + etiqueta);
+          if (consecuencias === null) return;
+          consecuencias.push(etiqueta + " no participa en proyectos.");
+        }
+        SBAI.modal.close && SBAI.modal.close(backdrop);
+        SBAI.modal.confirm({
+          variant: "primary", icon: "icon-shield",
+          title: "¿Cambiar el rol de " + nombre + " a " + etiqueta + "?",
+          desc: "Se registra en Auditoría y se le notifica.",
+          consequences: consecuencias,
+          reason: { label: "Motivo", required: false, placeholder: "Opcional: queda registrado en Auditoría." },
+          confirmLabel: "Cambiar rol", cancelLabel: "Volver",
+          onConfirm: function (d) {
+            submitForm("/administrador/usuarios/" + id + "/rol", { rol: rol, motivo: d.motivo || "", confirmarSalida: "true" });
+          }
+        });
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-suspend]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, nombre = btn.dataset.nombre;
+      var consecuencias = avisoProyectos(nombre, participacion(btn), "suspender su cuenta");
+      if (consecuencias === null) return;
+      consecuencias.push("Se le avisará por correo, con el motivo.");
+      SBAI.modal.confirm({
+        title: "¿Suspender a " + nombre + "?",
+        desc: "Perderá acceso a la plataforma de inmediato. Puedes reactivarlo cuando quieras.",
+        variant: "warning", icon: "icon-user-x",
+        subject: { nombre: nombre, meta: btn.dataset.correo || "" },
+        consequences: consecuencias,
+        reason: { label: "Motivo de la suspensión", required: true, placeholder: "Ej.: terminó su contrato.",
+          presets: ["Terminó su contrato", "Actividad sospechosa", "Solicitud del área", "Cuenta duplicada"] },
+        confirmLabel: "Suspender cuenta", cancelLabel: "Volver",
+        onConfirm: function (d) { submitForm("/administrador/usuarios/" + id + "/estado", { activar: "false", motivo: d.motivo, confirmarSalida: "true" }); }
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-reactivate]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id;
+      submitForm("/administrador/usuarios/" + id + "/estado", { activar: "true" });
+    });
+  });
+
+  document.querySelectorAll("[data-delete]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.dataset.id, nombre = btn.dataset.nombre;
+      SBAI.modal.confirm({
+        title: "¿Eliminar a " + nombre + "?",
+        desc: "Esta acción es permanente.",
+        subject: { nombre: nombre, meta: btn.dataset.correo || "" },
+        consequences: ["Si tiene asignaciones, publicaciones u otros registros asociados no se podrá eliminar: en ese caso usa Suspender."],
+        reason: { label: "Motivo de la eliminación", required: true, placeholder: "Ej.: cuenta creada por error.",
+          presets: ["Cuenta creada por error", "Cuenta duplicada", "Ya no pertenece a la organización"] },
+        typeToConfirm: nombre,
+        confirmLabel: "Eliminar definitivamente", variant: "destructive", cancelLabel: "Volver",
+        onConfirm: function (d) { submitForm("/administrador/usuarios/" + id + "/eliminar", { motivo: d.motivo }); }
+      });
+    });
+  });
+
+  // Paginación de la tabla, encima del filtrado de table-filter.js: no se
+  // toca la busqueda/rol/estado (siguen filtrando igual), solo se agrega
+  // que de los resultados que coinciden se muestren de a 6. Se recalcula
+  // el match aqui mismo (misma logica que table-filter.js: q busca en
+  // data-f-search, rol/estado comparan exacto salvo "todos") para poder
+  // paginar el conjunto filtrado sin pelear por la propiedad "hidden" de
+  // las filas con el motor generico.
+  (function () {
+    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="users"]'));
+    if (!rows.length) return;
+
+    var searchInput = document.querySelector('[data-filter-scope="users"][data-filter-key="q"]');
+    var rolSelect = document.querySelector('[data-filter-scope="users"][data-filter-key="rol"]');
+    var estadoSelect = document.querySelector('[data-filter-scope="users"][data-filter-key="estado"]');
+    var emptyPanel = document.querySelector('[data-filter-empty="users"]');
+    var visibleCount = document.getElementById("users-visible-count");
+    var filteredCount = document.getElementById("users-filtered-count");
+    var pageLabel = document.getElementById("users-page-label");
+    var previous = document.getElementById("users-prev");
+    var next = document.getElementById("users-next");
+    var pageJump = document.getElementById("users-page-jump");
+    var pageSize = 6;
+    var page = 1;
+
+    function normalize(value) {
+      return (value || "").toString().normalize("NFD").replace(/[̀-\u036f]/g, "").toLowerCase().trim();
+    }
+
+    function matches(row) {
+      var q = searchInput ? normalize(searchInput.value) : "";
+      if (q && normalize(row.dataset.fSearch).indexOf(q) === -1) return false;
+      var rol = rolSelect ? rolSelect.value : "todos";
+      if (rol && rol !== "todos" && row.dataset.fRol !== rol) return false;
+      var estado = estadoSelect ? estadoSelect.value : "todos";
+      if (estado && estado !== "todos" && row.dataset.fEstado !== estado) return false;
+      return true;
+    }
+
+    function render() {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      page = Math.min(page, pages);
+      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
+      rows.forEach(function (row) { row.hidden = true; });
+      visible.forEach(function (row) { row.hidden = false; });
+      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
+      visibleCount.textContent = visible.length;
+      filteredCount.textContent = matched.length;
+      pageLabel.textContent = "Página " + page + " de " + pages;
+      previous.disabled = page === 1;
+      next.disabled = page === pages;
+      if (pageJump) {
+        pageJump.max = pages;
+        if (document.activeElement !== pageJump) pageJump.value = page;
+      }
+    }
+
+    [searchInput, rolSelect, estadoSelect].forEach(function (ctrl) {
+      if (!ctrl) return;
+      var evt = ctrl.tagName === "SELECT" ? "change" : "input";
+      ctrl.addEventListener(evt, function () { page = 1; render(); });
+    });
+    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    next.addEventListener("click", function () {
+      var matched = rows.filter(matches);
+      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+      if (page < pages) { page++; render(); }
+    });
+    if (pageJump) {
+      function irAPagina() {
+        var matched = rows.filter(matches);
+        var pages = Math.max(1, Math.ceil(matched.length / pageSize));
+        var destino = parseInt(pageJump.value, 10);
+        if (isNaN(destino)) return;
+        page = Math.min(Math.max(destino, 1), pages);
+        render();
+      }
+      pageJump.addEventListener("change", irAPagina);
+      pageJump.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); irAPagina(); } });
+    }
+    render();
+  })();
 });
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/password-generator.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
 </html>

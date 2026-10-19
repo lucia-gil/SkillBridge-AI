@@ -7,8 +7,8 @@
 
 :root {
   /* ---------- Tipografía ---------- */
-  --font-ui: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "Space Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   --fs-2xs: 0.6875rem;   /* 11px — labels mono en mayúscula */
   --fs-xs: 0.75rem;      /* 12px */
@@ -84,6 +84,11 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 999px;
+  /* RG-224 — estilo único de esquinas. Úsalos en vez de valores sueltos:
+     --radius-card    tarjetas, paneles, KPI, listados de opciones agrupados
+     --radius-control botones, inputs, filas/opciones dentro de un listado */
+  --radius-card: var(--radius-lg);
+  --radius-control: var(--radius-md);
 
   /* ---------- Sombras ---------- */
   --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.04);
@@ -103,7 +108,10 @@
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
+  --space-14: 56px;
   --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
 
   /* ---------- Layout ---------- */
   --sidebar-w: 264px;
@@ -117,6 +125,15 @@
   --dur-base: 180ms;
   --dur-slow: 280ms;
 
+  /* ---------- Color: tintes de interaccion (extraidos de hex sueltos) ---------- */
+  --tint-active: #DDE5F2;
+  --tint-destructive-active: #F6D9D3;
+  --notif-unread-bg: #F5F8FF;
+  --amber-fg-strong: #7A5313;
+  --red-fg-strong: #8C2A1F;
+  --blue-fg-strong: #1F3E7A;
+  --violet-fg-strong: #4A3480;
+
   /* ---------- Índices de apilamiento ---------- */
   --z-sidebar: 20;
   --z-topbar: 30;
@@ -125,4 +142,57 @@
   --z-modal: 51;
   --z-toast: 60;
   --z-command-palette: 70;
+}
+
+/* ============================================================
+   Tema oscuro — activado con [data-theme="dark"] en <html>.
+   Redefine solo las variables de superficie/texto/estado; el resto
+   (tipografia, espaciado, radios, marca navy/azul) se mantiene igual.
+   ============================================================ */
+:root[data-theme="dark"] {
+  --canvas: #14161C;
+  --surface: #1C1F27;
+  --surface-sunken: #23262F;
+  --border-subtle: #2C303B;
+  --border-default: #383D4A;
+  --border-strong: #4A505F;
+
+  --text-primary: #F1F3F7;
+  --text-secondary: #B7BECB;
+  --text-tertiary: #868FA1;
+
+  --navy-100: #232A3D;
+
+  --tint-active: #2C354D;
+  --tint-destructive-active: #4A2A26;
+  --notif-unread-bg: #182238;
+
+  --green-fg: #4ADE94;
+  --green-bg: #16302A;
+  --green-border: #245C43;
+
+  --amber-fg: #F5C265;
+  --amber-fg-strong: #FFDDA0;
+  --amber-bg: #3A2E14;
+  --amber-border: #6B5321;
+
+  --red-fg: #F0796A;
+  --red-fg-strong: #FFB3A8;
+  --red-bg: #3A1E1B;
+  --red-border: #6B3730;
+
+  --blue-fg: #7AA6F0;
+  --blue-fg-strong: #A9C6F5;
+  --blue-bg: #16233A;
+  --blue-border: #26406B;
+
+  --violet-fg: #B49CE8;
+  --violet-fg-strong: #D3C2F5;
+  --violet-bg: #251A3D;
+  --violet-border: #4A366E;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 3px rgba(0, 0, 0, 0.24);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.36);
+  --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.48);
+  --shadow-btn-primary: 0 2px 8px rgba(0, 0, 0, 0.4);
 }

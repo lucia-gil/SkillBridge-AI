@@ -1,2 +1,5 @@
-entregable2/backend/target/
-entregable2/backend/.idea/
+target/
+*.class
+
+# Secretos (contraseña de BD y de Gmail): nunca al repositorio
+src/main/resources/secretos.properties

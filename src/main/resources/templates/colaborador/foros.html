@@ -1,175 +1,221 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Foros · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/foros.css">
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
-    <main class="page-content" id="page-content" style="padding-bottom:0;">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
 
-      <div style="display:grid; grid-template-columns:240px 1fr; gap:var(--space-6); align-items:start; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2));">
+      <div class="fr-layout">
 
-        <!-- Columna izquierda: fija, no se desplaza con el feed -->
-        <div style="display:flex; flex-direction:column; gap:var(--space-5); height:100%; overflow-y:auto;">
-          <section class="card card-pad">
-            <p class="label-mono" style="margin-bottom:var(--space-3);">Categorías</p>
-            <div id="category-list" style="display:flex; flex-direction:column; gap:2px;"></div>
+        <!-- ── Barra lateral: vistas, proyectos, salud del foro ── -->
+        <aside class="fr-side" aria-label="Filtros del foro">
+          <button type="button" class="btn btn-primary fr-new-btn" id="new-thread-btn" th:if="${!proyectosPublicar.isEmpty()}">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nuevo hilo
+          </button>
+
+          <section class="card fr-side-card">
+            <h2 class="fr-side-title">Vistas</h2>
+            <nav class="fr-nav" id="vista-nav">
+              <button type="button" class="fr-nav-item is-active" data-vista="todos">
+                <svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg>
+                <span class="fr-nav-label">Todos los hilos</span><span class="fr-nav-count" th:text="${hilos.size()}">0</span>
+              </button>
+              <button type="button" class="fr-nav-item" data-vista="sin_responder">
+                <svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg>
+                <span class="fr-nav-label">Sin responder</span>
+                <span class="fr-nav-count" th:classappend="${numSinResponder > 0} ? 'is-alert'" th:text="${numSinResponder}">0</span>
+              </button>
+              <button type="button" class="fr-nav-item" data-vista="resueltos">
+                <svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg>
+                <span class="fr-nav-label">Resueltos</span><span class="fr-nav-count" th:text="${numResueltos}">0</span>
+              </button>
+              <button type="button" class="fr-nav-item" data-vista="mios">
+                <svg class="icon"><use href="/img/icons.svg#icon-user"></use></svg>
+                <span class="fr-nav-label">Mis hilos</span><span class="fr-nav-count" th:text="${numMios}">0</span>
+              </button>
+            </nav>
           </section>
-          <section class="card card-pad" style="background:var(--violet-bg); border-color:var(--violet-border); position:relative; overflow:hidden;">
-            <span style="position:absolute; top:-16px; right:-16px; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.25);"></span>
-            <p style="font-size:var(--fs-xs); font-weight:600; color:var(--violet-fg); margin-bottom:6px; display:flex; align-items:center; gap:6px; position:relative;">
-              <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-sparkles"></use></svg>Resúmenes con IA</p>
-            <p style="font-size:var(--fs-xs); color:var(--text-secondary); line-height:1.5; position:relative;">Los hilos con más de 15 respuestas generan un resumen automático de las conclusiones.</p>
-            <p class="label-mono" style="margin-top:var(--space-3); color:var(--violet-fg); position:relative;">38 hilos resumidos</p>
+
+          <section class="card fr-side-card" th:if="${!proyectos.isEmpty()}">
+            <h2 class="fr-side-title">Proyectos <span class="text-tertiary" th:text="${proyectos.size()}">0</span></h2>
+            <input type="search" class="input fr-project-search" id="proyecto-search" placeholder="Buscar proyecto…"
+                   aria-label="Buscar proyecto" th:if="${proyectos.size() > 5}">
+            <nav class="fr-nav fr-project-list" id="proyecto-nav">
+              <button type="button" class="fr-nav-item is-active" data-proyecto="todos">
+                <span class="fr-project-dot"></span><span class="fr-nav-label">Todos los proyectos</span>
+                <span class="fr-nav-count" th:text="${hilos.size()}">0</span>
+              </button>
+              <button type="button" class="fr-nav-item" th:each="p : ${proyectos}" th:attr="data-proyecto=${p.id()}" th:title="${p.nombre()}">
+                <span class="fr-project-dot"></span><span class="fr-nav-label" th:text="${p.nombre()}">Proyecto</span>
+                <span class="fr-nav-count" th:text="${p.numHilos()}">0</span>
+              </button>
+            </nav>
+          </section>
+
+          <section class="card fr-side-card" th:if="${!hilos.isEmpty()}"
+                   th:with="pct=${hilos.size() > 0 ? (numResueltos * 100 / hilos.size()) : 0}">
+            <h2 class="fr-side-title">Salud del foro</h2>
+            <div class="fr-health">
+              <div class="fr-health-row"><span>Hilos resueltos</span><strong th:text="${pct} + '%'">0%</strong></div>
+              <div class="fr-health-bar" role="progressbar" th:attr="aria-valuenow=${pct}" aria-valuemin="0" aria-valuemax="100"
+                   aria-label="Porcentaje de hilos resueltos"><span th:style="'width:' + ${pct} + '%'"></span></div>
+              <div class="fr-health-row"><span>Esperan respuesta</span><strong th:text="${numSinResponder}">0</strong></div>
+              <div class="fr-health-row"><span>Respuestas totales</span><strong th:text="${totalRespuestas}">0</strong></div>
+            </div>
+          </section>
+        </aside>
+
+        <!-- ── Contenido: buscador, tópicos, lista ── -->
+        <div class="fr-main">
+          <section class="card fr-search-card">
+            <h2 class="fr-search-title">¿En qué necesitas ayuda?</h2>
+            <p class="fr-search-sub">Busca en las preguntas y respuestas de tus proyectos. La búsqueda entiende temas: “bd” también encuentra MySQL o SQL.</p>
+            <div class="fr-search" role="search">
+              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
+              <input type="search" class="fr-search-input" id="q" autocomplete="off" spellcheck="false"
+                     placeholder="Busca por tema, tecnología o error (p. ej. conexión a mysql)"
+                     aria-label="Buscar en los foros">
+              <button type="button" class="fr-search-clear" id="q-clear" aria-label="Limpiar búsqueda" hidden>
+                <svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg>
+              </button>
+            </div>
+            <div class="fr-search-hints" th:unless="${hilos.isEmpty()}">
+              <span>Prueba:</span>
+              <button type="button" class="fr-hint" data-hint="base de datos">base de datos</button>
+              <button type="button" class="fr-hint" data-hint="despliegue">despliegue</button>
+              <button type="button" class="fr-hint" data-hint="login">login</button>
+              <button type="button" class="fr-hint" data-hint="error">error</button>
+              <span class="fr-kbd">· Atajo: <kbd>/</kbd></span>
+            </div>
+            <div class="fr-search-expansion" id="expansion" hidden></div>
+          </section>
+
+          <div class="fr-topics" id="topic-chips" role="group" aria-label="Filtrar por tópico" th:unless="${hilos.isEmpty()}">
+            <button type="button" class="fr-topic-chip is-active" data-topico="todos" aria-pressed="true">
+              Todos los tópicos <span class="fr-chip-count" th:text="${hilos.size()}">0</span>
+            </button>
+            <button type="button" class="fr-topic-chip" th:each="tp : ${topicos}"
+                    th:classappend="'tone-' + ${tp.color} + (${tp.numHilos == 0} ? ' is-empty' : '')"
+                    th:attr="data-topico=${tp.codigo}" th:title="${tp.descripcion}" aria-pressed="false">
+              <svg class="icon"><use th:href="'/img/icons.svg#' + ${tp.icono}"></use></svg>
+              <span th:text="${tp.nombre}">Tópico</span> <span class="fr-chip-count" th:text="${tp.numHilos}">0</span>
+            </button>
+          </div>
+
+          <section class="card fr-list-card">
+            <div class="fr-list-toolbar" th:unless="${hilos.isEmpty()}">
+              <div class="fr-result-count" id="result-count" aria-live="polite"><strong th:text="${hilos.size()}">0</strong> hilos</div>
+              <label class="fr-sort">Ordenar por
+                <select class="select" id="orden">
+                  <option value="relevancia" hidden>Relevancia</option>
+                  <option value="actividad" selected>Actividad reciente</option>
+                  <option value="recientes">Más nuevos</option>
+                  <option value="utiles">Más útiles</option>
+                  <option value="respondidos">Más respondidos</option>
+                </select>
+              </label>
+            </div>
+
+            <div th:if="${hilos.isEmpty()}" class="state-panel">
+              <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg></span>
+              <span class="state-panel-title">Todavía no hay hilos</span>
+              <span class="state-panel-desc" th:text="${proyectosPublicar.isEmpty()} ? 'No tienes proyectos abiertos donde publicar.' : 'Abre el primero: una duda, un bloqueo o algo que aprendiste y le sirva al equipo.'">—</span>
+            </div>
+
+            <div id="thread-list" th:unless="${hilos.isEmpty()}">
+              <article class="fr-thread" th:each="t : ${hilos}" th:classappend="${t.esFijado} ? 'is-pinned'" th:attr="data-id=${t.id}">
+                <span class="fr-status" th:classappend="'is-' + ${t.estado}"
+                      th:title="${t.estado == 'resuelto'} ? 'Resuelto' : (${t.estado == 'sin_responder'} ? 'Sin responder' : 'En conversación')">
+                  <svg class="icon"><use th:href="${t.estado == 'resuelto'} ? '/img/icons.svg#icon-check-circle' : (${t.estado == 'sin_responder'} ? '/img/icons.svg#icon-alert-circle' : '/img/icons.svg#icon-message')"></use></svg>
+                </span>
+                <div class="fr-thread-body">
+                  <h3 class="fr-thread-title">
+                    <span class="fr-pin" th:if="${t.esFijado}"><svg class="icon"><use href="/img/icons.svg#icon-pin"></use></svg>Fijado</span>
+                    <a class="fr-thread-link" th:href="@{foro-hilo.html(id=${t.id})}"><span data-titulo th:text="${t.titulo}">Título</span></a>
+                  </h3>
+                  <div class="fr-thread-tags">
+                    <button type="button" class="fr-topic-badge" th:classappend="'tone-' + ${t.topicoColor}"
+                            th:attr="data-filtro-topico=${t.topicoCodigo}" th:title="'Ver hilos de ' + ${t.topicoNombre}">
+                      <svg class="icon"><use th:href="'/img/icons.svg#' + ${t.topicoIcono}"></use></svg><span th:text="${t.topicoNombre}">Tópico</span>
+                    </button>
+                    <button type="button" class="fr-tag" th:each="e : ${t.etiquetas}" th:text="${e}"
+                            th:attr="data-filtro-etiqueta=${e}" th:title="'Buscar ' + ${e}">etiqueta</button>
+                  </div>
+                  <p class="fr-thread-excerpt" data-extracto th:text="${t.extracto}">Extracto</p>
+                  <div class="fr-thread-meta">
+                    <span class="avatar-stack" aria-hidden="true">
+                      <span class="avatar" th:each="ini : ${t.participantesIniciales}" th:text="${ini}">AA</span>
+                    </span>
+                    <span><span class="fr-meta-strong" th:text="${t.autorNombre}">Autor</span> en <span th:text="${t.proyectoNombre}">Proyecto</span></span>
+                    <span class="fr-meta-sep">Actividad <span th:attr="data-relativo=${t.ultimaActividadIso}" th:text="${t.ultimaActividadLabel}">fecha</span></span>
+                    <span class="fr-meta-sep" th:unless="${t.foroAbierto}">Solo lectura</span>
+                  </div>
+                </div>
+                <div class="fr-thread-stats">
+                  <span class="fr-replies" th:classappend="${t.numRespuestas == 0} ? 'is-zero'">
+                    <strong th:text="${t.numRespuestas}">0</strong><span th:text="${t.numRespuestas == 1} ? 'respuesta' : 'respuestas'">respuestas</span>
+                  </span>
+                  <span class="fr-mini-stats">
+                    <span class="is-star" th:if="${t.numDestacados > 0}" th:title="${t.numDestacados} + ' lo encontraron útil'">
+                      <svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg><span th:text="${t.numDestacados}">0</span></span>
+                    <span th:title="${t.numVistas} + ' vistas'"><svg class="icon"><use href="/img/icons.svg#icon-eye"></use></svg><span th:text="${t.numVistas}">0</span></span>
+                    <span th:if="${t.numAdjuntos > 0}" th:title="${t.numAdjuntos} + ' adjuntos'"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${t.numAdjuntos}">0</span></span>
+                  </span>
+                </div>
+                <button type="button" class="fr-pin-btn" th:if="${t.puedeFijar}"
+                        th:attr="data-fijar=${t.id}, data-valor=${!t.esFijado}" th:text="${t.esFijado} ? 'Desfijar' : 'Fijar arriba'">Fijar</button>
+              </article>
+            </div>
+
+            <div class="state-panel" id="dynamic-empty" hidden>
+              <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-search"></use></svg></span>
+              <span class="state-panel-title" data-vacio-titulo>Sin resultados</span>
+              <span class="state-panel-desc" data-vacio-desc>Prueba con otra búsqueda.</span>
+              <button type="button" class="btn btn-primary btn-sm fr-empty-cta" data-vacio-cta hidden th:if="${!proyectosPublicar.isEmpty()}">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Preguntar esto en un hilo nuevo
+              </button>
+            </div>
           </section>
         </div>
-
-        <!-- Columna derecha: header fijo (tabs + contador) + feed con scroll propio -->
-        <section class="card" style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
-          <div class="table-toolbar" style="flex-shrink:0;">
-            <div class="segmented" id="sort-tabs">
-              <button type="button" class="segmented-btn active" data-sort="recientes">Recientes</button>
-              <button type="button" class="segmented-btn" data-sort="respondidos">Más respondidos</button>
-              <button type="button" class="segmented-btn" data-sort="sinresponder">Sin responder</button>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" id="new-thread-btn">
-              <svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-plus"></use></svg>Nuevo hilo</button>
-          </div>
-          <p class="text-tertiary" style="font-size:var(--fs-xs); padding:var(--space-4) var(--space-6); flex-shrink:0; border-bottom:1px solid var(--border-subtle);" id="thread-count-label">248 hilos · 1.904 respuestas · 62 participantes activos</p>
-
-          <div style="flex:1; overflow-y:auto;">
-            <div id="thread-list"></div>
-            <div class="state-panel" data-filter-empty="hilos" hidden>
-              <span class="state-panel-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-message"></use></svg></span>
-              <span class="state-panel-title">Sin hilos en esta categoría</span>
-              <span class="state-panel-desc">Prueba con otra categoría o crea el primer hilo.</span>
-            </div>
-          </div>
-        </section>
       </div>
 
     </main>
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "colaborador", active: "foros.html", title: "Foros", subtitle: "Conocimiento compartido · 248 hilos" });
-  if (!cfg) return;
-
-  var activeCategory = "todos";
-  var activeSort = "recientes";
-
-  function renderCategories() {
-    var all = [{ nombre: "Todos los hilos", cantidad: 248, slug: "todos" }].concat(
-      MOCK.forumCategoriesCount.map(function (c) { return { nombre: c.nombre, cantidad: c.cantidad, slug: c.nombre }; })
-    );
-    document.getElementById("category-list").innerHTML = all.map(function (c) {
-      return '<button type="button" class="forum-cat-btn' + (c.slug === activeCategory ? " active" : "") + '" data-cat="' + c.slug + '">' +
-        '<span>' + c.nombre + '</span><span class="forum-cat-count">' + c.cantidad + "</span></button>";
-    }).join("");
-    document.querySelectorAll("[data-cat]").forEach(function (btn) {
-      btn.addEventListener("click", function () { activeCategory = btn.dataset.cat; renderCategories(); renderThreads(); });
-    });
-  }
-
-  function togglePin(id, btnEl, rowEl) {
-    var t = MOCK.forumThreads.filter(function (x) { return x.id === id; })[0];
-    if (!t) return;
-    t.fijado = !t.fijado;
-    SBAI.toast.show(t.fijado ? "Hilo fijado arriba del feed." : "Hilo desfijado.", { type: "success" });
-    renderThreads();
-  }
-
-  function renderThreads() {
-    var list = MOCK.forumThreads.slice();
-    if (activeCategory !== "todos") list = list.filter(function (t) { return t.categoria === activeCategory; });
-    if (activeSort === "recientes") { /* orden natural (ya viene de más reciente a más antiguo) */ }
-    if (activeSort === "respondidos") list.sort(function (a, b) { return b.respuestas - a.respuestas; });
-    if (activeSort === "sinresponder") list = list.filter(function (t) { return t.respuestas === 0; });
-
-    // Los hilos fijados siempre van primero, sin romper el orden relativo del resto
-    list.sort(function (a, b) { return (b.fijado ? 1 : 0) - (a.fijado ? 1 : 0); });
-
-    var wrap = document.getElementById("thread-list");
-    var empty = document.querySelector('[data-filter-empty="hilos"]');
-    if (!list.length) { wrap.innerHTML = ""; empty.hidden = false; return; }
-    empty.hidden = true;
-
-    wrap.innerHTML = list.map(function (t, i) {
-      var ai = t.resumenIA ? '<div class="thread-row-ai"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-sparkles"></use></svg><span>' + t.resumenIA.slice(0, 150) + '…</span></div>' : "";
-      return '<div class="thread-row' + (t.fijado ? " pinned" : "") + '" data-open-thread="' + t.id + '" style="animation-delay:' + Math.min(i * 25, 300) + 'ms;">' +
-        '<span class="avatar avatar-sm">' + t.iniciales + '</span>' +
-        '<div class="thread-row-body"><div class="thread-row-title">' + (t.fijado ? '<span class="badge badge-blue">FIJADO</span>' : "") + t.titulo + '</div>' +
-        '<div class="thread-row-meta">' + t.categoria + " · " + t.autor + " · " + t.tiempo + " · " + t.vistas + ' vistas</div>' + ai + "</div>" +
-        '<button type="button" class="thread-pin-btn' + (t.fijado ? " active" : "") + '" data-pin-thread="' + t.id + '" title="' + (t.fijado ? "Desfijar hilo" : "Fijar hilo") + '" aria-label="Fijar hilo">' +
-        '<svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-pin"></use></svg></button>' +
-        '<div class="thread-row-count"><div class="thread-row-count-num">' + t.respuestas + '</div><div class="thread-row-count-label">Respuestas</div></div>' +
-        "</div>";
-    }).join("");
-
-    wrap.querySelectorAll("[data-pin-thread]").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        togglePin(btn.dataset.pinThread, btn, btn.closest(".thread-row"));
-      });
-    });
-    wrap.querySelectorAll("[data-open-thread]").forEach(function (row) {
-      row.addEventListener("click", function () { window.location.href = "foro-hilo.html"; });
-    });
-  }
-
-  document.querySelectorAll("#sort-tabs [data-sort]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      document.querySelectorAll("#sort-tabs [data-sort]").forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      activeSort = btn.dataset.sort;
-      renderThreads();
-    });
-  });
-
-  document.getElementById("new-thread-btn").addEventListener("click", function () {
-    var cats = MOCK.forumCategoriesCount.map(function (c) { return '<option>' + c.nombre + '</option>'; }).join("");
-    var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-      '<div class="modal-header"><div><h2>Nuevo hilo</h2><p>Comparte una pregunta o hallazgo con la comunidad técnica.</p></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Título</label><input class="input" id="new-thread-title" placeholder="¿Cómo resolviste...?"></div>' +
-      '<div class="field"><label class="field-label">Categoría</label><select class="select" id="new-thread-cat">' + cats + '</select></div>' +
-      '<div class="field"><label class="field-label">Mensaje</label><textarea class="input" id="new-thread-body" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="Describe el contexto..."></textarea></div></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="publish-thread-btn">Publicar hilo</button></div></div>';
-    var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#publish-thread-btn").addEventListener("click", function () {
-      var title = backdrop.querySelector("#new-thread-title").value.trim();
-      if (!title) { SBAI.toast.show("Escribe un título para tu hilo.", { type: "error" }); return; }
-      var user = MOCK.roleUsers.colaborador;
-      MOCK.forumThreads.unshift({ id: "t-new-" + Date.now(), titulo: title, categoria: backdrop.querySelector("#new-thread-cat").value, autor: user.nombre, iniciales: user.iniciales, tiempo: "ahora", respuestas: 0, vistas: 1, fijado: false });
-      SBAI.modal.close(backdrop);
-      activeCategory = "todos"; activeSort = "recientes";
-      renderCategories(); renderThreads();
-      SBAI.toast.show("Hilo publicado en <strong>Foros</strong>.", { type: "success" });
-    });
-  });
-
-  renderCategories();
-  renderThreads();
-});
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+window.FORO = {
+  baseUrl: /*[[${baseUrl}]]*/ "/project-manager",
+  hilos: /*[[${hilos}]]*/ [],
+  topicos: /*[[${topicos}]]*/ [],
+  proyectosPublicar: /*[[${proyectosPublicar}]]*/ [],
+  maxArchivos: /*[[${maxArchivos}]]*/ 3,
+  maxEnlaces: /*[[${maxEnlaces}]]*/ 3
+};
 </script>
+<script src="/js/foro-utils.js"></script>
+<script src="/js/foros.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
 </body>
 </html>

@@ -1,202 +1,190 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reportes · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/kpi-hero.css">
+<style>
+  .report-hero{background:linear-gradient(135deg,var(--navy-900),var(--navy-700));border-radius:var(--radius-lg);padding:var(--space-6);color:white;display:flex;justify-content:space-between;gap:var(--space-5);align-items:center;box-shadow:var(--shadow-2)}
+  .report-hero h1{font-size:var(--fs-xl);margin-bottom:6px}.report-hero p{font-size:var(--fs-sm);color:rgba(255,255,255,.72);max-width:620px}
+  .report-actions{display:flex;gap:var(--space-3);flex-wrap:wrap}.report-actions .btn{background:white;border-color:rgba(255,255,255,.25)}
+  .report-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:var(--space-3);align-items:start}.report-filters>.btn{margin-top:22px}.report-filters .field{margin:0}.report-filters .field-label{font-size:var(--fs-xs)}
+  .report-table .progress-inline{min-width:145px}.report-note{display:flex;gap:var(--space-2);align-items:flex-start;color:var(--text-tertiary);font-size:var(--fs-xs);line-height:1.5}
+  @media(max-width:1050px){.report-filters{grid-template-columns:1fr 1fr}.report-filters .btn{width:100%}}
+  @media(max-width:700px){.report-hero{align-items:flex-start;flex-direction:column}.report-filters{grid-template-columns:1fr}.report-actions{width:100%}.report-actions .btn{flex:1}}
+
+  /* ── Gráficas de "Resumen por estado" + "Avance por proyecto": CSS puro (conic-gradient / anchos),
+     calculadas en el servidor a partir de los mismos datos del reporte, sin librerías externas. ── */
+  .report-charts-grid{display:flex;gap:var(--space-6);align-items:center}
+  .donut-wrap{display:flex;align-items:center;gap:var(--space-5);flex:0 0 auto}
+  .avance-mini-chart-wrap{flex:1;min-width:0}
+  .donut-chart{width:126px;height:126px;border-radius:50%;position:relative;flex:none;box-shadow:inset 0 0 0 1px var(--border-subtle)}
+  .donut-center{position:absolute;inset:16px;background:var(--surface);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut-value{font-size:var(--fs-xl);font-weight:700;color:var(--navy-700);line-height:1}
+  .donut-label{font-size:9.5px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .donut-legend{display:flex;flex-direction:column;gap:7px;min-width:0}
+  .donut-legend-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs)}
+  .donut-legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .donut-legend-label{color:var(--text-secondary);white-space:nowrap}
+  .donut-legend-value{color:var(--text-tertiary);font-variant-numeric:tabular-nums;margin-left:auto;padding-left:var(--space-3)}
+
+  .avance-mini-chart{display:flex;flex-direction:column;gap:10px}
+  .avance-mini-row{display:grid;grid-template-columns:170px 1fr 36px;gap:var(--space-3);align-items:center}
+  .avance-mini-label{font-size:var(--fs-xs);color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .avance-mini-track{height:8px;border-radius:999px;background:var(--surface-sunken);overflow:hidden}
+  .avance-mini-fill{height:100%;border-radius:999px;background:var(--navy-700)}
+  .avance-mini-fill.badge-green{background:var(--green-fg)}
+  .avance-mini-fill.badge-amber{background:var(--amber-fg)}
+  .avance-mini-fill.badge-red{background:var(--red-fg)}
+  .avance-mini-fill.badge-blue{background:var(--blue-fg)}
+  .avance-mini-fill.badge-neutral{background:var(--navy-700)}
+  .avance-mini-value{font-size:10.5px;color:var(--text-tertiary);text-align:right;font-variant-numeric:tabular-nums}
+  .avance-mini-more{font-size:var(--fs-xs);color:var(--text-tertiary);margin:2px 0 0}
+  .report-charts-divider{width:1px;align-self:stretch;background:var(--border-subtle)}
+  @media(max-width:900px){.report-charts-grid{flex-direction:column;align-items:stretch;gap:var(--space-5)}.donut-wrap{justify-content:center}.report-charts-divider{display:none}}
+</style>
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
-    <main class="page-content" id="page-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content page-content-wide">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
+      <section class="card card-pad">
+        <form class="report-filters" method="get" action="reportes.html">
+          <div class="field"><span class="field-label">Proyectos</span><select class="select" name="proyectoId" multiple data-multiselect data-placeholder="Todos los proyectos" data-noun="proyectos"><option th:each="p : ${proyectosDisponibles}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${proyectoId != null and proyectoId.contains(p.id)}">Proyecto</option></select></div>
+          <label class="field"><span class="field-label">Estado</span><select class="select" name="estado"><option value="">Todos</option><option value="planificacion" th:selected="${estado == 'planificacion'}">Planificación</option><option value="activo" th:selected="${estado == 'activo'}">Activo</option><option value="en_pausa" th:selected="${estado == 'en_pausa'}">En pausa</option><option value="completado" th:selected="${estado == 'completado'}">Completado</option><option value="cancelado" th:selected="${estado == 'cancelado'}">Cancelado</option></select></label>
+          <label class="field"><span class="field-label">Inicio desde</span><input class="input" type="date" name="desde" th:value="${desde}"></label>
+          <label class="field"><span class="field-label">Inicio hasta</span><input class="input" type="date" name="hasta" th:value="${hasta}"></label>
+          <button class="btn btn-primary" type="submit"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg>Aplicar</button>
+        </form>
+      </section>
 
-      <div class="detail-grid" style="margin-top:var(--space-6);">
-        <div style="display:flex; flex-direction:column; gap:var(--space-6);">
-          <section class="card card-pad">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
-              <div class="card-header-icon-row">
-                <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-bar-chart"></use></svg></span>
-                <div>
-                  <h2 style="font-size:var(--fs-md);">Avance por sprint</h2>
-                  <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de historias cerradas sobre el plan · sprints S9–S14 · pasa el mouse o toca una barra</p>
-                </div>
-              </div>
-              <button type="button" class="btn btn-secondary btn-sm" id="export-btn"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-download"></use></svg>Exportar</button>
-            </div>
-            <div class="bar-chart" id="sprint-chart"></div>
-          </section>
-
-          <section class="card card-pad">
-            <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
-              <span class="card-header-icon red"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
-              <h3 style="font-size:var(--fs-md);">Riesgos activos</h3>
-            </div>
-            <div id="risk-list"></div>
-          </section>
+      <section class="report-hero">
+        <div>
+          <h1>Informe ejecutivo de proyectos</h1>
+          <p>La vista y los archivos exportados utilizan exactamente los mismos filtros, indicadores, estados y registros.</p>
         </div>
-
-        <section class="card card-pad">
-          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
-            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-users"></use></svg></span>
-            <h3 style="font-size:var(--fs-md);">Ocupación del equipo</h3>
-          </div>
-          <div id="team-occupancy"></div>
-        </section>
-      </div>
-
-      <section class="card" style="margin-top:var(--space-6); display:flex; flex-direction:column; max-height:520px; overflow:hidden;">
-        <div class="card-header" style="flex-shrink:0;">
-          <div class="card-header-icon-row">
-            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
-            <div class="card-header-text"><h2>Detalle por proyecto</h2><p>Historias, horas invertidas, desviación de plazo y actividad de foro</p></div>
-          </div>
-        </div>
-        <div style="flex:1; min-width:0; overflow-y:auto;">
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead class="sticky-head"><tr><th>Proyecto</th><th>Historias (cerradas / totales)</th><th>Horas invertidas</th><th>Desviación de plazo</th><th>Hilos de foro</th><th>Riesgo</th></tr></thead>
-            <tbody id="detail-body"></tbody>
-          </table>
-        </div>
-        </div>
-        <div class="table-footer" style="flex-shrink:0;">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="detail-pagination-count"></span>
-          <div class="pagination" id="detail-pagination-controls"></div>
+        <div class="report-actions">
+          <a class="btn btn-secondary" th:href="'reportes.xlsx' + ${queryExport}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar Excel</a>
+          <a class="btn btn-secondary" th:href="'reportes.pdf' + ${queryExport}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar PDF</a>
         </div>
       </section>
 
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title">Resultados filtrados</h2>
+            <p class="kpi-hero-sub">Según los filtros aplicados arriba</p>
+          </div>
+        </div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+              <span class="hero-card-label">Proyectos</span>
+            </div>
+            <div class="hero-card-value" th:text="${datos.totalProyectos}">0</div>
+            <p class="hero-card-meta">resultado filtrado</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></span>
+              <span class="hero-card-label">Avance promedio</span>
+            </div>
+            <div class="hero-card-value" th:text="${datos.avancePromedio} + '%'">0%</div>
+            <p class="hero-card-meta">estimado por calendario</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+              <span class="hero-card-label">Asignaciones activas</span>
+            </div>
+            <div class="hero-card-value" th:text="${datos.asignacionesActivas}">0</div>
+            <p class="hero-card-meta">en los proyectos visibles</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
+              <span class="hero-card-label">Atrasados</span>
+            </div>
+            <div class="hero-card-value" th:text="${datos.atrasados}">0</div>
+            <p class="hero-card-meta" th:classappend="${datos.atrasados > 0} ? ' warn' : ''">fecha estimada vencida</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card card-pad">
+        <div class="page-section-header" style="margin-bottom:var(--space-5)"><div><h2 class="page-section-title">Resumen por estado y avance</h2><p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:3px">La misma distribución se incluye en PDF y Excel.</p></div><span class="label-mono" th:text="'Generado ' + ${datos.generado}">Generado</span></div>
+
+        <div class="report-charts-grid">
+          <div class="donut-wrap">
+            <div class="donut-chart" th:style="'background: conic-gradient(' + ${datos.conicGradient} + ')'">
+              <div class="donut-center">
+                <span class="donut-value" th:text="${datos.totalProyectos}">0</span>
+                <span class="donut-label">proyecto(s)</span>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="donut-legend-item" th:each="s : ${datos.segmentos}">
+                <span class="donut-legend-dot" th:style="'background:' + ${s.color}"></span>
+                <span class="donut-legend-label" th:text="${s.label}">Estado</span>
+                <span class="donut-legend-value" th:text="${s.cantidad} + ' · ' + ${s.porcentajeRedondeado} + '%'">0 · 0%</span>
+              </div>
+              <div class="donut-legend-item" th:if="${datos.segmentos.isEmpty()}"><span class="donut-legend-label text-tertiary">Sin resultados</span></div>
+            </div>
+          </div>
+
+          <div class="report-charts-divider"></div>
+
+          <div class="avance-mini-chart-wrap">
+          <div class="avance-mini-chart">
+            <div class="avance-mini-row" th:each="f, it : ${datos.filas}" th:if="${it.index < 6}">
+              <span class="avance-mini-label" th:text="${f.proyecto}">Proyecto</span>
+              <div class="avance-mini-track"><div class="avance-mini-fill" th:classappend="${f.situacionBadgeClass}" th:style="'width:' + ${f.avance} + '%'"></div></div>
+              <span class="avance-mini-value" th:text="${f.avance} + '%'">0%</span>
+            </div>
+            <p class="avance-mini-more" th:if="${datos.filas.size() > 6}" th:text="${'+' + (datos.filas.size() - 6) + ' proyecto(s) más en la tabla de abajo'}">+ más</p>
+            <p class="avance-mini-more" th:if="${datos.filas.isEmpty()}">Sin proyectos para graficar.</p>
+          </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card report-table">
+        <div class="card-header"><div class="card-header-icon-row"><div class="card-header-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-bar-chart"></use></svg></div><div class="card-header-text"><h2>Detalle exportable</h2><p th:text="${datos.filtrosLabel}">Filtros</p></div></div><span class="badge badge-blue" th:text="${datos.totalProyectos} + ' registros'">0 registros</span></div>
+        <div class="table-scroll">
+          <table class="data-table" data-paginar="8">
+            <thead><tr><th>Proyecto</th><th>Estado</th><th>Inicio</th><th>Entrega estimada</th><th>Avance estimado</th><th>Equipo activo</th><th>Carga asignada</th><th>Situación</th></tr></thead>
+            <tbody>
+              <tr th:each="f : ${datos.filas}">
+                <td class="cell-primary" th:text="${f.proyecto}">Proyecto</td><td><span class="badge" th:classappend="${f.estadoBadgeClass}" th:text="${f.estado}">Estado</span></td>
+                <td class="mono" th:text="${f.fechaInicioLabel}">—</td><td class="mono" th:text="${f.fechaFinLabel}">—</td>
+                <td><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${f.avance} + '%' "></div></div><span class="progress-value" th:text="${f.avance} + '%'">0%</span></div></td>
+                <td class="mono" th:text="${f.equipoActivo}">0</td><td class="mono" th:text="${f.cargaAsignada} + '%'">0%</td><td><span class="badge" th:classappend="${f.situacionBadgeClass}" th:text="${f.situacion}">Situación</span></td>
+              </tr>
+              <tr th:if="${datos.filas.isEmpty()}"><td colspan="8" style="text-align:center;padding:var(--space-10);color:var(--text-tertiary)">No hay proyectos que coincidan con los filtros seleccionados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer"><div class="report-note"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-info"></use></svg><span>El avance es una estimación basada en las fechas de inicio y entrega, porque el modelo actual no registra tareas completadas.</span></div><a href="reportes.html" class="btn btn-tertiary btn-sm">Limpiar filtros</a></div>
+      </section>
     </main>
   </div>
 </div>
-
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "project-manager", active: "reportes.html", title: "Reportes", subtitle: "Desempeño de mis 4 proyectos · Q3 2026" });
-  if (!cfg) return;
-
-  var r = MOCK.pmReport;
-  var pmProjects = ["Portal Andes", "App Móvil Aurora", "Núcleo Retail", "Motor Cobranzas v2"];
-
-  // --- Dato real de eventos_proyecto: cumplimiento de entregables ---
-  var entregables = MOCK.projectEvents.filter(function (e) { return e.tipo === "entregable" && pmProjects.indexOf(e.proyecto) !== -1; });
-  var entCumplidos = entregables.filter(function (e) { return e.estado === "cumplido"; }).length;
-  var entAtrasados = entregables.filter(function (e) { return e.estado === "atrasado"; }).length;
-
-  document.getElementById("kpi-grid").innerHTML = [
-    { label: "AVANCE PONDERADO", value: r.avancePonderado + "%", delta: r.avanceDelta, unit: "pts", icon: "icon-bar-chart" },
-    { label: "HISTORIAS CERRADAS", value: r.historiasCerradas, delta: r.historiasDelta, unit: "", icon: "icon-check-circle" },
-    { label: "DESVIACIÓN DE PLAZO", value: r.desviacionPlazo, meta: r.desviacionNota, cls: "warn", icon: "icon-calendar" },
-    { label: "HORAS ASIGNADAS", value: r.horasAsignadas.toLocaleString("es-CO"), meta: "de " + r.horasDisponibles.toLocaleString("es-CO") + " h disponibles", icon: "icon-zap" },
-    { label: "ENTREGABLES CUMPLIDOS", value: entCumplidos + "/" + entregables.length, meta: entAtrasados + " atrasado" + (entAtrasados === 1 ? "" : "s"), cls: entAtrasados > 0 ? "warn" : "up", icon: "icon-folder" }
-  ].map(function (k) {
-    var meta = k.meta || (typeof k.delta === "number" ? (k.delta >= 0 ? "+" : "") + k.delta + (k.unit ? " " + k.unit : "") + " vs. mes anterior" : "");
-    var cls = k.cls || (typeof k.delta === "number" ? (k.delta >= 0 ? "up" : "down") : "");
-    var accent = cls === "up" ? "green" : cls === "down" ? "red" : cls === "warn" ? "amber" : "blue";
-    return '<div class="kpi-tile accent-' + accent + '"><span class="kpi-tile-icon ' + accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + cls + '">' + meta + '</span></div>';
-  }).join("");
-
-  var maxSprint = Math.max.apply(null, r.sprints.map(function (s) { return s.pct; }));
-  document.getElementById("sprint-chart").innerHTML = r.sprints.map(function (s, i) {
-    return '<div class="bar-chart-col" data-sprint="' + s.s + '" data-pct="' + s.pct + '"><span class="bar-chart-value">' + s.pct + '%</span>' +
-      '<div class="bar-chart-track"><div class="bar-chart-fill' + (i === r.sprints.length - 1 ? " accent" : "") + '" data-target-h="' + Math.round((s.pct / maxSprint) * 100) + '" style="height:0%;"></div></div>' +
-      '<span class="bar-chart-label">' + s.s + '</span></div>';
-  }).join("");
-
-  // Anima las barras de 0 a su altura real, escalonado
-  document.querySelectorAll(".bar-chart-fill[data-target-h]").forEach(function (bar, i) {
-    setTimeout(function () { bar.style.height = bar.dataset.targetH + "%"; }, 100 + i * 70);
-  });
-
-  // Click en una barra: detalle rápido del sprint en un toast
-  document.querySelectorAll(".bar-chart-col").forEach(function (col) {
-    col.addEventListener("click", function () {
-      var s = col.dataset.sprint, pct = col.dataset.pct;
-      SBAI.toast.show("<strong>" + s + "</strong>: " + pct + "% de historias cerradas sobre el plan.", { icon: "icon-bar-chart" });
-    });
-  });
-
-  document.getElementById("team-occupancy").innerHTML = r.ocupacionEquipo.map(function (o) {
-    var cls = o.pct > 100 ? "red" : o.pct >= 90 ? "amber" : "";
-    return '<div style="margin-bottom:var(--space-4);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:6px;"><span style="font-weight:500;">' + o.nombre + '</span><span class="mono" style="font-weight:600;">' + o.pct + '%</span></div>' +
-      '<div class="progress-bar"><div class="progress-bar-fill ' + cls + '" data-target="' + Math.min(o.pct, 100) + '" style="width:0%;"></div></div></div>';
-  }).join("");
-  document.querySelectorAll("#team-occupancy .progress-bar-fill[data-target]").forEach(function (bar, i) {
-    setTimeout(function () { bar.style.width = bar.dataset.target + "%"; }, 150 + i * 60);
-  });
-
-  // Riesgos activos: proyectos con riesgo Medio/Alto, calculado sobre el
-  // mismo detalleProyectos de la tabla de abajo (no es un dato nuevo,
-  // es un resumen del que ya tenías).
-  var riesgosActivos = r.detalleProyectos.filter(function (p) { return p.riesgo !== "Bajo"; });
-  document.getElementById("risk-list").innerHTML = riesgosActivos.length
-    ? riesgosActivos.map(function (p) {
-        var variant = p.riesgo === "Alto" ? "danger" : "warn";
-        var partes = p.historias.split("/");
-        var cerradas = partes[0].trim(), totales = partes[1].trim();
-        var motivo = "Historias: " + cerradas + " de " + totales + " cerradas. Desviación de plazo: " + p.desviacion.trim() + ".";
-        return '<div class="callout ' + variant + '" style="margin-bottom:var(--space-3);">' +
-          '<span class="callout-icon"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
-          '<span class="callout-body"><span class="callout-title">' + p.proyecto + ' · riesgo ' + p.riesgo.toLowerCase() + '</span>' + motivo + '</span></div>';
-      }).join("")
-    : '<p class="text-tertiary" style="font-size:var(--fs-xs);">Ningún proyecto en riesgo Medio o Alto esta semana.</p>';
-
-  // --- Dato real de foro_publicaciones: hilos por proyecto ---
-  var hilosPorProyecto = {};
-  (MOCK.threadActivityByProject || []).forEach(function (a) { hilosPorProyecto[a.proyecto] = a.hilos; });
-
-  var riesgoBadge = { "Bajo": "badge-green", "Medio": "badge-amber", "Alto": "badge-red" };
-  var PAGE_SIZE = 10;
-  var currentPage = 1;
-
-  function renderDetailPage() {
-    var list = r.detalleProyectos;
-    var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    var pageItems = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-    document.getElementById("detail-body").innerHTML = pageItems.map(function (p, i) {
-      var hilos = hilosPorProyecto[p.proyecto];
-      return '<tr data-f-riesgo="' + p.riesgo + '" style="animation-delay:' + (i * 30) + 'ms;"><td class="cell-primary">' + p.proyecto + "</td><td class=\"mono\">" + p.historias + "</td><td class=\"mono\">" + p.horas + "</td>" +
-        "<td class=\"mono\">" + p.desviacion + '</td><td class="mono">' + (hilos !== undefined ? hilos + " hilos" : "—") + '</td><td><span class="badge ' + (riesgoBadge[p.riesgo] || "badge-neutral") + '">' + p.riesgo + "</span></td></tr>";
-    }).join("");
-
-    var countEl = document.getElementById("detail-pagination-count");
-    var controlsEl = document.getElementById("detail-pagination-controls");
-    var start = list.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
-    var end = Math.min(currentPage * PAGE_SIZE, list.length);
-    countEl.textContent = "Mostrando " + start + "–" + end + " de " + list.length + " proyectos";
-    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
-    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
-    for (var pnum = 1; pnum <= totalPages; pnum++) html += '<button type="button" class="page-btn' + (pnum === currentPage ? " active" : "") + '" data-page="' + pnum + '">' + pnum + "</button>";
-    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
-    controlsEl.innerHTML = html;
-    var prevBtn = document.getElementById("pg-prev"), nextBtn = document.getElementById("pg-next");
-    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; renderDetailPage(); } });
-    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; renderDetailPage(); } });
-    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) { btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); renderDetailPage(); }); });
-  }
-  renderDetailPage();
-
-  document.getElementById("export-btn").addEventListener("click", function () {
-    SBAI.toast.show("Generando exportable de reportes en PDF…");
-  });
-});
-</script>
+<script src="/js/toast.js"></script><script src="/js/dropdown.js"></script><script src="/js/multiselect.js"></script><script src="/js/topbar-actions.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginar-lista.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
 </body>
 </html>

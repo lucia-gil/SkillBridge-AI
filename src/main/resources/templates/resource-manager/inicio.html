@@ -1,139 +1,425 @@
 <!DOCTYPE html>
-<html lang="es">
+<!--
+  resource-manager/inicio.html — Panel del Resource Manager.
+  Datos reales: RmInicioController (+ RmPanelService). Estilos propios en
+  /css/rm-inicio.css (prefijo rmi-), comportamiento en /js/rm-inicio.js.
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inicio · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicio · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
+  <link rel="stylesheet" href="/css/rm-inicio.css">
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
-    <main class="page-content" id="page-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content rmi" id="page-content" th:with="p=${panel}">
 
-      <div class="kpi-grid" id="kpi-grid"></div>
-
-      <section class="card card-pad" style="margin-top:var(--space-6);">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5); flex-wrap:wrap; gap:var(--space-3);">
-          <div class="card-header-icon-row">
-            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-layers"></use></svg></span>
-            <div>
-              <h2 style="font-size:var(--fs-md);">Mapa de carga por colaborador</h2>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">% de dedicación asignada por semana · S34–S39</p>
-            </div>
+      <!-- ═════════════ Encabezado + indicadores (patrón kpi-hero.css) ═════════════ -->
+      <section class="kpi-hero" th:with="b=${p.balance()}">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title" th:text="'¡Hola, ' + ${user != null and user.nombre != null and !#strings.isEmpty(user.nombre) ? #strings.arraySplit(user.nombre, ' ')[0] : 'equipo'} + '!'">¡Hola!</h2>
+            <p class="kpi-hero-sub">Esto es lo que pasa hoy con la carga y la disponibilidad de tu equipo.</p>
           </div>
-          <div class="heatmap-legend">
-            <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:#EAF1FC;"></span>&lt; 60%</span>
-            <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--green-bg);"></span>60–89%</span>
-            <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--amber-bg);"></span>90–100%</span>
-            <span class="heatmap-legend-item"><span class="heatmap-legend-swatch" style="background:var(--red-bg);"></span>&gt; 100%</span>
-          </div>
+          <a class="kpi-hero-action" href="ai-talent-matching.html" th:if="${p.solicitudesTotal() > 0}">
+            <svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg>
+            <span th:text="'Revisar solicitudes (' + ${p.solicitudesTotal()} + ')'">Revisar solicitudes</span>
+          </a>
+          <a class="kpi-hero-action" href="asignaciones.html" th:if="${p.solicitudesTotal() == 0}">
+            <svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg><span>Ir a asignaciones</span>
+          </a>
         </div>
-        <div class="heatmap-scroll">
-          <table class="heatmap-table">
-            <thead><tr><th>Colaborador</th><th id="week-heads"></th></tr></thead>
-            <tbody id="heatmap-body"></tbody>
-          </table>
+
+        <div class="kpi-hero-grid">
+          <!-- Ocupación promedio + tendencia -->
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></span>
+              <span class="hero-card-label">Ocupación promedio</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiOcupacionPromedio} + '%'">0%</div>
+            <p class="hero-card-meta" th:if="${!p.tendencia().semanas().isEmpty()}">
+              <b th:classappend="${p.tendencia().sube()} ? 'tone-blue' : (${p.tendencia().baja()} ? 'tone-green' : 'tone-muted')"
+                 th:text="${p.tendencia().variacion() > 0 ? '+' : ''} + ${p.tendencia().variacion()} + ' pts'">0 pts</b> vs. semana pasada
+            </p>
+            <svg class="rmi-spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"
+                 th:if="${!p.tendencia().semanas().isEmpty()}">
+              <polygon class="rmi-spark-area" th:attr="points=${p.tendencia().areaSparkline()}"></polygon>
+              <polyline class="rmi-spark-line" th:attr="points=${p.tendencia().puntosSparkline()}"></polyline>
+            </svg>
+            <span class="rmi-kpi-foot" th:if="${!p.tendencia().semanas().isEmpty()}"
+                  th:text="'Últimas ' + ${p.tendencia().semanas().size()} + ' semanas'">Últimas semanas</span>
+          </article>
+
+          <!-- Sobre-asignados + predicción -->
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon" th:classappend="${kpiSobreAsignados > 0} ? 'tone-red' : (${p.prediccion().hayRiesgo()} ? 'tone-amber' : 'tone-green')">
+                <svg class="icon"><use th:href="${kpiSobreAsignados > 0 or p.prediccion().hayRiesgo()} ? '/img/icons.svg#icon-alert-triangle' : '/img/icons.svg#icon-shield-check'"></use></svg>
+              </span>
+              <span class="hero-card-label">Sobre-asignados</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiSobreAsignados}">0</div>
+            <p class="hero-card-meta" th:if="${kpiSobreAsignados > 0}"><b class="tone-red">Requieren acción</b> hoy</p>
+            <p class="hero-card-meta" th:if="${kpiSobreAsignados == 0 and p.prediccion().hayRiesgo()}">
+              <b class="tone-amber" th:text="${p.prediccion().enRiesgo().size()} + ' en riesgo'">en riesgo</b>
+              <span th:text="'de pasar el ' + ${p.limiteCarga()} + '% en ' + ${p.prediccion().dias()} + ' días'">días</span>
+            </p>
+            <p class="hero-card-meta" th:if="${kpiSobreAsignados == 0 and !p.prediccion().hayRiesgo()}">
+              <b class="tone-green">Sin riesgo</b> <span th:text="'en los próximos ' + ${p.prediccion().dias()} + ' días'">días</span>
+            </p>
+          </article>
+
+          <!-- Balance de carga -->
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg></span>
+              <span class="hero-card-label">En carga óptima</span>
+            </div>
+            <div class="hero-card-value"><span th:text="${b.optimos()}">0</span><small th:text="'/ ' + ${b.total()}">/ 0</small></div>
+            <p class="hero-card-meta"><b class="tone-green">70%–85%</b> de dedicación</p>
+            <div class="rmi-dist" th:if="${b.total() > 0}" role="img"
+                 th:attr="aria-label=${'Distribución: ' + b.sinAsignar() + ' sin asignar, ' + b.baja() + ' baja, ' + b.media() + ' media, ' + b.optimos() + ' óptima, ' + b.alta() + ' alta, ' + b.sobre() + ' sobre el límite'}">
+              <span class="rmi-dist-seg is-libre" th:if="${b.sinAsignar() > 0}" th:style="'flex:' + ${b.sinAsignar()}" th:title="${b.sinAsignar()} + ' sin asignar (0%)'"></span>
+              <span class="rmi-dist-seg is-baja" th:if="${b.baja() > 0}" th:style="'flex:' + ${b.baja()}" th:title="${b.baja()} + ' con carga baja (1–29%)'"></span>
+              <span class="rmi-dist-seg is-media" th:if="${b.media() > 0}" th:style="'flex:' + ${b.media()}" th:title="${b.media()} + ' con carga media (30–69%)'"></span>
+              <span class="rmi-dist-seg is-optima" th:if="${b.optimos() > 0}" th:style="'flex:' + ${b.optimos()}" th:title="${b.optimos()} + ' en carga óptima (70–85%)'"></span>
+              <span class="rmi-dist-seg is-alta" th:if="${b.alta() > 0}" th:style="'flex:' + ${b.alta()}" th:title="${b.alta()} + ' con carga alta (86–100%)'"></span>
+              <span class="rmi-dist-seg is-sobre" th:if="${b.sobre() > 0}" th:style="'flex:' + ${b.sobre()}" th:title="${b.sobre()} + ' sobre el límite'"></span>
+            </div>
+          </article>
+
+          <!-- Disponibles ahora -->
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-user-check"></use></svg></span>
+              <span class="hero-card-label">Disponibles ahora</span>
+            </div>
+            <div class="hero-card-value" th:text="${disponiblesTotal}">0</div>
+            <p class="hero-card-meta">
+              <b class="tone-violet" th:text="${p.enBanca()} + ' en la banca'">0 en la banca</b>
+              <span th:text="'· ' + ${p.capacidadLibreTotal()} + '% de capacidad libre'">capacidad</span>
+            </p>
+          </article>
         </div>
       </section>
 
-      <div class="detail-grid" style="margin-top:var(--space-6);">
-        <section class="card">
-          <div class="card-header">
-            <div class="card-header-icon-row">
-              <span class="card-header-icon red"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>
-              <div class="card-header-text"><h2>Sobre-asignación</h2><p>Colaboradores por encima del 100% de carga</p></div>
+      <!-- ═════════════ Dos columnas: izquierda (banca + línea de tiempo), derecha (solicitudes + habilidades) ═════════════ -->
+      <div class="rmi-layout">
+        <div class="rmi-col">
+          <section class="card card-pad rmi-central">
+            <div class="rmi-head">
+              <div>
+                <h3>Disponibilidad del equipo</h3>
+                <p class="rmi-sub">Personas con capacidad libre, alertas de carga y quién se libera pronto.</p>
+              </div>
+              <a href="ocupacion.html" class="btn btn-secondary btn-sm">Ver ocupación completa</a>
             </div>
-          </div>
-          <div class="card-body" id="overallocation-list" style="display:flex; flex-direction:column; gap:var(--space-4);"></div>
-        </section>
 
-        <section class="card card-pad">
-          <div class="card-header-icon-row" style="margin-bottom:var(--space-4);">
-            <span class="card-header-icon violet"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-book"></use></svg></span>
-            <h3 style="font-size:var(--fs-md);">Habilidades más demandadas</h3>
-          </div>
-          <div id="skills-demand"></div>
-        </section>
+            <div class="tabs rmi-tabs" role="tablist" data-tabs>
+              <button type="button" class="tab-btn" data-tab="banca" th:classappend="${alertasCarga == 0} ? 'active'">
+                Gestión de la banca <span class="counter-badge" th:text="${disponiblesTotal}">0</span>
+              </button>
+              <button type="button" class="tab-btn" data-tab="alertas" th:classappend="${alertasCarga > 0} ? 'active'">
+                Alertas de carga <span class="counter-badge" th:text="${alertasCarga}">0</span>
+              </button>
+              <button type="button" class="tab-btn" data-tab="liberados">
+                Se liberan pronto <span class="counter-badge" th:text="${p.liberados().size()}">0</span>
+              </button>
+            </div>
+
+            <!-- Pestaña: la banca -->
+            <div class="rmi-panel" data-tab-panel="banca">
+              <div class="rmi-hello" th:if="${alertasCarga == 0 and !p.disponibles().isEmpty()}">
+                <svg class="rmi-hello-art" viewBox="0 0 64 64" aria-hidden="true">
+                  <circle cx="32" cy="32" r="30" class="rmi-art-bg"></circle>
+                  <circle cx="24" cy="26" r="7" class="rmi-art-fg"></circle>
+                  <circle cx="41" cy="26" r="7" class="rmi-art-fg2"></circle>
+                  <path d="M12 50c2-9 7-13 12-13s10 4 12 13" class="rmi-art-fg"></path>
+                  <path d="M29 50c2-9 7-13 12-13s10 4 12 13" class="rmi-art-fg2"></path>
+                  <path d="M44 9l3 3 6-6" class="rmi-art-check"></path>
+                </svg>
+                <span><strong>¡Buen trabajo!</strong> El equipo tiene una carga saludable hoy. Estas personas tienen capacidad para tomar nuevos proyectos.</span>
+              </div>
+
+              <div class="state-panel rmi-empty" th:if="${p.disponibles().isEmpty()}">
+                <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span>
+                <span class="state-panel-title">Nadie está en la banca</span>
+                <span class="state-panel-desc">Todos los miembros tienen al menos 30% de dedicación asignada.</span>
+              </div>
+
+              <div class="rmi-carousel" th:unless="${p.disponibles().isEmpty()}" data-rmi-carousel>
+                <button type="button" class="rmi-nav is-prev" data-rmi-prev aria-label="Anterior"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-left"></use></svg></button>
+                <div class="rmi-track" data-rmi-track>
+                  <article class="rmi-person" th:each="d : ${p.disponibles()}">
+                    <header class="rmi-person-head">
+                      <span class="avatar" th:text="${d.iniciales()}">AB</span>
+                      <span class="rmi-person-id">
+                        <a class="rmi-person-name" th:href="@{'/resource-manager/colaboradores/' + ${d.perfilId()}}" th:text="${d.nombre()}">Nombre</a>
+                        <span class="rmi-person-role" th:text="${d.cargo()} ?: 'Miembro'">Cargo</span>
+                      </span>
+                    </header>
+
+                    <div class="rmi-load">
+                      <div class="rmi-load-bar"><span th:style="'width:' + ${d.carga()} + '%'"></span></div>
+                      <span class="rmi-load-text"><b th:text="${d.carga()} + '%'">0%</b> asignado · <span th:text="${d.libre()} + '% libre'">100% libre</span></span>
+                    </div>
+
+                    <ul class="rmi-skills" th:unless="${d.habilidades().isEmpty()}">
+                      <li th:each="h : ${d.habilidades()}" th:title="${h.nombre()} + ' · nivel ' + ${h.nivel()} + ' de 5'">
+                        <span th:text="${h.nombre()}">Skill</span>
+                        <span class="rmi-dots" aria-hidden="true"><i th:each="n : ${#numbers.sequence(1, 5)}" th:classappend="${n <= h.nivel()} ? 'on'"></i></span>
+                      </li>
+                    </ul>
+                    <p class="rmi-muted" th:if="${d.habilidades().isEmpty()}">Sin habilidades declaradas.</p>
+
+                    <span class="badge" th:if="${d.enBanca() and d.diasEnBanca() != null}"
+                          th:classappend="${d.bancaLarga()} ? 'badge-red' : 'badge-amber'"
+                          th:text="${d.diasEnBanca() == 0} ? 'En la banca desde hoy' : 'En la banca hace ' + ${d.diasEnBanca()} + (${d.diasEnBanca() == 1} ? ' día' : ' días')">En la banca</span>
+                    <span class="badge badge-blue" th:unless="${d.enBanca()}">Capacidad parcial</span>
+
+                    <div class="rmi-suggest" th:if="${d.sugerenciaProyecto() != null}">
+                      <svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg>
+                      <span>Encaja en <a href="asignaciones.html" th:text="${d.sugerenciaProyecto()}">Proyecto</a>
+                        <span class="rmi-muted" th:text="'· ' + ${#strings.listJoin(d.sugerenciaHabilidades(), ', ')}">· skills</span></span>
+                    </div>
+                    <div class="rmi-suggest is-none" th:if="${d.sugerenciaProyecto() == null}">
+                      <svg class="icon icon-sm"><use href="/img/icons.svg#icon-book"></use></svg>
+                      <span>Ningún proyecto con vacantes pide sus habilidades: buen momento para capacitación.</span>
+                    </div>
+                  </article>
+                </div>
+                <button type="button" class="rmi-nav is-next" data-rmi-next aria-label="Siguiente"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-right"></use></svg></button>
+              </div>
+            </div>
+
+            <!-- Pestaña: alertas -->
+            <div class="rmi-panel" data-tab-panel="alertas" hidden>
+              <div class="rmi-list" th:if="${alertasCarga > 0}">
+                <div class="callout danger" th:each="o : ${sobrecargados}">
+                  <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
+                  <span class="callout-body"><strong th:text="${o.nombre}">Nombre</strong> está sobre-asignado hoy
+                    (<span th:text="${o.promedio}">0</span>% de carga) — <a href="asignaciones.html">rebalancear</a>.</span>
+                </div>
+                <div class="callout warn" th:each="r : ${p.prediccion().enRiesgo()}">
+                  <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
+                  <span class="callout-body"><strong th:text="${r.nombre()}">Nombre</strong> llegará a
+                    <strong th:text="${r.cargaFutura()} + '%'">0%</strong> en los próximos <span th:text="${p.prediccion().dias()}">14</span> días
+                    por asignaciones ya programadas — <a th:href="@{'/resource-manager/colaboradores/' + ${r.perfilId()}}">ver detalle</a>.</span>
+                </div>
+              </div>
+              <div class="rmi-calm" th:if="${alertasCarga == 0}">
+                <svg class="rmi-calm-art" viewBox="0 0 120 90" aria-hidden="true">
+                  <ellipse cx="60" cy="80" rx="44" ry="6" class="rmi-art-shadow"></ellipse>
+                  <rect x="22" y="22" width="76" height="52" rx="10" class="rmi-art-card"></rect>
+                  <path d="M34 60 L48 46 L60 54 L84 34" class="rmi-art-line"></path>
+                  <circle cx="84" cy="34" r="5" class="rmi-art-dot"></circle>
+                  <circle cx="94" cy="18" r="12" class="rmi-art-badge"></circle>
+                  <path d="M88.5 18.5l4 4 7-8" class="rmi-art-check"></path>
+                </svg>
+                <strong>Sin alertas de carga</strong>
+                <span>Nadie supera el <span th:text="${p.limiteCarga()}">100</span>% hoy ni lo hará en los próximos <span th:text="${p.prediccion().dias()}">14</span> días con lo que ya está programado.</span>
+                <button type="button" class="btn btn-secondary btn-sm" data-rmi-go="banca">Ver quién está disponible</button>
+              </div>
+            </div>
+
+            <!-- Pestaña: se liberan pronto -->
+            <div class="rmi-panel" data-tab-panel="liberados" hidden>
+              <div class="state-panel rmi-empty" th:if="${p.liberados().isEmpty()}">
+                <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-calendar"></use></svg></span>
+                <span class="state-panel-title">Nadie se libera en los próximos 30 días</span>
+                <span class="state-panel-desc">Aquí aparecen las asignaciones cuya fecha de fin (o la del proyecto) está cerca.</span>
+              </div>
+              <ul class="rmi-rows" th:unless="${p.liberados().isEmpty()}">
+                <li th:each="l : ${p.liberados()}">
+                  <span class="avatar avatar-sm" th:text="${l.iniciales()}">AB</span>
+                  <span class="rmi-row-main">
+                    <a class="rmi-row-title" th:href="@{'/resource-manager/colaboradores/' + ${l.perfilId()}}" th:text="${l.nombre()}">Nombre</a>
+                    <span class="rmi-row-sub">Termina en <b th:text="${l.proyecto()}">Proyecto</b> el <span th:text="${l.fechaLabel()}">fecha</span></span>
+                  </span>
+                  <span class="rmi-when" th:classappend="${l.diasRestantes() <= 7} ? 'is-soon'"
+                        th:text="${l.diasRestantes() == 0} ? 'hoy' : 'en ' + ${l.diasRestantes()} + (${l.diasRestantes() == 1} ? ' día' : ' días')">en 5 días</span>
+                  <span class="rmi-free" th:text="'+' + ${l.cargaQueLibera()} + '% libre'">+50%</span>
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="card card-pad rmi-timeline">
+            <div class="rmi-head">
+              <div>
+                <h3>Línea de tiempo de proyectos</h3>
+                <p class="rmi-sub" th:text="${p.gantt().rangoLabel()}">rango</p>
+              </div>
+              <span class="rmi-legend">
+                <span><i class="is-activo"></i>Activo</span>
+                <span><i class="is-planificacion"></i>Planificación</span>
+                <span><i class="is-en_pausa"></i>En pausa</span>
+              </span>
+            </div>
+
+            <div class="state-panel rmi-empty" th:if="${p.gantt().filas().isEmpty()}">
+              <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-calendar"></use></svg></span>
+              <span class="state-panel-title">No hay proyectos vigentes</span>
+            </div>
+
+            <div class="rmi-gantt" th:unless="${p.gantt().filas().isEmpty()}">
+              <div class="rmi-gantt-scale">
+                <span class="rmi-gantt-label"></span>
+                <span class="rmi-gantt-track">
+                  <span class="rmi-gantt-month" th:each="m : ${p.gantt().meses()}" th:style="'left:' + ${m.pct()} + '%'" th:text="${m.etiqueta()}">oct</span>
+                </span>
+              </div>
+              <div class="rmi-gantt-row" th:each="g : ${p.gantt().filas()}">
+                <span class="rmi-gantt-label">
+                  <span class="rmi-gantt-name" th:text="${g.nombre()}">Proyecto</span>
+                  <span class="rmi-gantt-meta" th:text="${g.equipo()} + ' en equipo' + (${g.vacantes() > 0} ? ' · ' + ${g.vacantes()} + ' vacante(s)' : '')">equipo</span>
+                </span>
+                <span class="rmi-gantt-track">
+                  <span class="rmi-gantt-today" th:style="'left:' + ${p.gantt().hoyPct()} + '%'"></span>
+                  <span class="rmi-gantt-bar" th:classappend="'is-' + ${g.estado()} + (${g.abierto()} ? ' is-open' : '') + (${g.empiezaAntes()} ? ' is-before' : '')"
+                        th:style="'left:' + ${g.inicioPct()} + '%;width:' + ${g.anchoPct()} + '%'"
+                        th:title="${g.nombre()} + ' · ' + ${g.estadoLabel()} + ' · ' + ${g.fechasLabel()}"></span>
+                </span>
+              </div>
+              <div class="rmi-gantt-foot">
+                <span class="rmi-gantt-label"></span>
+                <span class="rmi-gantt-track"><span class="rmi-gantt-today-label" th:style="'left:' + ${p.gantt().hoyPct()} + '%'">Hoy</span></span>
+              </div>
+            </div>
+
+            <h4 class="rmi-subtitle" th:unless="${p.porIniciar().isEmpty()}">Proyectos por iniciar</h4>
+            <div class="rmi-upcoming" th:unless="${p.porIniciar().isEmpty()}">
+              <a class="rmi-up" href="asignaciones.html" th:each="u : ${p.porIniciar()}">
+                <span class="rmi-up-date">
+                  <b th:text="${u.diasParaIniciar() != null} ? 'en ' + ${u.diasParaIniciar()} + ' d' : 'ya'">en 5 d</b>
+                  <span th:text="${u.fechaLabel()}">fecha</span>
+                </span>
+                <span class="rmi-up-main">
+                  <span class="rmi-row-title" th:text="${u.nombre()}">Proyecto</span>
+                  <span class="rmi-chips"><span class="rmi-chip" th:each="h : ${u.habilidades()}" th:text="${h}">Skill</span></span>
+                </span>
+                <span class="rmi-up-slots" th:classappend="${u.vacantes() > 0} ? 'is-open'">
+                  <b th:text="${u.vacantes()}">0</b><span th:text="${u.vacantes() == 1} ? 'vacante' : 'vacantes'">vacantes</span>
+                </span>
+              </a>
+            </div>
+          </section>
+        </div>
+
+        <div class="rmi-col">
+          <!-- Buzón de solicitudes de PMs -->
+          <section class="card card-pad rmi-inbox">
+            <div class="rmi-head">
+              <div>
+                <h3>Solicitudes de Project Managers</h3>
+                <p class="rmi-sub" th:text="${p.solicitudesTotal() == 0} ? 'Bandeja al día' : ${p.solicitudesTotal()} + ' pendiente(s) de tu revisión'">pendientes</p>
+              </div>
+              <span class="counter-badge rmi-inbox-count" th:if="${p.solicitudesTotal() > 0}" th:text="${p.solicitudesTotal()}">0</span>
+            </div>
+
+            <div class="state-panel rmi-empty" th:if="${p.solicitudes().isEmpty()}">
+              <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span>
+              <span class="state-panel-title">No hay solicitudes pendientes</span>
+              <span class="state-panel-desc">Cuando un PM proponga a alguien para su proyecto, aparecerá aquí.</span>
+            </div>
+
+            <ul class="rmi-requests" th:unless="${p.solicitudes().isEmpty()}">
+              <li th:each="s : ${p.solicitudes()}">
+                <span class="avatar avatar-sm" th:text="${s.candidatoIniciales()}">AB</span>
+                <span class="rmi-row-main">
+                  <span class="rmi-row-title"><span th:text="${s.candidato()}">Candidato</span>
+                    <svg class="icon icon-sm rmi-arrow"><use href="/img/icons.svg#icon-arrow-right"></use></svg>
+                    <span th:text="${s.proyecto()}">Proyecto</span></span>
+                  <span class="rmi-row-sub">
+                    Pide <b th:text="${s.solicitante()}">PM</b> · <span th:text="${s.dedicacion()} + '%'">40%</span>
+                    <th:block th:if="${s.score() != null}"> · match <span th:text="${s.score()}">88</span></th:block>
+                    · <span th:text="${s.fechaLabel()}">fecha</span>
+                  </span>
+                  <span class="rmi-tags">
+                    <span class="badge badge-violet" th:text="${s.origenLabel()}">Talent Matching</span>
+                    <span class="badge badge-red" th:if="${s.superaLimite()}">Superaría el límite</span>
+                  </span>
+                </span>
+              </li>
+            </ul>
+
+            <a href="ai-talent-matching.html" class="btn btn-primary btn-sm rmi-inbox-cta" th:if="${p.solicitudesTotal() > 0}">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-check-circle"></use></svg>Revisar solicitudes
+            </a>
+          </section>
+
+          <section class="card card-pad rmi-skills-card">
+            <div class="rmi-head">
+              <div>
+                <h3>Habilidades: demanda vs. equipo</h3>
+                <p class="rmi-sub">Lo que piden los proyectos abiertos frente a quiénes lo dominan.</p>
+              </div>
+            </div>
+
+            <!-- Con habilidades requeridas por proyectos -->
+            <div class="rmi-skillrows" th:unless="${p.habilidades().isEmpty()}">
+              <a class="rmi-skillrow" th:each="h : ${p.habilidades()}" th:href="@{/resource-manager/colaboradores.html(habilidadId=${h.id()})}"
+                 th:title="'Ver colaboradores con ' + ${h.nombre()}">
+                <span class="rmi-skillrow-top">
+                  <span class="rmi-skill-name" th:text="${h.nombre()}">Skill</span>
+                  <span class="rmi-tags">
+                    <span class="badge badge-red" th:if="${h.faltan() > 0}" th:text="'Faltan ' + ${h.faltan()}">Faltan</span>
+                    <span class="badge badge-green" th:if="${h.faltan() == 0}">Cubierta</span>
+                    <span class="badge badge-amber" th:if="${h.enRiesgo() and h.personas() > 0}" th:text="'Riesgo: solo ' + ${h.personas()}">Riesgo</span>
+                    <span class="badge badge-amber" th:if="${h.personas() == 0}">Nadie la domina</span>
+                  </span>
+                </span>
+                <div class="progress-inline">
+                  <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${h.faltan() > 0} ? 'amber'" th:style="'width:' + ${h.barraPct()} + '%'"></div></div>
+                  <span class="progress-value" th:text="${h.personas()} + ' persona(s)'">0 personas</span>
+                </div>
+                <span class="rmi-row-sub" th:text="'Piden ' + ${h.proyectos()} + ' proyecto(s) · ' + ${h.plazasAbiertas()} + ' plaza(s) abierta(s) · ' + ${h.conCapacidad()} + ' con capacidad'">detalle</span>
+              </a>
+            </div>
+
+            <!-- Sin requeridas: se mantiene el ranking de habilidades declaradas -->
+            <th:block th:if="${p.habilidades().isEmpty()}">
+              <div th:if="${topHabilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
+              <div th:each="s : ${topHabilidades}" style="display:flex; align-items:center; gap:var(--space-4); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
+                <span style="flex:1; font-size:var(--fs-sm); font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
+                <div class="progress-bar" style="max-width:140px;"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
+                <span class="mono text-tertiary" style="font-size:var(--fs-xs); min-width:110px; text-align:right;" th:text="${s.vacantes()} + ' persona(s)'">0 personas</span>
+              </div>
+            </th:block>
+
+            <a href="colaboradores.html" class="btn btn-secondary btn-sm rmi-skill-cta">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-search"></use></svg>Buscar en el directorio
+            </a>
+          </section>
+        </div>
       </div>
 
     </main>
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "resource-manager", active: "inicio.html", title: "Inicio", subtitle: "Ocupación del equipo · " + MOCK.meta.stats.colaboradores + " colaboradores" });
-  if (!cfg) return;
-
-  var b = MOCK.occupancyBuckets;
-  document.getElementById("kpi-grid").innerHTML = [
-    { label: "OCUPACIÓN PROMEDIO", value: MOCK.rmReport.ocupacionPromedio + "%", meta: "meta " + MOCK.rmReport.meta + "%", cls: "warn", icon: "icon-layers", accent: "amber" },
-    { label: "SOBRE-ASIGNADOS", value: b.sobreAsignados, meta: "requieren acción", cls: "down", icon: "icon-user-x", accent: "red" },
-    { label: "CAPACIDAD LIBRE", value: b.horasLibres + " h", meta: "próximas 6 semanas", icon: "icon-zap", accent: "blue" },
-    { label: "SOLICITUDES PENDIENTES", value: MOCK.rmReport.solicitudesPendientes, meta: MOCK.rmReport.vencenHoy + " vencen hoy", cls: "warn", icon: "icon-bell", accent: "amber" }
-  ].map(function (k) { return '<div class="kpi-tile accent-' + k.accent + '"><span class="kpi-tile-icon ' + k.accent + '"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#' + k.icon + '"></use></svg></span><span class="kpi-tile-label">' + k.label + '</span><span class="kpi-tile-value">' + k.value + '</span><span class="kpi-tile-meta ' + (k.cls || "") + '">' + k.meta + '</span></div>'; }).join("");
-
-  document.getElementById("week-heads").outerHTML = MOCK.occupancyWeeks.map(function (w) { return "<th>" + w + "</th>"; }).join("") + "<th>Prom.</th>";
-
-  function levelClass(v) {
-    if (v > 100) return "level-over";
-    if (v >= 90) return "level-high";
-    if (v >= 60) return "level-optimal";
-    return "level-low";
-  }
-
-  document.getElementById("heatmap-body").innerHTML = MOCK.occupancyHeatmap.map(function (row) {
-    var cells = row.valores.map(function (v) { return '<td><span class="heatmap-cell ' + levelClass(v) + '" title="' + row.nombre + ' · ' + v + '%">' + v + "</span></td>"; }).join("");
-    return "<tr><td><div class=\"heatmap-person-cell\"><span class=\"avatar avatar-sm\">" + row.iniciales + "</span><span><div style=\"font-size:var(--fs-xs); font-weight:500;\">" + row.nombre + "</div><div class=\"text-tertiary\" style=\"font-size:10px;\">" + row.cargo + "</div></span></div></td>" +
-      cells + '<td><span class="mono" style="font-weight:600; font-size:var(--fs-xs);">' + row.promedio + "%</span></td></tr>";
-  }).join("");
-
-  document.getElementById("overallocation-list").innerHTML = MOCK.overallocationCases.map(function (c, i) {
-    return '<div class="callout ' + (c.pct > 110 ? "danger" : "warn") + '" style="margin:0;">' +
-      '<span class="callout-icon"><svg class="icon"><use href="../../static/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
-      '<span class="callout-body"><span class="callout-title">' + c.nombre + " (" + c.pct + "%) · " + c.cargo + '</span>' + c.detalle +
-      '<div class="callout-actions"><button type="button" class="btn btn-secondary btn-sm" data-rebalance="' + i + '">Rebalancear</button>' +
-      '<button type="button" class="btn btn-primary btn-sm" data-approve="' + i + '">Aprobar excepción</button></div></span></div>';
-  }).join("");
-
-  document.querySelectorAll("[data-rebalance]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var c = MOCK.overallocationCases[btn.dataset.rebalance];
-      SBAI.toast.show("Se envió una propuesta de rebalanceo de carga a los PM de los proyectos de <strong>" + c.nombre + "</strong>.", { type: "success" });
-    });
-  });
-  document.querySelectorAll("[data-approve]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var c = MOCK.overallocationCases[btn.dataset.approve];
-      SBAI.modal.confirm({
-        title: "¿Aprobar excepción de carga?",
-        desc: c.nombre + " continuará al " + c.pct + "% hasta que su carga se normalice.",
-        confirmLabel: "Aprobar excepción",
-        onConfirm: function () { SBAI.toast.show("Excepción de carga aprobada para <strong>" + c.nombre + "</strong>.", { type: "success" }); }
-      });
-    });
-  });
-
-  var maxDemand = Math.max.apply(null, MOCK.skillsDemand.map(function (s) { return s.vacantes; }));
-  document.getElementById("skills-demand").innerHTML = MOCK.skillsDemand.map(function (s) {
-    return '<div style="margin-bottom:var(--space-3);"><div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); margin-bottom:4px;"><span style="font-weight:500;">' + s.nombre + '</span><span class="text-tertiary mono">' + s.vacantes + ' vacantes</span></div>' +
-      '<div class="progress-bar"><div class="progress-bar-fill" style="width:' + Math.round((s.vacantes / maxDemand) * 100) + '%;"></div></div></div>';
-  }).join("");
-});
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/ui-kit.js"></script>
+<script src="/js/rm-inicio.js"></script>
 </body>
 </html>

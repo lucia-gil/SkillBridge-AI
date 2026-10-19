@@ -1,19 +1,30 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mis proyectos · SkillBridge AI</title>
-<link rel="stylesheet" href="../../static/css/tokens.css">
-<link rel="stylesheet" href="../../static/css/base.css">
-<link rel="stylesheet" href="../../static/css/components.css">
-<link rel="stylesheet" href="../../static/css/layout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis proyectos · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/polish.css">
+<style>
+  /* Tarjetas de "Mis proyectos" alineadas: misma altura por fila y la parte
+     inferior (periodo, avance, dedicación) siempre al fondo de la tarjeta. */
+  .colab-card { display: flex; flex-direction: column; }
+  .colab-card[hidden] { display: none; }
+  .colab-card-desc { font-size: var(--fs-sm); line-height: 1.5; margin-bottom: var(--space-4); min-height: 3em;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .colab-card-tech { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: var(--space-4); }
+  .colab-card-bottom { margin-top: auto; padding-top: var(--space-4); border-top: 1px solid var(--border-subtle); }
+</style>
 </head>
 <body>
 <div class="app-shell">
-  <aside class="sidebar" id="sbai-sidebar"></aside>
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
-    <header class="topbar" id="sbai-topbar"></header>
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
       <div class="tabs">
@@ -21,229 +32,148 @@
         <button type="button" class="tab-btn" data-tab="historial">Historial completo</button>
       </div>
 
-      <div id="proyectos-toolbar" class="card table-filters" style="margin:var(--space-5) 0; padding:var(--space-4) var(--space-5);">
-        <div class="input-wrap" style="flex:1; min-width:240px; max-width:360px;">
-          <svg class="icon"><use href="../../static/img/icons.svg#icon-search"></use></svg>
-          <input type="text" class="input has-left-icon" id="proyectos-search" placeholder="Buscar proyecto por nombre…">
+      <section class="card" id="filtros-actuales">
+        <div class="table-toolbar">
+          <div>
+            <strong th:text="${proyectosActivos.size()} + (${proyectosActivos.size()} == 1 ? ' proyecto actual' : ' proyectos actuales')">0 proyectos</strong>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Filtra por nombre, estado, tecnología, duración o avance</p>
+          </div>
+          <div class="table-filters">
+            <input type="text" class="input" data-filter-scope="proyectos-colab" data-filter-key="q" placeholder="Buscar proyecto…" style="width:220px; height:36px; font-size:var(--fs-xs);">
+            <select class="select" data-filter-scope="proyectos-colab" data-filter-key="estado">
+              <option value="todos">Estado: todos</option>
+              <option value="planificacion">Planificación</option><option value="activo">Activo</option>
+              <option value="en_pausa">En pausa</option><option value="completado">Completado</option><option value="cancelado">Cancelado</option>
+            </select>
+          </div>
         </div>
-        <select class="select" id="proyectos-estado-filter" style="max-width:200px;">
-          <option value="todos">Todos los estados</option>
-          <option value="Activo">Activo</option>
-          <option value="En riesgo">En riesgo</option>
-          <option value="Planeado">Planeado</option>
-          <option value="Bloqueado">Bloqueado</option>
-          <option value="Cerrado">Cerrado</option>
-        </select>
+        <div data-project-filters="proyectos-colab" data-hide="miembros" data-rows="[data-project-card=&quot;proyectos-colab&quot;]"></div>
+      </section>
+      <div class="state-panel" data-cards-empty="proyectos-colab" hidden>
+        <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+        <span class="state-panel-title">Sin proyectos con estos filtros</span>
       </div>
 
-      <div id="tab-actuales">
-        <div id="proyectos-grid" class="grid-cards" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:var(--space-5);"></div>
-
-        <div class="state-panel" id="proyectos-empty" hidden>
-          <span class="state-panel-icon"><svg class="icon icon-lg"><use href="../../static/img/icons.svg#icon-search"></use></svg></span>
-          <span class="state-panel-desc">No se encontraron proyectos con ese nombre o estado.</span>
-        </div>
-
-        <div id="proyectos-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:var(--space-6);">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="proyectos-pagination-count"></span>
-          <div class="pagination" id="proyectos-pagination-controls"></div>
-        </div>
-      </div>
-
-      <section class="card" id="tab-historial" hidden style="display:flex; flex-direction:column; height:calc(100vh - var(--topbar-h) - (var(--space-6) * 2) - 100px); overflow:hidden;">
-        <div class="table-toolbar" style="flex-shrink:0;">
-          <div class="card-header-icon-row">
-            <span class="card-header-icon blue"><svg class="icon icon-sm"><use href="../../static/img/icons.svg#icon-folder"></use></svg></span>
-            <div>
-              <strong id="historial-count"></strong>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Todos tus proyectos, actuales e históricos</p>
+      <div id="tab-actuales" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:var(--space-5);">
+        <div th:if="${proyectosActivos.isEmpty()}" class="text-tertiary" style="grid-column:1/-1; text-align:center; padding:var(--space-6);">No tienes proyectos activos por ahora.</div>
+        <div class="card card-pad colab-card" th:each="p : ${proyectosActivos}" data-project-card="proyectos-colab" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre)}">
+          <div style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">
+            <span class="avatar" style="border-radius:var(--radius-md); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:600;" th:text="${p.nombre}">Proyecto</div>
+              <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${p.rolLabel}">Rol</div>
             </div>
+            <span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span>
+          </div>
+          <p class="text-secondary colab-card-desc" th:title="${p.descripcion}"
+             th:text="${p.descripcion ?: 'Sin descripción.'}">Descripción</p>
+          <span class="colab-card-tech" data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="4"></span>
+          <!-- Parte inferior anclada abajo: periodo, barra y dedicación quedan
+               a la misma altura en todas las tarjetas aunque la descripción o
+               las tecnologías ocupen distinto alto. -->
+          <div class="colab-card-bottom">
+          <div data-periodo th:attr="data-periodo=${p.periodoLabel}" style="margin:0 0 var(--space-4);"></div>
+          <div class="progress-inline" style="margin-bottom:var(--space-4);">
+            <div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div>
+            <span class="progress-value" th:text="${p.avance} + '%'">0%</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="label-mono" th:text="${p.cargaPorcentaje} + '% dedicación'">0%</span>
+            <button type="button" class="btn btn-tertiary btn-sm" th:attr="data-view-project=${p.proyectoId}">Ver detalle →</button>
+          </div>
           </div>
         </div>
-        <div class="table-scroll-wrap">
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead class="sticky-head"><tr><th>Proyecto</th><th>Cliente</th><th>Rol</th><th>Periodo</th><th>Estado</th></tr></thead>
-              <tbody id="historial-body"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="table-footer" style="flex-shrink:0;">
-          <span class="text-tertiary" style="font-size:var(--fs-xs);" id="historial-pagination-count"></span>
-          <div class="pagination" id="historial-pagination-controls"></div>
+      </div>
+
+      <section class="card" id="tab-historial" hidden>
+        <div class="table-scroll">
+          <table class="data-table" data-paginar="8">
+            <thead><tr><th>Proyecto</th><th>Rol</th><th>Periodo</th><th>Dedicación</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+            <tr th:if="${historial.isEmpty()}"><td colspan="6" class="text-tertiary" style="text-align:center; padding:var(--space-6);">Todavía no tienes asignaciones registradas.</td></tr>
+            <tr th:each="h : ${historial}">
+              <td class="cell-primary" th:text="${h.nombre}">Proyecto</td>
+              <td th:text="${h.rolLabel}">Rol</td>
+              <td><span data-periodo th:attr="data-periodo=${h.periodoLabel}">Periodo</span></td>
+              <td class="mono" th:text="${h.cargaPorcentaje} + '%'">0%</td>
+              <td><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></td>
+              <td class="cell-actions"><button type="button" th:attr="data-view-project=${h.proyectoId}">Ver detalle</button></td>
+            </tr>
+            </tbody>
+          </table>
         </div>
       </section>
+
+      <!-- Detalle precalculado por proyecto (misma idea que administrador/proyectos.html,
+           pero de solo lectura: sin formularios de asignar/cambiar estado). -->
+      <div id="project-detail-templates" hidden>
+        <template th:each="d : ${detalles}" th:attr="data-project-id=${d.id}">
+          <div class="modal-header">
+            <div><h2 th:text="${d.nombre}">Proyecto</h2><p th:text="${d.estadoLabel} + ' · PM: ' + ${d.pmNombre}">Estado</p></div>
+            <button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-4);" th:text="${d.descripcion} ?: 'Sin descripción.'">Descripción</p>
+            <div style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
+              <span class="badge badge-neutral" th:each="t : ${d.tecnologias}" th:with="icono=${T(com.skillbridge.ai.util.TecnologiaIconUtil).icono(t)}" style="display:inline-flex; align-items:center; gap:6px;"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${icono}"></use></svg><span th:text="${t}">Tech</span></span>
+            </div>
+            <div class="info-row"><span class="info-row-label">Fechas</span><span class="info-row-value" th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel}">fechas</span></div>
+            <div class="info-row"><span class="info-row-label">Avance (heurístico por tiempo transcurrido)</span><span class="info-row-value mono" th:text="${d.avance} + '%'">0%</span></div>
+
+            <h3 style="font-size:var(--fs-sm); margin:var(--space-5) 0 var(--space-3);">Equipo activo</h3>
+            <div th:if="${d.equipo.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin colaboradores asignados todavía.</div>
+            <div th:each="m : ${d.equipo}" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-2) 0; border-bottom:1px solid var(--border-subtle);">
+              <span class="avatar avatar-sm" th:text="${m.iniciales}">MR</span>
+              <span style="flex:1; min-width:0;">
+                  <div style="font-size:var(--fs-sm); font-weight:500;" th:text="${m.nombre}">Nombre</div>
+                  <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${m.rolLabel} + ' · ' + ${m.cargaPorcentaje} + '%'">rol</div>
+                </span>
+            </div>
+          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div>
+        </template>
+      </div>
 
     </main>
   </div>
 </div>
 
-<script src="../../static/js/mock-data.js"></script>
-<script src="../../static/js/state.js"></script>
-<script src="../../static/js/toast.js"></script>
-<script src="../../static/js/dropdown.js"></script>
-<script src="../../static/js/table-filter.js"></script>
-<script src="../../static/js/command-palette.js"></script>
-<script src="../../static/js/modal.js"></script>
-<script src="../../static/js/shell.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var cfg = SBAI.shell.init({ role: "colaborador", active: "proyectos.html", title: "Mis proyectos", subtitle: "12 proyectos actuales · 5 históricos" });
-  if (!cfg) return;
-
-  var PAGE_SIZE = 6;
-  var currentPage = 1;
-
-  // Asignaciones actuales de Mariana (demo): todos los proyectos del catálogo
-  // global que no están Cerrados, con un rol y dedicación inventados para
-  // cada uno. Solo para tener suficiente data y poder probar la paginación.
-  var actuales = MOCK.projects.filter(function (p) { return p.estado !== "Cerrado"; }).map(function (p, i) {
-    var roles = ["Frontend Sr.", "Frontend", "Consultora UI", "Backend", "QA", "DevOps"];
-    var dedic = [45, 35, 20, 30, 15, 25, 10, 40, 20, 15, 30, 20];
-    return { p: p, rol: roles[i % roles.length], dedicacion: dedic[i % dedic.length] };
-  });
-
-  var estadoBadge = { "Activo": "badge-green", "En riesgo": "badge-amber", "Planeado": "badge-neutral", "Bloqueado": "badge-red", "Cerrado": "badge-neutral" };
-
-  function getFiltered() {
-    var q = document.getElementById("proyectos-search").value.trim().toLowerCase();
-    var estado = document.getElementById("proyectos-estado-filter").value;
-    return actuales.filter(function (row) {
-      var p = row.p;
-      var matchesQ = !q || (p.nombre + " " + p.cliente).toLowerCase().indexOf(q) !== -1;
-      var matchesEstado = estado === "todos" || p.estado === estado;
-      return matchesQ && matchesEstado;
-    });
-  }
-
-  function cardHtml(row) {
-    var p = row.p;
-    return '<div class="card card-pad">' +
-      '<div style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">' +
-      '<span class="avatar" style="border-radius:var(--radius-md); background:var(--navy-700);">' + p.iniciales + '</span>' +
-      '<div style="flex:1; min-width:0;"><div style="font-weight:600;">' + p.nombre + '</div><div class="text-tertiary" style="font-size:var(--fs-xs);">' + p.cliente + '</div></div>' +
-      '<span class="badge ' + (estadoBadge[p.estado] || "badge-neutral") + '">' + p.estado + "</span></div>" +
-      '<p class="text-secondary" style="font-size:var(--fs-sm); line-height:1.5; margin-bottom:var(--space-4);">' + p.descripcion.slice(0, 130) + "…</p>" +
-      '<div class="progress-inline" style="margin-bottom:var(--space-4);"><div class="progress-bar"><div class="progress-bar-fill" style="width:' + p.avance + '%;"></div></div><span class="progress-value">' + p.avance + '%</span></div>' +
-      '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-      '<span class="label-mono">' + row.rol + " · " + row.dedicacion + '% dedicación</span>' +
-      '<button type="button" class="btn btn-tertiary btn-sm" data-open-detail="' + p.nombre + '">Ver detalle →</button></div>' +
-      "</div>";
-  }
-
-  function wireDetailButtons() {
-    document.querySelectorAll("[data-open-detail]").forEach(function (btn) {
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("[data-view-project]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var p = MOCK.findProject(btn.dataset.openDetail);
-        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-          '<div class="modal-header"><div><h2>' + p.nombre + '</h2><p>' + p.cliente + ' · ' + p.inicio + ' → ' + p.fin + '</p></div>' +
-          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="../../static/img/icons.svg#icon-x"></use></svg></button></div>' +
-          '<div class="modal-body"><p class="text-secondary" style="line-height:1.6; margin-bottom:var(--space-5);">' + p.descripcion + '</p>' +
-          '<div style="display:flex; flex-wrap:wrap; gap:var(--space-2);">' + p.stack.map(function (t) { return '<span class="badge badge-neutral">' + t + '</span>'; }).join("") + '</div></div>' +
-          '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
-        SBAI.modal.open(html);
+        var id = btn.dataset.viewProject;
+        var tpl = document.querySelector('#project-detail-templates template[data-project-id="' + id + '"]');
+        if (!tpl) return;
+        SBAI.modal.open('<div class="modal modal-wide" role="dialog" aria-modal="true">' + tpl.innerHTML + '</div>');
       });
     });
-  }
 
-  function renderPagination(totalItems, totalPages) {
-    var countEl = document.getElementById("proyectos-pagination-count");
-    var controlsEl = document.getElementById("proyectos-pagination-controls");
-    var wrapEl = document.getElementById("proyectos-pagination");
-
-    if (totalItems === 0) { wrapEl.hidden = true; return; }
-    wrapEl.hidden = false;
-
-    var start = (currentPage - 1) * PAGE_SIZE + 1;
-    var end = Math.min(currentPage * PAGE_SIZE, totalItems);
-    countEl.textContent = "Mostrando " + start + "–" + end + " de " + totalItems + " proyectos";
-
-    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
-
-    var html = '<button type="button" class="page-btn" id="pg-prev" ' + (currentPage === 1 ? "disabled" : "") + '>‹</button>';
-    for (var i = 1; i <= totalPages; i++) {
-      html += '<button type="button" class="page-btn' + (i === currentPage ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
-    }
-    html += '<button type="button" class="page-btn" id="pg-next" ' + (currentPage === totalPages ? "disabled" : "") + '>›</button>';
-    controlsEl.innerHTML = html;
-
-    var prevBtn = document.getElementById("pg-prev");
-    var nextBtn = document.getElementById("pg-next");
-    if (prevBtn) prevBtn.addEventListener("click", function () { if (currentPage > 1) { currentPage--; render(); } });
-    if (nextBtn) nextBtn.addEventListener("click", function () { if (currentPage < totalPages) { currentPage++; render(); } });
-    controlsEl.querySelectorAll("[data-page]").forEach(function (btn) {
-      btn.addEventListener("click", function () { currentPage = parseInt(btn.dataset.page, 10); render(); });
-    });
-  }
-
-  function render() {
-    var filtered = getFiltered();
-    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    if (currentPage > totalPages) currentPage = totalPages;
-
-    var pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-    document.getElementById("proyectos-grid").innerHTML = pageItems.map(cardHtml).join("");
-    document.getElementById("proyectos-empty").hidden = filtered.length !== 0;
-    document.getElementById("proyectos-grid").hidden = filtered.length === 0;
-
-    wireDetailButtons();
-    renderPagination(filtered.length, totalPages);
-  }
-
-  document.getElementById("proyectos-search").addEventListener("input", function () { currentPage = 1; render(); });
-  document.getElementById("proyectos-estado-filter").addEventListener("change", function () { currentPage = 1; render(); });
-
-  render();
-
-  var HIST_PAGE_SIZE = 6;
-  var historialPage = 1;
-  var badgeCls = { "En curso": "badge-blue", "En riesgo": "badge-amber", "Cerrado": "badge-neutral" };
-
-  function renderHistorialPagination(total, totalPages) {
-    var countEl = document.getElementById("historial-pagination-count");
-    var controlsEl = document.getElementById("historial-pagination-controls");
-    var start = total ? (historialPage - 1) * HIST_PAGE_SIZE + 1 : 0;
-    var end = Math.min(historialPage * HIST_PAGE_SIZE, total);
-    countEl.textContent = "Mostrando " + start + "–" + end + " de " + total + " proyectos";
-    if (totalPages <= 1) { controlsEl.innerHTML = ""; return; }
-    var html = '<button type="button" class="page-btn" id="hist-pg-prev" ' + (historialPage === 1 ? "disabled" : "") + '>‹</button>';
-    for (var i = 1; i <= totalPages; i++) html += '<button type="button" class="page-btn' + (i === historialPage ? " active" : "") + '" data-hist-page="' + i + '">' + i + "</button>";
-    html += '<button type="button" class="page-btn" id="hist-pg-next" ' + (historialPage === totalPages ? "disabled" : "") + '>›</button>';
-    controlsEl.innerHTML = html;
-    var prevBtn = document.getElementById("hist-pg-prev"), nextBtn = document.getElementById("hist-pg-next");
-    if (prevBtn) prevBtn.addEventListener("click", function () { if (historialPage > 1) { historialPage--; renderHistorial(); } });
-    if (nextBtn) nextBtn.addEventListener("click", function () { if (historialPage < totalPages) { historialPage++; renderHistorial(); } });
-    controlsEl.querySelectorAll("[data-hist-page]").forEach(function (btn) { btn.addEventListener("click", function () { historialPage = parseInt(btn.dataset.histPage, 10); renderHistorial(); }); });
-  }
-
-  function renderHistorial() {
-    var list = MOCK.marianaHistorial;
-    var totalPages = Math.max(1, Math.ceil(list.length / HIST_PAGE_SIZE));
-    if (historialPage > totalPages) historialPage = totalPages;
-    var pageItems = list.slice((historialPage - 1) * HIST_PAGE_SIZE, historialPage * HIST_PAGE_SIZE);
-
-    document.getElementById("historial-count").textContent = list.length + " proyecto" + (list.length === 1 ? "" : "s") + " en tu historial";
-    document.getElementById("historial-body").innerHTML = pageItems.map(function (h, i) {
-      return '<tr data-f-estado="' + h.estado + '" style="animation-delay:' + (i * 30) + 'ms;"><td class="cell-primary">' + h.proyecto + "</td><td>" + h.cliente + "</td><td>" + h.rol + "</td><td>" + h.periodo + "</td>" +
-        '<td><span class="badge ' + (badgeCls[h.estado] || "badge-neutral") + '">' + h.estado + "</span></td></tr>";
-    }).join("");
-
-    renderHistorialPagination(list.length, totalPages);
-  }
-  renderHistorial();
-
-  document.querySelectorAll("[data-tab]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      document.querySelectorAll("[data-tab]").forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      var isActuales = btn.dataset.tab === "actuales";
-      document.getElementById("tab-actuales").hidden = !isActuales;
-      document.getElementById("proyectos-toolbar").hidden = !isActuales;
-      document.getElementById("historial-body").closest("section").hidden = isActuales;
+    document.querySelectorAll("[data-tab]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("[data-tab]").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        document.getElementById("tab-actuales").hidden = btn.dataset.tab !== "actuales";
+        var fa = document.getElementById("filtros-actuales"); if (fa) fa.hidden = btn.dataset.tab !== "actuales";
+        var ce = document.querySelector("[data-cards-empty]"); if (ce && btn.dataset.tab !== "actuales") ce.hidden = true;
+        document.getElementById("tab-historial").hidden = btn.dataset.tab !== "historial";
+      });
     });
   });
-});
 </script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/battery-progress.js"></script>
+<script src="/js/paginar-lista.js"></script>
+<script src="/js/paginacion.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tech-icons.js"></script>
+<script src="/js/project-ui.js"></script>
+<script src="/js/tabla-acciones.js"></script>
 </body>
-</html>
+</html>
