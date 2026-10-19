@@ -9,8 +9,9 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/admin.css">
 </head>
-<body>
+<body class="admin-app">
 <script th:inline="javascript">try{sessionStorage.setItem("sbai_active_role", /*[[${rolSlug}]]*/ "colaborador");}catch(e){}</script>
 <script th:inline="javascript">window.SBAI_REAL_USER = { nombre: /*[[${sesionNombreCompleto}]]*/ null, iniciales: /*[[${sesionIniciales}]]*/ null };</script>
 
@@ -102,5 +103,6 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 </script>
+<script src="/js/admin-ui.js"></script>
 </body>
 </html>
