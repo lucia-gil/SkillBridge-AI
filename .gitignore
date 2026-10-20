@@ -3,3 +3,7 @@ target/
 
 # Secretos (contraseña de BD y de Gmail): nunca al repositorio
 src/main/resources/secretos.properties
+
+# Archivos de IDE y del sistema operativo
+.idea/
+.DS_Store
