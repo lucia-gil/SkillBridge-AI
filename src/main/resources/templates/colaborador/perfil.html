@@ -64,7 +64,7 @@
                       <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
                             th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
                     </div>
-                    <span th:if="${h.validada}" class="badge badge-green" style="margin-left:6px;">Validada por RM</span>
+                    <span th:if="${h.validada}" class="check-badge" style="margin-left:6px;" title="Validada por RM" aria-label="Validada por RM"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-check"></use></svg></span>
 
                     <!-- Constancia: PDF subido y/o link externo (se muestran los que existan) -->
                     <div th:if="${h.tieneCertificado}" class="cert-links">

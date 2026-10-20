@@ -670,3 +670,11 @@ input[type="file"]::file-selector-button:hover { background: var(--blue-bg); }
 .cert-current a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cert-quitar { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
 .btn.is-loading { opacity: .75; cursor: progress; }
+
+/* ============ Check centrado para habilidades validadas por RM ============ */
+.check-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--green-fg); color: #fff; flex-shrink: 0; vertical-align: middle;
+}
+.check-badge .icon { width: 12px; height: 12px; stroke: currentColor; }

@@ -90,7 +90,7 @@
                             <strong th:text="${h.nombre}">Habilidad</strong>
                             <span class="text-tertiary" style="font-size:var(--fs-xs);" th:text="'(' + ${h.categoriaNombre} + ' · ' + ${h.nivelLabel} + ')'">(Categoría · Nivel)</span>
                         </div>
-                        <span th:if="${h.validada}" class="badge badge-green">Validada</span>
+                        <span th:if="${h.validada}" class="check-badge" title="Validada" aria-label="Validada"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-check"></use></svg></span>
                         <button type="button" th:unless="${h.validada}" class="btn btn-secondary btn-sm"
                                 th:attr="data-validar-habilidad=${h.habilidadId}, data-habilidad-nombre=${h.nombre}">Validar</button>
                     </div>
