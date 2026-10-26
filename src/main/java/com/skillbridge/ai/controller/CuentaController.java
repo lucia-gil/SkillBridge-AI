@@ -260,6 +260,10 @@ public class CuentaController {
             @RequestParam(defaultValue = "0") int experienciaAnios,
             @RequestParam(required = false) String linkedinUrl,
             @RequestParam(required = false) String githubUrl,
+            @RequestParam(required = false) String portafolioUrl,
+            @RequestParam(required = false) String telefono,
+            @RequestParam(required = false) String ubicacion,
+            @RequestParam(required = false) String etiquetas,
             @RequestParam String volver,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
@@ -278,6 +282,10 @@ public class CuentaController {
                     experienciaAnios,
                     linkedinUrl,
                     githubUrl,
+                    portafolioUrl,
+                    telefono,
+                    ubicacion,
+                    etiquetas,
                     sesion.getUsuarioId()
             );
 

@@ -430,6 +430,45 @@
               </div>
 
 
+              <!-- PORTAFOLIO / CONTACTO / ETIQUETAS (v9: se ven en tu perfil profesional) -->
+
+              <div class="field">
+                <label class="field-label" for="cta-portafolio">Portafolio o sitio web</label>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <svg class="icon" style="width:20px; height:20px; flex-shrink:0; color:var(--text-tertiary);" aria-hidden="true"><use href="/img/icons.svg#icon-globe"></use></svg>
+                  <input class="input" id="cta-portafolio" name="portafolioUrl" type="url" maxlength="500"
+                         placeholder="https://tu-portafolio.dev"
+                         th:value="${resumen.portafolioUrl}">
+                </div>
+                <span class="field-hint">Opcional · Behance, Dribbble, blog o web personal</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label class="field-label" for="cta-telefono">Teléfono</label>
+                  <input class="input" id="cta-telefono" name="telefono" type="tel" maxlength="30"
+                         pattern="\+?[0-9 \-\(\)]{6,20}" placeholder="+51 999 999 999"
+                         th:value="${resumen.telefono}">
+                  <span class="field-hint">Opcional · lo ve el Resource Manager</span>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="cta-ubicacion">Ubicación</label>
+                  <input class="input" id="cta-ubicacion" name="ubicacion" maxlength="120"
+                         placeholder="Lima, Perú · remoto"
+                         th:value="${resumen.ubicacion}">
+                  <span class="field-hint">Ciudad, país o modalidad</span>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="cta-etiquetas">Etiquetas sobre ti</label>
+                <input class="input" id="cta-etiquetas" name="etiquetas" maxlength="400"
+                       placeholder="Mentor, Inglés B2, Design systems"
+                       th:value="${resumen.etiquetasTexto}">
+                <span class="field-hint">Sepáralas con comas · hasta 10, de 30 caracteres cada una. Aparecen en «Sobre mí».</span>
+              </div>
+
+
               <!-- GUARDAR -->
 
               <div

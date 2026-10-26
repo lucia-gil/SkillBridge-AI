@@ -3,116 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${perfil.usuario.nombreCompleto} + ' · SkillBridge AI'">Perfil · SkillBridge AI</title>
+    <title th:text="${vista.nombre} + ' · SkillBridge AI'">Perfil · SkillBridge AI</title>
     <link rel="stylesheet" href="/css/tokens.css">
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/components.css">
     <link rel="stylesheet" href="/css/layout.css">
     <link rel="stylesheet" href="/css/polish.css">
+    <link rel="stylesheet" href="/css/tonos-categoria.css">
+    <link rel="stylesheet" href="/css/colaborador-perfil.css">
 </head>
 <body>
 <div class="app-shell">
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
     <div class="main-content">
         <div th:replace="~{fragments/topbar :: topbar}"></div>
-        <main class="page-content" id="page-content">
+        <main class="page-content cp" id="page-content">
 
-            <a href="/resource-manager/colaboradores.html" class="text-tertiary" style="font-size:var(--fs-xs); display:inline-block; margin-bottom:var(--space-4);">← Volver a Colaboradores</a>
+            <a href="/resource-manager/colaboradores.html" class="cp-back">
+                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-arrow-left"></use></svg>
+                Colaboradores
+            </a>
 
-            <!-- Encabezado tipo CV -->
-            <section class="card card-pad">
-                <div style="display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;">
-                    <img th:if="${perfil.usuario.tieneFotoPerfil()}" th:src="@{'/perfil/foto/' + ${perfil.usuario.id}}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;" th:alt="${perfil.usuario.nombreCompleto}">
-                    <span th:unless="${perfil.usuario.tieneFotoPerfil()}" class="avatar avatar-lg" style="background:var(--navy-700);" th:text="${#strings.substring(perfil.usuario.nombreCompleto,0,1)}">N</span>
-                    <div style="flex:1; min-width:220px;">
-                        <h2 style="font-size:var(--fs-lg);" th:text="${perfil.usuario.nombreCompleto}">Nombre</h2>
-                        <p class="text-tertiary" th:text="${perfil.cargo} + ' · ' + ${perfil.usuario.correo}">Cargo · correo</p>
-                        <div style="display:flex; align-items:center; gap:var(--space-3); margin-top:var(--space-2); flex-wrap:wrap;">
-                            <span class="badge" th:classappend="${!perfil.usuario.activo} ? 'badge-red' : (${perfil.estado == 'activo'} ? 'badge-green' : 'badge-amber')"
-                                  th:text="${!perfil.usuario.activo} ? 'Cuenta suspendida' : (${perfil.estado == 'activo'} ? 'Disponible' : 'No disponible')">Estado</span>
-                            <a th:if="${perfil.linkedinUrl != null and !perfil.linkedinUrl.isBlank()}" th:href="${perfil.linkedinUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); color:var(--text-secondary); text-decoration:none;">
-                                <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                                LinkedIn
+            <!-- ═══════════ Encabezado ═══════════ -->
+            <section class="card cp-hero" aria-labelledby="cp-nombre">
+                <!-- Portada: la franja inferior es la mezcla de habilidades por categoría -->
+                <div class="cp-cover">
+                    <div class="cp-spectrum" th:unless="${vista.grupos.isEmpty()}" aria-hidden="true">
+                        <span th:each="g : ${vista.grupos}" th:attr="data-tono=${g.tono}"
+                              th:style="'flex-grow:' + ${g.habilidades.size()}"
+                              th:title="${g.categoria} + ': ' + ${g.habilidades.size()}"></span>
+                    </div>
+                </div>
+
+                <div class="cp-hero-body">
+                    <div class="cp-avatar">
+                        <img th:if="${vista.tieneFoto}" th:src="@{'/perfil/foto/' + ${vista.usuarioId}}" th:alt="${vista.nombre}" alt="">
+                        <span th:unless="${vista.tieneFoto}" th:text="${vista.iniciales}" aria-hidden="true">NN</span>
+                    </div>
+
+                    <div class="cp-identity">
+                        <h1 id="cp-nombre" th:text="${vista.nombre}">Nombre completo</h1>
+                        <p class="cp-headline">
+                            <span th:text="${vista.cargo.isEmpty()} ? 'Cargo sin registrar' : ${vista.cargo}">Cargo</span><span th:if="${vista.experienciaAnios > 0}" th:text="', ' + ${vista.experienciaAnios} + (${vista.experienciaAnios == 1} ? ' año de experiencia' : ' años de experiencia')">, 3 años de experiencia</span>
+                        </p>
+                        <ul class="cp-meta">
+                            <li th:unless="${vista.ubicacion.isEmpty()}">
+                                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-pin"></use></svg>
+                                <span th:text="${vista.ubicacion}">Lima, Perú</span>
+                            </li>
+                            <li th:if="${vista.miembroDesde != null}">
+                                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-calendar"></use></svg>
+                                <span th:text="'En SkillBridge desde ' + ${vista.miembroDesde}">En SkillBridge desde marzo 2025</span>
+                            </li>
+                        </ul>
+                        <div class="cp-badges">
+                            <span class="badge" th:classappend="${vista.estadoBadgeClass}" th:text="${vista.estadoLabel}">Disponible</span>
+                            <span class="badge badge-neutral" th:if="${vista.habilidadesTotal > 0}"
+                                  th:text="${vista.habilidadesValidadas} + ' de ' + ${vista.habilidadesTotal} + ' habilidades validadas'">5 de 8 habilidades validadas</span>
+                        </div>
+                        <div class="cp-actions">
+                            <a class="btn btn-primary btn-sm" th:href="'mailto:' + ${vista.correo}" href="#">
+                                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-mail"></use></svg>
+                                Escribir correo
                             </a>
-                            <a th:if="${perfil.githubUrl != null and !perfil.githubUrl.isBlank()}" th:href="${perfil.githubUrl}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-xs); color:var(--text-secondary); text-decoration:none;">
-                                <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-                                GitHub
+                            <a th:each="e : ${vista.enlaces}" class="cp-social" th:classappend="'is-' + ${e.tipo}"
+                               th:href="${e.url}" target="_blank" rel="noopener noreferrer"
+                               th:title="${e.nombre} + ': ' + ${e.legible}" th:attr="aria-label=${e.nombre}">
+                                <svg th:if="${e.tipo == 'linkedin'}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.063 2.063 0 1 1 0-4.126 2.063 2.063 0 0 1 0 4.126zm1.782 13.019H3.555V9h3.564v11.452z"/></svg>
+                                <svg th:if="${e.tipo == 'github'}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                                <svg th:if="${e.tipo == 'portafolio'}" class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-globe"></use></svg>
                             </a>
                         </div>
                     </div>
-                    <div style="text-align:center;">
-                        <div style="font-size:var(--fs-xl); font-weight:700; color:var(--navy-700);" th:text="${ocupacion} + '%'">0%</div>
-                        <div class="label-mono">OCUPACIÓN ACTUAL</div>
-                    </div>
-                </div>
-            </section>
 
-            <!-- Datos generales -->
-            <section class="card card-pad" style="margin-top:var(--space-6);">
-                <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Datos generales</h3>
-                <div class="info-row"><span class="info-row-label">Experiencia</span><span class="info-row-value" th:text="${perfil.experienciaAnios} + ' año(s)'">0 años</span></div>
-                <div class="info-row"><span class="info-row-label">Disponibilidad declarada</span><span class="info-row-value" th:text="${perfil.disponibilidadPorcentaje} + '%'">100%</span></div>
-                <div class="info-row" th:if="${perfil.biografia != null and !perfil.biografia.isBlank()}">
-                    <span class="info-row-label">Biografía</span><span class="info-row-value" th:text="${perfil.biografia}">—</span>
-                </div>
-            </section>
-
-            <!-- Proyectos activos -->
-            <section class="card card-pad" style="margin-top:var(--space-6);">
-                <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Proyectos activos</h3>
-                <div th:if="${proyectosActivos.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Sin proyectos activos actualmente.</div>
-                <div th:each="p : ${proyectosActivos}" class="info-row">
-                    <span class="info-row-label" th:text="${p.nombre}">Proyecto</span>
-                    <span class="info-row-value" th:text="${p.rolLabel} + ' · ' + ${p.cargaPorcentaje} + '%'">Rol · 0%</span>
-                </div>
-            </section>
-
-            <!-- Historial de proyectos -->
-            <section class="card card-pad" style="margin-top:var(--space-6);" th:unless="${historialProyectos.isEmpty()}">
-                <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Historial de proyectos</h3>
-                <div th:each="h : ${historialProyectos}" class="info-row">
-                    <span class="info-row-label" th:text="${h.nombre}">Proyecto</span>
-                    <span class="info-row-value"><span class="badge" th:classappend="${h.estadoBadgeClass}" th:text="${h.estadoLabel}">Estado</span></span>
-                </div>
-            </section>
-
-            <!-- Habilidades con certificados y validación -->
-            <section class="card card-pad" style="margin-top:var(--space-6);">
-                <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-2);">Habilidades declaradas</h3>
-                <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);">Nivel autodeclarado por el colaborador; el Resource Manager confirma que le parece correcto</p>
-
-                <div th:if="${habilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no declaró ninguna habilidad.</div>
-
-                <div th:each="h : ${habilidades}" style="border:1px solid var(--border-subtle); border-radius:var(--radius-control); padding:var(--space-4); margin-bottom:var(--space-3);">
-                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-3);">
-                        <div style="display:flex; align-items:center; gap:var(--space-2);">
-                            <span class="tech-logo-sm" th:attr="data-tech-logo=${h.nombre}"></span>
-                            <strong th:text="${h.nombre}">Habilidad</strong>
-                            <span class="text-tertiary" style="font-size:var(--fs-xs);" th:text="'(' + ${h.categoriaNombre} + ' · ' + ${h.nivelLabel} + ')'">(Categoría · Nivel)</span>
+                    <!-- Carga actual contra el límite configurado -->
+                    <div class="cp-load" th:attr="data-estado=${vista.ocupacionClave}">
+                        <div class="cp-ring" role="img"
+                             th:style="'--deg:' + ${vista.ocupacionGrados} + 'deg'"
+                             th:attr="aria-label='Carga actual ' + ${vista.ocupacion} + '% de un límite de ' + ${vista.limite} + '%'">
+                            <span><b th:text="${vista.ocupacion} + '%'">60%</b><small th:text="'de ' + ${vista.limite} + '%'">de 100%</small></span>
                         </div>
-                        <span th:if="${h.validada}" class="check-badge" title="Validada" aria-label="Validada"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-check"></use></svg></span>
-                        <button type="button" th:unless="${h.validada}" class="btn btn-secondary btn-sm"
-                                th:attr="data-validar-habilidad=${h.habilidadId}, data-habilidad-nombre=${h.nombre}">Validar</button>
-                    </div>
-
-                    <!-- Certificados de respaldo -->
-                    <div style="margin-top:var(--space-3);">
-                        <div th:if="${h.certificados.isEmpty()}" class="callout warn" style="margin:0;">
-                            <span class="callout-body" style="font-size:var(--fs-xs);">Sin constancia adjunta — esta validación se basaría solo en criterio del Resource Manager, no en evidencia documental.</span>
-                        </div>
-                        <div class="cert-links" th:unless="${h.certificados.isEmpty()}">
-                          <th:block th:each="cert : ${h.certificados}">
-                            <a th:if="${cert.tieneArchivo}" class="cert-chip" th:href="@{'/certificados/' + ${cert.id} + '/archivo'}" target="_blank" rel="noopener" title="Abrir PDF">
-                              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${cert.nombreArchivo}">certificado.pdf</span>
-                            </a>
-                            <a th:if="${cert.tieneEnlace()}" class="cert-chip is-link" th:href="${cert.urlArchivo}" target="_blank" rel="noopener" th:title="${cert.urlArchivo}">
-                              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-external-link"></use></svg><span th:text="${cert.enlaceEtiqueta()}">enlace</span>
-                            </a>
-                          </th:block>
+                        <div class="cp-load-text">
+                            <span class="cp-load-label">Carga actual</span>
+                            <span class="badge" th:classappend="${vista.ocupacionBadgeClass}" th:text="${vista.ocupacionEstado}">Óptimo</span>
+                            <span class="cp-load-free" th:if="${vista.libre > 0}" th:text="${vista.libre} + '% libre para asignar'">40% libre para asignar</span>
                         </div>
                     </div>
                 </div>
+
+                <dl class="cp-stats">
+                    <div><dt>Proyectos</dt><dd th:text="${vista.proyectosDistintos}">4</dd></div>
+                    <div><dt>En curso</dt><dd th:text="${vista.proyectosActuales.size()}">2</dd></div>
+                    <div><dt>Habilidades</dt><dd th:text="${vista.habilidadesTotal}">8</dd></div>
+                    <div><dt>Certificaciones</dt><dd th:text="${vista.certificaciones.size()}">3</dd></div>
+                    <div title="Disponibilidad que declaró en su perfil"><dt>Disponibilidad</dt><dd th:text="${vista.disponibilidad} + '%'">100%</dd></div>
+                </dl>
+
+                <nav class="cp-tabs" aria-label="Secciones del perfil">
+                    <a href="#sobre-mi" class="is-active">Sobre mí</a>
+                    <a href="#proyectos">Proyectos <span th:text="${vista.proyectos.size()}">4</span></a>
+                    <a href="#habilidades">Habilidades <span th:text="${vista.habilidadesTotal}">8</span></a>
+                    <a href="#certificaciones">Certificaciones <span th:text="${vista.certificaciones.size()}">3</span></a>
+                </nav>
             </section>
+
+            <div class="cp-layout">
+                <div class="cp-main">
+
+                    <!-- ═══════════ Sobre mí ═══════════ -->
+                    <section class="card cp-section" id="sobre-mi" aria-labelledby="cp-h-sobre">
+                        <h2 id="cp-h-sobre">Sobre mí</h2>
+                        <p class="cp-bio" th:unless="${vista.biografia.isEmpty()}" th:text="${vista.biografia}">Biografía</p>
+                        <p class="cp-empty-line" th:if="${vista.biografia.isEmpty()}">Todavía no escribió una presentación. Puede hacerlo desde Mi cuenta.</p>
+                        <ul class="cp-tags" th:unless="${vista.etiquetas.isEmpty()}" aria-label="Etiquetas">
+                            <li th:each="t : ${vista.etiquetas}" th:text="${t}">Mentor</li>
+                        </ul>
+                    </section>
+
+                    <!-- ═══════════ Proyectos ═══════════ -->
+                    <section class="card cp-section" id="proyectos" aria-labelledby="cp-h-proy">
+                        <div class="cp-section-head">
+                            <h2 id="cp-h-proy">Experiencia en proyectos</h2>
+                            <p th:unless="${vista.proyectos.isEmpty()}"
+                               th:text="${vista.proyectosActuales.size()} + ' en curso, ' + ${vista.proyectosAnteriores} + ' anteriores'">2 en curso, 3 anteriores</p>
+                        </div>
+
+                        <div class="cp-empty" th:if="${vista.proyectos.isEmpty()}">
+                            <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-briefcase"></use></svg>
+                            <p>Aún no participó en ningún proyecto. Cuando tenga una asignación aparecerá aquí con su rol y dedicación.</p>
+                        </div>
+
+                        <ol class="cp-timeline" th:unless="${vista.proyectos.isEmpty()}">
+                            <li th:each="p : ${vista.proyectos}" class="cp-job"
+                                th:classappend="${p.asignacionEstadoCrudo == 'activa'} ? 'is-current'">
+                                <span class="cp-job-mark" aria-hidden="true" th:text="${#strings.substring(p.nombre,0,1)}">P</span>
+                                <div class="cp-job-body">
+                                    <div class="cp-job-head">
+                                        <h3 th:text="${p.nombre}">Proyecto</h3>
+                                        <span class="badge badge-green" th:if="${p.asignacionEstadoCrudo == 'activa'}">En curso</span>
+                                        <span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="'Proyecto ' + ${#strings.toLowerCase(p.estadoLabel)}">Proyecto activo</span>
+                                    </div>
+                                    <p class="cp-job-meta">
+                                        <span th:text="${p.rolLabel}">Colaborador</span>
+                                        <span th:if="${p.asignacionEstadoCrudo == 'activa'}" th:text="${p.cargaPorcentaje} + '% de dedicación'">50% de dedicación</span>
+                                        <span th:text="${p.periodoLabel}">01 mar 2025 → actualidad</span>
+                                    </p>
+                                    <p class="cp-job-desc" th:if="${p.descripcion != null and !p.descripcion.isBlank()}" th:text="${p.descripcion}" data-cp-clamp>Descripción</p>
+                                    <ul class="cp-tech" th:unless="${p.tecnologias.isEmpty()}" aria-label="Tecnologías">
+                                        <li th:each="t : ${p.tecnologias}"><span class="tech-logo-sm" th:attr="data-tech-logo=${t}"></span><span th:text="${t}">Java</span></li>
+                                    </ul>
+                                    <div class="cp-progress" th:if="${p.asignacionEstadoCrudo == 'activa'}">
+                                        <span class="cp-progress-track"><span class="cp-progress-fill" th:style="'width:' + ${p.avance} + '%'"></span></span>
+                                        <span class="cp-progress-value" th:text="${p.avance} + '% del plazo transcurrido'">40% del plazo transcurrido</span>
+                                    </div>
+                                </div>
+                            </li>
+                        </ol>
+                    </section>
+
+                    <!-- ═══════════ Habilidades ═══════════ -->
+                    <section class="card cp-section" id="habilidades" aria-labelledby="cp-h-hab">
+                        <div class="cp-section-head">
+                            <div>
+                                <h2 id="cp-h-hab">Habilidades</h2>
+                                <p>Nivel autodeclarado; tú confirmas si te parece correcto.</p>
+                            </div>
+                            <div class="cp-seg" role="group" aria-label="Filtrar habilidades" th:if="${vista.habilidadesPendientes > 0 and vista.habilidadesValidadas > 0}">
+                                <button type="button" class="is-active" data-cp-filtro="todas" aria-pressed="true">Todas</button>
+                                <button type="button" data-cp-filtro="pendientes" aria-pressed="false" th:text="'Por validar (' + ${vista.habilidadesPendientes} + ')'">Por validar (3)</button>
+                            </div>
+                        </div>
+
+                        <div class="cp-empty" th:if="${vista.grupos.isEmpty()}">
+                            <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-layers"></use></svg>
+                            <p>Todavía no declaró ninguna habilidad.</p>
+                        </div>
+
+                        <div th:each="g : ${vista.grupos}" class="cp-group" th:attr="data-tono=${g.tono}">
+                            <h3 class="cp-group-title"><i aria-hidden="true"></i><span th:text="${g.categoria}">Backend</span><small th:text="${g.habilidades.size()}">3</small></h3>
+                            <ul class="cp-skills">
+                                <li th:each="h : ${g.habilidades}" class="cp-skill" th:classappend="${h.validada} ? 'is-valid' : 'is-pending'">
+                                    <span class="tech-logo-sm" th:attr="data-tech-logo=${h.nombre}"></span>
+                                    <div class="cp-skill-text">
+                                        <strong th:text="${h.nombre}">Java</strong>
+                                        <span class="cp-level" th:attr="data-paso=${h.nivelNumero le 2 ? 1 : h.nivelNumero - 1}">
+                                            <span class="cp-level-bar" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                                            <span th:text="${h.nivelLabel}">Avanzado</span>
+                                        </span>
+                                        <span class="cp-skill-cert" th:if="${h.certificados.isEmpty()}">Sin constancia</span>
+                                        <a class="cp-skill-cert is-ok" th:unless="${h.certificados.isEmpty()}" href="#certificaciones"
+                                           th:text="${h.certificados.size() == 1} ? 'Con constancia' : ${h.certificados.size()} + ' constancias'">Con constancia</a>
+                                    </div>
+                                    <span th:if="${h.validada}" class="cp-valid" title="Validada">
+                                        <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-check-circle"></use></svg>Validada
+                                    </span>
+                                    <button type="button" th:unless="${h.validada}" class="btn btn-secondary btn-sm"
+                                            th:attr="data-validar-habilidad=${h.habilidadId}, data-habilidad-nombre=${h.nombre}, data-sin-constancia=${h.certificados.isEmpty()}">Validar</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <!-- ═══════════ Certificaciones ═══════════ -->
+                    <section class="card cp-section" id="certificaciones" aria-labelledby="cp-h-cert">
+                        <div class="cp-section-head">
+                            <div>
+                                <h2 id="cp-h-cert">Certificaciones y constancias</h2>
+                                <p>Lo que adjuntó para respaldar sus habilidades.</p>
+                            </div>
+                        </div>
+
+                        <div class="cp-empty" th:if="${vista.certificaciones.isEmpty()}">
+                            <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg>
+                            <p>No adjuntó constancias. Si validas alguna habilidad, será solo con tu criterio.</p>
+                        </div>
+
+                        <ul class="cp-certs" th:unless="${vista.certificaciones.isEmpty()}">
+                            <li th:each="c : ${vista.certificaciones}" class="cp-cert" th:attr="data-tono=${c.tono}">
+                                <span class="cp-cert-icon" th:classappend="${c.certificado.tieneArchivo} ? 'is-file' : 'is-link'" aria-hidden="true">
+                                    <svg class="icon"><use th:href="${c.certificado.tieneArchivo} ? '/img/icons.svg#icon-file-text' : '/img/icons.svg#icon-globe'" href="/img/icons.svg#icon-file-text"></use></svg>
+                                </span>
+                                <div class="cp-cert-text">
+                                    <strong th:text="${c.certificado.tieneArchivo} ? ${c.certificado.nombreArchivo} : ${c.certificado.enlaceEtiqueta()}">certificado.pdf</strong>
+                                    <span>
+                                        <span class="cp-cert-skill" th:text="${c.habilidad} + ' · ' + ${c.nivelLabel}">Java · Avanzado</span>
+                                        <span th:if="${c.fechaLabel != null}" th:text="'Subido el ' + ${c.fechaLabel}">Subido el 3 mar 2025</span>
+                                    </span>
+                                </div>
+                                <div class="cp-cert-actions">
+                                    <a th:if="${c.certificado.tieneArchivo}" class="btn btn-ghost btn-sm" th:href="@{'/certificados/' + ${c.certificado.id} + '/archivo'}" target="_blank" rel="noopener">Ver PDF</a>
+                                    <a th:if="${c.certificado.tieneEnlace()}" class="btn btn-ghost btn-sm" th:href="${c.certificado.urlArchivo}" target="_blank" rel="noopener noreferrer">Abrir enlace</a>
+                                </div>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
+
+                <!-- ═══════════ Columna lateral ═══════════ -->
+                <aside class="cp-aside">
+                    <section class="card cp-side" aria-labelledby="cp-h-contacto">
+                        <h2 id="cp-h-contacto">Contacto</h2>
+                        <ul class="cp-contact">
+                            <li>
+                                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-mail"></use></svg>
+                                <a th:href="'mailto:' + ${vista.correo}" th:text="${vista.correo}" href="#">correo@empresa.com</a>
+                                <button type="button" class="cp-copy" th:attr="data-copiar=${vista.correo}" aria-label="Copiar correo" title="Copiar correo">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                </button>
+                            </li>
+                            <li th:unless="${vista.telefono.isEmpty()}">
+                                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-phone"></use></svg>
+                                <a th:href="${vista.telefonoHref}" th:text="${vista.telefono}" href="#">+51 900 000 000</a>
+                            </li>
+                            <li th:unless="${vista.ubicacion.isEmpty()}">
+                                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-pin"></use></svg>
+                                <span th:text="${vista.ubicacion}">Lima, Perú</span>
+                            </li>
+                        </ul>
+                        <h3 class="cp-side-sub">Enlaces</h3>
+                        <ul class="cp-links" th:unless="${vista.enlaces.isEmpty()}">
+                            <li th:each="e : ${vista.enlaces}">
+                                <a th:href="${e.url}" target="_blank" rel="noopener noreferrer" th:classappend="'is-' + ${e.tipo}">
+                                    <span class="cp-link-name" th:text="${e.nombre}">LinkedIn</span>
+                                    <span class="cp-link-url" th:text="${e.legible}">linkedin.com/in/ana</span>
+                                    <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-external-link"></use></svg>
+                                </a>
+                            </li>
+                        </ul>
+                        <p class="cp-empty-line" th:if="${vista.enlaces.isEmpty()}">No registró LinkedIn, GitHub ni portafolio.</p>
+                    </section>
+
+                    <section class="card cp-side" aria-labelledby="cp-h-carga" th:attr="data-estado=${vista.ocupacionClave}">
+                        <h2 id="cp-h-carga">Dedicación actual</h2>
+                        <div class="cp-alloc" th:unless="${vista.proyectosActuales.isEmpty()}">
+                            <div class="cp-alloc-bar" role="img"
+                                 th:attr="aria-label=${vista.ocupacion} + '% asignado, límite ' + ${vista.limite} + '%'">
+                                <span th:each="p, st : ${vista.proyectosActuales}" class="cp-alloc-seg"
+                                      th:attr="data-i=${st.index % 4}"
+                                      th:style="'width:' + ${p.cargaPorcentaje * 100 / (vista.ocupacion gt vista.limite ? vista.ocupacion : vista.limite)} + '%'"
+                                      th:title="${p.nombre} + ': ' + ${p.cargaPorcentaje} + '%'"></span>
+                            </div>
+                            <ul class="cp-alloc-list">
+                                <li th:each="p, st : ${vista.proyectosActuales}">
+                                    <i th:attr="data-i=${st.index % 4}" aria-hidden="true"></i>
+                                    <span th:text="${p.nombre}">Proyecto</span>
+                                    <b th:text="${p.cargaPorcentaje} + '%'">50%</b>
+                                </li>
+                                <li class="is-free" th:if="${vista.libre > 0}">
+                                    <i aria-hidden="true"></i><span>Libre</span><b th:text="${vista.libre} + '%'">40%</b>
+                                </li>
+                            </ul>
+                        </div>
+                        <p class="cp-empty-line" th:if="${vista.proyectosActuales.isEmpty()}">Sin asignaciones activas: tiene toda su capacidad libre.</p>
+                    </section>
+
+                    <section class="card cp-side" aria-labelledby="cp-h-tec" th:unless="${vista.tecnologias.isEmpty()}">
+                        <h2 id="cp-h-tec">Tecnologías en sus proyectos</h2>
+                        <ul class="cp-tech cp-tech-side">
+                            <li th:each="t : ${vista.tecnologias}" th:title="${t.proyectos == 1} ? 'En 1 proyecto' : 'En ' + ${t.proyectos} + ' proyectos'">
+                                <span class="tech-logo-sm" th:attr="data-tech-logo=${t.nombre}"></span><span th:text="${t.nombre}">Java</span><small th:if="${t.proyectos > 1}" th:text="'×' + ${t.proyectos}">×2</small>
+                            </li>
+                        </ul>
+                    </section>
+                </aside>
+            </div>
 
         </main>
     </div>
@@ -125,38 +319,11 @@
 <script src="/js/tech-icons.js"></script>
 <script th:inline="javascript">
     window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
-    var PERFIL_ID = /*[[${perfil.id}]]*/ 0;
-
-    document.addEventListener("DOMContentLoaded", function () {
-        // Renderizar logos de tecnologías en habilidades
-        document.querySelectorAll("[data-tech-logo]").forEach(function (el) {
-            var name = el.getAttribute("data-tech-logo");
-            if (window.SBAI && window.SBAI.techIcons) {
-                var html = window.SBAI.techIcons.logo(name);
-                if (html) { el.innerHTML = html; }
-            }
-        });
-
-        var submitForm = window.SBAI.submitForm;
-        document.querySelectorAll("[data-validar-habilidad]").forEach(function (btn) {
-            btn.addEventListener("click", function () {
-                var habilidadId = btn.dataset.validarHabilidad;
-                var nombre = btn.dataset.habilidadNombre || "esta habilidad";
-                SBAI.modal.confirm({
-                    title: "¿Validar \"" + nombre + "\"?",
-                    desc: "Quedará marcada como verificada para este colaborador: se usará en Talent Matching y se mostrará en su perfil.",
-                    confirmLabel: "Validar",
-                    onConfirm: function () {
-                        submitForm("/resource-manager/colaboradores/" + PERFIL_ID + "/habilidades/" + habilidadId + "/validar", {});
-                    }
-                });
-            });
-        });
-    });
+    window.CP_PERFIL_ID = /*[[${vista.perfilId}]]*/ 0;
 </script>
+<script src="/js/colaborador-perfil.js"></script>
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
-<script src="/js/battery-progress.js"></script>
 <script src="/js/mobile-nav.js"></script>
 </body>
 </html>

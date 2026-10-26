@@ -101,7 +101,7 @@ public class CuentaService {
                 ? usuario.getFechaCreacion().format(FORMATO_MES_ANIO)
                 : "";
 
-        return new CuentaResumen(
+        CuentaResumen resumen = new CuentaResumen(
                 usuario.getNombreCompleto(),
                 usuario.getCorreo(),
                 perfil.getCargo(),
@@ -117,8 +117,14 @@ public class CuentaService {
                 perfil.getLinkedinUrl(),
                 perfil.getGithubUrl()
         );
+        resumen.setPortafolioUrl(perfil.getPortafolioUrl());
+        resumen.setTelefono(perfil.getTelefono());
+        resumen.setUbicacion(perfil.getUbicacion());
+        resumen.setEtiquetas(PerfilDatosUtil.leerEtiquetas(perfil.getEtiquetas()));
+        return resumen;
     }
 
+    /** Compatibilidad: formularios sin los campos de contacto v9 (los conserva). */
     @Transactional
     public void actualizarDatos(
             Long perfilId,
@@ -127,6 +133,30 @@ public class CuentaService {
             int experienciaAnios,
             String linkedinUrl,
             String githubUrl,
+            Long actorUsuarioId) {
+        actualizarDatos(perfilId, cargo, biografia, experienciaAnios, linkedinUrl, githubUrl,
+                null, null, null, null, actorUsuarioId);
+    }
+
+    /**
+     * Guarda los datos del perfil. Un parámetro en null significa "este
+     * formulario no trae ese campo" y el valor guardado se conserva; un texto
+     * vacío sí lo borra. Antes, guardar desde el "Mi cuenta" de Administrador,
+     * Project Manager o Resource Manager (que no tienen los campos LinkedIn y
+     * GitHub) borraba esos enlaces.
+     */
+    @Transactional
+    public void actualizarDatos(
+            Long perfilId,
+            String cargo,
+            String biografia,
+            int experienciaAnios,
+            String linkedinUrl,
+            String githubUrl,
+            String portafolioUrl,
+            String telefono,
+            String ubicacion,
+            String etiquetas,
             Long actorUsuarioId) {
 
         Perfil perfil = perfilRepository.findById(perfilId)
@@ -158,17 +188,24 @@ public class CuentaService {
 
         perfil.setExperienciaAnios(experienciaAnios);
 
-        perfil.setLinkedinUrl(
-                linkedinUrl != null && !linkedinUrl.isBlank()
-                        ? linkedinUrl.trim()
-                        : null
-        );
-
-        perfil.setGithubUrl(
-                githubUrl != null && !githubUrl.isBlank()
-                        ? githubUrl.trim()
-                        : null
-        );
+        if (linkedinUrl != null) {
+            perfil.setLinkedinUrl(PerfilDatosUtil.normalizarUrl(linkedinUrl, "LinkedIn"));
+        }
+        if (githubUrl != null) {
+            perfil.setGithubUrl(PerfilDatosUtil.normalizarUrl(githubUrl, "GitHub"));
+        }
+        if (portafolioUrl != null) {
+            perfil.setPortafolioUrl(PerfilDatosUtil.normalizarUrl(portafolioUrl, "tu portafolio"));
+        }
+        if (telefono != null) {
+            perfil.setTelefono(PerfilDatosUtil.normalizarTelefono(telefono));
+        }
+        if (ubicacion != null) {
+            perfil.setUbicacion(PerfilDatosUtil.normalizarUbicacion(ubicacion));
+        }
+        if (etiquetas != null) {
+            perfil.setEtiquetas(PerfilDatosUtil.escribirEtiquetas(PerfilDatosUtil.normalizarEtiquetas(etiquetas)));
+        }
 
         perfilRepository.save(perfil);
 

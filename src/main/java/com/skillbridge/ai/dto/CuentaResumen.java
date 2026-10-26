@@ -69,4 +69,22 @@ public class CuentaResumen {
 
     public String getLinkedinUrl() { return linkedinUrl; }
     public String getGithubUrl() { return githubUrl; }
+
+    // ── v9: contacto y presentación (opcionales; se completan con setters
+    //    para no cambiar el constructor que ya usan las otras pantallas) ──
+    private String portafolioUrl = "";
+    private String telefono = "";
+    private String ubicacion = "";
+    private java.util.List<String> etiquetas = java.util.List.of();
+
+    public String getPortafolioUrl() { return portafolioUrl; }
+    public void setPortafolioUrl(String v) { this.portafolioUrl = v != null ? v : ""; }
+    public String getTelefono() { return telefono; }
+    public void setTelefono(String v) { this.telefono = v != null ? v : ""; }
+    public String getUbicacion() { return ubicacion; }
+    public void setUbicacion(String v) { this.ubicacion = v != null ? v : ""; }
+    public java.util.List<String> getEtiquetas() { return etiquetas; }
+    public void setEtiquetas(java.util.List<String> v) { this.etiquetas = v != null ? v : java.util.List.of(); }
+    /** Las etiquetas como las escribe el usuario en el formulario: separadas por coma. */
+    public String getEtiquetasTexto() { return String.join(", ", etiquetas); }
 }

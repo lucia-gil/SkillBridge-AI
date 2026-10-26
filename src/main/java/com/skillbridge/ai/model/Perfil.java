@@ -51,6 +51,21 @@ public class Perfil {
     @Column(name = "github_url", length = 500)
     private String githubUrl;
 
+    // v9 (migracion_v9_perfil_profesional.sql / InicializadorEsquemaV9):
+    // datos de contacto y presentación que se ven en el perfil profesional.
+    @Column(name = "portafolio_url", length = 500)
+    private String portafolioUrl;
+
+    @Column(name = "telefono", length = 30)
+    private String telefono;
+
+    @Column(name = "ubicacion", length = 120)
+    private String ubicacion;
+
+    /** Etiquetas cortas sobre la persona ("Mentor", "Inglés C1"...), arreglo JSON de textos. */
+    @Column(name = "etiquetas", columnDefinition = "json")
+    private String etiquetas;
+
     public Perfil() {
     }
 
@@ -132,5 +147,37 @@ public class Perfil {
 
     public void setGithubUrl(String githubUrl) {
         this.githubUrl = githubUrl;
+    }
+
+    public String getPortafolioUrl() {
+        return portafolioUrl;
+    }
+
+    public void setPortafolioUrl(String portafolioUrl) {
+        this.portafolioUrl = portafolioUrl;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getUbicacion() {
+        return ubicacion;
+    }
+
+    public void setUbicacion(String ubicacion) {
+        this.ubicacion = ubicacion;
+    }
+
+    public String getEtiquetas() {
+        return etiquetas;
+    }
+
+    public void setEtiquetas(String etiquetas) {
+        this.etiquetas = etiquetas;
     }
 }

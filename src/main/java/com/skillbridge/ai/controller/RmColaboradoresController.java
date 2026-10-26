@@ -64,12 +64,14 @@ public class RmColaboradoresController {
     private final AuditoriaService auditoriaService;
     private final UsuarioService usuarioService;
     private final com.skillbridge.ai.service.ProyectoService proyectoService;
+    private final com.skillbridge.ai.service.PerfilVistaService perfilVistaService;
 
     public RmColaboradoresController(PerfilRepository perfilRepository, AsignacionRepository asignacionRepository,
                                      HabilidadRepository habilidadRepository, HabilidadService habilidadService,
                                      ShellModelBuilder shellModelBuilder, AuditoriaService auditoriaService,
                                      UsuarioService usuarioService,
-                                     com.skillbridge.ai.service.ProyectoService proyectoService) {
+                                     com.skillbridge.ai.service.ProyectoService proyectoService,
+                                     com.skillbridge.ai.service.PerfilVistaService perfilVistaService) {
         this.auditoriaService = auditoriaService;
         this.usuarioService = usuarioService;
         this.perfilRepository = perfilRepository;
@@ -78,6 +80,7 @@ public class RmColaboradoresController {
         this.habilidadService = habilidadService;
         this.shellModelBuilder = shellModelBuilder;
         this.proyectoService = proyectoService;
+        this.perfilVistaService = perfilVistaService;
     }
 
     @GetMapping("/colaboradores.html")
@@ -156,22 +159,11 @@ public class RmColaboradoresController {
         if (p.getUsuario() != null && p.getUsuario().getRolOrganizacional() != null) {
             return "redirect:/resource-manager/colaboradores.html";
         }
-        List<HabilidadPerfilFila> habilidades = habilidadService.habilidadesConValidacion(perfilId);
-        Integer sumaCarga = asignacionRepository.sumarCargaActivaDePerfil(perfilId);
-        int ocupacion = sumaCarga != null ? sumaCarga : 0;
-
         shellModelBuilder.aplicar(model, sesion, "colaboradores.html", p.getUsuario().getNombreCompleto(),
                 "Perfil profesional");
 
-        // Proyectos activos del colaborador
-        List<com.skillbridge.ai.dto.MiProyectoFila> proyectosActivos = proyectoService.misProyectosActivos(perfilId);
-        List<com.skillbridge.ai.dto.MiProyectoFila> historialProyectos = proyectoService.misProyectosHistorial(perfilId);
-
         model.addAttribute("perfil", p);
-        model.addAttribute("ocupacion", ocupacion);
-        model.addAttribute("habilidades", habilidades);
-        model.addAttribute("proyectosActivos", proyectosActivos);
-        model.addAttribute("historialProyectos", historialProyectos);
+        model.addAttribute("vista", perfilVistaService.armar(p));
 
         return "resource-manager/colaborador-detalle";
     }
