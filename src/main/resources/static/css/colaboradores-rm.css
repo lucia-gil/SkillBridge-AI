@@ -1,0 +1,171 @@
+/* ============================================================
+   SkillBridge AI — Directorio del equipo (resource-manager/colaboradores.html)
+   Todo cuelga de .cl-*. Los colores de carga son los mismos de Reportes
+   y del perfil del colaborador (banca/sub/opt/lim/sobre).
+   ============================================================ */
+
+.cl {
+  --cl-banca: #8FA7D6;
+  --cl-sub: #9AA6B8;
+  --cl-opt: #2E9A65;
+  --cl-lim: #D99A2B;
+  --cl-sobre: #CF4A3C;
+  overflow: hidden;
+}
+:root[data-theme="dark"] .cl {
+  --cl-banca: #5C78AF;
+  --cl-sub: #6B7486;
+  --cl-opt: #3FBF80;
+  --cl-lim: #E6AD47;
+  --cl-sobre: #E8695B;
+}
+
+/* ── Cabecera ─────────────────────────────────────────────── */
+.cl-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 20px; padding: 20px 24px 14px; }
+.cl-title h2 { font-size: var(--fs-md); font-weight: 650; letter-spacing: -.01em; color: var(--text-primary); }
+.cl-title p { margin-top: 2px; font-size: var(--fs-sm); color: var(--text-tertiary); }
+.cl-tools { display: flex; flex-wrap: wrap; gap: 10px; flex: 1 1 420px; justify-content: flex-end; }
+.cl-search { position: relative; flex: 1 1 240px; max-width: 320px; }
+.cl-search .icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-tertiary); pointer-events: none; }
+.cl-search input {
+  width: 100%; height: 38px; padding: 0 12px 0 34px; border: 1px solid var(--border-default); border-radius: var(--radius-control);
+  background: var(--surface); color: var(--text-primary); font: inherit; font-size: var(--fs-sm);
+}
+.cl-search input:focus { outline: none; border-color: var(--blue-accent); box-shadow: var(--shadow-focus); }
+.cl-select { height: 38px; flex: 0 1 240px; min-width: 180px; font-size: var(--fs-sm); }
+
+/* Chips de estado (filtran en el servidor) */
+.cl-states { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 24px 16px; }
+.cl-states button {
+  display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid var(--border-default); background: var(--surface); color: var(--text-secondary);
+  font: inherit; font-size: var(--fs-sm); font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: border-color var(--dur-base) var(--ease-standard), background var(--dur-base) var(--ease-standard);
+}
+.cl-states button:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.cl-states button:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.cl-states button b { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--surface-sunken); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.cl-states button i { width: 7px; height: 7px; border-radius: 50%; }
+.cl-states i.is-green { background: var(--green-fg); }
+.cl-states i.is-amber { background: var(--amber-fg); }
+.cl-states i.is-red { background: var(--red-fg); }
+.cl-states button.is-active { background: var(--navy-700); border-color: var(--navy-700); color: #fff; cursor: default; }
+.cl-states button.is-active b { background: rgba(255, 255, 255, .16); color: #fff; }
+:root[data-theme="dark"] .cl-states button.is-active { background: var(--blue-accent-strong); border-color: var(--blue-accent-strong); }
+.cl-limit { margin-left: auto; font-size: var(--fs-xs); color: var(--text-tertiary); }
+
+/* ── Tabla ────────────────────────────────────────────────── */
+.cl-scroll { overflow-x: auto; border-top: 1px solid var(--border-subtle); }
+.cl-table { width: 100%; border-collapse: collapse; }
+.cl-table thead th {
+  padding: 10px 16px; text-align: left; white-space: nowrap;
+  font-size: var(--fs-xs); font-weight: 600; color: var(--text-tertiary); background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.cl-table thead th:first-child { padding-left: 24px; }
+.cl-table td { padding: 12px 16px; vertical-align: middle; border-bottom: 1px solid var(--border-subtle); }
+.cl-table td:first-child { padding-left: 24px; }
+.cl-table td:last-child { padding-right: 24px; }
+.cl-table tbody tr { transition: background var(--dur-base) var(--ease-standard); }
+.cl-table tbody tr:hover { background: var(--surface-sunken); }
+.cl-table tbody tr:last-child td { border-bottom: 0; }
+.cl-table tbody tr[hidden] { display: none; }
+
+/* Persona: foto o iniciales en el MISMO círculo de 40 px (antes la foto
+   era un <img display:block> suelto y empujaba el nombre a otra línea). */
+.cl-person { display: flex; align-items: center; gap: 12px; min-width: 220px; text-decoration: none; color: inherit; }
+.cl-person:hover { text-decoration: none; }
+.cl-person:hover .cl-name { color: var(--blue-link); }
+.cl-person:focus-visible { outline: none; box-shadow: var(--shadow-focus); border-radius: 8px; }
+.cl-avatar {
+  width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(140deg, var(--navy-600), var(--navy-900)); color: #fff;
+  font-size: 13px; font-weight: 600; letter-spacing: .01em;
+}
+.cl-avatar.has-photo { background: var(--surface-sunken); box-shadow: 0 0 0 1px var(--border-subtle); }
+.cl-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cl-person-text { display: flex; flex-direction: column; min-width: 0; }
+.cl-name { font-size: var(--fs-sm); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color var(--dur-base) var(--ease-standard); }
+.cl-role { font-size: var(--fs-xs); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Habilidades */
+.cl-skills { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; max-width: 340px; }
+.cl-skills li {
+  display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px 0 6px; border-radius: 6px;
+  border: 1px solid var(--border-subtle); background: var(--surface); font-size: var(--fs-xs); color: var(--text-secondary); white-space: nowrap;
+}
+.cl-skills .tech-logo-sm, .cl-skills .tech-logo-sm img, .cl-skills .tech-logo-sm svg { width: 14px; height: 14px; }
+.cl-skills .tech-logo-sm:empty { display: none; }
+.cl-skills .cl-check { width: 13px; height: 13px; color: var(--green-fg); }
+.cl-skills li.cl-more { padding: 0 8px; font-weight: 600; color: var(--text-tertiary); background: var(--surface-sunken); cursor: default; }
+.cl-none { font-size: var(--fs-xs); color: var(--text-tertiary); }
+
+/* Carga: barra respecto del límite + valor + estado */
+.cl-load { display: grid; grid-template-columns: 88px auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; min-width: 150px; }
+.cl-load[data-estado="banca"] { --cl-c: var(--cl-banca); }
+.cl-load[data-estado="sub"]   { --cl-c: var(--cl-sub); }
+.cl-load[data-estado="opt"]   { --cl-c: var(--cl-opt); }
+.cl-load[data-estado="lim"]   { --cl-c: var(--cl-lim); }
+.cl-load[data-estado="sobre"] { --cl-c: var(--cl-sobre); }
+.cl-load-track { position: relative; height: 6px; border-radius: 3px; background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--border-subtle); overflow: hidden; }
+.cl-load-fill { display: block; height: 100%; border-radius: 3px; background: var(--cl-c); }
+.cl-load-value { font-size: var(--fs-sm); font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.cl-load-label { grid-column: 1 / -1; margin-top: 3px; font-size: 11px; color: var(--text-tertiary); }
+.cl-load[data-estado="sobre"] .cl-load-label, .cl-load[data-estado="sobre"] .cl-load-value { color: var(--red-fg); }
+.cl-load[data-estado="lim"] .cl-load-label { color: var(--amber-fg); }
+
+/* Acciones: "Ver perfil" visible; cambiar disponibilidad, discreto */
+.cl-actions { white-space: nowrap; text-align: right; }
+.cl-actions > * { vertical-align: middle; }
+.cl-actions .btn { margin-right: 4px; }
+.cl-quiet {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px;
+  border: 1px solid transparent; background: none; font: inherit; font-size: var(--fs-xs); font-weight: 600;
+  color: var(--text-tertiary); cursor: pointer;
+}
+.cl-quiet .icon { width: 15px; height: 15px; }
+.cl-quiet.is-danger:hover { color: var(--red-fg); background: var(--red-bg); border-color: var(--red-border); }
+.cl-quiet.is-ok { color: var(--green-fg); }
+.cl-quiet.is-ok:hover { background: var(--green-bg); border-color: var(--green-border); }
+.cl-quiet:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.cl-note { font-size: var(--fs-xs); color: var(--text-tertiary); }
+
+.cl-noresults { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 36px 20px; color: var(--text-tertiary); font-size: var(--fs-sm); }
+.cl-noresults[hidden] { display: none; }
+.cl-noresults .icon { width: 18px; height: 18px; }
+.cl-noresults span { color: var(--text-primary); font-weight: 600; }
+
+/* ── Anchos intermedios: el botón discreto queda solo con ícono ── */
+@media (max-width: 1280px) {
+  .cl-quiet span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .cl-quiet { width: 32px; padding: 0; justify-content: center; }
+  .cl-skills { max-width: 260px; }
+}
+
+/* ── Celular: cada fila es una tarjeta ────────────────────── */
+@media (max-width: 760px) {
+  .cl-head { padding: 16px 16px 12px; }
+  .cl-states { padding: 0 16px 14px; }
+  .cl-limit { width: 100%; margin-left: 0; }
+  .cl-search, .cl-select { max-width: none; flex: 1 1 100%; }
+  .cl-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .cl-table, .cl-table tbody { display: block; }
+  .cl-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 12px; padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); }
+  .cl-table tbody tr[hidden] { display: none; }
+  .cl-table td { display: block; padding: 0 !important; border: 0; }
+  .cl-table td.cl-person-cell { grid-column: 1; }
+  .cl-table td[data-label="Estado"] { grid-column: 2; grid-row: 1; align-self: center; }
+  .cl-table td.cl-skills-cell, .cl-table td[data-label="Carga"] { grid-column: 1 / -1; }
+  .cl-person { min-width: 0; }
+  .cl-skills { max-width: none; }
+  .cl-load { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: auto; }
+  .cl-load-label { grid-column: auto; margin: 0; }
+  .cl-actions { grid-column: 1 / -1; display: flex; gap: 8px; text-align: left; }
+  .cl-actions .btn { flex: 1; justify-content: center; margin: 0; }
+  .cl-quiet { width: auto; padding: 0 12px; border-color: var(--border-subtle); }
+  .cl-quiet span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cl-states button, .cl-table tbody tr, .cl-name { transition: none; }
+}

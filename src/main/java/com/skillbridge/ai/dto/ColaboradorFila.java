@@ -94,4 +94,61 @@ public class ColaboradorFila {
                 .limit(3)
                 .collect(Collectors.toList());
     }
+
+    // ── Directorio del RM: carga contra el límite configurado ──
+    private int limite = 100;
+
+    /** Límite de carga vigente (Configuración); lo fija el controlador. */
+    public ColaboradorFila conLimite(int limite) {
+        this.limite = limite;
+        return this;
+    }
+
+    public int getLimite() { return limite; }
+
+    /** Mismos estados que Reportes/Ocupación: banca, sub, opt, lim, sobre. */
+    public String getCargaClave() {
+        if (ocupacion == 0) return "banca";
+        if (ocupacion > limite) return "sobre";
+        if (ocupacion >= limite - 10) return "lim";
+        if (ocupacion >= 60) return "opt";
+        return "sub";
+    }
+
+    public String getCargaLabel() {
+        return switch (getCargaClave()) {
+            case "banca" -> "Sin asignación";
+            case "sobre" -> "Sobre-asignado";
+            case "lim" -> "Al límite";
+            case "opt" -> "Óptimo";
+            default -> "Subutilizado";
+        };
+    }
+
+    /** Ancho de la barra respecto del límite (tope 100). */
+    public int getCargaPct() {
+        return limite <= 0 ? 0 : (int) Math.min(100, Math.round(ocupacion * 100.0 / limite));
+    }
+
+    /** Habilidades que no entran en las 3 principales (para el chip "+N"). */
+    public List<HabilidadPerfilFila> getHabilidadesResto() {
+        List<HabilidadPerfilFila> top = getHabilidadesTop();
+        return habilidades.stream().filter(h -> !top.contains(h)).collect(Collectors.toList());
+    }
+
+    public String getHabilidadesRestoTexto() {
+        return getHabilidadesResto().stream().map(HabilidadPerfilFila::getNombre).collect(Collectors.joining(", "));
+    }
+
+    public long getHabilidadesValidadas() {
+        return habilidades.stream().filter(HabilidadPerfilFila::isValidada).count();
+    }
+
+    /** Texto en minúsculas para el buscador del cliente: nombre, correo, cargo y habilidades. */
+    public String getTextoBusqueda() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(nombre).append(' ').append(correo).append(' ').append(cargo);
+        habilidades.forEach(h -> sb.append(' ').append(h.getNombre()));
+        return sb.toString().toLowerCase(java.util.Locale.ROOT);
+    }
 }

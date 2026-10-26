@@ -65,13 +65,15 @@ public class RmColaboradoresController {
     private final UsuarioService usuarioService;
     private final com.skillbridge.ai.service.ProyectoService proyectoService;
     private final com.skillbridge.ai.service.PerfilVistaService perfilVistaService;
+    private final com.skillbridge.ai.service.ConfiguracionService configuracionService;
 
     public RmColaboradoresController(PerfilRepository perfilRepository, AsignacionRepository asignacionRepository,
                                      HabilidadRepository habilidadRepository, HabilidadService habilidadService,
                                      ShellModelBuilder shellModelBuilder, AuditoriaService auditoriaService,
                                      UsuarioService usuarioService,
                                      com.skillbridge.ai.service.ProyectoService proyectoService,
-                                     com.skillbridge.ai.service.PerfilVistaService perfilVistaService) {
+                                     com.skillbridge.ai.service.PerfilVistaService perfilVistaService,
+                                     com.skillbridge.ai.service.ConfiguracionService configuracionService) {
         this.auditoriaService = auditoriaService;
         this.usuarioService = usuarioService;
         this.perfilRepository = perfilRepository;
@@ -81,6 +83,7 @@ public class RmColaboradoresController {
         this.shellModelBuilder = shellModelBuilder;
         this.proyectoService = proyectoService;
         this.perfilVistaService = perfilVistaService;
+        this.configuracionService = configuracionService;
     }
 
     @GetMapping("/colaboradores.html")
@@ -101,6 +104,14 @@ public class RmColaboradoresController {
                 .filter(p -> p.getUsuario() != null && p.getUsuario().getRolOrganizacional() == null)
                 .collect(Collectors.toList());
 
+        int limite = configuracionService.limiteCarga();
+        // Conteos por estado de todo el directorio (sin filtros): alimentan
+        // los chips de estado de la barra de filtros.
+        java.util.Map<String, Long> porEstado = perfiles.stream()
+                .collect(Collectors.groupingBy(
+                        p -> !p.getUsuario().isActivo() ? "cuenta_suspendida" : java.util.Objects.toString(p.getEstado(), "activo"),
+                        Collectors.counting()));
+
         List<ColaboradorFila> filas = perfiles.stream()
                 .map(p -> {
                     List<HabilidadPerfilFila> habilidades = habilidadService.habilidadesConValidacion(p.getId());
@@ -118,7 +129,7 @@ public class RmColaboradoresController {
 
                     return new ColaboradorFila(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo(),
                             p.getCargo(), ocupacion, estadoVista, habilidades,
-                            p.getUsuario().tieneFotoPerfil(), p.getUsuario().getId());
+                            p.getUsuario().tieneFotoPerfil(), p.getUsuario().getId()).conLimite(limite);
                 })
                 .filter(java.util.Objects::nonNull)
                 .sorted(Comparator.comparing(ColaboradorFila::getNombre))
@@ -127,12 +138,17 @@ public class RmColaboradoresController {
         List<Habilidad> catalogoHabilidades = habilidadRepository.findAllConCategoriaOrderByNombre();
 
         shellModelBuilder.aplicar(model, sesion, "colaboradores.html", "Colaboradores",
-                filas.size() + " colaboradores en la plataforma");
+                perfiles.size() + " miembros en el directorio del equipo");
 
         model.addAttribute("colaboradores", filas);
         model.addAttribute("catalogoHabilidades", catalogoHabilidades);
         model.addAttribute("habilidadIdSeleccionada", habilidadId);
         model.addAttribute("estadoSeleccionado", estado);
+        model.addAttribute("limiteCarga", limite);
+        model.addAttribute("totalMiembros", perfiles.size());
+        model.addAttribute("totalDisponibles", porEstado.getOrDefault("activo", 0L));
+        model.addAttribute("totalNoDisponibles", porEstado.getOrDefault("inactivo", 0L));
+        model.addAttribute("totalSuspendidos", porEstado.getOrDefault("cuenta_suspendida", 0L));
         // Se usa en la plantilla para esconder el botón "Suspender" en la
         // propia fila del usuario logueado - nadie debería poder
         // auto-suspenderse (se quedaría sin acceso, sin nadie más que
