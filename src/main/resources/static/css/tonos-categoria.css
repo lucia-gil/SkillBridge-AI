@@ -1,0 +1,30 @@
+/* ============================================================
+   SkillBridge AI — Tonos de categoría de habilidad (compartido)
+   Lo usan el Catálogo de habilidades (Admin) y los Reportes del RM.
+   Uso: data-tono="{categoriaId % 8}" en el elemento; expone
+   --tone-fg, --tone-bg y --tone-line.
+   ============================================================ */
+
+/* ── Tonos de categoría ───────────────────────────────────────
+   8 tonos asignados por id de categoría (id % 8), no por un hash del
+   nombre: así dos categorías no comparten color mientras haya menos de 9,
+   y ninguna usa rojo, que en la app significa error o acción destructiva. */
+[data-tono] { --tone-fg: #4F5B70; --tone-bg: #EEF1F5; --tone-line: #D5DBE4; }
+[data-tono="0"] { --tone-fg: #4C55C7; --tone-bg: #EEF0FD; --tone-line: #D3D7FA; }
+[data-tono="1"] { --tone-fg: #0F7F78; --tone-bg: #E6F6F4; --tone-line: #BFE6E1; }
+[data-tono="2"] { --tone-fg: #1F6FB2; --tone-bg: #E8F2FB; --tone-line: #C3DDF3; }
+[data-tono="3"] { --tone-fg: #6E4EBE; --tone-bg: #F1ECFB; --tone-line: #D9CBF3; }
+[data-tono="4"] { --tone-fg: #A23C78; --tone-bg: #FBEAF3; --tone-line: #F1C8DF; }
+[data-tono="5"] { --tone-fg: #A56A12; --tone-bg: #FCF3E1; --tone-line: #F3DDA8; }
+[data-tono="6"] { --tone-fg: #2B7A4B; --tone-bg: #E7F5EC; --tone-line: #BFE3CC; }
+[data-tono="7"] { --tone-fg: #4F5B70; --tone-bg: #EEF1F5; --tone-line: #D5DBE4; }
+
+:root[data-theme="dark"] [data-tono]     { --tone-fg: #AEB8CA; --tone-bg: #262B36; --tone-line: #3A4150; }
+:root[data-theme="dark"] [data-tono="0"] { --tone-fg: #9DA5F5; --tone-bg: #1F2340; --tone-line: #343B6B; }
+:root[data-theme="dark"] [data-tono="1"] { --tone-fg: #5FD3C8; --tone-bg: #112E2C; --tone-line: #1F5551; }
+:root[data-theme="dark"] [data-tono="2"] { --tone-fg: #7DB8EE; --tone-bg: #13263A; --tone-line: #23466B; }
+:root[data-theme="dark"] [data-tono="3"] { --tone-fg: #B49CE8; --tone-bg: #251A3D; --tone-line: #4A366E; }
+:root[data-theme="dark"] [data-tono="4"] { --tone-fg: #EB93C6; --tone-bg: #36182A; --tone-line: #63304F; }
+:root[data-theme="dark"] [data-tono="5"] { --tone-fg: #F5C265; --tone-bg: #3A2E14; --tone-line: #6B5321; }
+:root[data-theme="dark"] [data-tono="6"] { --tone-fg: #6FD39A; --tone-bg: #16302A; --tone-line: #245C43; }
+:root[data-theme="dark"] [data-tono="7"] { --tone-fg: #AEB8CA; --tone-bg: #262B36; --tone-line: #3A4150; }

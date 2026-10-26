@@ -26,13 +26,28 @@ public class OcupacionColaboradorFila {
      * superar ese límite; "Al límite" son los 10 puntos anteriores a él.
      */
     public OcupacionColaboradorFila(Long perfilId, String nombre, String cargo, int promedio, int limite) {
+        this(perfilId, nombre, cargo, promedio, limite, false);
+    }
+
+    /**
+     * Miembro sin ninguna asignación activa ("en banca"): 0% de carga y
+     * estado propio, para distinguirlo de quien tiene poca carga.
+     */
+    public static OcupacionColaboradorFila sinAsignacion(Long perfilId, String nombre, String cargo, int limite) {
+        return new OcupacionColaboradorFila(perfilId, nombre, cargo, 0, limite, true);
+    }
+
+    private OcupacionColaboradorFila(Long perfilId, String nombre, String cargo, int promedio, int limite, boolean enBanca) {
         this.perfilId = perfilId;
         this.nombre = nombre;
         this.iniciales = InicialesUtil.de(nombre);
         this.cargo = cargo != null ? cargo : "—";
         this.promedio = promedio;
         this.limite = limite;
-        if (promedio > limite) {
+        if (enBanca) {
+            this.estadoLabel = "Sin asignación";
+            this.estadoBadgeClass = "badge-blue";
+        } else if (promedio > limite) {
             this.estadoLabel = "Sobre-asignado";
             this.estadoBadgeClass = "badge-red";
         } else if (promedio >= limite - 10) {

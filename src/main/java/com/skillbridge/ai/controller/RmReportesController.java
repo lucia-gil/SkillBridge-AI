@@ -1,75 +1,103 @@
 package com.skillbridge.ai.controller;
 
-import com.skillbridge.ai.dto.OcupacionColaboradorFila;
+import com.skillbridge.ai.dto.ReporteRmDatos;
 import com.skillbridge.ai.dto.UsuarioSesion;
-import com.skillbridge.ai.dto.VacanteHabilidad;
-import com.skillbridge.ai.service.ReporteService;
+import com.skillbridge.ai.service.ReporteExportService;
+import com.skillbridge.ai.service.RmReporteService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.SesionKeys;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
  * Reportes del Resource Manager (resource-manager/reportes.html).
  *
- * Misma logica que RmInicioController, reutilizando los mismos servicios
- * (ReporteService) - esta pantalla es la version "detalle" con la tabla
- * completa de ocupacion por colaborador, en vez del resumen que ya se ve
- * en Inicio.
+ * <p>Dos reportes con los mismos filtros, aplicados en el servidor
+ * ({@link RmReporteService}), de modo que la pantalla, el Excel y el PDF
+ * muestran siempre lo mismo:</p>
+ * <ul>
+ *   <li>Ocupación por colaborador (incluye a quien no tiene asignaciones).</li>
+ *   <li>Oferta contra demanda de habilidades de los proyectos vigentes.</li>
+ * </ul>
  *
- * "Evolucion de ocupacion" (grafico mensual) y "Reuniones de esta semana"
- * del mock original se retiran: el primero necesitaria una tabla de
- * historico que no existe (mismo motivo que el heatmap de Inicio); el
- * segundo requeriria una consulta nueva de eventos_proyecto cruzando TODOS
- * los proyectos de la plataforma por rango de fecha, que no existe hoy en
- * EventoProyectoRepository/EventoService (ambos solo listan eventos de los
- * proyectos de un perfil puntual) - agregarla es una funcionalidad nueva,
- * no una conexion de datos que ya exista.
- *
- * "Solicitudes pendientes" tambien se retira: dependia de
- * TalentMatchingService.pendientes(), que apunta a la tabla
- * propuestas_asignacion - esa tabla NO existe en skillbridge_db_v4.sql, asi
- * que esa consulta revienta en runtime aunque compile. No hay otra tabla
- * real para ese KPI en este esquema.
+ * <p>Filtros (GET): {@code q} texto, {@code estado} (repetible), {@code min}
+ * ocupación mínima en %, {@code brecha=1} solo habilidades con brecha.</p>
  */
 @Controller
 @RequestMapping("/resource-manager")
 public class RmReportesController {
 
-    private final ReporteService reporteService;
+    private final RmReporteService rmReporteService;
+    private final ReporteExportService exportService;
     private final ShellModelBuilder shellModelBuilder;
 
-    public RmReportesController(ReporteService reporteService, ShellModelBuilder shellModelBuilder) {
-        this.reporteService = reporteService;
+    public RmReportesController(RmReporteService rmReporteService, ReporteExportService exportService,
+                                ShellModelBuilder shellModelBuilder) {
+        this.rmReporteService = rmReporteService;
+        this.exportService = exportService;
         this.shellModelBuilder = shellModelBuilder;
     }
 
     @GetMapping("/reportes.html")
-    public String reportes(HttpSession session, Model model) {
+    public String reportes(HttpSession session, Model model,
+                           @RequestParam(required = false) String q,
+                           @RequestParam(name = "estado", required = false) List<String> estados,
+                           @RequestParam(name = "min", defaultValue = "0") int minimo,
+                           @RequestParam(name = "brecha", defaultValue = "false") boolean soloBrecha) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-
-        List<OcupacionColaboradorFila> ocupacion = reporteService.ocupacionPorColaborador();
-        List<OcupacionColaboradorFila> sobrecargados = reporteService.colaboradoresSobrecargados();
-        List<VacanteHabilidad> topHabilidades = reporteService.topHabilidadesDeclaradas(8);
-        long maxDeclarada = topHabilidades.stream().mapToLong(VacanteHabilidad::vacantes).max().orElse(1);
+        RmReporteService.Filtros filtros = new RmReporteService.Filtros(q, estados, minimo, soloBrecha);
+        ReporteRmDatos datos = rmReporteService.generar(filtros);
 
         shellModelBuilder.aplicar(model, sesion, "reportes.html", "Reportes",
-                "Ocupación y demanda de habilidades · datos actuales");
+                "Ocupación del equipo y cobertura de habilidades · " + datos.generado());
 
-        model.addAttribute("kpiOcupacionPromedio", reporteService.ocupacionPromedio());
-        model.addAttribute("kpiSobreAsignados", sobrecargados.size());
-        model.addAttribute("kpiColaboradoresEvaluados", ocupacion.size());
-        model.addAttribute("limiteCarga", reporteService.limiteCarga());
-
-        model.addAttribute("ocupacion", ocupacion);
-        model.addAttribute("topHabilidades", topHabilidades);
-        model.addAttribute("maxDeclarada", maxDeclarada);
-
+        model.addAttribute("datos", datos);
+        model.addAttribute("filtros", filtros);
+        model.addAttribute("queryExport", query(filtros));
         return "resource-manager/reportes";
+    }
+
+    @GetMapping("/reportes.xlsx")
+    public void excel(HttpServletResponse response,
+                      @RequestParam(required = false) String q,
+                      @RequestParam(name = "estado", required = false) List<String> estados,
+                      @RequestParam(name = "min", defaultValue = "0") int minimo,
+                      @RequestParam(name = "brecha", defaultValue = "false") boolean soloBrecha) throws IOException {
+        ReporteRmDatos datos = rmReporteService.generar(new RmReporteService.Filtros(q, estados, minimo, soloBrecha));
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=" + exportService.nombreArchivo("skillbridge-reporte-rm") + ".xlsx");
+        exportService.escribirExcel(rmReporteService.paraExportar(datos), response.getOutputStream());
+    }
+
+    @GetMapping("/reportes.pdf")
+    public void pdf(HttpServletResponse response,
+                    @RequestParam(required = false) String q,
+                    @RequestParam(name = "estado", required = false) List<String> estados,
+                    @RequestParam(name = "min", defaultValue = "0") int minimo,
+                    @RequestParam(name = "brecha", defaultValue = "false") boolean soloBrecha) throws IOException {
+        ReporteRmDatos datos = rmReporteService.generar(new RmReporteService.Filtros(q, estados, minimo, soloBrecha));
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=" + exportService.nombreArchivo("skillbridge-reporte-rm") + ".pdf");
+        exportService.escribirPdf(rmReporteService.paraExportar(datos), response.getOutputStream());
+    }
+
+    /** Los mismos filtros, como query string para los enlaces de exportación. */
+    private static String query(RmReporteService.Filtros f) {
+        StringBuilder s = new StringBuilder();
+        if (!f.q().isEmpty()) s.append("&q=").append(URLEncoder.encode(f.q(), StandardCharsets.UTF_8));
+        for (String e : f.estados()) s.append("&estado=").append(URLEncoder.encode(e, StandardCharsets.UTF_8));
+        if (f.minimo() > 0) s.append("&min=").append(f.minimo());
+        if (f.soloBrecha()) s.append("&brecha=true");
+        return s.length() == 0 ? "" : "?" + s.substring(1);
     }
 }

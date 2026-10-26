@@ -36,6 +36,7 @@ public class TalentMatchingService {
     private final AuditoriaService auditoriaService;
     private final ObjectMapper objectMapper;
     private final ObjectProvider<TalentMatchingService> selfProvider;
+    private final DemandaHabilidadesService demandaService;
 
     public TalentMatchingService(ProyectoRepository proyectoRepository, PerfilRepository perfilRepository,
             AsignacionRepository asignacionRepository, PerfilHabilidadRepository perfilHabilidadRepository,
@@ -43,7 +44,7 @@ public class TalentMatchingService {
             PropuestaAsignacionRepository propuestaRepository, ConfiguracionService configuracionService,
             ProyectoService proyectoService, NotificacionService notificacionService,
             AuditoriaService auditoriaService, ObjectMapper objectMapper,
-            ObjectProvider<TalentMatchingService> selfProvider) {
+            ObjectProvider<TalentMatchingService> selfProvider, DemandaHabilidadesService demandaService) {
         this.proyectoRepository = proyectoRepository; this.perfilRepository = perfilRepository;
         this.asignacionRepository = asignacionRepository; this.perfilHabilidadRepository = perfilHabilidadRepository;
         this.requeridaRepository = requeridaRepository; this.habilidadRepository = habilidadRepository;
@@ -51,6 +52,7 @@ public class TalentMatchingService {
         this.proyectoService = proyectoService; this.notificacionService = notificacionService;
         this.auditoriaService = auditoriaService; this.objectMapper = objectMapper;
         this.selfProvider = selfProvider;
+        this.demandaService = demandaService;
     }
 
     @Transactional(readOnly = true)
@@ -334,17 +336,9 @@ public class TalentMatchingService {
         return Math.max(0, Optional.ofNullable(p.getColaboradoresRequeridos()).orElse(0) - asignados);
     }
 
+    /** Habilidades que pide el proyecto: regla compartida con Catálogo y Reportes (DemandaHabilidadesService). */
     private Map<Long, Integer> requisitos(Proyecto p, Map<Long, Habilidad> habilidades) {
-        Map<Long, Integer> r = requeridaRepository.findById_ProyectoId(p.getId()).stream()
-                .collect(Collectors.toMap(x -> x.getId().getHabilidadId(), ProyectoHabilidadRequerida::getNivelRequerido));
-        if (!r.isEmpty() || p.getTecnologias() == null || p.getTecnologias().isBlank()) return r;
-        try {
-            List<String> tecnologias = objectMapper.readValue(p.getTecnologias(), new TypeReference<List<String>>() {});
-            for (String tecnologia : tecnologias) habilidades.values().stream()
-                    .filter(h -> normalizar(h.getNombre()).equals(normalizar(tecnologia)))
-                    .findFirst().ifPresent(h -> r.put(h.getId(), 3));
-        } catch (Exception ignored) { }
-        return r;
+        return new HashMap<>(demandaService.requisitos(p, habilidades.values()));
     }
 
     private void validarPesos(int a, int b, int c) {

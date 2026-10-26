@@ -9,11 +9,13 @@ import com.skillbridge.ai.model.CertificadoHabilidad;
 import com.skillbridge.ai.model.Habilidad;
 import com.skillbridge.ai.model.PerfilHabilidad;
 import com.skillbridge.ai.model.PerfilHabilidadId;
+import com.skillbridge.ai.model.Proyecto;
 import com.skillbridge.ai.repository.CategoriaHabilidadRepository;
 import com.skillbridge.ai.repository.CertificadoHabilidadRepository;
 import com.skillbridge.ai.repository.HabilidadRepository;
 import com.skillbridge.ai.repository.PerfilHabilidadRepository;
 import com.skillbridge.ai.repository.ProyectoHabilidadRequeridaRepository;
+import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -46,6 +48,8 @@ public class HabilidadService {
     private final ProyectoHabilidadRequeridaRepository proyectoHabilidadRequeridaRepository;
     private final CertificadoHabilidadRepository certificadoHabilidadRepository;
     private final AuditoriaService auditoriaService;
+    private final DemandaHabilidadesService demandaService;
+    private final ProyectoRepository proyectoRepository;
 
     /** Mismo límite que spring.servlet.multipart.max-file-size (5 MB). */
     private static final long MAX_CERTIFICADO_BYTES = 5L * 1024 * 1024;
@@ -55,21 +59,32 @@ public class HabilidadService {
                             PerfilHabilidadRepository perfilHabilidadRepository,
                             ProyectoHabilidadRequeridaRepository proyectoHabilidadRequeridaRepository,
                             CertificadoHabilidadRepository certificadoHabilidadRepository,
-                            AuditoriaService auditoriaService) {
+                            AuditoriaService auditoriaService,
+                            DemandaHabilidadesService demandaService,
+                            ProyectoRepository proyectoRepository) {
         this.habilidadRepository = habilidadRepository;
         this.categoriaHabilidadRepository = categoriaHabilidadRepository;
         this.perfilHabilidadRepository = perfilHabilidadRepository;
         this.proyectoHabilidadRequeridaRepository = proyectoHabilidadRequeridaRepository;
         this.certificadoHabilidadRepository = certificadoHabilidadRepository;
         this.auditoriaService = auditoriaService;
+        this.demandaService = demandaService;
+        this.proyectoRepository = proyectoRepository;
     }
 
     public List<HabilidadFila> listar() {
-        return habilidadRepository.findAllConCategoriaOrderByNombre().stream()
+        List<Habilidad> catalogo = habilidadRepository.findAllConCategoriaOrderByNombre();
+        // Proyectos que piden cada habilidad, con la misma regla que el AI Talent
+        // Matching y los reportes del RM (tabla de requisitos o, si el proyecto no
+        // tiene filas ahí, su lista de tecnologías). Se excluyen los cancelados.
+        List<Proyecto> vigentes = proyectoRepository.findAll().stream()
+                .filter(p -> !"cancelado".equals(p.getEstado())).collect(Collectors.toList());
+        Map<Long, Long> pedidas = demandaService.proyectosPorHabilidad(vigentes, catalogo);
+        return catalogo.stream()
                 .map(h -> new HabilidadFila(
                         h.getId(), h.getNombre(), h.getCategoria().getId(), h.getCategoria().getNombre(),
                         perfilHabilidadRepository.countById_HabilidadId(h.getId()),
-                        proyectoHabilidadRequeridaRepository.countById_HabilidadId(h.getId()),
+                        pedidas.getOrDefault(h.getId(), 0L),
                         perfilHabilidadRepository.promedioNivel(h.getId())))
                 .collect(Collectors.toList());
     }

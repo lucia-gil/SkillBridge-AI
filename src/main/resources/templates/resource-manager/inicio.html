@@ -159,7 +159,13 @@
               </div>
 
               <div class="rmi-carousel" th:unless="${p.disponibles().isEmpty()}" data-rmi-carousel>
-                <button type="button" class="rmi-nav is-prev" data-rmi-prev aria-label="Anterior"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-left"></use></svg></button>
+                <div class="rmi-carousel-bar">
+                  <span class="rmi-carousel-count" data-rmi-count aria-live="polite"></span>
+                  <span class="rmi-carousel-nav">
+                    <button type="button" class="rmi-nav is-prev" data-rmi-prev aria-label="Anterior"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-left"></use></svg></button>
+                    <button type="button" class="rmi-nav is-next" data-rmi-next aria-label="Siguiente"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-right"></use></svg></button>
+                  </span>
+                </div>
                 <div class="rmi-track" data-rmi-track>
                   <article class="rmi-person" th:each="d : ${p.disponibles()}">
                     <header class="rmi-person-head">
@@ -199,7 +205,6 @@
                     </div>
                   </article>
                 </div>
-                <button type="button" class="rmi-nav is-next" data-rmi-next aria-label="Siguiente"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-right"></use></svg></button>
               </div>
             </div>
 
@@ -282,7 +287,7 @@
               </div>
               <div class="rmi-gantt-row" th:each="g : ${p.gantt().filas()}">
                 <span class="rmi-gantt-label">
-                  <span class="rmi-gantt-name" th:text="${g.nombre()}">Proyecto</span>
+                  <span class="rmi-gantt-name" th:text="${g.nombre()}" th:title="${g.nombre()}">Proyecto</span>
                   <span class="rmi-gantt-meta" th:text="${g.equipo()} + ' en equipo' + (${g.vacantes() > 0} ? ' · ' + ${g.vacantes()} + ' vacante(s)' : '')">equipo</span>
                 </span>
                 <span class="rmi-gantt-track">
@@ -380,10 +385,10 @@
                     <span class="badge badge-amber" th:if="${h.personas() == 0}">Nadie la domina</span>
                   </span>
                 </span>
-                <div class="progress-inline">
-                  <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${h.faltan() > 0} ? 'amber'" th:style="'width:' + ${h.barraPct()} + '%'"></div></div>
-                  <span class="progress-value" th:text="${h.personas()} + ' persona(s)'">0 personas</span>
-                </div>
+                <span class="rmi-meter" th:classappend="${h.personas() == 0} ? 'is-none' : (${h.faltan() > 0} ? 'is-short' : 'is-ok')">
+                  <span class="rmi-meter-track"><span class="rmi-meter-fill" th:style="'width:' + ${h.barraPct()} + '%'"></span></span>
+                  <span class="rmi-meter-value" th:text="${h.personas()} + ' persona(s)'">0 personas</span>
+                </span>
                 <span class="rmi-row-sub" th:text="'Piden ' + ${h.proyectos()} + ' proyecto(s) · ' + ${h.plazasAbiertas()} + ' plaza(s) abierta(s) · ' + ${h.conCapacidad()} + ' con capacidad'">detalle</span>
               </a>
             </div>
