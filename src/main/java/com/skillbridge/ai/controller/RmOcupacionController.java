@@ -67,10 +67,13 @@ public class RmOcupacionController {
         // misma logica que ya usa OcupacionColaboradorFila para decidir su
         // propio badge (getEstadoLabel()), solo que aqui se cuenta cuantos
         // colaboradores hay en cada categoria para los KPI de arriba.
-        long subutilizados = ocupacion.stream().filter(o -> o.getPromedio() < 60).count();
-        long optimo = ocupacion.stream().filter(o -> o.getPromedio() >= 60 && o.getPromedio() < 90).count();
-        long alLimite = ocupacion.stream().filter(o -> o.getPromedio() >= 90 && o.getPromedio() <= 100).count();
-        long sobreAsignados = ocupacion.stream().filter(o -> o.getPromedio() > 100).count();
+        // Se cuenta por el estado ya calculado en cada fila (contra el límite
+        // de carga de Configuración), así los KPI y los badges de la tabla
+        // nunca se contradicen.
+        long subutilizados = ocupacion.stream().filter(o -> "Subutilizado".equals(o.getEstadoLabel())).count();
+        long optimo = ocupacion.stream().filter(o -> "Óptimo".equals(o.getEstadoLabel())).count();
+        long alLimite = ocupacion.stream().filter(OcupacionColaboradorFila::isAlLimite).count();
+        long sobreAsignados = ocupacion.stream().filter(OcupacionColaboradorFila::isSobrecargado).count();
 
         shellModelBuilder.aplicar(model, sesion, "ocupacion.html", "Ocupación del equipo",
                 ocupacion.size() + " colaboradores con asignaciones activas");

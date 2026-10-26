@@ -40,8 +40,16 @@
     var close = dialog.querySelector("[data-modal-close]");
     if (close) close.setAttribute("aria-label", close.getAttribute("aria-label") || "Cerrar");
 
+    // Foco inicial: el campo marcado con [autofocus] o el primer campo del
+    // formulario; solo si no hay campos, el primer elemento enfocable.
+    // Antes iba siempre al primer enfocable, que es la "×" de cerrar del
+    // encabezado, y le quitaba el foco al campo que modal.js ya había elegido.
     setTimeout(function () {
-      var first = focusable()[0];
+      if (dialog.contains(document.activeElement) && document.activeElement.matches("input, select, textarea")) return;
+      var items = focusable();
+      var campo = items.filter(function (el) { return el.hasAttribute("autofocus"); })[0]
+        || items.filter(function (el) { return el.matches("input:not([type=hidden]), select, textarea"); })[0];
+      var first = campo || items[0];
       if (first) first.focus();
     }, 80);
   }

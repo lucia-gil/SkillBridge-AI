@@ -10,89 +10,211 @@
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
 <link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/kpi-hero.css">
+<link rel="stylesheet" href="/css/habilidades.css">
 </head>
 <body class="admin-app">
 <div class="app-shell">
   <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
     <div th:replace="~{fragments/topbar :: topbar}"></div>
-    <main class="page-content" id="page-content">
+    <main class="page-content sk-page" id="page-content">
 
-      <div class="detail-grid" style="grid-template-columns: 1fr 2.4fr; align-items: stretch;">
-        <section class="card" style="height:100%;">
-          <div class="table-toolbar">
-            <div>
-              <strong th:text="${categorias.size()} + ' categorías'">0 categorías</strong>
+      <!-- ═════════════ Encabezado + indicadores (patrón kpi-hero.css) ═════════════ -->
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <h2 class="kpi-hero-title">¿Qué sabe hacer tu equipo?</h2>
+            <p class="kpi-hero-sub">Ordena las habilidades por categoría y detecta las que nadie ha declarado todavía.</p>
+          </div>
+          <button type="button" class="kpi-hero-action" id="add-skill-btn">
+            <svg class="icon"><use href="/img/icons.svg#icon-plus"></use></svg><span>Agregar habilidad</span>
+          </button>
+        </div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-book"></use></svg></span>
+              <span class="hero-card-label">Habilidades en el catálogo</span>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="add-category-btn" title="Agregar categoría">
+            <div class="hero-card-value" th:text="${habilidades.size()}">0</div>
+            <p class="hero-card-meta" th:text="'en ' + ${categorias.size()} + (${categorias.size() == 1} ? ' categoría' : ' categorías')">en 0 categorías</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon" th:classappend="${kpiSinPersonas > 0} ? 'tone-amber' : 'tone-green'"><svg class="icon"><use href="/img/icons.svg#icon-user-x"></use></svg></span>
+              <span class="hero-card-label">Sin nadie que la declare</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiSinPersonas}">0</div>
+            <p class="hero-card-meta">
+              <b th:if="${kpiSinPersonas > 0}" class="tone-amber">Revísalas</b>
+              <b th:unless="${kpiSinPersonas > 0}" class="tone-green">Todas en uso</b>
+              <span th:text="${kpiSinPersonas > 0} ? 'antes de pedirlas en un proyecto' : 'por al menos una persona'">antes de pedirlas en un proyecto</span>
+            </p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-briefcase"></use></svg></span>
+              <span class="hero-card-label">Pedidas por proyectos</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiPedidasPorProyectos}">0</div>
+            <p class="hero-card-meta" th:text="'de ' + ${habilidades.size()} + ' habilidades del catálogo'">de 0 habilidades del catálogo</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg></span>
+              <span class="hero-card-label">La más declarada</span>
+            </div>
+            <div class="hero-card-value sk-hero-text" th:text="${kpiMasDeclarada != null} ? ${kpiMasDeclarada.nombre} : '—'">—</div>
+            <p class="hero-card-meta" th:if="${kpiMasDeclarada != null}">
+              <b class="tone-green" th:text="${kpiMasDeclarada.personas} + (${kpiMasDeclarada.personas == 1} ? ' persona' : ' personas')">0 personas</b>
+              <span th:text="'en ' + ${kpiMasDeclarada.categoriaNombre}">en categoría</span>
+            </p>
+            <p class="hero-card-meta" th:unless="${kpiMasDeclarada != null}">Nadie ha declarado habilidades aún</p>
+          </article>
+        </div>
+      </section>
+
+      <div class="sk-layout">
+
+        <!-- ═════════════ Categorías: lista que también filtra la tabla ═════════════ -->
+        <section class="card sk-cats" aria-labelledby="sk-cats-title">
+          <header class="sk-panel-head">
+            <div>
+              <h3 id="sk-cats-title">Categorías</h3>
+              <p th:text="${categorias.size()} + (${categorias.size() == 1} ? ' categoría · elige una para filtrar' : ' categorías · elige una para filtrar')">0 categorías</p>
+            </div>
+            <button type="button" class="sk-icon-btn sk-icon-btn-solid" id="add-category-btn" aria-label="Nueva categoría" title="Nueva categoría">
               <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>
             </button>
-          </div>
-          <div class="table-scroll">
-            <table class="data-table" style="min-width:0;" data-paginar="6">
-              <thead><tr><th>Categoría</th><th style="text-align:center;">Habilidades</th><th>Acciones</th></tr></thead>
-              <tbody id="category-list">
-                <tr th:each="c : ${categorias}" th:attr="data-id=${c.id()}">
-                  <td class="cell-primary" style="display:flex; align-items:center; gap:var(--space-2);">
-                    <span class="card-header-icon category-color-icon" style="width:26px; height:26px; border-radius:var(--radius-sm);" th:attr="data-categoria=${c.nombre()}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-folder"></use></svg></span>
-                    <span th:text="${c.nombre()}">Categoría</span>
-                  </td>
-                  <td class="mono" style="text-align:center;" th:text="${c.cantidad()}">0</td>
-                  <td class="cell-actions">
-                    <button type="button" data-edit-category
-                            th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}">Editar</button>
-                    <button type="button" class="danger" data-delete-category
-                            th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}, data-cantidad=${c.cantidad()}">Eliminar</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          </header>
+
+          <ul class="sk-cat-list" id="category-list">
+            <li class="sk-cat is-active" data-cat-id="">
+              <button type="button" class="sk-cat-select" aria-pressed="true">
+                <span class="sk-cat-swatch sk-tone-all" aria-hidden="true"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-layers"></use></svg></span>
+                <span class="sk-cat-text">
+                  <span class="sk-cat-name">Todas las habilidades</span>
+                  <span class="sk-cat-bar" aria-hidden="true"><i style="width:100%"></i></span>
+                </span>
+                <span class="sk-cat-count" th:text="${habilidades.size()}">0</span>
+              </button>
+            </li>
+            <li class="sk-cat" th:each="c : ${categorias}"
+                th:attr="data-cat-id=${c.id()}, data-tono=${c.id() % 8}, data-cantidad=${c.cantidad()}">
+              <button type="button" class="sk-cat-select" aria-pressed="false">
+                <span class="sk-cat-swatch" aria-hidden="true"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+                <span class="sk-cat-text">
+                  <span class="sk-cat-name" th:text="${c.nombre()}">Categoría</span>
+                  <span class="sk-cat-bar" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="sk-cat-count" th:text="${c.cantidad()}">0</span>
+              </button>
+              <div class="sk-cat-actions">
+                <button type="button" class="sk-icon-btn" data-edit-category
+                        th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}, data-cantidad=${c.cantidad()}, aria-label='Editar ' + ${c.nombre()}, title='Editar categoría'">
+                  <svg class="icon icon-sm"><use href="/img/icons.svg#icon-edit"></use></svg>
+                </button>
+                <button type="button" class="sk-icon-btn sk-icon-btn-danger" data-delete-category
+                        th:attr="data-id=${c.id()}, data-nombre=${c.nombre()}, data-cantidad=${c.cantidad()}, aria-label='Eliminar ' + ${c.nombre()}, title='Eliminar categoría'">
+                  <svg class="icon icon-sm"><use href="/img/icons.svg#icon-trash"></use></svg>
+                </button>
+              </div>
+            </li>
+          </ul>
+          <div class="sk-cats-empty" th:if="${categorias.isEmpty()}">
+            Crea la primera categoría para empezar a ordenar el catálogo.
           </div>
         </section>
 
-        <section class="card">
-          <div class="table-toolbar">
+        <!-- ═════════════ Habilidades ═════════════ -->
+        <section class="card sk-skills" aria-labelledby="sk-skills-title">
+          <header class="sk-panel-head sk-skills-head">
             <div>
-              <strong th:text="${habilidades.size()} + ' habilidades en este catálogo'">0 habilidades</strong>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">"Demanda" es una referencia calculada a partir de cuántos proyectos piden cada habilidad, no un dato cargado a mano.</p>
+              <h3 id="sk-skills-title">
+                <span id="sk-scope-label">Habilidades</span>
+                <button type="button" class="sk-scope-clear" id="sk-scope-clear" hidden aria-label="Ver todas las categorías">
+                  <svg class="icon icon-sm"><use href="/img/icons.svg#icon-x"></use></svg>
+                </button>
+              </h3>
+              <p>La demanda se calcula según cuántos proyectos piden cada habilidad.</p>
             </div>
-            <div class="table-filters">
-              <input type="text" class="input" data-filter-scope="skills" data-filter-key="q" placeholder="Buscar habilidad…" id="skills-search" style="width:190px; height:38px; font-size:var(--fs-xs);">
-              <select class="select" data-filter-scope="skills" data-filter-key="demanda">
-                <option value="todos">Demanda: todas</option><option>Alta</option><option>Media</option><option>Baja</option>
+            <div class="sk-filters">
+              <label class="sk-search">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
+                <input type="search" id="skills-search" placeholder="Buscar habilidad" aria-label="Buscar habilidad" autocomplete="off">
+              </label>
+              <select class="select sk-select" id="skills-demanda" aria-label="Filtrar por demanda">
+                <option value="todos">Cualquier demanda</option>
+                <option value="Alta">Demanda alta</option>
+                <option value="Media">Demanda media</option>
+                <option value="Baja">Demanda baja</option>
               </select>
-              <button type="button" class="btn btn-primary btn-sm" id="add-skill-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Agregar habilidad</button>
             </div>
-          </div>
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead><tr><th>Habilidad</th><th>Categoría</th><th style="text-align:center;">Personas</th><th style="text-align:center;">Proyectos</th><th>Nivel medio</th><th>Demanda</th><th>Acciones</th></tr></thead>
+          </header>
+
+          <div class="table-scroll sk-table-wrap">
+            <table class="data-table sk-table">
+              <thead>
+                <tr>
+                  <th scope="col">Habilidad</th>
+                  <th scope="col">Categoría</th>
+                  <th scope="col" class="num">Personas</th>
+                  <th scope="col" class="num">Proyectos</th>
+                  <th scope="col">Nivel medio</th>
+                  <th scope="col">Demanda</th>
+                  <th scope="col" class="sk-th-actions"><span class="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
               <tbody id="skills-body">
-                <tr th:each="s : ${habilidades}" data-filter-row="skills"
-                    th:attr="data-f-demanda=${s.demanda}, data-f-search=${#strings.toLowerCase(s.nombre)}">
-                  <td class="cell-primary" th:text="${s.nombre}">Nombre</td>
-                  <td><span class="badge category-color-badge" th:text="${s.categoriaNombre}" th:attr="data-categoria=${s.categoriaNombre}">Categoría</span></td>
-                  <td class="mono" style="text-align:center;" th:text="${s.personas}">0</td>
-                  <td class="mono" style="text-align:center;" th:text="${s.proyectos}">0</td>
-                  <td th:text="${s.nivelMedio}">—</td>
-                  <td><span class="badge" th:classappend="${s.demandaBadgeClass}" th:text="${s.demanda}">Demanda</span></td>
-                  <td class="cell-actions">
-                    <button type="button" data-edit-skill
-                            th:attr="data-id=${s.id}, data-nombre=${s.nombre}, data-categoria-id=${s.categoriaId}">Editar</button>
-                    <button type="button" class="danger" data-delete-skill
-                            th:attr="data-id=${s.id}, data-nombre=${s.nombre}">Eliminar</button>
+                <tr th:each="s : ${habilidades}" data-skill-row
+                    th:attr="data-id=${s.id}, data-nombre=${s.nombre}, data-cat-id=${s.categoriaId}, data-tono=${s.categoriaId % 8}, data-demanda=${s.demanda}, data-personas=${s.personas}, data-proyectos=${s.proyectos}">
+                  <td>
+                    <div class="sk-skill">
+                      <span class="sk-mono" aria-hidden="true" th:text="${#strings.length(s.nombre) > 1} ? ${#strings.toUpperCase(#strings.substring(s.nombre, 0, 2))} : ${#strings.toUpperCase(s.nombre)}">SK</span>
+                      <span class="sk-skill-name" th:text="${s.nombre}">Nombre</span>
+                    </div>
+                  </td>
+                  <td><span class="sk-tag" th:text="${s.categoriaNombre}">Categoría</span></td>
+                  <td class="num" th:text="${s.personas}">0</td>
+                  <td class="num" th:text="${s.proyectos}">0</td>
+                  <td>
+                    <span class="sk-level" th:attr="data-nivel=${s.nivelMedio}">
+                      <span class="sk-level-meter" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                      <span class="sk-level-text" th:text="${s.nivelMedio == '—'} ? 'Sin datos' : ${s.nivelMedio}">Intermedio</span>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="sk-demand" th:attr="data-demanda=${s.demanda}">
+                      <span class="sk-demand-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+                      <span th:text="${s.demanda}">Media</span>
+                    </span>
+                  </td>
+                  <td class="cell-actions sk-actions">
+                    <button type="button" class="sk-icon-btn" data-edit-skill
+                            th:attr="data-id=${s.id}, aria-label='Editar ' + ${s.nombre}, title='Editar habilidad'">
+                      <svg class="icon icon-sm"><use href="/img/icons.svg#icon-edit"></use></svg>
+                    </button>
+                    <button type="button" class="sk-icon-btn sk-icon-btn-danger" data-delete-skill
+                            th:attr="data-id=${s.id}, aria-label='Eliminar ' + ${s.nombre}, title='Eliminar habilidad'">
+                      <svg class="icon icon-sm"><use href="/img/icons.svg#icon-trash"></use></svg>
+                    </button>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <div class="state-panel" data-filter-empty="skills" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-book"></use></svg></span>
-            <span class="state-panel-title">Sin habilidades con estos filtros</span>
+
+          <div class="sk-empty" id="skills-empty" hidden>
+            <span class="sk-empty-icon"><svg class="icon"><use href="/img/icons.svg#icon-search"></use></svg></span>
+            <strong>Ninguna habilidad coincide</strong>
+            <p>Prueba con otro nombre, otra demanda u otra categoría.</p>
+            <button type="button" class="btn btn-secondary btn-sm" id="skills-reset">Quitar filtros</button>
           </div>
-          <div class="table-footer">
-            <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="skills-visible-count">0</span> de <span id="skills-filtered-count">0</span> habilidades</span>
-            <div class="pagination"><button class="page-btn" id="skills-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="skills-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="skills-next" type="button" aria-label="Página siguiente">›</button></div>
+
+          <div class="table-footer sk-footer">
+            <span class="text-tertiary">Mostrando <span id="skills-visible-count">0</span> de <span id="skills-filtered-count">0</span> habilidades</span>
+            <div class="pagination"><button class="page-btn" id="skills-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="skills-page-label">Página 1</span><button class="page-btn" id="skills-next" type="button" aria-label="Página siguiente">›</button></div>
           </div>
         </section>
       </div>
@@ -101,226 +223,19 @@
   </div>
 </div>
 
-<!-- Catálogo de categorías serializado para el <select> de los modales (crear/editar). -->
+<!-- Datos para los modales (crear/editar) y avisos del último POST. -->
 <script th:inline="javascript">
   var CATEGORIAS = /*[[${categoriasParaSelect}]]*/ [];
+  var SK_EXITO = /*[[${exito}]]*/ null;
+  var SK_ERROR = /*[[${error}]]*/ null;
 </script>
 <script src="/js/mock-data.js"></script>
 <script src="/js/state.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
-<script src="/js/table-filter.js"></script>
-<script src="/js/paginar-lista.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
-<script th:inline="javascript">
-document.addEventListener("DOMContentLoaded", function () {
-  window.SBAI.dropdown.init(document);
-  window.SBAI.tableFilter.init(document);
-
-  // Color por categoría (icono del panel izquierdo + badge en la tabla de
-  // habilidades): mismo nombre de categoría siempre sale con el mismo color,
-  // calculado con un hash simple del nombre sobre la paleta de badges/iconos
-  // que ya usa el resto de la app (azul, violeta, verde, ámbar, rojo).
-  var PALETA_CATEGORIAS = ["blue", "violet", "green", "amber", "red"];
-  function colorDeCategoria(nombre) {
-    var hash = 0;
-    for (var i = 0; i < nombre.length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) >>> 0;
-    return PALETA_CATEGORIAS[hash % PALETA_CATEGORIAS.length];
-  }
-  document.querySelectorAll("[data-categoria]").forEach(function (el) {
-    var color = colorDeCategoria(el.dataset.categoria);
-    if (el.classList.contains("category-color-icon")) el.classList.add(color);
-    if (el.classList.contains("category-color-badge")) el.classList.add("badge-" + color);
-  });
-
-  document.body.addEventListener("click", function (e) {
-    if (e.target.closest('[data-action="logout"]')) { (window.SBAI && window.SBAI.logout) ? window.SBAI.logout() : window.location.assign("/auth/login.html"); }
-  });
-
-  var exito = /*[[${exito}]]*/ null;
-  var error = /*[[${error}]]*/ null;
-  if (exito) SBAI.toast.show(exito, { type: "success" });
-  if (error) SBAI.toast.show(error, { type: "error" });
-
-  function submitForm(action, fields) {
-    var form = document.createElement("form");
-    form.method = "POST";
-    form.action = action;
-    Object.keys(fields).forEach(function (k) {
-      var input = document.createElement("input");
-      input.type = "hidden"; input.name = k; input.value = fields[k];
-      form.appendChild(input);
-    });
-    document.body.appendChild(form);
-    form.submit();
-  }
-
-  function catOptions(selectedId) {
-    return CATEGORIAS.map(function (c) {
-      return "<option value=\"" + c.id + "\"" + (String(c.id) === String(selectedId) ? " selected" : "") + ">" + c.nombre + "</option>";
-    }).join("");
-  }
-
-  document.getElementById("add-skill-btn").addEventListener("click", function () {
-    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="new-skill-name" placeholder="Ej. OpenTelemetry"></div>' +
-      '<div class="field"><label class="field-label">Categoría</label><select class="select" id="new-skill-cat">' + catOptions(null) + '</select></div></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="new-skill-confirm">Agregar</button></div></div>';
-    var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#new-skill-confirm").addEventListener("click", function () {
-      var nombre = backdrop.querySelector("#new-skill-name").value.trim();
-      if (!nombre) { SBAI.toast.show("Escribe un nombre para la habilidad.", { type: "error" }); return; }
-      var categoriaId = backdrop.querySelector("#new-skill-cat").value;
-      submitForm("/administrador/habilidades", { nombre: nombre, categoriaId: categoriaId });
-    });
-  });
-
-  document.getElementById("add-category-btn").addEventListener("click", function () {
-    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar categoría</h2></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="new-cat-name" placeholder="Ej. Cloud &amp; DevOps"></div>' +
-      '<div class="field"><label class="field-label">Descripción (opcional)</label><input class="input" id="new-cat-desc" placeholder="Breve descripción"></div></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="new-cat-confirm">Agregar</button></div></div>';
-    var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#new-cat-confirm").addEventListener("click", function () {
-      var nombre = backdrop.querySelector("#new-cat-name").value.trim();
-      if (!nombre) { SBAI.toast.show("Escribe un nombre para la categoría.", { type: "error" }); return; }
-      var descripcion = backdrop.querySelector("#new-cat-desc").value.trim();
-      submitForm("/administrador/categorias", { nombre: nombre, descripcion: descripcion });
-    });
-  });
-
-  document.querySelectorAll("[data-edit-category]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var id = btn.dataset.id, nombre = btn.dataset.nombre;
-      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar categoría</h2></div>' +
-        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="edit-cat-name" value="' + nombre.replace(/"/g, "&quot;") + '"></div>' +
-        '<div class="field"><label class="field-label">Descripción (opcional)</label><input class="input" id="edit-cat-desc"></div></div>' +
-        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="edit-cat-confirm">Guardar</button></div></div>';
-      var backdrop = SBAI.modal.open(html);
-      backdrop.querySelector("#edit-cat-confirm").addEventListener("click", function () {
-        var nuevoNombre = backdrop.querySelector("#edit-cat-name").value.trim();
-        if (!nuevoNombre) { SBAI.toast.show("Escribe un nombre para la categoría.", { type: "error" }); return; }
-        var descripcion = backdrop.querySelector("#edit-cat-desc").value.trim();
-        submitForm("/administrador/categorias/" + id + "/editar", { nombre: nuevoNombre, descripcion: descripcion });
-      });
-    });
-  });
-
-  document.querySelectorAll("[data-delete-category]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var id = btn.dataset.id, nombre = btn.dataset.nombre, cantidad = btn.dataset.cantidad;
-      SBAI.modal.confirm({
-        title: "¿Eliminar \"" + nombre + "\"?",
-        desc: cantidad !== "0" ? "Tiene " + cantidad + " habilidad(es) asignada(s); no se podrá eliminar hasta reasignarlas." : "Esta acción no se puede deshacer.",
-        confirmLabel: "Eliminar", variant: "destructive",
-        onConfirm: function () { submitForm("/administrador/categorias/" + id + "/eliminar", {}); }
-      });
-    });
-  });
-
-  document.querySelectorAll("[data-edit-skill]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var id = btn.dataset.id, nombre = btn.dataset.nombre, categoriaId = btn.dataset.categoriaId;
-      var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Editar habilidad</h2></div>' +
-        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body"><div class="field"><label class="field-label">Nombre</label><input class="input" id="edit-skill-name" value="' + nombre.replace(/"/g, "&quot;") + '"></div>' +
-        '<div class="field"><label class="field-label">Categoría</label><select class="select" id="edit-skill-cat">' + catOptions(categoriaId) + '</select></div></div>' +
-        '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="edit-skill-confirm">Guardar</button></div></div>';
-      var backdrop = SBAI.modal.open(html);
-      backdrop.querySelector("#edit-skill-confirm").addEventListener("click", function () {
-        var nuevoNombre = backdrop.querySelector("#edit-skill-name").value.trim();
-        if (!nuevoNombre) { SBAI.toast.show("Escribe un nombre para la habilidad.", { type: "error" }); return; }
-        submitForm("/administrador/habilidades/" + id + "/editar", { nombre: nuevoNombre, categoriaId: backdrop.querySelector("#edit-skill-cat").value });
-      });
-    });
-  });
-
-  document.querySelectorAll("[data-delete-skill]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var id = btn.dataset.id, nombre = btn.dataset.nombre;
-      SBAI.modal.confirm({
-        title: "¿Eliminar \"" + nombre + "\"?",
-        desc: "Si está en uso en perfiles o requisitos de proyecto, no se podrá eliminar.",
-        confirmLabel: "Eliminar", variant: "destructive",
-        onConfirm: function () { submitForm("/administrador/habilidades/" + id + "/eliminar", {}); }
-      });
-    });
-  });
-
-  var params = new URLSearchParams(window.location.search);
-  var buscar = params.get("buscar");
-  if (buscar) {
-    document.getElementById("skills-search").value = buscar;
-    window.SBAI.tableFilter.setFilter("skills", "q", buscar);
-  }
-
-  // Paginación de la tabla, encima del filtrado de table-filter.js: no se
-  // toca la busqueda/demanda (siguen filtrando igual), solo se agrega que
-  // de los resultados que coinciden se muestren de a 6. Se recalcula el
-  // match aqui mismo (misma logica que table-filter.js) para poder paginar
-  // el conjunto filtrado sin pelear por la propiedad "hidden" de las filas
-  // con el motor generico (mismo patron que administrador/usuarios.html).
-  (function () {
-    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="skills"]'));
-    if (!rows.length) return;
-
-    var searchInput = document.querySelector('[data-filter-scope="skills"][data-filter-key="q"]');
-    var demandaSelect = document.querySelector('[data-filter-scope="skills"][data-filter-key="demanda"]');
-    var emptyPanel = document.querySelector('[data-filter-empty="skills"]');
-    var visibleCount = document.getElementById("skills-visible-count");
-    var filteredCount = document.getElementById("skills-filtered-count");
-    var pageLabel = document.getElementById("skills-page-label");
-    var previous = document.getElementById("skills-prev");
-    var next = document.getElementById("skills-next");
-    var pageSize = 6;
-    var page = 1;
-
-    function normalize(value) {
-      return (value || "").toString().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
-    }
-
-    function matches(row) {
-      var q = searchInput ? normalize(searchInput.value) : "";
-      if (q && normalize(row.dataset.fSearch).indexOf(q) === -1) return false;
-      var demanda = demandaSelect ? demandaSelect.value : "todos";
-      if (demanda && demanda !== "todos" && row.dataset.fDemanda !== demanda) return false;
-      return true;
-    }
-
-    function render() {
-      var matched = rows.filter(matches);
-      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
-      page = Math.min(page, pages);
-      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
-      rows.forEach(function (row) { row.hidden = true; });
-      visible.forEach(function (row) { row.hidden = false; });
-      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
-      visibleCount.textContent = visible.length;
-      filteredCount.textContent = matched.length;
-      pageLabel.textContent = "Página " + page + " de " + pages;
-      previous.disabled = page === 1;
-      next.disabled = page === pages;
-    }
-
-    [searchInput, demandaSelect].forEach(function (ctrl) {
-      if (!ctrl) return;
-      var evt = ctrl.tagName === "SELECT" ? "change" : "input";
-      ctrl.addEventListener(evt, function () { page = 1; render(); });
-    });
-    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
-    next.addEventListener("click", function () {
-      var matched = rows.filter(matches);
-      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
-      if (page < pages) { page++; render(); }
-    });
-    render();
-  })();
-});
-</script>
+<script src="/js/habilidades-catalogo.js"></script>
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>

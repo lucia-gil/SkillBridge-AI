@@ -43,6 +43,27 @@ public class ConfiguracionService {
         return v != null ? Boolean.parseBoolean(v) : porDefecto;
     }
 
+    /** Tope duro de carga (modelo v7): nadie supera el 100%, aunque se configure más. */
+    public static final int LIMITE_CARGA_MAXIMO = 100;
+
+    /**
+     * Límite de carga (%) vigente, leído de "limite_carga_colaborador".
+     * Fuente única: lo usan la asignación (ProyectoService) y todos los
+     * reportes y dashboards, para que "sobre-asignado" signifique lo mismo
+     * en toda la plataforma. Siempre queda entre 1 y {@link #LIMITE_CARGA_MAXIMO}.
+     *
+     * @return límite de carga configurado, 100 si no está definido o es inválido
+     */
+    public int limiteCarga() {
+        int configurado;
+        try {
+            configurado = Integer.parseInt(valor(obtenerMapa(), "limite_carga_colaborador", "100").trim());
+        } catch (NumberFormatException ex) {
+            configurado = LIMITE_CARGA_MAXIMO;
+        }
+        return Math.max(1, Math.min(LIMITE_CARGA_MAXIMO, configurado));
+    }
+
     @Transactional
     public void actualizar(String clave, String nuevoValor, Long actorUsuarioId, Long actorPerfilId) {
         ConfiguracionGlobal c = repository.findById(clave)

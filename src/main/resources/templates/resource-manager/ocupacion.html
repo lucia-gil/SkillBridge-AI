@@ -38,17 +38,17 @@
           <article class="hero-card">
             <div class="hero-card-top"><span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span><span class="hero-card-label">Óptimo</span></div>
             <div class="hero-card-value" th:text="${optimo}">0</div>
-            <p class="hero-card-meta"><b class="tone-green">60%–89%</b> de carga</p>
+            <p class="hero-card-meta"><b class="tone-green" th:text="'60%–' + ${limiteCarga - 11} + '%'">60%–89%</b> de carga</p>
           </article>
           <article class="hero-card">
             <div class="hero-card-top"><span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span><span class="hero-card-label">Al límite</span></div>
             <div class="hero-card-value" th:text="${alLimite}">0</div>
-            <p class="hero-card-meta"><b class="tone-amber">90%–100%</b> de carga</p>
+            <p class="hero-card-meta"><b class="tone-amber" th:text="${limiteCarga - 10} + '%–' + ${limiteCarga} + '%'">90%–100%</b> de carga</p>
           </article>
           <article class="hero-card">
             <div class="hero-card-top"><span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span><span class="hero-card-label">Sobre-asignados</span></div>
             <div class="hero-card-value" th:text="${sobreAsignados}">0</div>
-            <p class="hero-card-meta"><b class="tone-red">&gt; 100%</b> de carga</p>
+            <p class="hero-card-meta"><b class="tone-red" th:text="'> ' + ${limiteCarga} + '%'">&gt; 100%</b> de carga</p>
           </article>
         </div>
       </section>
@@ -81,7 +81,7 @@
                 <div class="progress-inline" style="min-width:110px;">
                   <div class="progress-bar">
                     <div class="progress-bar-fill"
-                         th:classappend="${o.promedio > 100} ? 'red' : (${o.promedio >= 90} ? 'amber' : '')"
+                         th:classappend="${o.sobrecargado} ? 'red' : (${o.alLimite} ? 'amber' : '')"
                          th:style="'width:' + ${#numbers.formatDecimal(o.promedio > 100 ? 100 : o.promedio, 1, 0)} + '%;'"></div>
                   </div>
                   <span class="progress-value" th:text="${o.promedio} + '%'">0%</span>
@@ -90,9 +90,9 @@
               <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
               <td class="cell-actions">
                 <button type="button" th:attr="data-rebalancear=${o.perfilId},data-nombre=${o.nombre},data-carga=${o.promedio}"
-                        th:classappend="${o.promedio > 100} ? 'action-alert'">
+                        th:classappend="${o.sobrecargado} ? 'action-alert'">
                   <svg class="icon icon-sm"><use href="/img/icons.svg#icon-sliders"></use></svg>
-                  <span th:text="${o.promedio > 100} ? 'Rebalancear' : 'Ajustar carga'">Ajustar carga</span>
+                  <span th:text="${o.sobrecargado} ? 'Rebalancear' : 'Ajustar carga'">Ajustar carga</span>
                 </button>
               </td>
             </tr>

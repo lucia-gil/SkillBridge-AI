@@ -67,6 +67,7 @@ public class ColaboradorPerfilController {
         model.addAttribute("historial", historial);
         model.addAttribute("proyectosActivos", proyectosActivos);
         model.addAttribute("cargaActiva", proyectoService.cargaActivaDe(perfilId));
+        model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
         model.addAttribute("catalogoHabilidades", catalogo);
         return "colaborador/perfil";
     }
@@ -137,4 +138,4 @@ public class ColaboradorPerfilController {
         }
         return "redirect:/colaborador/perfil.html";
     }
-}
+}

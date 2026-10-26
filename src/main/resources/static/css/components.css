@@ -1007,6 +1007,24 @@
   object-position: left center;
 }
 
+/* Ícono de marca: reemplaza al logo completo cuando el sidebar colapsa a
+   íconos (76 px, entre 861 y 1180 px de ancho de ventana). Antes el logo de
+   ~141 px se desbordaba sobre el contenido. Bajo 860 px el sidebar vuelve a
+   ser un panel ancho (drawer) y se muestra otra vez el logo completo. */
+.sidebar-logo-icon {
+  display: none;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+@media (min-width: 861px) and (max-width: 1180px) {
+  .sidebar-brand { padding: 0; }
+  .sidebar-logo { display: none; }
+  .sidebar-logo-icon { display: block; }
+}
+
 /* =========================================================
    TOPBAR - USUARIO
    ========================================================= */

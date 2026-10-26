@@ -36,7 +36,8 @@
         }).join("");
 
         return (
-            '<div class="sidebar-brand"><img src="' + window.SBAI.state.STATIC + 'img/logo_blanco.png" alt="SkillBridge AI" class="sidebar-logo"></div>' +
+            '<div class="sidebar-brand"><img src="' + window.SBAI.state.STATIC + 'img/logo_blanco.png" alt="SkillBridge AI" class="sidebar-logo">' +
+            '<img src="' + window.SBAI.state.STATIC + 'img/logo-icon.png" alt="SkillBridge AI" class="sidebar-logo-icon"></div>' +
             '<div class="sidebar-role-badge">' + config.label + "</div>" +
             '<nav class="sidebar-nav" aria-label="Navegación principal">' + items + "</nav>"
             // Sin sidebar-footer: el menú de usuario (Mi cuenta / Cerrar sesión)

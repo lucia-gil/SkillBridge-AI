@@ -14,6 +14,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Comparator;
 import java.util.List;
 
 /** CRUD completo del catálogo de habilidades (administrador/habilidades.html). */
@@ -43,6 +44,16 @@ public class HabilidadesController {
         model.addAttribute("habilidades", habilidades);
         model.addAttribute("categorias", categorias);
         model.addAttribute("categoriasParaSelect", categoriasParaSelect);
+
+        // Indicadores de la banda superior (kpi-hero), calculados sobre la
+        // misma lista que se pinta: sin consultas extra a la base de datos.
+        model.addAttribute("kpiSinPersonas", habilidades.stream().filter(h -> h.getPersonas() == 0).count());
+        model.addAttribute("kpiPedidasPorProyectos", habilidades.stream().filter(h -> h.getProyectos() > 0).count());
+        model.addAttribute("kpiMasDeclarada", habilidades.stream()
+                .filter(h -> h.getPersonas() > 0)
+                .max(Comparator.comparingLong(HabilidadFila::getPersonas)
+                        .thenComparing(HabilidadFila::getNombre, Comparator.reverseOrder()))
+                .orElse(null));
         return "administrador/habilidades";
     }
 

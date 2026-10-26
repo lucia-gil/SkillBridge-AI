@@ -64,6 +64,7 @@ public class RmReportesController {
         model.addAttribute("kpiOcupacionPromedio", reporteService.ocupacionPromedio());
         model.addAttribute("kpiSobreAsignados", sobrecargados.size());
         model.addAttribute("kpiColaboradoresEvaluados", ocupacion.size());
+        model.addAttribute("limiteCarga", reporteService.limiteCarga());
 
         model.addAttribute("ocupacion", ocupacion);
         model.addAttribute("topHabilidades", topHabilidades);

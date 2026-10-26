@@ -9,9 +9,9 @@ import com.skillbridge.ai.repository.HabilidadRepository;
 import com.skillbridge.ai.repository.PerfilHabilidadRepository;
 import com.skillbridge.ai.repository.PerfilRepository;
 import com.skillbridge.ai.repository.ProyectoRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,14 +37,18 @@ public class ReporteService {
     private final HabilidadRepository habilidadRepository;
     private final PerfilHabilidadRepository perfilHabilidadRepository;
 
+    private final ConfiguracionService configuracionService;
+
     public ReporteService(ProyectoRepository proyectoRepository, AsignacionRepository asignacionRepository,
                            PerfilRepository perfilRepository, HabilidadRepository habilidadRepository,
-                           PerfilHabilidadRepository perfilHabilidadRepository) {
+                           PerfilHabilidadRepository perfilHabilidadRepository,
+                           ConfiguracionService configuracionService) {
         this.proyectoRepository = proyectoRepository;
         this.asignacionRepository = asignacionRepository;
         this.perfilRepository = perfilRepository;
         this.habilidadRepository = habilidadRepository;
         this.perfilHabilidadRepository = perfilHabilidadRepository;
+        this.configuracionService = configuracionService;
     }
 
     public Map<String, Long> kpisAdministrador() {
@@ -59,11 +63,12 @@ public class ReporteService {
     }
 
     public List<VacanteHabilidad> topHabilidadesDeclaradas(int limite) {
-        return habilidadRepository.findAllConCategoriaOrderByNombre().stream()
-                .map(h -> new VacanteHabilidad(h.getNombre(), perfilHabilidadRepository.countById_HabilidadId(h.getId())))
-                .sorted(Comparator.comparingLong(VacanteHabilidad::vacantes).reversed())
-                .limit(limite)
-                .collect(Collectors.toList());
+        return habilidadRepository.rankingDeclaradas(PageRequest.of(0, Math.max(1, limite)));
+    }
+
+    /** Límite de carga vigente (Configuración), para que las vistas lo muestren. */
+    public int limiteCarga() {
+        return configuracionService.limiteCarga();
     }
 
     public Map<String, Long> proyectosPorEstado() {
@@ -94,19 +99,22 @@ public class ReporteService {
         for (Object[] fila : asignacionRepository.sumarCargaActivaAgrupadaPorPerfil()) {
             cargaPorPerfil.put((Long) fila[0], ((Number) fila[1]).intValue());
         }
+        int limite = configuracionService.limiteCarga();
         List<Perfil> perfiles = perfilRepository.listarActivosConUsuario();
         return perfiles.stream()
                 // Modelo v7: la ocupación es de Miembros (Admin y RM no tienen carga en proyectos).
                 .filter(p -> p.getUsuario() != null && p.getUsuario().getRolOrganizacional() == null)
                 .filter(p -> cargaPorPerfil.containsKey(p.getId()))
-                .map(p -> new OcupacionColaboradorFila(p.getId(), p.getUsuario().getNombreCompleto(), p.getCargo(), cargaPorPerfil.get(p.getId())))
+                .map(p -> new OcupacionColaboradorFila(p.getId(), p.getUsuario().getNombreCompleto(), p.getCargo(),
+                        cargaPorPerfil.get(p.getId()), limite))
                 .sorted((a, b) -> Integer.compare(b.getPromedio(), a.getPromedio()))
                 .collect(Collectors.toList());
     }
 
+    /** Colaboradores por encima del límite de carga configurado (no de un 100% fijo). */
     public List<OcupacionColaboradorFila> colaboradoresSobrecargados() {
         return ocupacionPorColaborador().stream()
-                .filter(o -> o.getPromedio() > 100)
+                .filter(OcupacionColaboradorFila::isSobrecargado)
                 .collect(Collectors.toList());
     }
 }

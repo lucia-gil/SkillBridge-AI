@@ -103,18 +103,18 @@
           <section class="card card-pad">
             <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Carga de trabajo</h3>
             <div class="progress-inline" style="margin-bottom:var(--space-2);">
-              <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${cargaActiva > 100} ? 'amber' : ''" th:style="'width:' + ${cargaActiva > 100 ? 100 : cargaActiva} + '%;'"></div></div>
+              <div class="progress-bar"><div class="progress-bar-fill" th:classappend="${cargaActiva > limiteCarga} ? 'red' : (${cargaActiva >= limiteCarga - 10} ? 'amber' : '')" th:style="'width:' + ${cargaActiva > 100 ? 100 : cargaActiva} + '%;'"></div></div>
               <span class="progress-value" th:text="${cargaActiva} + '%'">0%</span>
             </div>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);" th:text="${cargaActiva > 100} ? 'sobre el límite' : 'dentro del límite (100%)'">dentro del límite</p>
+            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-5);" th:text="${cargaActiva > limiteCarga} ? 'Sobre el límite (' + ${limiteCarga} + '%)' : 'Dentro del límite (' + ${limiteCarga} + '%)'">dentro del límite</p>
             <div th:if="${proyectosActivos.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-xs);">Sin proyectos activos.</div>
             <div class="info-row" th:each="p : ${proyectosActivos}">
               <span class="info-row-label" th:text="${p.nombre}">Proyecto</span>
               <span class="info-row-value" th:text="${p.cargaPorcentaje} + '%'">0%</span>
             </div>
-            <div class="info-row" th:if="${!proyectosActivos.isEmpty() and cargaActiva < 100}">
+            <div class="info-row" th:if="${!proyectosActivos.isEmpty() and cargaActiva < limiteCarga}">
               <span class="info-row-label">Capacidad libre</span>
-              <span class="info-row-value" style="color:var(--green-fg);" th:text="${100 - cargaActiva} + '%'">0%</span>
+              <span class="info-row-value" style="color:var(--green-fg);" th:text="${limiteCarga - cargaActiva} + '%'">0%</span>
             </div>
           </section>
 

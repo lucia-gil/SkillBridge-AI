@@ -177,11 +177,8 @@ public class ProyectoService {
 
     /** Límite de carga (%) configurado en Configuración (por defecto 100). */
     public int limiteCargaConfigurado() {
-        var configuracion = configuracionService.obtenerMapa();
-        int configurado = parseEntero(configuracionService.valor(configuracion, "limite_carga_colaborador", "100"), 100);
-        // Tope duro del modelo v7: nadie puede quedar por encima del 100%,
-        // aunque en Configuración se haya guardado un valor mayor.
-        return Math.max(1, Math.min(LIMITE_CARGA_MAXIMO, configurado));
+        // Fuente única compartida con los reportes (ConfiguracionService.limiteCarga).
+        return configuracionService.limiteCarga();
     }
 
     /** Máximo de proyectos vigentes simultáneos por persona (Configuración, por defecto 3). */
@@ -1030,7 +1027,7 @@ public class ProyectoService {
     /** Dedicación estándar con la que entra un Project Manager. */
     public static final int CARGA_PM_POR_DEFECTO = 20;
     /** Tope duro de carga (modelo v7): nadie supera el 100%. */
-    public static final int LIMITE_CARGA_MAXIMO = 100;
+    public static final int LIMITE_CARGA_MAXIMO = ConfiguracionService.LIMITE_CARGA_MAXIMO;
     /** Máximo de proyectos vigentes simultáneos para un PM (valor fijo). */
     public static final int MAXIMO_PROYECTOS_PM = 3;
 

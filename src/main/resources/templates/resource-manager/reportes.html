@@ -36,7 +36,7 @@
           <article class="hero-card">
             <div class="hero-card-top">
               <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></span>
-              <span class="hero-card-label">OCUPACIÓN PROMEDIO</span>
+              <span class="hero-card-label">Ocupación promedio</span>
             </div>
             <div class="hero-card-value" th:text="${kpiOcupacionPromedio} + '%'">0%</div>
             <p class="hero-card-meta">carga media del equipo</p>
@@ -47,12 +47,12 @@
               <span class="hero-card-label">SOBRE-ASIGNADOS</span>
             </div>
             <div class="hero-card-value" th:text="${kpiSobreAsignados}">0</div>
-            <p class="hero-card-meta" th:classappend="${kpiSobreAsignados > 0} ? 'down' : 'up'" th:text="${kpiSobreAsignados > 0} ? 'requieren acción' : 'nadie supera el 100%'">requieren acción</p>
+            <p class="hero-card-meta" th:classappend="${kpiSobreAsignados > 0} ? 'down' : 'up'" th:text="${kpiSobreAsignados > 0} ? 'requieren acción' : 'nadie supera el ' + ${limiteCarga} + '%'">requieren acción</p>
           </article>
           <article class="hero-card">
             <div class="hero-card-top">
               <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-user-check"></use></svg></span>
-              <span class="hero-card-label">COLABORADORES EVALUADOS</span>
+              <span class="hero-card-label">Colaboradores evaluados</span>
             </div>
             <div class="hero-card-value" th:text="${kpiColaboradoresEvaluados}">0</div>
             <p class="hero-card-meta">con asignaciones activas</p>
@@ -85,8 +85,8 @@
           <label class="field"><span class="field-label">Buscar</span><input type="search" class="input" id="rm-f-q" placeholder="Nombre o cargo…" autocomplete="off"></label>
           <div class="field"><span class="field-label">Estado de carga</span>
             <select class="select" id="rm-f-estado" multiple data-multiselect data-placeholder="Todos los estados" data-noun="estados">
-              <option value="Sobre-asignado">Sobre-asignado (&gt; 100%)</option>
-              <option value="Al límite">Al límite (90–100%)</option>
+              <option value="Sobre-asignado" th:text="'Sobre-asignado (> ' + ${limiteCarga} + '%)'">Sobre-asignado (&gt; 100%)</option>
+              <option value="Al límite" th:text="'Al límite (' + ${limiteCarga - 10} + '–' + ${limiteCarga} + '%)'">Al límite (90–100%)</option>
               <option value="Óptimo">Óptimo (60–89%)</option>
               <option value="Subutilizado">Subutilizado (&lt; 60%)</option>
             </select>
@@ -235,11 +235,14 @@
       var f = filtradas();
       if (!f.length) return window.SBAI.toast.show("No hay filas para exportar con estos filtros.", { type: "error" });
       var esc = function (t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; };
-      var kpis = Array.from(document.querySelectorAll(".kpi-tile")).map(function (k) {
-        return "<div class='k'><span>" + esc(k.querySelector(".kpi-tile-label").textContent) + "</span><b>" + esc(k.querySelector(".kpi-tile-value").textContent) + "</b></div>";
+      var kpis = Array.from(document.querySelectorAll(".kpi-hero .hero-card")).map(function (k) {
+        var l = k.querySelector(".hero-card-label"), v = k.querySelector(".hero-card-value");
+        if (!l || !v) return "";
+        return "<div class='k'><span>" + esc(l.textContent.trim()) + "</span><b>" + esc(v.textContent.trim()) + "</b></div>";
       }).join("");
       var filas = f.map(function (r) {
-        var c = Number(r.dataset.carga), col = c > 100 ? "#c0392b" : (c >= 90 ? "#c98a12" : "#1f8a5b");
+        var c = Number(r.dataset.carga), e = r.dataset.estado,
+            col = e === "Sobre-asignado" ? "#c0392b" : (e === "Al límite" ? "#c98a12" : "#1f8a5b");
         return "<tr><td>" + esc(r.dataset.nombre) + "</td><td>" + esc(r.dataset.cargo) + "</td><td><div class='bar'><i style='width:" + Math.min(100, c) + "%;background:" + col + "'></i></div> " + c + "%</td><td>" + esc(r.dataset.estado) + "</td></tr>";
       }).join("");
       var w = window.open("", "_blank");

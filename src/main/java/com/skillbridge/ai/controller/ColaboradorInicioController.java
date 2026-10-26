@@ -58,6 +58,7 @@ public class ColaboradorInicioController {
 
         model.addAttribute("proyectosActivos", proyectosActivos);
         model.addAttribute("cargaActiva", proyectoService.cargaActivaDe(perfilId));
+        model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
         model.addAttribute("habilidadesDeclaradas", habilidadesDeclaradas);
         model.addAttribute("habilidadesValidadas", habilidadesValidadas);
         model.addAttribute("hilosRecientes", hilosRecientes.size() > 4 ? hilosRecientes.subList(0, 4) : hilosRecientes);
