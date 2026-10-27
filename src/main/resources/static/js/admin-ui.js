@@ -40,16 +40,8 @@
     var close = dialog.querySelector("[data-modal-close]");
     if (close) close.setAttribute("aria-label", close.getAttribute("aria-label") || "Cerrar");
 
-    // Foco inicial: el campo marcado con [autofocus] o el primer campo del
-    // formulario; solo si no hay campos, el primer elemento enfocable.
-    // Antes iba siempre al primer enfocable, que es la "×" de cerrar del
-    // encabezado, y le quitaba el foco al campo que modal.js ya había elegido.
     setTimeout(function () {
-      if (dialog.contains(document.activeElement) && document.activeElement.matches("input, select, textarea")) return;
-      var items = focusable();
-      var campo = items.filter(function (el) { return el.hasAttribute("autofocus"); })[0]
-        || items.filter(function (el) { return el.matches("input:not([type=hidden]), select, textarea"); })[0];
-      var first = campo || items[0];
+      var first = focusable()[0];
       if (first) first.focus();
     }, 80);
   }
@@ -112,11 +104,30 @@
     });
   }
 
+  function enhanceLowDataStates() {
+    document.querySelectorAll(".admin-app .card").forEach(function (card) {
+      var body = card.querySelector(".data-table tbody");
+      if (!body || card.querySelector(".admin-complementary-panel")) return;
+      var rows = Array.prototype.slice.call(body.children).filter(function (row) { return !row.hidden; });
+      if (rows.length > 3) return;
+      card.classList.add("admin-low-data");
+      var panel = document.createElement("aside");
+      panel.className = "admin-complementary-panel";
+      panel.setAttribute("aria-label", "Resumen de contenido");
+      panel.innerHTML = '<span class="admin-complementary-panel__icon" aria-hidden="true">+</span>' +
+        '<div><div class="admin-complementary-panel__title">Espacio listo para crecer</div>' +
+        '<div class="admin-complementary-panel__copy">Usa las acciones de esta vista para completar el catálogo o revisar los registros disponibles.</div></div>' +
+        '<span class="admin-complementary-panel__count">' + rows.length + ' registro' + (rows.length === 1 ? '' : 's') + '</span>';
+      card.appendChild(panel);
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     document.documentElement.classList.add("admin-ui-ready");
     observeModals();
     enhanceLoading();
     enhanceTooltips();
     enhanceStatus();
+    enhanceLowDataStates();
   });
 })();

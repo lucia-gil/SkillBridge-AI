@@ -1,7 +1,9 @@
 package com.skillbridge.ai.controller;
 
 import com.skillbridge.ai.dto.CategoriaConConteo;
+import com.skillbridge.ai.dto.CategoriaHabilidadRequest;
 import com.skillbridge.ai.dto.HabilidadFila;
+import com.skillbridge.ai.dto.HabilidadRequest;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.model.CategoriaHabilidad;
 import com.skillbridge.ai.service.HabilidadService;
@@ -9,12 +11,13 @@ import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Comparator;
 import java.util.List;
 
 /** CRUD completo del catálogo de habilidades (administrador/habilidades.html). */
@@ -44,26 +47,20 @@ public class HabilidadesController {
         model.addAttribute("habilidades", habilidades);
         model.addAttribute("categorias", categorias);
         model.addAttribute("categoriasParaSelect", categoriasParaSelect);
-
-        // Indicadores de la banda superior (kpi-hero), calculados sobre la
-        // misma lista que se pinta: sin consultas extra a la base de datos.
-        model.addAttribute("kpiSinPersonas", habilidades.stream().filter(h -> h.getPersonas() == 0).count());
-        model.addAttribute("kpiPedidasPorProyectos", habilidades.stream().filter(h -> h.getProyectos() > 0).count());
-        model.addAttribute("kpiMasDeclarada", habilidades.stream()
-                .filter(h -> h.getPersonas() > 0)
-                .max(Comparator.comparingLong(HabilidadFila::getPersonas)
-                        .thenComparing(HabilidadFila::getNombre, Comparator.reverseOrder()))
-                .orElse(null));
         return "administrador/habilidades";
     }
 
     @PostMapping("/categorias")
-    public String crearCategoria(@RequestParam String nombre, @RequestParam(required = false) String descripcion,
+    public String crearCategoria(@Valid CategoriaHabilidadRequest request, BindingResult validacion,
                                   HttpSession session, RedirectAttributes redirectAttributes) {
+        if (validacion.hasErrors()) {
+            redirectAttributes.addFlashAttribute("error", mensajeValidacion(validacion));
+            return "redirect:/administrador/habilidades.html";
+        }
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            habilidadService.crearCategoria(nombre, descripcion, sesion.getUsuarioId());
-            redirectAttributes.addFlashAttribute("exito", "\"" + nombre.trim() + "\" se agregó a las categorías.");
+            habilidadService.crearCategoria(request.getNombre(), request.getDescripcion(), sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "\"" + request.getNombre().trim() + "\" se agregó a las categorías.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
@@ -71,12 +68,15 @@ public class HabilidadesController {
     }
 
     @PostMapping("/categorias/{id}/editar")
-    public String editarCategoria(@PathVariable Long id, @RequestParam String nombre,
-                                   @RequestParam(required = false) String descripcion,
+    public String editarCategoria(@PathVariable Long id, @Valid CategoriaHabilidadRequest request, BindingResult validacion,
                                    HttpSession session, RedirectAttributes redirectAttributes) {
+        if (validacion.hasErrors()) {
+            redirectAttributes.addFlashAttribute("error", mensajeValidacion(validacion));
+            return "redirect:/administrador/habilidades.html";
+        }
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            habilidadService.editarCategoria(id, nombre, descripcion, sesion.getUsuarioId());
+            habilidadService.editarCategoria(id, request.getNombre(), request.getDescripcion(), sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Categoría actualizada.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -97,12 +97,16 @@ public class HabilidadesController {
     }
 
     @PostMapping("/habilidades")
-    public String crear(@RequestParam String nombre, @RequestParam Long categoriaId,
+    public String crear(@Valid HabilidadRequest request, BindingResult validacion,
                          HttpSession session, RedirectAttributes redirectAttributes) {
+        if (validacion.hasErrors()) {
+            redirectAttributes.addFlashAttribute("error", mensajeValidacion(validacion));
+            return "redirect:/administrador/habilidades.html";
+        }
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            habilidadService.crear(nombre, categoriaId, sesion.getUsuarioId());
-            redirectAttributes.addFlashAttribute("exito", "\"" + nombre.trim() + "\" se agregó al catálogo.");
+            habilidadService.crear(request.getNombre(), request.getCategoriaId(), sesion.getUsuarioId());
+            redirectAttributes.addFlashAttribute("exito", "\"" + request.getNombre().trim() + "\" se agregó al catálogo.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
@@ -110,11 +114,15 @@ public class HabilidadesController {
     }
 
     @PostMapping("/habilidades/{id}/editar")
-    public String editar(@PathVariable Long id, @RequestParam String nombre, @RequestParam Long categoriaId,
+    public String editar(@PathVariable Long id, @Valid HabilidadRequest request, BindingResult validacion,
                           HttpSession session, RedirectAttributes redirectAttributes) {
+        if (validacion.hasErrors()) {
+            redirectAttributes.addFlashAttribute("error", mensajeValidacion(validacion));
+            return "redirect:/administrador/habilidades.html";
+        }
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            habilidadService.editar(id, nombre, categoriaId, sesion.getUsuarioId());
+            habilidadService.editar(id, request.getNombre(), request.getCategoriaId(), sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Habilidad actualizada.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -132,5 +140,10 @@ public class HabilidadesController {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/administrador/habilidades.html";
+    }
+
+    private String mensajeValidacion(BindingResult validacion) {
+        return validacion.getFieldErrors().stream().findFirst()
+                .map(error -> error.getDefaultMessage()).orElse("Revisa los datos ingresados.");
     }
 }
