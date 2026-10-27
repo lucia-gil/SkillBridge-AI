@@ -57,6 +57,7 @@ public class InicioPmController {
         long enRiesgo = proyectos.stream().filter(p -> "en_riesgo".equals(p.getEstadoCrudo())).count();
 
         List<HiloFila> hilos = foroService.listarHilosDeMisProyectos(perfilId);
+        long hilosSinResponder = hilos.stream().filter(h -> h.getNumRespuestas() == 0).count();
 
         String subtitle = activos + " proyectos activos" + (enRiesgo > 0 ? " · " + enRiesgo + " alertas de riesgo" : "");
         shellModelBuilder.aplicar(model, sesion, "inicio.html", "Panel de Project Manager", subtitle);
@@ -67,6 +68,7 @@ public class InicioPmController {
         model.addAttribute("avancePromedio", avancePromedio);
         model.addAttribute("totalHilos", hilos.size());
         model.addAttribute("hilosRecientes", hilos.size() > 4 ? hilos.subList(0, 4) : hilos);
+        model.addAttribute("hilosSinResponder", hilosSinResponder);
         return "project-manager/inicio";
     }
 

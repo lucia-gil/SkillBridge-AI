@@ -1,5 +1,6 @@
 package com.skillbridge.ai.repository;
 
+import com.skillbridge.ai.dto.VacanteHabilidad;
 import com.skillbridge.ai.model.Habilidad;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
@@ -36,4 +37,11 @@ public interface HabilidadRepository extends JpaRepository<Habilidad, Long> {
     // Para el KPI "habilidades sin proyecto asociado" de Reportes globales.
     @Query("select count(h) from Habilidad h where h.id not in (select phr.id.habilidadId from ProyectoHabilidadRequerida phr)")
     long contarSinProyectoAsociado();
+
+    // Ranking de habilidades mas declaradas por los colaboradores (perfil_habilidad),
+    // usado en Reportes globales del Administrador (ver ReporteService.topHabilidadesDeclaradas).
+    @Query("select new com.skillbridge.ai.dto.VacanteHabilidad(h.nombre, count(ph)) " +
+            "from Habilidad h left join PerfilHabilidad ph on ph.id.habilidadId = h.id " +
+            "group by h.id, h.nombre order by count(ph) desc")
+    List<VacanteHabilidad> rankingDeclaradas(Pageable pageable);
 }
