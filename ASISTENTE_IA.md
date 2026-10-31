@@ -169,6 +169,51 @@ código:
   honestamente que no tiene acceso a esa información todavía, en vez de
   inventar una respuesta.
 
+## 11. Nuevo: Resumen con IA en los Foros
+
+Usando la misma conexión a Gemini, se agregó un botón **"Resumir con IA"**
+en el detalle de cada hilo del foro (`colaborador/foro-hilo.html` y
+`project-manager/foro-hilo.html`). Al hacer clic, junta el mensaje inicial
+y todas las respuestas del hilo, se lo manda a Gemini pidiendo un resumen
+corto (de qué trata, qué se acordó, qué queda pendiente), y **lo guarda en
+la base de datos** (columnas nuevas `resumen_ia` y `resumen_ia_generado_en`
+en `foro_publicaciones`) para no gastar otra llamada a Gemini cada vez que
+alguien abra el hilo — solo se vuelve a generar si alguien hace clic en
+"Actualizar resumen".
+
+Archivos nuevos/modificados para esto:
+
+- **`config/InicializadorEsquemaV10.java`** (nuevo): agrega las dos columnas
+  nuevas a `foro_publicaciones` automáticamente al arrancar la app (mismo
+  patrón que la v9 para el perfil profesional). El equivalente en SQL manual
+  está en `db/migracion_v10_resumen_ia.sql` por si alguien prefiere
+  aplicarlo a mano.
+- **`model/ForoPublicacion.java`**: agrega los campos `resumenIa` y
+  `resumenIaGeneradoEn`.
+- **`dto/HiloDetalle.java`**: expone `resumenIa`, `tieneResumenIa` y
+  `resumenIaFechaLabel` a la plantilla.
+- **`service/AsistenteIaService.java`**: se refactorizó para compartir la
+  llamada HTTP a Gemini entre el chat (`responder`) y el nuevo
+  `resumirHilo(titulo, contenidoCompleto)`, cada uno con su propio prompt
+  de sistema.
+- **`service/ForoService.java`**: nuevo método `generarResumenIa(hiloId, ...)`
+  que arma el texto completo del hilo, llama a `resumirHilo` y guarda el
+  resultado.
+- **`controller/ForoHiloBaseController.java`**: nuevo endpoint
+  `POST /{base}/foro-hilo/{id}/resumen-ia`.
+- **`static/js/foro-hilo.js`** y **`static/css/foros.css`**: lógica y estilo
+  de la tarjeta/botón "Resumir con IA".
+
+## 12. Correcciones a la vista del chat
+
+- La fecha que aparecía arriba del chat ("Martes 18 de agosto, 2026") estaba
+  fija en los datos de ejemplo; ahora `ai-assistant.js` calcula la fecha
+  real del día en español.
+- Se agregó la etiqueta **"(ejemplo)"** junto a "Historial" y "Contexto
+  cargado" en las 4 páginas de Asistente IA, para dejar claro que esos dos
+  paneles siguen siendo datos de muestra (ver limitaciones, sección 10) y
+  no confundir en la sustentación.
+
 ## 11. Posibles siguientes pasos (si da tiempo)
 
 - Guardar el historial de conversaciones en una tabla nueva

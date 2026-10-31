@@ -208,6 +208,41 @@
       }).then(function () { btn.disabled = false; });
     }
 
+    // ── Resumen con IA ──
+    var btnResumenIa = document.getElementById("btn-resumen-ia");
+    if (btnResumenIa) {
+      btnResumenIa.addEventListener("click", function () {
+        var textoEl = document.getElementById("resumen-ia-texto");
+        var fechaEl = document.getElementById("resumen-ia-fecha");
+        var textoOriginal = btnResumenIa.textContent;
+        btnResumenIa.disabled = true;
+        btnResumenIa.textContent = "Generando…";
+        fetch(base + "/resumen-ia", {
+          method: "POST",
+          headers: { "Accept": "application/json", "X-Requested-With": "fetch" },
+          credentials: "same-origin"
+        }).then(function (r) {
+          var tipo = r.headers.get("content-type") || "";
+          if (tipo.indexOf("application/json") < 0) throw new Error("Tu sesión expiró. Vuelve a iniciar sesión.");
+          return r.json().then(function (data) {
+            if (!r.ok) throw new Error(data.error || "No se pudo generar el resumen.");
+            return data;
+          });
+        }).then(function (data) {
+          textoEl.textContent = data.resumen;
+          var ahora = new Date();
+          if (fechaEl) {
+            fechaEl.textContent = "Generado el " + ahora.toLocaleDateString("es-PE") + " " + ahora.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
+            fechaEl.hidden = false;
+          }
+          btnResumenIa.textContent = "Actualizar resumen";
+        }).catch(function (err) {
+          SBAI.toast.show(err.message || "No se pudo generar el resumen.", { type: "error" });
+          btnResumenIa.textContent = textoOriginal;
+        }).then(function () { btnResumenIa.disabled = false; });
+      });
+    }
+
     // ── Delegación de acciones ──
     document.addEventListener("click", function (e) {
       var b;

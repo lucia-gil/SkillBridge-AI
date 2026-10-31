@@ -59,6 +59,28 @@ public class AsistenteIaService {
     }
 
     public String responder(UsuarioSesion sesion, String mensajeUsuario) {
+        return llamarGemini(promptSistema(sesion), mensajeUsuario, 500);
+    }
+
+    /**
+     * Resume un hilo completo del foro (titulo + mensaje inicial + respuestas,
+     * ya concatenados por ForoService) usando el mismo modelo del Asistente
+     * IA, con un prompt de sistema distinto. Lo usa
+     * ForoService.generarResumenIa, que ademas guarda el resultado en
+     * foro_publicaciones.resumen_ia para no volver a gastar una llamada a
+     * Gemini cada vez que alguien abre el hilo.
+     */
+    public String resumirHilo(String tituloHilo, String contenidoCompleto) {
+        String prompt = "Eres el Asistente IA de SkillBridge AI. Te paso el contenido completo de un hilo del foro " +
+                "de un proyecto (titulo \"" + tituloHilo + "\", seguido del mensaje inicial y las respuestas en orden). " +
+                "Responde siempre en español, en un maximo de 4-5 lineas, con un resumen util para alguien que no leyo " +
+                "el hilo: de que trata, que se acordo o decidio (si algo quedo claro), y que queda pendiente o sin responder " +
+                "(si aplica). No inventes nada que no este en el texto. No agregues saludos ni frases de relleno, ve directo " +
+                "al resumen.";
+        return llamarGemini(prompt, contenidoCompleto, 350);
+    }
+
+    private String llamarGemini(String promptSistema, String mensajeUsuario, int maxOutputTokens) {
         if (!configurado()) {
             log.warn("Asistente IA: no hay gemini.api.key configurada (ver secretos.properties.example)");
             return "El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Gemini.";
@@ -66,14 +88,14 @@ public class AsistenteIaService {
 
         Map<String, Object> cuerpo = new LinkedHashMap<>();
         cuerpo.put("systemInstruction", Map.of(
-                "parts", List.of(Map.of("text", promptSistema(sesion)))
+                "parts", List.of(Map.of("text", promptSistema))
         ));
         cuerpo.put("contents", List.of(
                 Map.of("role", "user", "parts", List.of(Map.of("text", mensajeUsuario)))
         ));
         cuerpo.put("generationConfig", Map.of(
                 "temperature", 0.4,
-                "maxOutputTokens", 500
+                "maxOutputTokens", maxOutputTokens
         ));
 
         try {

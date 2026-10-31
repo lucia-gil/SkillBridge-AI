@@ -48,8 +48,18 @@
    * todavia, asi que cada carga de pagina empieza con un saludo nuevo en vez
    * de la conversacion de ejemplo que mostraba el mock.
    */
+  var DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  var MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+  /** Fecha real de hoy en español (no la fecha fija de los datos de ejemplo). */
+  function hoyLabel() {
+    var d = new Date();
+    var dia = DIAS[d.getDay()];
+    return dia.charAt(0).toUpperCase() + dia.slice(1) + " " + d.getDate() + " de " + MESES[d.getMonth()] + ", " + d.getFullYear();
+  }
+
   function renderConversation(role, el) {
-    el.innerHTML = '<div class="chat-date-sep">' + MOCK.meta.todayLabel.toUpperCase() + "</div>" +
+    el.innerHTML = '<div class="chat-date-sep">' + hoyLabel().toUpperCase() + "</div>" +
       bubbleHtml({ role: "assistant", texto: "Hola, soy el Asistente IA de SkillBridge AI. ¿En qué te ayudo hoy?", meta: nowLabel() + " · ASISTENTE SKILLBRIDGE" });
     el.scrollTop = el.scrollHeight;
   }

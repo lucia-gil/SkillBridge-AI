@@ -179,4 +179,22 @@ public abstract class ForoHiloBaseController {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         }
     }
+
+    /**
+     * Genera (o regenera) el resumen con IA del hilo y lo deja guardado en
+     * BD (foro_publicaciones.resumen_ia) - ver ForoService.generarResumenIa
+     * y AsistenteIaService.resumirHilo. Responde {resumen: "..."} o
+     * {error: "..."} con 400.
+     */
+    @PostMapping("/foro-hilo/{id}/resumen-ia")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> resumenIa(@PathVariable Long id, HttpSession session) {
+        UsuarioSesion sesion = sesion(session);
+        try {
+            String resumen = foroService.generarResumenIa(id, sesion.getPerfilId(), esAdmin(sesion));
+            return ResponseEntity.ok(Map.of("resumen", resumen));
+        } catch (OperacionInvalidaException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
 }

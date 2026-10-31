@@ -56,6 +56,19 @@
             </div>
           </section>
 
+          <!-- ── Resumen con IA ── -->
+          <section class="card fr-resumen-ia" id="resumen-ia">
+            <div class="fr-resumen-ia-icon"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></div>
+            <div class="fr-resumen-ia-body">
+              <div class="fr-resumen-ia-head">
+                <span class="fr-resumen-ia-label">Resumen con IA</span>
+                <button type="button" class="btn btn-tertiary btn-sm" id="btn-resumen-ia" th:text="${hilo.tieneResumenIa} ? 'Actualizar resumen' : 'Resumir con IA'">Resumir con IA</button>
+              </div>
+              <p class="fr-resumen-ia-text" id="resumen-ia-texto" th:text="${hilo.tieneResumenIa} ? ${hilo.resumenIa} : 'Pide un resumen generado por IA de todo el hilo: de qué trata, qué se acordó y qué queda pendiente.'">Resumen</p>
+              <span class="fr-resumen-ia-fecha" id="resumen-ia-fecha" th:text="${hilo.tieneResumenIa} ? ('Generado el ' + ${hilo.resumenIaFechaLabel}) : ''" th:attr="hidden=${hilo.tieneResumenIa} ? null : true">Generado el ...</span>
+            </div>
+          </section>
+
           <!-- ── Solución aceptada (atajo) ── -->
           <div class="fr-solution" th:if="${hilo.solucion != null}">
             <span class="fr-solution-icon"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span>

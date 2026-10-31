@@ -41,6 +41,8 @@ public class HiloDetalle {
     private boolean esFijado;
     private boolean permiteFijar;
     private boolean esModerador;
+    private String resumenIa;
+    private String resumenIaFechaLabel = "";
 
     public HiloDetalle(Long id, String titulo, Long proyectoId, String proyectoNombre, String autorNombre,
                         String fechaLabel, String contenido, int numVistas, boolean permiteMarcarSolucion,
@@ -242,4 +244,25 @@ public class HiloDetalle {
     public void setEsModerador(boolean esModerador) {
         this.esModerador = esModerador;
     }
+
+    public String getResumenIa() {
+        return resumenIa;
+    }
+
+    public void setResumenIa(String resumenIa) {
+        this.resumenIa = resumenIa;
+    }
+
+    public boolean isTieneResumenIa() {
+        return resumenIa != null && !resumenIa.isBlank();
+    }
+
+    public String getResumenIaFechaLabel() {
+        return resumenIaFechaLabel;
+    }
+
+    public void setResumenIaFechaLabel(String resumenIaFechaLabel) {
+        this.resumenIaFechaLabel = resumenIaFechaLabel;
+    }
 }
+

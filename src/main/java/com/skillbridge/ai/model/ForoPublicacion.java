@@ -83,6 +83,13 @@ public class ForoPublicacion {
     @Column(name = "fecha_edicion")
     private LocalDateTime fechaEdicion;
 
+    /** Resumen generado por el Asistente IA (solo tiene sentido en el hilo raiz). */
+    @Column(name = "resumen_ia", columnDefinition = "TEXT")
+    private String resumenIa;
+
+    @Column(name = "resumen_ia_generado_en")
+    private LocalDateTime resumenIaGeneradoEn;
+
     public Long getId() {
         return id;
     }
@@ -137,6 +144,22 @@ public class ForoPublicacion {
 
     public void setContenido(String contenido) {
         this.contenido = contenido;
+    }
+
+    public String getResumenIa() {
+        return resumenIa;
+    }
+
+    public void setResumenIa(String resumenIa) {
+        this.resumenIa = resumenIa;
+    }
+
+    public LocalDateTime getResumenIaGeneradoEn() {
+        return resumenIaGeneradoEn;
+    }
+
+    public void setResumenIaGeneradoEn(LocalDateTime resumenIaGeneradoEn) {
+        this.resumenIaGeneradoEn = resumenIaGeneradoEn;
     }
 
     public String getEtiquetas() {

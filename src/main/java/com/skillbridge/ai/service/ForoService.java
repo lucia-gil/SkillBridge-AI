@@ -119,13 +119,14 @@ public class ForoService {
     private final ConfiguracionGlobalRepository configuracionGlobalRepository;
     private final PerfilRepository perfilRepository;
     private final ForoClasificadorService clasificador;
+    private final AsistenteIaService asistenteIaService;
 
     public ForoService(ForoPublicacionRepository foroPublicacionRepository, AsignacionRepository asignacionRepository,
                         NotificacionService notificacionService, AuditoriaService auditoriaService,
                         ProyectoRepository proyectoRepository, ForoTopicoRepository foroTopicoRepository,
                         ForoDestacadoRepository foroDestacadoRepository, ForoAdjuntoRepository foroAdjuntoRepository,
                         ConfiguracionGlobalRepository configuracionGlobalRepository, PerfilRepository perfilRepository,
-                        ForoClasificadorService clasificador) {
+                        ForoClasificadorService clasificador, AsistenteIaService asistenteIaService) {
         this.foroPublicacionRepository = foroPublicacionRepository;
         this.asignacionRepository = asignacionRepository;
         this.notificacionService = notificacionService;
@@ -137,6 +138,7 @@ public class ForoService {
         this.configuracionGlobalRepository = configuracionGlobalRepository;
         this.perfilRepository = perfilRepository;
         this.clasificador = clasificador;
+        this.asistenteIaService = asistenteIaService;
     }
 
     // ═════════════════════════════ Permisos ═════════════════════════════
@@ -550,7 +552,38 @@ public class ForoService {
         detalle.setEsFijado(Boolean.TRUE.equals(hilo.getEsFijado()));
         detalle.setPermiteFijar(moderador);
         detalle.setEsModerador(moderador);
+        if (hilo.getResumenIa() != null && !hilo.getResumenIa().isBlank()) {
+            detalle.setResumenIa(hilo.getResumenIa());
+            detalle.setResumenIaFechaLabel(hilo.getResumenIaGeneradoEn() != null ? formatear(hilo.getResumenIaGeneradoEn()) : "");
+        }
         return detalle;
+    }
+
+    /**
+     * Genera (o regenera) el resumen con IA de un hilo y lo guarda en
+     * foro_publicaciones.resumen_ia, para no volver a llamar a Gemini la
+     * proxima vez que alguien lo abra. Cualquiera que pueda ver el hilo
+     * (ya validado por exigirMiembro) puede pedir el resumen.
+     */
+    @Transactional
+    public String generarResumenIa(Long hiloId, Long viewerPerfilId, boolean viewerEsAdmin) {
+        ForoPublicacion hilo = foroPublicacionRepository.buscarHiloConDetalle(hiloId)
+                .filter(h -> h.getPublicacionPadreId() == null)
+                .orElseThrow(() -> new OperacionInvalidaException("El hilo ya no existe."));
+        exigirMiembro(viewerPerfilId, hilo.getProyectoId(), viewerEsAdmin);
+
+        List<ForoPublicacion> respuestas = foroPublicacionRepository.listarRespuestas(hiloId);
+        StringBuilder texto = new StringBuilder();
+        texto.append(nombreDe(hilo)).append(" (mensaje inicial): ").append(hilo.getContenido()).append("\n\n");
+        for (ForoPublicacion r : respuestas) {
+            texto.append(nombreDe(r)).append(": ").append(r.getContenido()).append("\n\n");
+        }
+
+        String resumen = asistenteIaService.resumirHilo(hilo.getTitulo(), texto.toString());
+        hilo.setResumenIa(resumen);
+        hilo.setResumenIaGeneradoEn(LocalDateTime.now());
+        foroPublicacionRepository.save(hilo);
+        return resumen;
     }
 
     /** Datos compartidos al convertir cada mensaje del hilo. */
