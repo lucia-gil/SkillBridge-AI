@@ -204,7 +204,17 @@ Archivos nuevos/modificados para esto:
 - **`static/js/foro-hilo.js`** y **`static/css/foros.css`**: lógica y estilo
   de la tarjeta/botón "Resumir con IA".
 
-## 12. Correcciones a la vista del chat
+## 12. El asistente ya no responde fuera de tema
+
+Se descubrió que el chat respondía cualquier pregunta (capitales, cuentas
+matemáticas, cultura general) porque el prompt de sistema
+(`AsistenteIaService.promptSistema`) no se lo prohibía explícitamente. Se
+agregó una sección "ALCANCE" al prompt indicando que solo debe responder
+temas de SkillBridge AI (cómo usar la plataforma) y de gestión de
+proyectos/desarrollo de software; para cualquier otra cosa, responde
+amablemente que no puede ayudar con eso y redirige a lo que sí sabe.
+
+## 13. Correcciones a la vista del chat
 
 - La fecha que aparecía arriba del chat ("Martes 18 de agosto, 2026") estaba
   fija en los datos de ejemplo; ahora `ai-assistant.js` calcula la fecha
@@ -214,7 +224,7 @@ Archivos nuevos/modificados para esto:
   paneles siguen siendo datos de muestra (ver limitaciones, sección 10) y
   no confundir en la sustentación.
 
-## 11. Posibles siguientes pasos (si da tiempo)
+## 14. Posibles siguientes pasos (si da tiempo)
 
 - Guardar el historial de conversaciones en una tabla nueva
   (`asistente_mensaje`), para que el panel "Historial" sea real.
