@@ -18,80 +18,90 @@ import java.util.Map;
 /**
  * Asistente IA (administrador/, colaborador/, project-manager/ y
  * resource-manager/asistente-ia.html): le manda el mensaje del usuario a la
- * API de Mistral (chat completions) y devuelve la respuesta en texto plano.
+ * API de Google Gemini (generateContent) y devuelve la respuesta en texto
+ * plano.
  *
  * Mismo patron de "consumo de servicio REST" visto en clase (verifica.id /
- * api.atenea): POST + cabecera "Authorization: Bearer {API-KEY}" + cuerpo y
- * respuesta en JSON. Aqui el "servicio externo" es Mistral en vez de un
- * verificador de DNI/RUC.
+ * api.atenea): POST + clave de API + cuerpo y respuesta en JSON. Aqui el
+ * "servicio externo" es Gemini en vez de un verificador de DNI/RUC. A
+ * diferencia de otras APIs que usan la cabecera "Authorization: Bearer",
+ * Gemini recibe la clave en la cabecera "x-goog-api-key".
+ *
+ * Se eligio Gemini (capa gratuita, sin tarjeta) en vez de Mistral porque la
+ * API de Mistral solo da acceso real con un plan de pago (Pay-as-you-go o
+ * Pro) incluso con cuenta gratuita de la app Mistral.
  *
  * No hay historial guardado en base de datos todavia (cada mensaje se
  * manda solo con el system prompt, sin memoria de turnos anteriores) - ver
- * README/documentacion de esta funcionalidad para el detalle de que falta.
+ * ASISTENTE_IA.md para el detalle de que falta.
  */
 @Service
 public class AsistenteIaService {
 
     private static final Logger log = LoggerFactory.getLogger(AsistenteIaService.class);
-    private static final String MISTRAL_URL = "https://api.mistral.ai/v1/chat/completions";
-    private static final String MODELO = "mistral-small-latest";
+    private static final String MODELO = "gemini-3.8-flash";
+    private static final String GEMINI_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models/" + MODELO + ":generateContent";
 
     private final String apiKey;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
-    public AsistenteIaService(@Value("${mistral.api.key:}") String apiKey, ObjectMapper objectMapper) {
+    public AsistenteIaService(@Value("${gemini.api.key:}") String apiKey, ObjectMapper objectMapper) {
         this.apiKey = apiKey;
         this.objectMapper = objectMapper;
         this.restClient = RestClient.create();
     }
 
-    /** true si hay una clave configurada (secretos.properties local o variable de entorno MISTRAL_API_KEY). */
+    /** true si hay una clave configurada (secretos.properties local o variable de entorno GEMINI_API_KEY). */
     public boolean configurado() {
         return apiKey != null && !apiKey.isBlank();
     }
 
     public String responder(UsuarioSesion sesion, String mensajeUsuario) {
         if (!configurado()) {
-            log.warn("Asistente IA: no hay mistral.api.key configurada (ver secretos.properties.example)");
-            return "El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Mistral.";
+            log.warn("Asistente IA: no hay gemini.api.key configurada (ver secretos.properties.example)");
+            return "El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Gemini.";
         }
 
         Map<String, Object> cuerpo = new LinkedHashMap<>();
-        cuerpo.put("model", MODELO);
-        cuerpo.put("messages", List.of(
-                Map.of("role", "system", "content", promptSistema(sesion)),
-                Map.of("role", "user", "content", mensajeUsuario)
+        cuerpo.put("systemInstruction", Map.of(
+                "parts", List.of(Map.of("text", promptSistema(sesion)))
         ));
-        cuerpo.put("temperature", 0.4);
-        cuerpo.put("max_tokens", 500);
+        cuerpo.put("contents", List.of(
+                Map.of("role", "user", "parts", List.of(Map.of("text", mensajeUsuario)))
+        ));
+        cuerpo.put("generationConfig", Map.of(
+                "temperature", 0.4,
+                "maxOutputTokens", 500
+        ));
 
         try {
             String respuestaCruda = restClient.post()
-                    .uri(MISTRAL_URL)
-                    .header("Authorization", "Bearer " + apiKey)
+                    .uri(GEMINI_URL)
+                    .header("x-goog-api-key", apiKey)
                     .header("Content-Type", "application/json")
                     .body(cuerpo)
                     .retrieve()
                     .body(String.class);
 
             JsonNode raiz = objectMapper.readTree(respuestaCruda);
-            JsonNode contenido = raiz.path("choices").path(0).path("message").path("content");
+            JsonNode contenido = raiz.path("candidates").path(0).path("content").path("parts").path(0).path("text");
             if (contenido.isMissingNode() || contenido.asText().isBlank()) {
-                log.warn("Asistente IA: respuesta de Mistral sin contenido util: {}", respuestaCruda);
+                log.warn("Asistente IA: respuesta de Gemini sin contenido util: {}", respuestaCruda);
                 return "No pude generar una respuesta en este momento. Intenta reformular tu pregunta.";
             }
             return contenido.asText().trim();
 
         } catch (RestClientResponseException ex) {
-            // Error devuelto por Mistral (401 clave invalida, 429 limite de la capa gratuita, etc.)
-            log.error("Asistente IA: Mistral respondio {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            // Error devuelto por Gemini (401/403 clave invalida, 429 limite de la capa gratuita, etc.)
+            log.error("Asistente IA: Gemini respondio {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
             if (ex.getStatusCode().value() == 429) {
                 return "El asistente alcanzó el límite de solicitudes de la capa gratuita. Intenta de nuevo en un minuto.";
             }
             return "No pude conectarme al asistente en este momento. Intenta de nuevo en unos segundos.";
         } catch (Exception ex) {
-            log.error("Asistente IA: error inesperado al consumir Mistral", ex);
+            log.error("Asistente IA: error inesperado al consumir Gemini", ex);
             return "Ocurrió un error inesperado al conectar con el asistente. Intenta de nuevo.";
         }
     }
