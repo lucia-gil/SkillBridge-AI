@@ -9,7 +9,6 @@
   var ROLE_KEY = { colaborador: "colaborador", "project-manager": "pm", "resource-manager": "rm", administrador: "administrador" };
   var PENDING_KEY = "sbai_pending_ai_msg";
 
-  function normalize(str) { return window.SBAI.tableFilter.normalize(str); }
   function nowLabel() {
     var d = new Date();
     var hh = String(d.getHours()).padStart(2, "0");
@@ -43,11 +42,15 @@
     }).join("");
   }
 
+  /**
+   * Conversacion real con el Asistente IA (backend en /api/asistente/mensaje,
+   * ver AsistenteIaController/AsistenteIaService): no hay historial guardado
+   * todavia, asi que cada carga de pagina empieza con un saludo nuevo en vez
+   * de la conversacion de ejemplo que mostraba el mock.
+   */
   function renderConversation(role, el) {
-    var key = ROLE_KEY[role];
-    var items = (MOCK.aiConversations[key] || []).slice();
-    el.innerHTML = '<div class="chat-date-sep">' + MOCK.meta.todayLabel.toUpperCase() + "</div>" + items.map(bubbleHtml).join("");
-    wireFactButtons(el);
+    el.innerHTML = '<div class="chat-date-sep">' + MOCK.meta.todayLabel.toUpperCase() + "</div>" +
+      bubbleHtml({ role: "assistant", texto: "Hola, soy el Asistente IA de SkillBridge AI. ¿En qué te ayudo hoy?", meta: nowLabel() + " · ASISTENTE SKILLBRIDGE" });
     el.scrollTop = el.scrollHeight;
   }
 
@@ -61,31 +64,11 @@
     });
   }
 
-  function findScriptedReply(role, text) {
-    var key = ROLE_KEY[role];
-    var convo = MOCK.aiConversations[key] || [];
-    var norm = normalize(text);
-    for (var i = 0; i < convo.length; i++) {
-      if (convo[i].role !== "user") continue;
-      var convoNorm = normalize(convo[i].texto);
-      if (convoNorm === norm || convoNorm.indexOf(norm) !== -1 || norm.indexOf(convoNorm) !== -1) {
-        var reply = convo[i + 1];
-        if (reply && reply.role === "assistant") return reply;
-      }
-    }
-    var suggestions = MOCK.aiSuggestions[key] || [];
-    for (var j = 0; j < suggestions.length; j++) {
-      if (normalize(suggestions[j]) === norm) {
-        for (var k = 0; k < convo.length; k++) {
-          if (convo[k].role === "user" && normalize(convo[k].texto) === normalize(suggestions[j])) {
-            return convo[k + 1];
-          }
-        }
-      }
-    }
-    return null;
-  }
-
+  /**
+   * Manda el mensaje al backend real (POST /api/asistente/mensaje, que a su
+   * vez consulta la API de Mistral - ver AsistenteIaService). El token CSRF
+   * lo agrega solo window.fetch gracias a csrf.js, no hace falta aqui.
+   */
   function sendMessage(role, text, messagesEl) {
     text = text.trim();
     if (!text) return;
@@ -99,14 +82,26 @@
     messagesEl.appendChild(typingEl);
     messagesEl.scrollTop = messagesEl.scrollHeight;
 
-    setTimeout(function () {
-      messagesEl.removeChild(typingEl);
-      var scripted = findScriptedReply(role, text);
-      var reply = scripted || { role: "assistant", texto: MOCK.aiFallbackReply, meta: nowLabel() + " · ASISTENTE SKILLBRIDGE" };
-      messagesEl.insertAdjacentHTML("beforeend", bubbleHtml(reply));
-      wireFactButtons(messagesEl);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }, 900 + Math.random() * 500);
+    fetch("/api/asistente/mensaje", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mensaje: text })
+    })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (r) {
+        if (typingEl.parentNode) messagesEl.removeChild(typingEl);
+        var texto = r.ok ? r.data.respuesta : (r.data && r.data.error) || MOCK.aiFallbackReply;
+        var reply = { role: "assistant", texto: escapeHtml(texto), meta: nowLabel() + " · ASISTENTE SKILLBRIDGE" };
+        messagesEl.insertAdjacentHTML("beforeend", bubbleHtml(reply));
+        wireFactButtons(messagesEl);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      })
+      .catch(function () {
+        if (typingEl.parentNode) messagesEl.removeChild(typingEl);
+        var reply = { role: "assistant", texto: "No pude conectarme al asistente. Revisa tu conexión e intenta de nuevo.", meta: nowLabel() + " · ASISTENTE SKILLBRIDGE" };
+        messagesEl.insertAdjacentHTML("beforeend", bubbleHtml(reply));
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      });
   }
 
   function escapeHtml(str) {
