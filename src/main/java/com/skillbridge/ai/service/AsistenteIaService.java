@@ -59,7 +59,7 @@ public class AsistenteIaService {
     }
 
     public String responder(UsuarioSesion sesion, String mensajeUsuario) {
-        return llamarGemini(promptSistema(sesion), mensajeUsuario, 500);
+        return llamarGemini(promptSistema(sesion), mensajeUsuario, 800);
     }
 
     /**
@@ -77,7 +77,7 @@ public class AsistenteIaService {
                 "el hilo: de que trata, que se acordo o decidio (si algo quedo claro), y que queda pendiente o sin responder " +
                 "(si aplica). No inventes nada que no este en el texto. No agregues saludos ni frases de relleno, ve directo " +
                 "al resumen.";
-        return llamarGemini(prompt, contenidoCompleto, 350);
+        return llamarGemini(prompt, contenidoCompleto, 600);
     }
 
     private String llamarGemini(String promptSistema, String mensajeUsuario, int maxOutputTokens) {
@@ -93,9 +93,14 @@ public class AsistenteIaService {
         cuerpo.put("contents", List.of(
                 Map.of("role", "user", "parts", List.of(Map.of("text", mensajeUsuario)))
         ));
+        // "thinkingLevel": "LOW" porque son tareas simples (responder una
+        // pregunta corta o resumir un hilo), no razonamiento complejo - sin
+        // esto, el modelo gasta buena parte de maxOutputTokens "pensando"
+        // antes de escribir la respuesta visible y esta sale cortada.
         cuerpo.put("generationConfig", Map.of(
                 "temperature", 0.4,
-                "maxOutputTokens", maxOutputTokens
+                "maxOutputTokens", maxOutputTokens,
+                "thinkingConfig", Map.of("thinkingLevel", "LOW")
         ));
 
         try {
