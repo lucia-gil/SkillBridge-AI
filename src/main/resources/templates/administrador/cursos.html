@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cursos · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/polish.css"><link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/admin-cursos.css">
+</head>
+<body class="admin-app">
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content"><div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content">
+      <div class="course-heading"><div><h1>Cursos</h1><p>Gestiona formación vinculada a las habilidades del catálogo.</p></div>
+        <button type="button" class="btn btn-primary" id="nuevo-curso">Nuevo curso</button></div>
+      <section class="course-summary" aria-label="Resumen"><div><strong th:text="${pagina.totalElements}">0</strong><span>Cursos encontrados</span></div>
+        <div><strong th:text="${categorias.size()}">0</strong><span>Categorías disponibles</span></div>
+        <div><strong th:text="${habilidades.size()}">0</strong><span>Habilidades vinculables</span></div></section>
+      <section class="card">
+        <form class="course-filters" method="get" action="/administrador/cursos.html">
+          <label><span>Buscar</span><input class="input" type="search" name="q" th:value="${q}" placeholder="Nombre del curso"></label>
+          <label><span>Estado</span><select class="select" name="estado"><option value="">Todos</option>
+            <option value="PUBLICADO" th:selected="${estado == 'PUBLICADO'}">Publicado</option>
+            <option value="BORRADOR" th:selected="${estado == 'BORRADOR'}">Borrador</option>
+            <option value="ARCHIVADO" th:selected="${estado == 'ARCHIVADO'}">Archivado</option></select></label>
+          <button class="btn btn-secondary" type="submit">Filtrar</button>
+        </form>
+        <div th:if="${pagina.empty}" class="course-empty"><strong>No hay cursos con estos filtros</strong>
+          <p>Agrega el primer curso o cambia la búsqueda para ver otros resultados.</p>
+          <button type="button" class="btn btn-primary" id="curso-vacio-nuevo">Agregar curso</button></div>
+        <div th:unless="${pagina.empty}" class="course-grid">
+          <article class="course-card" th:each="c : ${pagina.content}">
+            <div class="course-card-top"><span class="badge" th:text="${c.estado}">PUBLICADO</span><span th:text="${c.duracionHoras} + ' h'">1 h</span></div>
+            <h2 th:text="${c.titulo}">Curso</h2><p th:text="${c.descripcion != null and !c.descripcion.isBlank() ? c.descripcion : 'Sin descripción.'}">Descripción</p>
+            <div class="course-tags"><span th:text="${c.nivel}">BASICO</span><span th:if="${c.categoria != null}" th:text="${c.categoria.nombre}">Categoría</span>
+              <span th:if="${c.habilidad != null}" th:text="${c.habilidad.nombre}">Habilidad</span></div>
+            <div class="course-actions"><a th:if="${c.url != null}" th:href="${c.url}" target="_blank" rel="noopener noreferrer">Abrir recurso</a>
+              <button type="button" class="btn btn-secondary btn-sm" data-editar-curso
+                th:attr="data-id=${c.id},data-titulo=${c.titulo},data-descripcion=${c.descripcion},data-url=${c.url},data-categoria=${c.categoria != null ? c.categoria.id : ''},data-habilidad=${c.habilidad != null ? c.habilidad.id : ''},data-nivel=${c.nivel},data-duracion=${c.duracionHoras}">Editar</button>
+              <form th:action="@{'/administrador/cursos/' + ${c.id} + '/estado'}" method="post"><input type="hidden" name="estado" th:value="${c.estado == 'ARCHIVADO' ? 'PUBLICADO' : 'ARCHIVADO'}">
+                <button class="btn btn-secondary btn-sm" type="submit" th:text="${c.estado == 'ARCHIVADO' ? 'Publicar' : 'Archivar'}">Archivar</button></form></div>
+          </article>
+        </div>
+        <nav class="course-pagination" th:if="${pagina.totalPages > 1}" aria-label="Páginas de cursos">
+          <a th:if="${pagina.hasPrevious()}" th:href="@{/administrador/cursos.html(q=${q},estado=${estado},page=${pagina.number - 1})}">Anterior</a>
+          <span th:text="'Página ' + ${pagina.number + 1} + ' de ' + ${pagina.totalPages}">Página 1</span>
+          <a th:if="${pagina.hasNext()}" th:href="@{/administrador/cursos.html(q=${q},estado=${estado},page=${pagina.number + 1})}">Siguiente</a>
+        </nav>
+      </section>
+    </main>
+  </div>
+</div>
+<dialog id="curso-dialog" class="course-dialog"><form id="curso-form" method="post" action="/administrador/cursos">
+  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+  <div class="course-dialog-head"><h2 id="curso-dialog-title">Nuevo curso</h2><button type="button" id="cerrar-curso" aria-label="Cerrar">×</button></div>
+  <div class="course-form-grid"><label>Título<input class="input" name="titulo" maxlength="150" required></label>
+    <label>Duración (horas)<input class="input" type="number" name="duracionHoras" min="1" max="10000" value="1" required></label>
+    <label class="wide">Descripción<textarea class="input" name="descripcion" maxlength="5000" rows="3"></textarea></label>
+    <label class="wide">URL del curso<input class="input" type="url" name="url" maxlength="500" placeholder="https://..."></label>
+    <label>Categoría<select class="select" name="categoriaId"><option value="">Sin categoría</option><option th:each="cat : ${categorias}" th:value="${cat.id}" th:text="${cat.nombre}"></option></select></label>
+    <label>Habilidad<select class="select" name="habilidadId"><option value="">Sin habilidad</option><option th:each="h : ${habilidades}" th:value="${h.id}" th:text="${h.nombre}"></option></select></label>
+    <label>Nivel<select class="select" name="nivel"><option value="BASICO">Básico</option><option value="INTERMEDIO">Intermedio</option><option value="AVANZADO">Avanzado</option><option value="EXPERTO">Experto</option></select></label></div>
+  <div class="course-dialog-actions"><button type="button" class="btn btn-secondary" id="cancelar-curso">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
+</form></dialog>
+<script th:inline="javascript">window.adminCursoFeedback = {exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null};</script>
+<script src="/js/toast.js"></script><script src="/js/admin-cursos.js"></script><script src="/js/topbar-actions.js"></script><script src="/js/mobile-nav.js"></script><script src="/js/admin-ui.js"></script>
+</body></html>

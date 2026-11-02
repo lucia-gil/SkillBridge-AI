@@ -393,6 +393,8 @@
   border-radius: 3px;
 }
 
+.admin-app .admin-report-actions{display:flex;gap:.5rem;flex-wrap:wrap}.admin-app .admin-report-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:1rem}.admin-app .admin-report-summary>div{display:flex;flex-direction:column;align-items:flex-start;gap:.35rem}.admin-app .admin-report-summary strong{font-size:1.8rem}.admin-app .admin-report-summary span{color:var(--text-secondary);font-size:.85rem}.admin-app .admin-report-summary a{font-size:.85rem;margin-top:.5rem}
+
 /* Las superficies administrativas se dimensionan por su contenido. */
 .admin-app .detail-grid {
   align-items: start !important;

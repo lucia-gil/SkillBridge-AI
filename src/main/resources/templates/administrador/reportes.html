@@ -25,6 +25,7 @@
             <h2 class="kpi-hero-title">Reportes</h2>
             <p class="kpi-hero-sub">Indicadores generales de la plataforma</p>
           </div>
+          <div class="admin-report-actions"><a class="btn btn-secondary" href="/administrador/reportes/exportar?formato=xlsx">Exportar Excel</a><a class="btn btn-secondary" href="/administrador/reportes/exportar?formato=pdf">Exportar PDF</a></div>
         </div>
         <div class="kpi-hero-grid">
           <article class="hero-card">
@@ -61,6 +62,8 @@
           </article>
         </div>
       </section>
+
+      <section class="admin-report-summary" aria-label="Estado de formación y usuarios"><div class="card card-pad"><strong th:text="${cursosPublicados}">0</strong><span>Cursos publicados</span><a href="/administrador/cursos.html">Gestionar cursos</a></div><div class="card card-pad"><strong th:text="${usuariosActivos}">0</strong><span>Usuarios activos</span><a href="/administrador/usuarios.html">Gestionar usuarios</a></div></section>
 
       <div class="detail-grid" style="margin-top:var(--space-6);">
         <section class="card card-pad">
