@@ -3,7 +3,7 @@ package com.skillbridge.ai.dto;
 import jakarta.validation.constraints.*;
 
 public class CursoRequest {
-    @NotBlank @Size(max = 150)
+    @NotBlank @Size(min = 3, max = 150, message = "El título debe tener entre 3 y 150 caracteres.")
     private String titulo;
     @Size(max = 5000)
     private String descripcion;

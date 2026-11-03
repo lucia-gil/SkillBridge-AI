@@ -395,6 +395,25 @@
 
 .admin-app .admin-report-actions{display:flex;gap:.5rem;flex-wrap:wrap}.admin-app .admin-report-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:1rem}.admin-app .admin-report-summary>div{display:flex;flex-direction:column;align-items:flex-start;gap:.35rem}.admin-app .admin-report-summary strong{font-size:1.8rem}.admin-app .admin-report-summary span{color:var(--text-secondary);font-size:.85rem}.admin-app .admin-report-summary a{font-size:.85rem;margin-top:.5rem}
 
+/* Jerarquía y densidad consistentes en todo el rol de administrador. */
+.admin-app .page-content{width:min(100%,1440px);margin-inline:auto;align-content:start}
+.admin-app .detail-grid{align-items:start!important}
+.admin-app .detail-grid>.card{height:auto!important;min-height:0}
+.admin-app .card{border-radius:16px}
+.admin-app .card-header,.admin-app .table-toolbar{gap:1rem;flex-wrap:wrap}
+.admin-app .data-table td{padding:.75rem 1rem;vertical-align:middle}
+.admin-app .data-table th{white-space:nowrap}
+.admin-app .table-scroll{height:auto;max-height:min(65vh,720px);overflow:auto}
+.admin-app .card-pad{padding:clamp(1rem,2vw,1.5rem)}
+.admin-app .btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-height:38px;white-space:normal;text-align:center}
+.admin-app .btn:focus-visible,.admin-app button:focus-visible,.admin-app a:focus-visible{outline:3px solid var(--blue-accent);outline-offset:2px}
+.admin-app .modal-backdrop{display:flex;align-items:center;justify-content:center;padding:1rem;overflow-y:auto}
+.admin-app .modal{width:min(100%,640px);max-height:calc(100dvh - 2rem);overflow-y:auto;margin:auto}
+.admin-app .dropdown-menu .menu-logout-form{margin:0;width:100%}
+.admin-app .dropdown-menu .menu-logout-form button{width:100%;justify-content:flex-start;border:0;background:transparent;text-align:left;cursor:pointer}
+.admin-app .state-panel{min-height:0;padding:clamp(1.5rem,3vw,2.5rem)}
+@media(max-width:860px){.admin-app .modal-backdrop{align-items:center}.admin-app .modal{max-height:calc(100dvh - 2rem)}}
+
 /* Las superficies administrativas se dimensionan por su contenido. */
 .admin-app .detail-grid {
   align-items: start !important;

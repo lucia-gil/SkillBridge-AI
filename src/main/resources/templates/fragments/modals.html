@@ -24,9 +24,11 @@
     <svg class="icon"><use href="/img/icons.svg#icon-user"></use></svg>Mi cuenta
   </a>
   <div class="dropdown-divider"></div>
-  <button type="button" class="dropdown-item danger" data-action="logout">
-    <svg class="icon"><use href="/img/icons.svg#icon-log-out"></use></svg>Cerrar sesión
-  </button>
+  <form th:action="@{/auth/logout}" method="post" class="menu-logout-form">
+    <button type="submit" class="dropdown-item danger">
+      <svg class="icon"><use href="/img/icons.svg#icon-log-out"></use></svg>Cerrar sesión
+    </button>
+  </form>
 </div>
 
 <!-- Popup de selección de rol (login, fin de registro, fin de recuperar contraseña) -->

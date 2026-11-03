@@ -60,33 +60,29 @@
   }
 
   function enhanceLoading() {
-    document.addEventListener("click", function (e) {
-      var button = e.target.closest && e.target.closest(".admin-app button[type='submit'], .admin-app [data-admin-submit]");
-      if (!button || button.disabled || button.dataset.loadingBound === "1") return;
-      button.dataset.loadingBound = "1";
-
-      var form = button.form;
-      if (form && form.checkValidity && !form.checkValidity()) {
-        button.dataset.loadingBound = "0";
-        return;
-      }
-
-      var label = button.querySelector(".btn-label");
-      if (!label) {
-        label = document.createElement("span");
-        label.className = "btn-label";
-        while (button.firstChild) label.appendChild(button.firstChild);
-        button.appendChild(label);
-      }
-
+    document.addEventListener("submit", function (e) {
+      var form = e.target;
+      if (!form.closest || !form.closest(".admin-app") || e.defaultPrevented || !form.checkValidity()) return;
+      var button = e.submitter;
+      if (!button || button.dataset.adminLoading === "1") return;
+      button.dataset.adminLoading = "1";
+      button.setAttribute("aria-busy", "true");
       var spinner = document.createElement("span");
       spinner.className = "admin-loading-spinner";
       spinner.setAttribute("aria-hidden", "true");
-      button.insertBefore(spinner, label);
-      button.dataset.adminLoading = "1";
-      button.setAttribute("aria-busy", "true");
-      button.disabled = true;
-    }, true);
+      button.prepend(spinner);
+      // No se deshabilita el botón antes del envío: el navegador aún lo necesita.
+      window.setTimeout(function () { button.disabled = true; }, 0);
+    });
+    window.addEventListener("pageshow", function () {
+      document.querySelectorAll(".admin-app [data-admin-loading]").forEach(function (button) {
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+        delete button.dataset.adminLoading;
+        var spinner = button.querySelector(".admin-loading-spinner");
+        if (spinner) spinner.remove();
+      });
+    });
   }
 
   function enhanceTooltips() {
