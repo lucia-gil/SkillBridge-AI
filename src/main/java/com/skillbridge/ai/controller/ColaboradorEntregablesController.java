@@ -1,4 +1,4 @@
-package com.skillbridge.ai.web;
+package com.skillbridge.ai.controller;
 
 import com.skillbridge.ai.dto.EntregaFila;
 import com.skillbridge.ai.dto.EntregableFila;
