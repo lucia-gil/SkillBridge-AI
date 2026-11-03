@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * AsistenteIaService.resumirHilo), para no tener que volver a llamar a
  * Gemini cada vez que alguien lo abre. Mismo patron que
  * InicializadorEsquemaV9 (ddl-auto=none, MySQL 8 sin "ADD COLUMN IF NOT
- * EXISTS"); el SQL equivalente esta en db/migracion_v10_resumen_ia.sql.
+ * EXISTS"); el SQL equivalente esta en db/skillbridge_db.sql.
  */
 @Component
 @Order(1)

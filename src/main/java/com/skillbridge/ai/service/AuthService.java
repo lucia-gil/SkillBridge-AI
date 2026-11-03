@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  *  - rate limiting de login por IP (5 intentos / 10 min),
  *  - mensaje de error generico en login (no revela si el correo existe),
  *  - hash de contrasena con BCrypt (mas fuerte que el SHA2(_,256) sin sal
- *    de la referencia; el propio seed de skillbridge_db_v4.sql ya trae un
+ *    de la referencia; el propio seed de skillbridge_db.sql ya trae un
  *    hash BCrypt para el admin, asi que es el algoritmo consistente con el
  *    esquema entregado),
  *  - registro solo permitido para correos previamente autorizados
@@ -233,7 +233,7 @@ public class AuthService {
      * Colaborador con el selector "Ver como" (ver SesionInterceptor).
      *
      * Rol efectivo para navegacion (no confundir con usuarios.rol_organizacional,
-     * ver comentario de la tabla asignaciones en skillbridge_db_v4.sql):
+     * ver comentario de la tabla asignaciones en skillbridge_db.sql):
      * administrador/resource_manager son puestos fijos; si no aplica ninguno,
      * se revisa si el perfil tiene una asignacion ACTIVA como project_manager
      * en algun proyecto; si tampoco, es colaborador.

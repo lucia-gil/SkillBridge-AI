@@ -13,10 +13,10 @@ import org.springframework.stereotype.Component;
  * resource-manager/colaborador-detalle.html y que el colaborador edita en
  * "Mi cuenta". Mismo patrón que InicializadorEsquemaV7 (ddl-auto=none, MySQL 8
  * sin "ADD COLUMN IF NOT EXISTS"); el SQL equivalente está en
- * db/migracion_v9_perfil_profesional.sql.
+ * db/skillbridge_db.sql.
  *
  * También asegura las columnas de la v8 (linkedin_url, github_url), que hasta
- * ahora solo se agregaban corriendo migracion_v8_mejoras.sql a mano: una base
+ * ahora solo se agregaban corriendo skillbridge_db.sql a mano: una base
  * nueva (p. ej. RDS) sin ese script fallaba al abrir cualquier perfil.
  */
 @Component
@@ -32,7 +32,7 @@ public class InicializadorEsquemaV9 implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // v8 (por si la base no tiene migracion_v8_mejoras.sql aplicada)
+        // v8 (por si la base no tiene skillbridge_db.sql aplicada)
         agregarSiFalta("perfiles", "linkedin_url", "VARCHAR(500) NULL");
         agregarSiFalta("perfiles", "github_url", "VARCHAR(500) NULL");
         agregarSiFalta("proyectos", "github_url", "VARCHAR(500) NULL");

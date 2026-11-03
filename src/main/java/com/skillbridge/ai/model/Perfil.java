@@ -51,7 +51,7 @@ public class Perfil {
     @Column(name = "github_url", length = 500)
     private String githubUrl;
 
-    // v9 (migracion_v9_perfil_profesional.sql / InicializadorEsquemaV9):
+    // v9 (skillbridge_db.sql / InicializadorEsquemaV9):
     // datos de contacto y presentación que se ven en el perfil profesional.
     @Column(name = "portafolio_url", length = 500)
     private String portafolioUrl;

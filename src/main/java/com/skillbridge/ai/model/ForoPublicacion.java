@@ -56,7 +56,7 @@ public class ForoPublicacion {
     @Column(name = "fecha_publicacion", insertable = false, updatable = false)
     private LocalDateTime fechaPublicacion;
 
-    // ── v6 (migracion_v6_foros.sql) ──
+    // ── v6 (skillbridge_db.sql) ──
 
     /** Tópico del hilo (solo en hilos raíz; en respuestas queda NULL). */
     @Column(name = "topico_id")

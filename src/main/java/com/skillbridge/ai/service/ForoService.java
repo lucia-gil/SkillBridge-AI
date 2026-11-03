@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
  * Foros (RF06) sobre "foro_publicaciones": una sola tabla autorreferencial,
  * cada post cuelga obligatoriamente de un proyecto (proyecto_id NOT NULL en
  * el esquema). La lista "Tus proyectos" agrupa por proyecto, y desde la v6
- * (migracion_v6_foros.sql) además cada hilo tiene un TÓPICO (foro_topicos)
+ * (skillbridge_db.sql) además cada hilo tiene un TÓPICO (foro_topicos)
  * y etiquetas, para usar el foro como centro de ayuda.
  *
  * v6 agrega:

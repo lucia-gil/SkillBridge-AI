@@ -1,139 +1,152 @@
-# SkillBridge AI — Backend Spring Boot
+# SkillBridge AI
 
-Backend Spring Boot 3.2.5 (Java 17, empaquetado WAR) para el frontend Thymeleaf de SkillBridge AI, conectado a la base de datos MySQL de `db/skillbridge_db.sql`.
+Plataforma interna de gestión de talento y proyectos (empresa ficticia **NexaCorp**): usuarios y roles, catálogo de habilidades, proyectos, asignaciones con AI Talent Matching, entregables, foros, calendario, reportes y un Asistente IA conectado a Google Gemini.
 
-## ⚠️ Importante: este código NO fue compilado en el entorno donde se generó
+**Stack:** Java 17 · Spring Boot 3.2.5 · Spring MVC + Thymeleaf · Spring Data JPA (Hibernate) · MySQL 8 · Spring Security · Spring Session JDBC · Java Mail (Gmail SMTP) · Apache POI / OpenPDF (exportes) · API de Google Gemini.
 
-El entorno de trabajo usado para escribir este proyecto no tenía acceso a Maven Central (todas las peticiones a `repo.maven.apache.org` y mirrors devolvían HTTP 403 por la política de red del sandbox — se volvió a intentar `mvn compile` en la ronda de esta ampliación y sigue devolviendo 403), así que **no fue posible correr `mvn compile` ni `mvn package` para verificarlo**. Todo el código (el de la primera entrega y el de esta ampliación) fue revisado manualmente línea por línea (imports, firmas de métodos, mapeos JPA, convenciones de Spring Data, sintaxis Thymeleaf, binding de Jackson, choque de rutas `@GetMapping` entre controladores), pero la única verificación real es la que tú vas a hacer al compilarlo en tu máquina, que sí tiene internet. Si `mvn clean package` marca algún error, dime el mensaje exacto y lo corrijo.
-
-Un hallazgo concreto de esa revisión manual, ya corregido: al conectar cada página nueva a su propio controlador, `SitioController` se quedó mapeando las mismas rutas que esos controladores nuevos (p.ej. `/administrador/inicio.html` en dos lados) - eso hace que Spring falle al arrancar con "Ambiguous mapping". Se corrigió retirando de `SitioController` toda ruta que ya tiene un controlador real (ver sección "Qué es real" abajo). También se encontró que `/cuenta/**` y `/notificaciones/**` (compartidas por los 4 roles) habían quedado fuera de los patrones que protege `SesionInterceptor`, así que un POST directo a esas rutas sin sesión iniciada no redirigía a login sino que rompía con `NullPointerException`; se agregaron esos dos prefijos al interceptor (`WebConfig`) con una regla nueva que exige sesión activa de cualquiera de los 4 roles sin el redireccionamiento por rol específico que sí aplica al resto.
+---
 
 ## Puesta en marcha
 
-1. **Crear la base de datos** (MySQL 8, con el servidor corriendo localmente):
-   ```bash
-   mysql -u root -p < db/skillbridge_db.sql
-   ```
-   Esto crea el esquema `skillbridge_db` con todas las tablas y los datos semilla (incluido el usuario administrador).
+### 1. Base de datos
 
-2. **Ajustar la conexión** en `src/main/resources/application.properties` si tu MySQL no usa `localhost:3306` / usuario `root` / clave vacía:
-   ```properties
-   spring.datasource.url=jdbc:mysql://localhost:3306/skillbridge_db?...
-   spring.datasource.username=root
-   spring.datasource.password=
-   ```
+Con MySQL 8 corriendo:
 
-3. **Compilar y correr:**
-   ```bash
-   mvn clean package
-   mvn spring-boot:run
-   ```
-   o ejecutar el WAR generado en `target/skillbridge-ai.war` en un Tomcat externo.
+```bash
+mysql -u root -p < db/skillbridge_db.sql
+```
 
-4. Abrir `http://localhost:8080/` — redirige automáticamente a `/auth/login.html`.
+`db/skillbridge_db.sql` es el **único script** del proyecto: crea el esquema `skillbridge_db` con todas las tablas, la siembra base (administrador, catálogos, configuración) y los datos de demo. Si el esquema ya existe, el script falla a propósito para no borrar datos; para empezar de cero, descomenta la línea `DROP SCHEMA IF EXISTS skillbridge_db;` del inicio.
 
-## Credenciales de prueba (usuario semilla del propio `skillbridge_db.sql`)
+Si ya tienes una base creada con una versión anterior, **no hace falta recrearla**: al arrancar, la app agrega sola lo que le falte (ver *Inicializadores* más abajo).
 
-- **Correo:** `admin@nexacorp.com`
-- **Contraseña:** `admin123`
-- Verifiqué que este hash BCrypt del seed corresponde efectivamente a `admin123` corriendo `bcrypt.checkpw` antes de entregar esto — no es una suposición.
+### 2. Secretos
 
-## Qué es real y qué sigue siendo mock
+Copia `src/main/resources/secretos.properties.example` como `src/main/resources/secretos.properties` (está en `.gitignore`, nunca se sube) y completa:
 
-Esta es la segunda entrega sobre este proyecto. La primera hizo 2 CRUD (Usuarios y roles, Catálogo de habilidades) + login/registro/logout. Esta ampliación, a pedido explícito, **rediseña y conecta a datos reales los roles Administrador y Colaborador completos, sin el chatbot de Asistente IA** (excluido explícitamente del alcance); Resource Manager y Project Manager quedan fuera de esta ronda y siguen siendo la demo original.
+| Variable | Para qué | Si no se define |
+|---|---|---|
+| `DB_USERNAME` | Usuario de MySQL | `root` |
+| `DB_PASSWORD` | Clave de MySQL | vacía |
+| `MAIL_PASSWORD` | Contraseña de aplicación de Gmail (correos de invitación, recuperación y notificaciones) | la app arranca, pero no se envían correos |
+| `GEMINI_API_KEY` | Asistente IA y resumen de foros ([clave gratis](https://aistudio.google.com/apikey)) | el asistente responde que no está configurado |
 
-**Administrador — 100% real contra MySQL, salvo el Asistente IA:**
-- **Inicio** (`inicio.html`) — KPIs reales (usuarios, proyectos activos, habilidades del catálogo, asignaciones activas), "Proyectos por estado", "Requiere tu atención" (usuarios sin rol, habilidades sin ningún proyecto que las pida, colaboradores sobrecargados), vista previa de usuarios y de las 5 habilidades más declaradas.
-- **Usuarios y roles**, **Catálogo de habilidades** — igual que la primera entrega (CRUD completo, sin cambios de fondo).
-- **Proyectos** (`proyectos.html`) — listar con filtro por estado, crear (con Project Manager obligatorio, registrado vía `asignaciones` porque el esquema v4 no tiene `proyectos.creado_por_id`), ver detalle (modal con equipo activo), asignar colaborador o PM, finalizar una asignación, cambiar estado.
-- **Reportes globales** (`reportes.html`) — ocupación por colaborador, habilidades más declaradas, proyectos por estado; todo con datos agregados reales de `asignaciones`/`perfil_habilidad`/`proyectos`.
-- **Auditoría** (`auditoria.html`) — lectura de `auditoria_logs`, con tipo/severidad/origen derivados (ver "Supuestos").
-- **Configuración** (`configuracion.html`) — lee y escribe `configuracion_global`; una parte de las 13 claves ya controla comportamiento real, el resto queda declarada pero sin efecto todavía (ver "Supuestos" para el detalle exacto de cuáles).
-- **Mi cuenta**, **Notificaciones** — compartidas con Colaborador (mismo controlador, ver abajo).
-- **Asistente IA** (`asistente-ia.html`) — sigue siendo la demo estática original (`mock-data.js`), sin conexión a un LLM: excluido explícitamente del alcance de esta entrega.
+En el servidor se usan las mismas variables como variables de entorno (`export DB_PASSWORD='...'`), que tienen prioridad sobre `secretos.properties`.
 
-**Colaborador — 100% real contra MySQL, salvo el Asistente IA:**
-- **Inicio** (`inicio.html`) — KPIs reales (proyectos activos, carga activa, habilidades declaradas/validadas), lista de proyectos actuales con avance y dedicación, actividad reciente en foros, notificaciones recientes.
-- **Mi perfil** (`perfil.html`) — habilidades declaradas (agregar nuevas desde el catálogo, con nivel), historial completo de proyectos, carga de trabajo desglosada por proyecto activo, datos de colaborador (solo los campos que existen de verdad en `perfiles`, ver "Supuestos").
-- **Mis proyectos** (`proyectos.html`) — proyectos actuales (tarjetas) e historial completo (tabla), con un modal de detalle de solo lectura por proyecto (descripción, tecnologías, fechas, avance, equipo).
-- **Foros** (`foros.html`, `foro-hilo.html`) — listar hilos de tus proyectos, filtrar por proyecto, ordenar por recientes/más respondidos/sin responder, publicar un hilo nuevo, responder, marcar una respuesta como solución (solo quien abrió el hilo o un Administrador). Ver "Supuestos" sobre qué partes del foro del mockup no se reconstruyeron.
-- **Mi cuenta**, **Notificaciones** — compartidas con Administrador: mismo `CuentaController`/`CuentaService` (editar cargo/biografía/años de experiencia, cambiar contraseña) y mismo `NotificacionesController`/`NotificacionService` (marcar leída/todas, preferencias de aviso por tipo de evento).
-- **Asistente IA** (`asistente-ia.html`) — igual que en Administrador: demo estática, fuera de alcance.
+### 3. Compilar y correr
 
-**Resource Manager y Project Manager — sin cambios, 100% mock** (`mock-data.js`), incluyendo su AI Talent Matching y su Asistente IA: no se tocó nada de estos dos roles en esta entrega, quedan exactamente como en la entrega anterior, servidos como passthrough por `SitioController`.
+```bash
+mvn spring-boot:run
+```
 
-## Supuestos y simplificaciones declaradas
+o generar el JAR y ejecutarlo:
 
-**De la primera entrega (sin cambios):**
-- **"Demanda"** en el catálogo de habilidades no es una columna del esquema: se calcula como una heurística simple a partir de cuántos proyectos requieren cada habilidad (≥3 = Alta, ≥1 = Media, 0 = Baja). Documentado en el código (`HabilidadFila`).
-- **"Cuenta desde"** usa `usuarios.fecha_creacion` (no hay "último acceso" en el esquema).
-- El mapeo de nivel textual (Básico/Intermedio/Avanzado/Experto) a la escala numérica 1-5 de `perfil_habilidad.nivel` es una convención propia (1/3/4/5): el documento no fija la correspondencia exacta. Se repite igual en `HabilidadService.agregarAlPerfil` (Mi perfil de Colaborador) para no introducir una segunda escala.
-- El **rol organizacional fijo** (`usuarios.rol_organizacional`) solo admite `administrador` / `resource_manager` / `NULL`. El "rol efectivo" (que además distingue Project Manager y Colaborador) se calcula en tiempo real según si el perfil tiene una asignación activa como `project_manager` (`AuthService.calcularRolEfectivo`), no es una columna nueva.
-- Un usuario no puede cambiarse el rol, suspenderse ni eliminarse a sí mismo.
-- El selector de "aprobación de manager" del wizard de registro es decorativo (viene del mockup); el registro real solo depende del correo pre-autorizado.
-- Se corrigió un bug del mockup original en el wizard de registro (dejaba avanzar con solo 2 de los 4 requisitos de contraseña cumplidos); ahora exige los 4, igual que `PasswordPolicy` en el backend.
+```bash
+mvn clean package
+java -jar target/skillbridge-ai.jar
+```
 
-**De esta ampliación (Administrador y Colaborador completos):**
-- **Avance de proyecto (`avance`/"% Avance")** no es una columna del esquema (no hay tabla de tareas/tickets con progreso real). Se calcula como una heurística por tiempo transcurrido entre `fecha_inicio` y `fecha_fin_estimada` (`ProyectoService.avanceHeuristico`) — 100% si está `completado`, 0% si `cancelado`, y proporcional al tiempo transcurrido en los demás casos. Se documenta en la propia UI ("Avance (heurístico por tiempo transcurrido)") para no aparentar que mide trabajo completado.
-- **Auditoría** — el esquema `auditoria_logs` no tiene columnas de "tipo"/"severidad"/"origen": `AuditoriaFila` las deriva del texto de la acción (p.ej. `*_ELIMINADA` o `*_SUSPENDIDO` se marcan como severidad alta) y de si el `usuario_id` es nulo (se etiqueta "Sistema"). Es una clasificación visual, no una fuente de verdad nueva.
-- **Reportes/"Habilidades más declaradas"** reemplaza la idea de "vacantes por habilidad" del mockup original (que implicaría un módulo de postulaciones que no existe en el esquema v4) por un ranking real de cuántos colaboradores declararon cada habilidad.
-- **Configuración (`configuracion_global`)** — de las 13 claves semilla, estas SÍ controlan comportamiento real:
-  - `dominio_correo_permitido` → dominio exigido en el registro (`AuthService`).
-  - `expiracion_sesion_minutos` → duración real de la sesión HTTP (`AuthController`).
-  - `limite_carga_colaborador` → tope de dedicación (%) al asignar a un proyecto, sumando todas las asignaciones activas (`ProyectoService.asignarColaborador`).
-  - `maximo_proyectos_simultaneos` → tope de proyectos activos simultáneos por colaborador (mismo método).
-  Las 9 restantes (`peso_matching_*`, `resumenes_ia_foros_activos`, `asistente_ia_habilitado`, `doble_factor_obligatorio_admin`, `auto_aprobar_asignaciones_menores_a`, `idioma_por_defecto`, `zona_horaria_defecto`) se guardan y se pueden editar desde la pantalla, pero **no tienen ningún consumidor funcional todavía** — la mayoría corresponde a AI Talent Matching, al Asistente IA o a 2FA, todos fuera de alcance de esta entrega. No se fabricó un efecto falso para ellas.
-- **Mi cuenta** deja fuera del mockup original: activar/desactivar 2FA, una segunda "sesión activa" fabricada, y el aviso por correo de nuevos inicios de sesión — ninguno tiene soporte real en el esquema. Sí quedaron reales: editar cargo/biografía/años de experiencia (`perfiles`) y cambiar la contraseña (BCrypt + `PasswordPolicy`, la misma del registro).
-- **Foros** — el esquema v4 modela `foro_publicaciones` como una sola tabla autorreferencial donde cada post cuelga obligatoriamente de un proyecto; no existe un catálogo de "categorías" genéricas (Backend/Frontend/...) como mostraba el mockup. Se reinterpretó "Categorías" como **"tus proyectos"** (la única agrupación real disponible). El resumen de hilo generado por IA y el contador de votos "útil" del mockup NO se implementaron: el primero necesitaría un motor de IA (fuera de alcance) y el segundo no tiene columna en el esquema. "Marcar como solución" sí es real (columna `es_solucion`), limitado a quien abrió el hilo o a un Administrador.
-- **Mi perfil (Colaborador) / "Datos de colaborador"** — el mockup mostraba ID de colaborador, Área, Ubicación, Ingreso y Manager fabricados: la tabla `perfiles` del esquema v4 no tiene esas columnas. El panel se redujo a los campos reales (cargo, disponibilidad, años de experiencia, correo, fecha de alta).
-- **Inicio (Colaborador) / "Mis asignaciones de la semana"** y el mini-panel del Asistente IA del mockup se eliminaron por completo: no existe una tabla de tareas/tickets a nivel de sub-asignación en el esquema (solo asignaciones a nivel de proyecto completo), y el Asistente IA está fuera de alcance. Se reemplazaron por un desglose real de la carga activa por proyecto.
-- **"Habilidades validadas"** (KPI de Colaborador/Inicio) usa la columna real `perfil_habilidad.validado_por_id`, pero como todavía no existe una pantalla para que alguien valide una habilidad declarada, este número siempre será 0 en la práctica hasta que se construya ese flujo — se deja el conteo real (no fabricado) a la espera de esa función futura.
-- **DataSeeder** (`config/DataSeeder`, `ApplicationRunner` idempotente) agrega 2 filas a `tipos_notificacion` si no existen (`asignacion`, `foro_respuesta`): son los únicos 2 disparadores de notificación reales de esta entrega (asignar/finalizar una asignación de proyecto, y responder en un hilo que abrió otra persona).
-- **IA / chatbot** — a pedido explícito del usuario, esta entrega NO implementa el Asistente IA de ningún rol ni ninguna forma de "AI Talent Matching" (esa función solo existe en las pantallas de Resource Manager/Project Manager, que quedaron fuera de alcance). No hay integración con ningún LLM en todo el proyecto.
+Abrir `http://localhost:8080/`.
+
+### Cuentas de demo
+
+Todas usan la contraseña **`admin123`**.
+
+| Rol | Correo |
+|---|---|
+| Administrador | `admin@nexacorp.com` |
+| Resource Manager | `luis.pena@nexacorp.com`, `camila.vidal@nexacorp.com` |
+| Miembro que lidera proyectos (vista PM + Colaborador) | `ana.rios@nexacorp.com`, `jorge.paredes@nexacorp.com`, `mariana.solis@nexacorp.com`, `tomas.herrera@nexacorp.com` |
+| Colaborador | `brian.castro@nexacorp.com`, `diego.salazar@nexacorp.com`, `fiorella.torres@nexacorp.com`, … |
+
+---
+
+## Roles y módulos
+
+El rol fijo está en `usuarios.rol_organizacional`: `administrador`, `resource_manager` o `NULL` (= **Miembro**). Un Miembro entra como **Colaborador** y, si es Project Manager activo de algún proyecto (`asignaciones.rol_en_proyecto = 'project_manager'`), también puede usar la vista **Project Manager**.
+
+Menú de cada rol (definido en `service/NavService`):
+
+| Rol | Pantallas del menú |
+|---|---|
+| **Administrador** (`/administrador/**`) | Inicio, Usuarios y roles, Catálogo de habilidades, Cursos, Catálogos técnicos, Proyectos, Reportes globales, Auditoría, Configuración |
+| **Resource Manager** (`/resource-manager/**`) | Inicio, Ocupación del equipo, Asignaciones, Colaboradores (con ficha de detalle), AI Talent Matching, Reportes |
+| **Project Manager** (`/project-manager/**`) | Inicio, Proyectos (con archivos de contexto), Asignaciones, Calendario, AI Talent Matching, Foros, Asistente IA, Reportes |
+| **Colaborador** (`/colaborador/**`) | Inicio, Mi perfil (habilidades y certificados), Mis proyectos, Entregables, Calendario, Foros, Asistente IA, Notificaciones |
+| Todos (menú del usuario, arriba a la derecha) | Mi cuenta (datos, foto, contraseña, doble factor TOTP), Notificaciones, buscador global (`Ctrl+K`) |
+
+Detalles del Asistente IA y del resumen de foros con Gemini: ver [`ASISTENTE_IA.md`](ASISTENTE_IA.md).
+
+### Configuración global
+
+La pantalla *Configuración* del Administrador edita `configuracion_global`. Claves que hoy controlan comportamiento real: `dominio_correo_permitido`, `expiracion_sesion_minutos`, `limite_carga_colaborador`, `maximo_proyectos_simultaneos` y los tres `peso_matching_*` (AI Talent Matching). Las demás se guardan pero todavía no tienen efecto.
+
+### Valores calculados (no son columnas)
+
+- **% de avance de proyecto**: heurístico por tiempo transcurrido entre `fecha_inicio` y `fecha_fin_estimada` (`ProyectoService.avanceHeuristico`); la fuente de verdad del trabajo entregado es el módulo de Entregables.
+- **Demanda de una habilidad**: según cuántos proyectos la requieren.
+- **Tipo / severidad / origen en Auditoría**: derivados del texto de la acción (`AuditoriaFila`).
+
+---
+
+## Seguridad
+
+- **Spring Security** (`config/SecurityConfig`): login por formulario, acceso por rol según la URL, CSRF en todos los POST, logout por POST, cabeceras de seguridad (CSP, frame-options, referrer-policy).
+- **`security/SesionVigenteFilter`** revalida al usuario contra la BD en cada request: si lo suspenden o le cambian el rol, se refleja sin esperar a que cierre sesión.
+- **`interceptor/SesionInterceptor`** fija la vista activa (rol efectivo) según el área visitada.
+- Cada controlador verifica además que el recurso pertenezca al usuario o a su proyecto (p. ej. un PM solo gestiona sus proyectos; los archivos y entregas solo los descargan los integrantes del proyecto).
+- Contraseñas con BCrypt y política de 12+ caracteres (`util/PasswordPolicy`); doble factor TOTP (`util/Totp`, `DobleFactorService`).
+- Sesiones guardadas en MySQL (tablas `SPRING_SESSION*`), sobreviven a reinicios del servidor.
+
+---
 
 ## Estructura
 
 ```
+db/skillbridge_db.sql      script único de la base de datos
 src/main/java/com/skillbridge/ai/
-  model/        entidades JPA (mapeo 1:1 con skillbridge_db.sql)
+  config/       SecurityConfig, WebConfig, DataSeeder e inicializadores de esquema
+  controller/   controladores MVC (uno por pantalla o grupo de pantallas)
+  dto/          objetos que se pasan a las plantillas
+  interceptor/  SesionInterceptor
+  model/        entidades JPA (mapeo 1:1 con db/skillbridge_db.sql)
   repository/   Spring Data JPA
-  service/      lógica de negocio: auth, usuarios, habilidades, auditoría,
-                proyectos, foros, notificaciones, preferencias de aviso,
-                configuración global, cuenta, reportes, nav del sidebar,
-                y ShellModelBuilder (arma el modelo común de todas las
-                pantallas: sidebar, topbar, notificaciones del campanario)
-  web/          controladores MVC (uno por pantalla o grupo de pantallas
-                que comparten datos - ver Javadoc de cada uno)
-  dto/          objetos de transferencia hacia las plantillas
-  util/         constantes de roles, política de contraseñas, excepciones
-  config/       WebConfig (registro del interceptor) + DataSeeder
-  interceptor/  SesionInterceptor (control de acceso por sesión + rol)
+  security/     autenticación, handlers de login/acceso denegado, filtro de sesión
+  service/      lógica de negocio
+  util/         roles, política de contraseñas, TOTP, excepciones
+src/main/resources/
+  application.properties
+  secretos.properties.example
+  templates/    vistas Thymeleaf por rol + fragments/ compartidos
+  static/       css/, js/, img/, fonts/ (todo autohospedado, sin CDN)
 ```
 
-Los controladores de Administrador/Colaborador de esta ampliación:
-`AdminInicioController`, `AdminProyectosController`, `AdminReportesController`,
-`AdminAuditoriaController`, `AdminConfiguracionController`,
-`ColaboradorInicioController`, `ColaboradorPerfilController`,
-`ColaboradorProyectosController`, `ForosController`, `ForoHiloController`,
-y los dos compartidos entre ambos roles: `CuentaController` y
-`NotificacionesController`. `SitioController` solo sirve ya lo que sigue
-siendo mock: Resource Manager, Project Manager, y el Asistente IA de
-Administrador/Colaborador.
+### Inicializadores de esquema
+
+Con `spring.jpa.hibernate.ddl-auto=none`, Hibernate no toca la BD. Para que una base creada con una versión anterior del script siga funcionando, estas clases de `config/` agregan al arrancar **solo lo que falte** (no hacen nada si ya existe):
+
+| Clase | Qué agrega |
+|---|---|
+| `Inicializador2fa` | tabla `usuarios_2fa` |
+| `InicializadorEsquemaV7` | columnas de pausa de proyectos, `rol_asignado`, `origen` |
+| `InicializadorEsquemaV9` | enlaces y datos del perfil profesional, `proyectos.github_url` |
+| `InicializadorEsquemaV10` | columnas del resumen IA de foros |
+| `InicializadorRazonCancelacion` | `proyectos.razon_cancelacion` |
+| `InicializadorTablasExtra` | tablas `archivos_proyecto` y `cursos` |
+| `InicializadorTopicosForo` | asigna tópico a los hilos que no tengan |
+| `DataSeeder` | tipos de notificación `asignacion` y `foro_respuesta` |
+
+**Si cambias el esquema:** agrega el cambio en `db/skillbridge_db.sql` (para instalaciones nuevas) **y** un inicializador idempotente (para las bases que ya existen). No vuelvas a crear scripts de migración sueltos.
 
 ---
 
-## Iteración de pulido (buscador predictivo, proyectos, 2FA)
+## Despliegue (EC2)
 
-**Front / UX**
-- `static/css/polish.css`: capa final de estilos (Inter + JetBrains Mono autohospedadas en `static/fonts/`, tablas corregidas, contenedor fluido, responsive con menú hamburguesa, tablas con primera columna fija en celular).
-- Buscador global del topbar (`js/global-search.js` → `GET /cuenta/buscar?q=`): predictivo desde 2 letras, resaltado, teclado (↑ ↓ Enter Esc, `Ctrl+K` o `/`). Alcance por rol en `BuscadorService` (el colaborador no ve a otras personas).
-- `js/predictive.js`: sugerencias en buscadores de tabla, `?buscar=` desde el buscador global y **selector de colaboradores tipo buscador** (cualquier `<select data-combobox>`).
-- `js/battery-progress.js`: barras de progreso tipo batería con el % dentro (se aplica solo a `.progress-inline` / `.progress-bar`).
-- Proyectos (admin, PM, colaborador): logos de tecnología (`js/tech-icons.js`, sin CDN), periodo/duración, "N miembros" y filtros por tecnología / duración / avance / miembros (`js/project-ui.js`).
+```bash
+export DB_PASSWORD='...'
+export MAIL_PASSWORD='...'
+export GEMINI_API_KEY='...'
+nohup java -jar skillbridge-ai.jar > app.log 2>&1 &
+```
 
-**Seguridad**
-- **Doble factor TOTP (RFC 6238)**: `util/Totp.java` (probado con los vectores oficiales del RFC), `DobleFactorService`, `DobleFactorController` (`/cuenta/2fa/*`), paso extra en `AuthController` (`/auth/verificar-2fa.html`: 5 intentos, 5 min) y tarjeta con QR en *Mi cuenta*. La tabla `usuarios_2fa` la crea `Inicializador2fa` al arrancar (ya incluida en `db/skillbridge_db.sql`). Nota: el secreto se guarda sin cifrar en BD; para producción conviene cifrarlo.
-- **Contraseña generativa** (`js/password-generator.js`, `crypto.getRandomValues`): botón en Mi cuenta (4 roles), registro y restablecer; cumple la política (12+, mayúscula, minúscula, número, símbolo).
-- **Restricción de foros** (`ForoService`): responder exige tener asignación en el proyecto (antes solo lo exigía crear hilo) y los foros de proyectos completados/cancelados quedan en solo lectura.
-
-**Pendiente de verificar en tu máquina**: `mvn clean package` (el entorno de trabajo no tiene Maven Central) y probar el flujo 2FA y `/cuenta/buscar` contra tu MySQL.
+`app.base-url` en `application.properties` debe apuntar a la URL pública (se usa para los enlaces de los correos). En producción conviene `spring.thymeleaf.cache=true` y, con HTTPS, `server.servlet.session.cookie.secure=true`.

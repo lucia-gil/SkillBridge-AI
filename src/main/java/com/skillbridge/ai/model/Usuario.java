@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * Mapea la tabla "usuarios" (autenticacion, RF01) de skillbridge_db_v4.sql.
+ * Mapea la tabla "usuarios" (autenticacion, RF01) de skillbridge_db.sql.
  *
  * rol_organizacional y estado se mantienen como String (no enum de Java)
  * a proposito: son columnas ENUM de MySQL con un set de valores cerrado y

@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  * CRUD real de Proyectos (RF03) + asignación de colaboradores (RF03/RF04).
  *
  * No existe columna de "% de avance" en el esquema (ver comentario de la
- * tabla proyectos en skillbridge_db_v4.sql): se calcula un heurístico de
+ * tabla proyectos en skillbridge_db.sql): se calcula un heurístico de
  * tiempo transcurrido entre fecha_inicio y fecha_fin_estimada
  * (avanceHeuristico), documentado para no aparentar que es progreso real
  * de tareas completadas.
@@ -388,7 +388,7 @@ public class ProyectoService {
         p = proyectoRepository.save(p);
 
         // Nota de integridad del esquema v4: el PM se registra vía asignaciones,
-        // no hay proyectos.creado_por_id (ver skillbridge_db_v4.sql, sección 7).
+        // no hay proyectos.creado_por_id (ver skillbridge_db.sql, sección 7).
         Asignacion pmAsig = new Asignacion();
         pmAsig.setProyectoId(p.getId());
         pmAsig.setPerfilId(pm.getId());
@@ -414,7 +414,7 @@ public class ProyectoService {
      * recursos IA, eventos) tienen ON DELETE CASCADE en el esquema y se
      * perderian sin aviso real. Para un proyecto que ya avanzo, usa
      * cambiarEstado(..., "cancelado") en vez de borrarlo (ver comentario de
-     * la tabla proyectos en db/skillbridge_db_v4.sql).
+     * la tabla proyectos en db/skillbridge_db.sql).
      */
     @Transactional
     public void eliminar(Long proyectoId, String motivo, Long actorUsuarioId) {

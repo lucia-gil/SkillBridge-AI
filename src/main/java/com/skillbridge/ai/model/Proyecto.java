@@ -52,7 +52,7 @@ public class Proyecto {
 
     // Modelo v7 (fase 2): pausar = el equipo sale del proyecto; se exigen
     // motivo y fecha estimada de reanudación. Columnas creadas por
-    // InicializadorEsquemaV7 / migracion_v7_consistencia_roles.sql.
+    // InicializadorEsquemaV7 / skillbridge_db.sql.
     @Column(name = "fecha_pausa")
     private LocalDate fechaPausa;
 

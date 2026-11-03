@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * CRUD real de "Usuarios y roles" (administrador/usuarios.html).
  *
  * "Invitar usuario" NO crea la fila en usuarios directamente: el esquema
- * (correos_autorizados, ver skillbridge_db_v4.sql seccion 2) modela el
+ * (correos_autorizados, ver skillbridge_db.sql seccion 2) modela el
  * registro como autoregistro con correo pre-autorizado, asi que invitar =
  * autorizar el correo; la fila en usuarios se crea recien cuando esa
  * persona completa /auth/registro.html.

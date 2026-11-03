@@ -14,7 +14,7 @@ public interface ForoPublicacionRepository extends JpaRepository<ForoPublicacion
     // Hilos raíz (publicacion_padre_id NULL) de los proyectos donde el
     // colaborador tiene o tuvo una asignación - "Foros" en este esquema no
     // es un espacio único global, cada post cuelga de un proyecto (ver
-    // comentario de foro_publicaciones en skillbridge_db_v4.sql).
+    // comentario de foro_publicaciones en skillbridge_db.sql).
     // left join fetch del tópico: es NULL en hilos anteriores a la v6 que
     // todavía no se clasificaron.
     @Query("select f from ForoPublicacion f join fetch f.autor a join fetch a.usuario join fetch f.proyecto left join fetch f.topico " +

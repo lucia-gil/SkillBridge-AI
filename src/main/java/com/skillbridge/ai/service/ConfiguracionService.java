@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * Panel de Configuración (administrador/configuracion.html) real, sobre la
  * tabla clave-valor "configuracion_global" ya sembrada por
- * skillbridge_db_v4.sql (13 parámetros). Cada campo del formulario original
+ * skillbridge_db.sql (13 parámetros). Cada campo del formulario original
  * se reescribió para apuntar 1 a 1 a una clave real en vez de un toggle
  * decorativo sin persistencia.
  */

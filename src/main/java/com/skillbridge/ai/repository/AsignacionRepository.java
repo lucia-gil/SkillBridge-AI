@@ -98,7 +98,7 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
     long contarLiderazgosActivos(@Param("perfilId") Long perfilId);
 
     // Borrado en cascada manual: fk_asig_proyecto NO tiene ON DELETE CASCADE
-    // (ver db/skillbridge_db_v4.sql), asi que ProyectoService.eliminar() debe
+    // (ver db/skillbridge_db.sql), asi que ProyectoService.eliminar() debe
     // vaciar esta tabla para el proyecto ANTES de borrar la fila de proyectos.
     void deleteByProyectoId(Long proyectoId);
 

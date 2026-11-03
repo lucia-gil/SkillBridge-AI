@@ -8,25 +8,40 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Crea la tabla "cursos" (módulo Cursos del Administrador) si todavía no
- * existe, igual que Inicializador2fa con usuarios_2fa: con ddl-auto=none,
- * sin esto la pantalla administrador/cursos.html revienta en una base que
- * no corrió db/migracion_v9_cursos.sql a mano. Mismo SQL que ese script.
- * Si la tabla ya existe (creada a mano o por una versión anterior) no la toca.
+ * Crea, si todavía no existen, las tablas que se agregaron después del
+ * esquema base: "archivos_proyecto" (archivos de contexto del PM) y
+ * "cursos" (módulo Cursos del Administrador). Igual que Inicializador2fa
+ * con usuarios_2fa: con ddl-auto=none, sin esto esas pantallas revientan en
+ * una base creada con una versión anterior de db/skillbridge_db.sql.
+ * Mismo SQL que la sección 6 de ese script. Si la tabla ya existe no la toca.
  */
 @Component
 @Order(1)
-public class InicializadorEsquemaCursos implements CommandLineRunner {
+public class InicializadorTablasExtra implements CommandLineRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(InicializadorEsquemaCursos.class);
+    private static final Logger log = LoggerFactory.getLogger(InicializadorTablasExtra.class);
     private final JdbcTemplate jdbc;
 
-    public InicializadorEsquemaCursos(JdbcTemplate jdbc) {
+    public InicializadorTablasExtra(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
     @Override
     public void run(String... args) {
+        try {
+            jdbc.execute("CREATE TABLE IF NOT EXISTS archivos_proyecto ("
+                    + " id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+                    + " proyecto_id BIGINT UNSIGNED NOT NULL,"
+                    + " nombre VARCHAR(255) NOT NULL,"
+                    + " tipo VARCHAR(100),"
+                    + " datos MEDIUMBLOB NOT NULL,"
+                    + " fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP,"
+                    + " CONSTRAINT fk_archivo_proyecto FOREIGN KEY (proyecto_id)"
+                    + " REFERENCES proyectos(id) ON DELETE CASCADE"
+                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (Exception e) {
+            log.warn("No se pudo verificar/crear la tabla archivos_proyecto: {}", e.getMessage());
+        }
         try {
             jdbc.execute("CREATE TABLE IF NOT EXISTS cursos ("
                     + " id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,"

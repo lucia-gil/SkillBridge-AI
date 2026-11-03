@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 /**
  * Siembra idempotente de catálogo al arrancar la aplicación.
  *
- * skillbridge_db_v4.sql (INSERT INTO tipos_notificacion, línea ~646) trae 4
+ * skillbridge_db.sql (INSERT INTO tipos_notificacion, sección de siembra) trae 4
  * códigos: alerta, solicitud, info, resultado_ia. Esta iteración agrega dos
  * eventos reales que el esquema no anticipaba pero que ahora sí ocurren de
  * verdad (asignar un colaborador a un proyecto, responder un hilo de

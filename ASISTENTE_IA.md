@@ -186,7 +186,7 @@ Archivos nuevos/modificados para esto:
 - **`config/InicializadorEsquemaV10.java`** (nuevo): agrega las dos columnas
   nuevas a `foro_publicaciones` automáticamente al arrancar la app (mismo
   patrón que la v9 para el perfil profesional). El equivalente en SQL manual
-  está en `db/migracion_v10_resumen_ia.sql` por si alguien prefiere
+  está en la sección 6 de `db/skillbridge_db.sql` por si alguien prefiere
   aplicarlo a mano.
 - **`model/ForoPublicacion.java`**: agrega los campos `resumenIa` y
   `resumenIaGeneradoEn`.

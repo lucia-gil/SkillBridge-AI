@@ -3,7 +3,7 @@ package com.skillbridge.ai.model;
 import jakarta.persistence.*;
 
 /**
- * Mapea "foro_topicos" (migracion_v6_foros.sql): catálogo de temas con el que
+ * Mapea "foro_topicos" (skillbridge_db.sql): catálogo de temas con el que
  * se categorizan los hilos del foro (Backend, Base de datos, DevOps...).
  *
  * color es una clave de tono del design system (blue|violet|green|amber|red|

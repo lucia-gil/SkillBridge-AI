@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * Esquema v7 (modelo de permisos y consistencia de roles): agrega, solo si
  * todavía no existen, las columnas nuevas. La app corre con ddl-auto=none,
  * así que igual que Inicializador2fa se hace aquí de forma idempotente; la
- * misma alteración está en db/migracion_v7_consistencia_roles.sql para
+ * misma alteración está en db/skillbridge_db.sql para
  * quien prefiera aplicarla a mano.
  *
  *  - proyectos.fecha_pausa / motivo_pausa / fecha_reanudacion_estimada

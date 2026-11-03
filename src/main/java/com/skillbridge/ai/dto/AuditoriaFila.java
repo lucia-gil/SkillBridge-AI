@@ -3,7 +3,7 @@ package com.skillbridge.ai.dto;
 /**
  * Fila de administrador/auditoria.html. El esquema NO tiene columnas
  * tipo/severidad/origen en auditoria_logs (ver comentario de la tabla en
- * skillbridge_db_v4.sql) - se derivan aquí de forma heurística a partir del
+ * skillbridge_db.sql) - se derivan aquí de forma heurística a partir del
  * prefijo de "accion", declarado explícitamente para no aparentar que son
  * datos almacenados.
  */
@@ -25,7 +25,7 @@ public class AuditoriaFila {
         this.accion = accion;
         this.detalle = detalle != null ? detalle : "—";
         // auditoria_logs no tiene columna "origen" (ver comentario de la tabla
-        // en skillbridge_db_v4.sql): se deriva de si el evento tiene un
+        // en skillbridge_db.sql): se deriva de si el evento tiene un
         // usuario asociado o no, solo como referencia visual.
         this.origenLabel = "Sistema".equals(this.usuarioLabel) ? "Sistema" : "Manual";
 

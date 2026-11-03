@@ -21,7 +21,7 @@ import java.util.Map;
 /**
  * Configuración global (administrador/configuracion.html), real sobre la
  * tabla clave-valor "configuracion_global" (13 parámetros ya sembrados por
- * skillbridge_db_v4.sql). Ver ConfiguracionService y el README: algunos de
+ * skillbridge_db.sql). Ver ConfiguracionService y el README: algunos de
  * estos parámetros SÍ tienen efecto real (dominio de registro, duración de
  * sesión, límite de carga y de proyectos simultáneos por colaborador);
  * otros quedan persistidos y editables pero sin un sistema que los consuma
@@ -42,7 +42,7 @@ public class AdminConfiguracionController {
             "dominio_correo_permitido", "expiracion_sesion_minutos", "limite_carga_colaborador",
             "maximo_proyectos_simultaneos", "auto_aprobar_asignaciones_menores_a", "peso_matching_habilidades",
             "peso_matching_experiencia", "peso_matching_disponibilidad", "idioma_por_defecto", "zona_horaria_defecto",
-            // Foros v6 (migracion_v6_foros.sql): ediciones permitidas por mensaje (0 = sin límite).
+            // Foros v6 (skillbridge_db.sql): ediciones permitidas por mensaje (0 = sin límite).
             "foro_max_ediciones");
 
     private final ConfiguracionService configuracionService;

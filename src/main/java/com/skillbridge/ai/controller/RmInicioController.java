@@ -34,7 +34,7 @@ import java.util.List;
  * "Solicitudes pendientes" del mock original TAMBIEN se retira: la version
  * inicial de este controlador intento reusar TalentMatchingService.pendientes(),
  * pero esa consulta apunta a la tabla propuestas_asignacion, que no existe
- * en skillbridge_db_v4.sql (el codigo compila pero revienta en runtime con
+ * en skillbridge_db.sql (el codigo compila pero revienta en runtime con
  * "Table doesn't exist"). No hay ninguna otra tabla/servicio real para
  * "solicitudes pendientes" en este esquema (excepciones_carga tampoco tiene
  * entidad/repositorio implementado), asi que se deja fuera hasta que exista

@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * eventos de los proyectos donde el perfil tiene una asignacion activa,
  * respetando la audiencia (todos / solo_pm / solo_colaboradores). "Nuevo evento"
  * los guarda en la tabla real. Los tipos (reunion/entregable/hito) y audiencias
- * vienen sembrados en skillbridge_db_v4.sql.
+ * vienen sembrados en skillbridge_db.sql.
  */
 @Service
 public class EventoService {
@@ -229,7 +229,7 @@ public class EventoService {
      * estado, porque tienen historial que preservar), un evento de
      * calendario no participa de ningun reporte historico ni calculo de
      * carga - por eso aqui si se hace DELETE real. comentarios_evento
-     * referencia eventos_proyecto con ON DELETE CASCADE (ver skillbridge_db_v4.sql),
+     * referencia eventos_proyecto con ON DELETE CASCADE (ver skillbridge_db.sql),
      * asi que sus comentarios se eliminan junto con el evento, sin dejar
      * huerfanos.
      */

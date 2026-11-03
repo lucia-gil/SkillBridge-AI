@@ -1,21 +1,35 @@
 -- =====================================================================
--- SkillBridge AI — BASE DE DATOS COMPLETA + DATOS DEMO (un solo script)
+-- SkillBridge AI — BASE DE DATOS COMPLETA (único script oficial)
 -- =====================================================================
--- Ejecutar de una vez en MySQL 8 (Workbench: abrir y Run All, o
---   mysql -u root -p < skillbridge_db_COMPLETA_con_demo.sql).
--- Crea el esquema skillbridge_db; si ya existe, falla a proposito para no
--- borrarte datos. Para empezar de cero descomenta la linea siguiente:
+-- Crea el esquema skillbridge_db con TODAS las tablas, la siembra base
+-- (administrador, catálogos, configuración) y los datos de demo.
+--
+--   mysql -u root -p < db/skillbridge_db.sql
+--   (o en Workbench: abrir el archivo y "Run All")
+--
+-- Si el esquema ya existe, falla a propósito para no borrarte datos.
+-- Para empezar de cero, descomenta la línea siguiente:
 -- DROP SCHEMA IF EXISTS skillbridge_db;
 --
--- Contiene, en este orden:
---   1) skillbridge_db_v4_actualizado.sql   esquema base + siembra (admin, catalogos)
---   2) entregables_schema.sql              modulo de entregables/entregas
---   3) migracion_v5_doble_factor.sql       tabla usuarios_2fa
---   4) datos_demo_skillbridge.sql          datos de demo
---   5) migracion_v6_foros.sql              foros: tópicos, citas, edición, destacados, adjuntos
--- NO incluye insert_de_prueba_para_probar_crud_de_RM.sql: vuelve a insertar
--- a Ana Rios y Portal Andes, que el paso 1 ya siembra (daria error de duplicado).
--- Contrasena de las cuentas demo: la misma que ya usaban los scripts originales.
+-- Contenido, en este orden:
+--   1) Esquema base v4.1 + v7 (roles) + siembra
+--   2) Entregables y entregas
+--   3) Doble factor (usuarios_2fa)
+--   4) Datos de demo
+--   5) Foros v6 (tópicos, citas, destacados, adjuntos)
+--   6) v8–v10: archivos de proyecto, perfil profesional, cursos,
+--      resumen IA de foros y tablas de Spring Session
+--
+-- Reemplaza a los scripts sueltos anteriores (skillbridge_db_v4*.sql,
+-- entregables_schema.sql, datos_demo_skillbridge.sql, migracion_v6..v10,
+-- spring_session_mysql.sql, skillbridge_db_COMPLETA_con_demo.sql).
+--
+-- ¿Ya tienes una BD creada con la versión anterior? No hace falta volver
+-- a crearla: al arrancar, la app agrega sola lo que le falte (columnas
+-- nuevas, usuarios_2fa, archivos_proyecto, cursos, Spring Session). Solo
+-- los datos demo del perfil profesional (sección 6) no se agregan solos.
+--
+-- Contraseña de todas las cuentas: admin123  (admin@nexacorp.com = Administrador)
 -- =====================================================================
 
 -- ################ 1) ESQUEMA BASE ################
@@ -1774,4 +1788,165 @@ VALUES (@pid_portal_andes, @pid_ana, 'Conexión a RDS rechazada desde la instanc
 --   14 filas de auditoría
 --
 --   TODAS las cuentas nuevas usan la contraseña: admin123
+-- =====================================================================
+
+-- =====================================================================
+-- ################ 6) v7–v10: archivos, perfil profesional, cursos, IA ################
+-- Antes venían en scripts sueltos (migracion_v8_mejoras, migracion_v9_*,
+-- migracion_v10_resumen_ia, spring_session_mysql) o los agregaba la app al
+-- arrancar (InicializadorRazonCancelacion / V9 / V10 / TablasExtra). Los
+-- inicializadores siguen existiendo y no hacen nada si esto ya está.
+-- =====================================================================
+USE skillbridge_db;
+SET NAMES utf8mb4;
+
+-- Proyectos: enlace al repositorio y motivo de cancelación
+ALTER TABLE proyectos
+    ADD COLUMN github_url        VARCHAR(500) DEFAULT NULL,
+    ADD COLUMN razon_cancelacion TEXT NULL;
+
+-- Archivos de contexto de un proyecto (ArchivoProyectoController)
+CREATE TABLE archivos_proyecto (
+    id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    proyecto_id  BIGINT UNSIGNED NOT NULL,
+    nombre       VARCHAR(255) NOT NULL,
+    tipo         VARCHAR(100),
+    datos        MEDIUMBLOB NOT NULL,
+    fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_archivo_proyecto FOREIGN KEY (proyecto_id)
+        REFERENCES proyectos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Perfil profesional del colaborador (resource-manager/colaborador-detalle.html)
+ALTER TABLE perfiles
+    ADD COLUMN linkedin_url   VARCHAR(500) DEFAULT NULL,
+    ADD COLUMN github_url     VARCHAR(500) DEFAULT NULL,
+    ADD COLUMN portafolio_url VARCHAR(500) DEFAULT NULL COMMENT 'Portafolio o sitio web personal',
+    ADD COLUMN telefono       VARCHAR(30)  DEFAULT NULL COMMENT 'Teléfono de contacto',
+    ADD COLUMN ubicacion      VARCHAR(120) DEFAULT NULL COMMENT 'Ciudad / país o modalidad',
+    ADD COLUMN etiquetas      JSON         DEFAULT NULL COMMENT 'Etiquetas cortas sobre la persona (arreglo JSON)';
+
+-- Datos demo del perfil profesional
+UPDATE perfiles p JOIN usuarios u ON u.id = p.usuario_id SET
+    p.biografia = COALESCE(p.biografia, 'Desarrollador frontend enfocado en interfaces accesibles y rápidas. Me gusta convertir diseños de Figma en componentes reutilizables y medir su rendimiento.'),
+    p.ubicacion = 'Lima, Perú', p.telefono = '+51 900 000 101',
+    p.linkedin_url = COALESCE(p.linkedin_url, 'https://www.linkedin.com/in/brian-castro-demo'),
+    p.github_url   = COALESCE(p.github_url,   'https://github.com/brian-castro-demo'),
+    p.portafolio_url = 'https://brian-castro-demo.dev',
+    p.etiquetas = JSON_ARRAY('Accesibilidad', 'Design systems', 'Mentor de practicantes', 'Inglés B2')
+WHERE u.correo = 'brian.castro@nexacorp.com' AND p.telefono IS NULL;
+
+UPDATE perfiles p JOIN usuarios u ON u.id = p.usuario_id SET
+    p.biografia = COALESCE(p.biografia, 'Ingeniera DevOps. Automatizo despliegues en AWS y cuido que los entornos sean reproducibles con Docker e infraestructura como código.'),
+    p.ubicacion = 'Arequipa, Perú · remoto', p.telefono = '+51 900 000 102',
+    p.linkedin_url = COALESCE(p.linkedin_url, 'https://www.linkedin.com/in/fiorella-torres-demo'),
+    p.github_url   = COALESCE(p.github_url,   'https://github.com/fiorella-torres-demo'),
+    p.etiquetas = JSON_ARRAY('AWS Cloud Practitioner', 'CI/CD', 'Guardias on-call', 'Inglés C1')
+WHERE u.correo = 'fiorella.torres@nexacorp.com' AND p.telefono IS NULL;
+
+UPDATE perfiles p JOIN usuarios u ON u.id = p.usuario_id SET
+    p.biografia = COALESCE(p.biografia, 'Analista de datos. Construyo tableros y modelos para que las decisiones del negocio se basen en números claros.'),
+    p.ubicacion = 'Lima, Perú', p.telefono = '+51 900 000 103',
+    p.linkedin_url = COALESCE(p.linkedin_url, 'https://www.linkedin.com/in/eduardo-campos-demo'),
+    p.etiquetas = JSON_ARRAY('Storytelling con datos', 'Power BI', 'Curioso')
+WHERE u.correo = 'eduardo.campos@nexacorp.com' AND p.telefono IS NULL;
+
+UPDATE perfiles p JOIN usuarios u ON u.id = p.usuario_id SET
+    p.biografia = COALESCE(p.biografia, 'Backend developer con cinco años en Java y Spring. Diseño APIs REST limpias y me interesa la observabilidad de los servicios.'),
+    p.ubicacion = 'Trujillo, Perú', p.telefono = '+51 900 000 104',
+    p.linkedin_url = COALESCE(p.linkedin_url, 'https://www.linkedin.com/in/gabriel-chavez-demo'),
+    p.github_url   = COALESCE(p.github_url,   'https://github.com/gabriel-chavez-demo'),
+    p.etiquetas = JSON_ARRAY('APIs REST', 'Code review', 'Líder técnico', 'Inglés B2')
+WHERE u.correo = 'gabriel.chavez@nexacorp.com' AND p.telefono IS NULL;
+
+UPDATE perfiles p JOIN usuarios u ON u.id = p.usuario_id SET
+    p.biografia = COALESCE(p.biografia, 'Diseñadora UX/UI. Investigo con usuarios reales antes de dibujar y documento cada decisión en el sistema de diseño.'),
+    p.ubicacion = 'Lima, Perú · híbrido', p.telefono = '+51 900 000 105',
+    p.linkedin_url = COALESCE(p.linkedin_url, 'https://www.linkedin.com/in/helena-ponce-demo'),
+    p.portafolio_url = 'https://helena-ponce-demo.design',
+    p.etiquetas = JSON_ARRAY('Investigación UX', 'Figma', 'Facilitadora de talleres')
+WHERE u.correo = 'helena.ponce@nexacorp.com' AND p.telefono IS NULL;
+
+UPDATE perfiles p JOIN usuarios u ON u.id = p.usuario_id SET
+    p.biografia = COALESCE(p.biografia, 'Ingeniero backend y DevOps. Seis años llevando servicios Java a producción, con foco en rendimiento y costos de nube.'),
+    p.ubicacion = 'Cusco, Perú · remoto', p.telefono = '+51 900 000 106',
+    p.linkedin_url = COALESCE(p.linkedin_url, 'https://www.linkedin.com/in/ivan-rojas-demo'),
+    p.github_url   = COALESCE(p.github_url,   'https://github.com/ivan-rojas-demo'),
+    p.etiquetas = JSON_ARRAY('Kubernetes', 'Optimización de costos', 'Mentor')
+WHERE u.correo = 'ivan.rojas@nexacorp.com' AND p.telefono IS NULL;
+
+UPDATE perfiles p JOIN usuarios u ON u.id = p.usuario_id SET
+    p.biografia = COALESCE(p.biografia, 'QA engineer. Escribo pruebas automatizadas de punta a punta y ayudo a los equipos a definir criterios de aceptación medibles.'),
+    p.ubicacion = 'Lima, Perú', p.telefono = '+51 900 000 107',
+    p.linkedin_url = COALESCE(p.linkedin_url, 'https://www.linkedin.com/in/karla-medina-demo'),
+    p.etiquetas = JSON_ARRAY('Testing automatizado', 'Detallista', 'ISTQB')
+WHERE u.correo = 'karla.medina@nexacorp.com' AND p.telefono IS NULL;
+
+UPDATE perfiles p JOIN usuarios u ON u.id = p.usuario_id SET
+    p.biografia = COALESCE(p.biografia, 'Data engineer. Diseño pipelines de datos confiables y me encargo de que lleguen limpios a los equipos de análisis.'),
+    p.ubicacion = 'Piura, Perú · remoto', p.telefono = '+51 900 000 108',
+    p.github_url   = COALESCE(p.github_url,   'https://github.com/renzo-fernandez-demo'),
+    p.etiquetas = JSON_ARRAY('ETL', 'Spark', 'Inglés C1')
+WHERE u.correo = 'renzo.fernandez@nexacorp.com' AND p.telefono IS NULL;
+
+UPDATE perfiles p JOIN usuarios u ON u.id = p.usuario_id SET
+    p.biografia = COALESCE(p.biografia, 'Backend developer senior. Siete años construyendo sistemas transaccionales; disfruto enseñar buenas prácticas de diseño.'),
+    p.ubicacion = 'Lima, Perú', p.telefono = '+51 900 000 109',
+    p.linkedin_url = COALESCE(p.linkedin_url, 'https://www.linkedin.com/in/tomas-herrera-demo'),
+    p.github_url   = COALESCE(p.github_url,   'https://github.com/tomas-herrera-demo'),
+    p.portafolio_url = 'https://tomas-herrera-demo.dev',
+    p.etiquetas = JSON_ARRAY('Arquitectura', 'Microservicios', 'Mentor', 'Speaker interno')
+WHERE u.correo = 'tomas.herrera@nexacorp.com' AND p.telefono IS NULL;
+
+-- Catálogo de cursos del Administrador (AdminCursosController)
+CREATE TABLE cursos (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  titulo VARCHAR(150) NOT NULL,
+  descripcion TEXT NULL,
+  url VARCHAR(500) NULL,
+  categoria_id BIGINT UNSIGNED NULL,
+  habilidad_id BIGINT UNSIGNED NULL,
+  nivel VARCHAR(20) NOT NULL DEFAULT 'BASICO',
+  estado VARCHAR(20) NOT NULL DEFAULT 'PUBLICADO',
+  duracion_horas INT NOT NULL DEFAULT 1,
+  fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  fecha_actualizacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_curso_categoria FOREIGN KEY (categoria_id) REFERENCES categorias_habilidad(id),
+  CONSTRAINT fk_curso_habilidad FOREIGN KEY (habilidad_id) REFERENCES habilidades(id),
+  INDEX idx_cursos_estado_titulo (estado, titulo),
+  INDEX idx_cursos_categoria (categoria_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Resumen de hilos del foro con IA (ForoService.generarResumenIa)
+ALTER TABLE foro_publicaciones
+    ADD COLUMN resumen_ia             TEXT NULL     COMMENT 'Resumen del hilo generado por el Asistente IA (solo hilo raiz)',
+    ADD COLUMN resumen_ia_generado_en DATETIME NULL COMMENT 'Cuando se genero/regenero el resumen';
+
+-- Spring Session JDBC: sesiones HTTP en MySQL. La app también las crea al
+-- arrancar (spring.session.jdbc.initialize-schema=always).
+CREATE TABLE IF NOT EXISTS SPRING_SESSION (
+    PRIMARY_ID            CHAR(36)     NOT NULL,
+    SESSION_ID            CHAR(36)     NOT NULL,
+    CREATION_TIME         BIGINT       NOT NULL,
+    LAST_ACCESS_TIME      BIGINT       NOT NULL,
+    MAX_INACTIVE_INTERVAL INT          NOT NULL,
+    EXPIRY_TIME           BIGINT       NOT NULL,
+    PRINCIPAL_NAME        VARCHAR(100),
+    CONSTRAINT SPRING_SESSION_PK PRIMARY KEY (PRIMARY_ID),
+    CONSTRAINT SPRING_SESSION_IX1 UNIQUE (SESSION_ID),
+    INDEX SPRING_SESSION_IX2 (EXPIRY_TIME),
+    INDEX SPRING_SESSION_IX3 (PRINCIPAL_NAME)
+) ENGINE = InnoDB ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE IF NOT EXISTS SPRING_SESSION_ATTRIBUTES (
+    SESSION_PRIMARY_ID CHAR(36)     NOT NULL,
+    ATTRIBUTE_NAME     VARCHAR(200) NOT NULL,
+    ATTRIBUTE_BYTES    BLOB         NOT NULL,
+    CONSTRAINT SPRING_SESSION_ATTRIBUTES_PK PRIMARY KEY (SESSION_PRIMARY_ID, ATTRIBUTE_NAME),
+    CONSTRAINT SPRING_SESSION_ATTRIBUTES_FK FOREIGN KEY (SESSION_PRIMARY_ID)
+        REFERENCES SPRING_SESSION (PRIMARY_ID) ON DELETE CASCADE
+) ENGINE = InnoDB ROW_FORMAT = DYNAMIC;
+
+-- =====================================================================
+-- Fin del script.
 -- =====================================================================

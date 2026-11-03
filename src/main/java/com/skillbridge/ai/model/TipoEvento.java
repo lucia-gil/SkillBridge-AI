@@ -6,7 +6,7 @@ import jakarta.persistence.*;
  * Catalogo de tipos de evento (reunion, entregable, hito) - tabla tipos_evento.
  * Mantiene los getters originales (usados por EventoService) y agrega
  * setters + el campo descripcion (existe en la tabla real, ver
- * skillbridge_db_v4.sql) para que el CRUD del Admin pueda crear/editar.
+ * skillbridge_db.sql) para que el CRUD del Admin pueda crear/editar.
  */
 @Entity
 @Table(name = "tipos_evento")
