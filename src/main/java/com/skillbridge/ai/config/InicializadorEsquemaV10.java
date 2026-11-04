@@ -31,6 +31,26 @@ public class InicializadorEsquemaV10 implements CommandLineRunner {
     public void run(String... args) {
         agregarSiFalta("foro_publicaciones", "resumen_ia", "TEXT NULL");
         agregarSiFalta("foro_publicaciones", "resumen_ia_generado_en", "DATETIME NULL");
+        limpiarResumenesFallidos();
+    }
+
+    /**
+     * Antes, si Gemini no respondía (sin clave, límite gratuito, error), el
+     * aviso se guardaba como si fuera el resumen del hilo y quedaba fijo.
+     * Se borran esos avisos para que el hilo vuelva a ofrecer "Resumir con IA".
+     */
+    private void limpiarResumenesFallidos() {
+        try {
+            int n = jdbc.update("UPDATE foro_publicaciones SET resumen_ia = NULL, resumen_ia_generado_en = NULL "
+                    + "WHERE resumen_ia LIKE 'El Asistente IA todavía no está configurado%' "
+                    + "OR resumen_ia LIKE 'No pude generar una respuesta%' "
+                    + "OR resumen_ia LIKE 'No pude conectarme al asistente%' "
+                    + "OR resumen_ia LIKE 'El asistente alcanzó el límite%' "
+                    + "OR resumen_ia LIKE 'Ocurrió un error inesperado al conectar%'");
+            if (n > 0) log.info("Foros: se quitaron {} resumen(es) con IA que en realidad eran avisos de error.", n);
+        } catch (Exception e) {
+            log.warn("Foros: no se pudieron revisar los resúmenes con IA: {}", e.getMessage());
+        }
     }
 
     private void agregarSiFalta(String tabla, String columna, String definicion) {

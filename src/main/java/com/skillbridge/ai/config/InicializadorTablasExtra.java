@@ -64,6 +64,85 @@ public class InicializadorTablasExtra implements CommandLineRunner {
             log.warn("No se pudo verificar/crear la tabla cursos: {}", e.getMessage());
         }
         catalogoDeFormacion();
+        chatDeProyectos();
+    }
+
+    // ───────── Chat de proyectos (RF07) ─────────
+
+    private void chatDeProyectos() {
+        try {
+            jdbc.execute("CREATE TABLE IF NOT EXISTS chat_lecturas ("
+                    + " sala_id BIGINT UNSIGNED NOT NULL,"
+                    + " perfil_id BIGINT UNSIGNED NOT NULL,"
+                    + " ultimo_mensaje_id BIGINT UNSIGNED NOT NULL DEFAULT 0,"
+                    + " PRIMARY KEY (sala_id, perfil_id),"
+                    + " CONSTRAINT fk_lectura_sala FOREIGN KEY (sala_id) REFERENCES chat_salas(id) ON DELETE CASCADE,"
+                    + " CONSTRAINT fk_lectura_perfil FOREIGN KEY (perfil_id) REFERENCES perfiles(id) ON DELETE CASCADE"
+                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (Exception e) {
+            log.warn("No se pudo verificar/crear la tabla chat_lecturas: {}", e.getMessage());
+        }
+        try {
+            sembrarChatDemo();
+        } catch (Exception e) {
+            log.warn("No se pudieron cargar las conversaciones de ejemplo del chat: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Una sola vez (si el chat está vacío): conversaciones de ejemplo en los
+     * proyectos activos, escritas por sus integrantes reales, para la demo.
+     */
+    private void sembrarChatDemo() {
+        Integer hay = jdbc.queryForObject("SELECT COUNT(*) FROM chat_mensajes", Integer.class);
+        if (hay != null && hay > 0) return;
+        java.util.List<Long> proyectos = jdbc.queryForList(
+                "SELECT p.id FROM proyectos p WHERE p.estado = 'activo' AND "
+                        + "(SELECT COUNT(*) FROM asignaciones a WHERE a.proyecto_id = p.id AND a.estado = 'activa') >= 2 "
+                        + "ORDER BY p.id LIMIT 3", Long.class);
+        String[][] guiones = {
+                {"¡Hola equipo! Abro la sala para coordinar lo del sprint de esta semana.",
+                 "Perfecto. Yo sigo con la integración del login; mañana subo el PR.",
+                 "Ojo con el endpoint de usuarios: cambió el formato de las fechas.",
+                 "Anotado, lo ajusto. ¿Hacemos la demo el viernes a las 4?",
+                 "Viernes 4 pm me va bien. Preparo los datos de prueba."},
+                {"Buenas, ¿alguien revisó los resultados del pipeline de anoche?",
+                 "Sí, falló un test de integración por la base de datos de pruebas. Ya lo corregí.",
+                 "Gracias. Entonces podemos desplegar hoy a staging.",
+                 "De acuerdo. Después del despliegue dejo el enlace en el foro del proyecto."},
+                {"Equipo, subí el tablero con las tareas pendientes del módulo de reportes.",
+                 "Me tomo la exportación a Excel.",
+                 "Yo reviso los filtros por fecha. ¿Alguna duda con los criterios?",
+                 "Ninguna por ahora. Avisamos aquí si algo se traba."}
+        };
+        int g = 0;
+        for (Long proyectoId : proyectos) {
+            java.util.List<Long> miembros = jdbc.queryForList(
+                    "SELECT perfil_id FROM asignaciones WHERE proyecto_id = ? AND estado = 'activa' "
+                            + "ORDER BY rol_en_proyecto DESC, id", Long.class, proyectoId);
+            Long salaId = jdbc.queryForList("SELECT id FROM chat_salas WHERE proyecto_id = ? ORDER BY id LIMIT 1", Long.class, proyectoId)
+                    .stream().findFirst().orElse(null);
+            if (salaId == null) {
+                org.springframework.jdbc.support.GeneratedKeyHolder llave = new org.springframework.jdbc.support.GeneratedKeyHolder();
+                jdbc.update(con -> {
+                    java.sql.PreparedStatement ps = con.prepareStatement(
+                            "INSERT INTO chat_salas (proyecto_id, nombre) VALUES (?, 'General')", java.sql.Statement.RETURN_GENERATED_KEYS);
+                    ps.setLong(1, proyectoId);
+                    return ps;
+                }, llave);
+                salaId = llave.getKey().longValue();
+            }
+            String[] guion = guiones[g++ % guiones.length];
+            for (int i = 0; i < guion.length; i++) {
+                // Mensajes repartidos en las últimas horas, del más viejo al más nuevo.
+                // La hora se calcula en Java (igual que los mensajes reales, ChatMensaje):
+                // con NOW() de MySQL podía quedar en otra zona horaria y desordenarse.
+                jdbc.update("INSERT INTO chat_mensajes (sala_id, autor_id, contenido, fecha_envio) VALUES (?, ?, ?, ?)",
+                        salaId, miembros.get(i % miembros.size()), guion[i],
+                        java.sql.Timestamp.valueOf(java.time.LocalDateTime.now().minusMinutes((long) (guion.length - i) * 37)));
+            }
+        }
+        if (!proyectos.isEmpty()) log.info("Chat: se cargaron conversaciones de ejemplo en {} proyecto(s).", proyectos.size());
     }
 
     // ───────── Catálogo de formación (v11): tipos, plataforma, rutas ─────────

@@ -82,6 +82,23 @@
   document.addEventListener("DOMContentLoaded", function () {
     if (window.SBAI.dropdown) window.SBAI.dropdown.init(document);
 
+    // Contador de mensajes sin leer del chat (ítem "Chat" del sidebar), cada 30 s.
+    // En la propia página del chat lo actualiza js/chat.js.
+    var itemChat = document.querySelector('.sidebar-nav-item[href$="chat.html"]');
+    if (itemChat && window.SBAI.api && !document.getElementById("chat-app")) {
+      var refrescarChat = function () {
+        if (document.hidden) return;
+        window.SBAI.api.get("/api/chat/no-leidos").done(function (r) {
+          var total = r && r.total || 0, badge = itemChat.querySelector(".counter-badge");
+          if (total > 0) {
+            if (!badge) { badge = document.createElement("span"); badge.className = "counter-badge"; itemChat.appendChild(badge); }
+            badge.textContent = total > 99 ? "99+" : total;
+          } else if (badge) badge.remove();
+        });
+      };
+      setInterval(refrescarChat, 30000);
+    }
+
     // Sombra suave en el topbar cuando la página ya no está arriba del todo.
     var topbar = document.querySelector(".topbar");
     if (topbar) {

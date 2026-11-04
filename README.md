@@ -73,11 +73,17 @@ Menú de cada rol (definido en `service/NavService`):
 |---|---|
 | **Administrador** (`/administrador/**`) | Inicio, Usuarios y roles, Catálogo de habilidades, Cursos, Catálogos técnicos, Proyectos, Reportes globales, Auditoría, Configuración |
 | **Resource Manager** (`/resource-manager/**`) | Inicio, Ocupación del equipo, Asignaciones, Colaboradores (con ficha de detalle), AI Talent Matching, Cursos, Reportes |
-| **Project Manager** (`/project-manager/**`) | Inicio, Proyectos (con archivos de contexto), Asignaciones, Calendario, AI Talent Matching, Foros, Cursos, Asistente IA, Reportes |
-| **Colaborador** (`/colaborador/**`) | Inicio, Mi perfil (habilidades y certificados), Mis proyectos, Entregables, Calendario, Foros, Cursos, Asistente IA, Notificaciones |
+| **Project Manager** (`/project-manager/**`) | Inicio, Proyectos (con archivos de contexto), Asignaciones, Calendario, AI Talent Matching, Foros, Chat, Cursos, Asistente IA, Reportes |
+| **Colaborador** (`/colaborador/**`) | Inicio, Mi perfil (habilidades y certificados), Mis proyectos, Entregables, Calendario, Foros, Chat, Cursos, Asistente IA, Notificaciones |
 | Todos (menú del usuario, arriba a la derecha) | Mi cuenta (datos, foto, contraseña, doble factor TOTP), Notificaciones, buscador global (`Ctrl+K`) |
 
 Detalles del Asistente IA y del resumen de foros con Gemini: ver [`ASISTENTE_IA.md`](ASISTENTE_IA.md).
+
+### Chat de proyectos (RF07)
+
+Cada proyecto tiene una sala de chat que solo ven sus integrantes activos (PM y colaboradores). Se guarda el historial con autor, fecha y hora (`chat_salas`, `chat_mensajes`) y hasta dónde leyó cada persona (`chat_lecturas`, contador de no leídos en el sidebar).
+
+Arquitectura: servicio web **REST** (`ChatApiController`, `/api/chat/**`, JSON) consumido con **jQuery/AJAX** (`js/chat.js` sobre `js/sbai-api.js`, que agrega el token CSRF). Los mensajes nuevos llegan por *polling*: cada 3 s el navegador pide `GET /api/chat/salas/{id}/mensajes?despues={ultimoId}` (15 s si la pestaña está oculta), sin necesidad de WebSockets. Incluye "Resumir con IA" (Gemini) de la conversación reciente. La primera vez se cargan conversaciones de ejemplo en los proyectos activos.
 
 ### Catálogo de formación (Cursos)
 
@@ -140,7 +146,7 @@ Con `spring.jpa.hibernate.ddl-auto=none`, Hibernate no toca la BD. Para que una 
 | `InicializadorEsquemaV9` | enlaces y datos del perfil profesional, `proyectos.github_url` |
 | `InicializadorEsquemaV10` | columnas del resumen IA de foros |
 | `InicializadorRazonCancelacion` | `proyectos.razon_cancelacion` |
-| `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos` y `curso_pasos`, columnas del catálogo de formación y, la primera vez, un catálogo de ejemplo con recursos gratuitos |
+| `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos`, `curso_pasos` y `chat_lecturas`, columnas del catálogo de formación y, la primera vez, un catálogo de cursos y conversaciones de chat de ejemplo |
 | `InicializadorTopicosForo` | asigna tópico a los hilos que no tengan |
 | `DataSeeder` | tipos de notificación `asignacion` y `foro_respuesta` |
 | `ReparadorTildes` | corrige textos con tildes guardadas dos veces ("IvÃ¡n" → "Iván"); si no está seguro, no toca el valor |

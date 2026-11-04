@@ -542,6 +542,16 @@ CREATE TABLE chat_mensajes (
                                CONSTRAINT fk_chatmsg_autor FOREIGN KEY (autor_id) REFERENCES perfiles(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Hasta qué mensaje leyó cada persona en cada sala (contador de no leídos del chat)
+CREATE TABLE chat_lecturas (
+                               sala_id            BIGINT UNSIGNED NOT NULL,
+                               perfil_id          BIGINT UNSIGNED NOT NULL,
+                               ultimo_mensaje_id  BIGINT UNSIGNED NOT NULL DEFAULT 0,
+                               PRIMARY KEY (sala_id, perfil_id),
+                               CONSTRAINT fk_lectura_sala FOREIGN KEY (sala_id) REFERENCES chat_salas(id) ON DELETE CASCADE,
+                               CONSTRAINT fk_lectura_perfil FOREIGN KEY (perfil_id) REFERENCES perfiles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE INDEX idx_chatmsg_sala ON chat_mensajes(sala_id);
 
 -- ---------------------------------------------------------------------

@@ -27,15 +27,18 @@ public class ShellModelBuilder {
     private final NavService navService;
     private final NotificacionService notificacionService;
     private final UsuarioRepository usuarioRepository;
+    private final ChatService chatService;
 
     public ShellModelBuilder(
             NavService navService,
             NotificacionService notificacionService,
-            UsuarioRepository usuarioRepository) {
+            UsuarioRepository usuarioRepository,
+            ChatService chatService) {
 
         this.navService = navService;
         this.notificacionService = notificacionService;
         this.usuarioRepository = usuarioRepository;
+        this.chatService = chatService;
     }
 
     public void aplicar(
@@ -72,6 +75,11 @@ public class ShellModelBuilder {
 
             if (badge != null) {
                 item.setBadge(badge);
+            }
+            // Chat de proyectos: mensajes sin leer en todas sus salas.
+            if ("chat.html".equals(item.getHref()) && item.getBadge() == null && sesion.getPerfilId() != null) {
+                long sinLeer = chatService.totalNoLeidos(sesion.getPerfilId());
+                if (sinLeer > 0) item.setBadge((int) Math.min(sinLeer, 99));
             }
         }
 

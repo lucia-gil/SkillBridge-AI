@@ -58,8 +58,22 @@ public class AsistenteIaService {
         return apiKey != null && !apiKey.isBlank();
     }
 
+    /** Resultado de una llamada a Gemini: el texto y si es una respuesta real (ok) o un aviso de error. */
+    public record Resultado(String texto, boolean ok) {}
+
+    /** Chat del asistente: si falla, devuelve igual un aviso amable para mostrar en la conversación. */
     public String responder(UsuarioSesion sesion, String mensajeUsuario) {
-        return llamarGemini(promptSistema(sesion), mensajeUsuario, 800);
+        return llamarGemini(promptSistema(sesion), mensajeUsuario, 800).texto();
+    }
+
+    /**
+     * Para lo que se GUARDA (resúmenes): si la IA no está disponible lanza
+     * OperacionInvalidaException con el aviso, así nunca se persiste un
+     * mensaje de error como si fuera un resumen.
+     */
+    private String exigirRespuesta(Resultado r) {
+        if (!r.ok()) throw new com.skillbridge.ai.util.OperacionInvalidaException(r.texto());
+        return r.texto();
     }
 
     /**
@@ -77,13 +91,25 @@ public class AsistenteIaService {
                 "el hilo: de que trata, que se acordo o decidio (si algo quedo claro), y que queda pendiente o sin responder " +
                 "(si aplica). No inventes nada que no este en el texto. No agregues saludos ni frases de relleno, ve directo " +
                 "al resumen.";
-        return llamarGemini(prompt, contenidoCompleto, 600);
+        return exigirRespuesta(llamarGemini(prompt, contenidoCompleto, 600));
     }
 
-    private String llamarGemini(String promptSistema, String mensajeUsuario, int maxOutputTokens) {
+    /**
+     * Resume la conversación reciente del chat de un proyecto (ChatService).
+     * No se guarda: se muestra al momento. Si la IA no responde, lanza el aviso.
+     */
+    public String resumirConversacion(String proyecto, String conversacion) {
+        String prompt = "Eres el Asistente IA de SkillBridge AI. Te paso los últimos mensajes del chat del proyecto \"" + proyecto + "\" "
+                + "(cada línea: fecha y hora, autor y mensaje). Responde en español, en 3 a 5 viñetas cortas que empiecen con \"- \": "
+                + "los temas principales, lo que se decidió o quedó acordado y lo que sigue pendiente (con responsable si aparece). "
+                + "No inventes nada que no esté en los mensajes. Sin saludos ni frases de relleno.";
+        return exigirRespuesta(llamarGemini(prompt, conversacion, 600));
+    }
+
+    private Resultado llamarGemini(String promptSistema, String mensajeUsuario, int maxOutputTokens) {
         if (!configurado()) {
             log.warn("Asistente IA: no hay gemini.api.key configurada (ver secretos.properties.example)");
-            return "El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Gemini.";
+            return new Resultado("El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Gemini.", false);
         }
 
         Map<String, Object> cuerpo = new LinkedHashMap<>();
@@ -116,20 +142,20 @@ public class AsistenteIaService {
             JsonNode contenido = raiz.path("candidates").path(0).path("content").path("parts").path(0).path("text");
             if (contenido.isMissingNode() || contenido.asText().isBlank()) {
                 log.warn("Asistente IA: respuesta de Gemini sin contenido util: {}", respuestaCruda);
-                return "No pude generar una respuesta en este momento. Intenta reformular tu pregunta.";
+                return new Resultado("No pude generar una respuesta en este momento. Intenta reformular tu pregunta.", false);
             }
-            return contenido.asText().trim();
+            return new Resultado(contenido.asText().trim(), true);
 
         } catch (RestClientResponseException ex) {
             // Error devuelto por Gemini (401/403 clave invalida, 429 limite de la capa gratuita, etc.)
             log.error("Asistente IA: Gemini respondio {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
             if (ex.getStatusCode().value() == 429) {
-                return "El asistente alcanzó el límite de solicitudes de la capa gratuita. Intenta de nuevo en un minuto.";
+                return new Resultado("El asistente alcanzó el límite de solicitudes de la capa gratuita. Intenta de nuevo en un minuto.", false);
             }
-            return "No pude conectarme al asistente en este momento. Intenta de nuevo en unos segundos.";
+            return new Resultado("No pude conectarme al asistente en este momento. Intenta de nuevo en unos segundos.", false);
         } catch (Exception ex) {
             log.error("Asistente IA: error inesperado al consumir Gemini", ex);
-            return "Ocurrió un error inesperado al conectar con el asistente. Intenta de nuevo.";
+            return new Resultado("Ocurrió un error inesperado al conectar con el asistente. Intenta de nuevo.", false);
         }
     }
 

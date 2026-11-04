@@ -71,6 +71,9 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
     // Usado por EventoService.puedeGestionar() para saber si el perfil es el
     // PM activo de un proyecto puntual (permiso de editar/eliminar CUALQUIER
     // evento de ese proyecto, no solo los que el mismo creo).
+    /** ¿Tiene una asignación (cualquier rol) en ese estado? (acceso al chat del proyecto). */
+    boolean existsByProyectoIdAndPerfilIdAndEstado(Long proyectoId, Long perfilId, String estado);
+
     boolean existsByProyectoIdAndPerfilIdAndRolEnProyectoAndEstado(
             Long proyectoId, Long perfilId, String rolEnProyecto, String estado);
 

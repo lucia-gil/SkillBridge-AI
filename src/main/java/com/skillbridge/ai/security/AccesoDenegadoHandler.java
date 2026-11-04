@@ -61,6 +61,9 @@ public class AccesoDenegadoHandler implements AccessDeniedHandler {
     /** fetch() que espera JSON: no tiene sentido responderle con una redirección a HTML. */
     private static boolean esPeticionDeDatos(HttpServletRequest request) {
         String accept = request.getHeader("Accept");
-        return accept != null && accept.contains("application/json") && !accept.contains("text/html");
+        String ruta = request.getRequestURI().substring(request.getContextPath().length());
+        return ruta.startsWith("/api/")                                         // servicios REST (chat, asistente…)
+                || "XMLHttpRequest".equals(request.getHeader("X-Requested-With")) // $.ajax (sbai-api.js)
+                || (accept != null && accept.contains("application/json") && !accept.contains("text/html"));
     }
 }

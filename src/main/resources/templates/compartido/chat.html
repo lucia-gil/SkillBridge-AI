@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!--
+  compartido/chat.html — Chat de proyectos (RF07) para Colaborador y Project
+  Manager (ChatController). Toda la conversación la maneja js/chat.js con
+  jQuery/AJAX contra el servicio REST /api/chat (ChatApiController).
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/tonos-categoria.css">
+  <link rel="stylesheet" href="/css/chat.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content page-content-wide ch-page" id="page-content">
+
+      <div class="ch" id="chat-app" data-estado="lista">
+        <!-- Salas -->
+        <aside class="ch-rooms" aria-label="Salas de chat">
+          <div class="ch-rooms-head">
+            <h2>Salas</h2>
+            <span class="ch-rooms-count" id="ch-total"></span>
+          </div>
+          <label class="ch-search">
+            <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
+            <input type="search" id="ch-buscar" placeholder="Buscar proyecto" autocomplete="off" aria-label="Buscar sala">
+          </label>
+          <ul class="ch-room-list" id="ch-salas" role="listbox" aria-label="Proyectos">
+            <li class="ch-skeleton" aria-hidden="true"></li><li class="ch-skeleton" aria-hidden="true"></li><li class="ch-skeleton" aria-hidden="true"></li>
+          </ul>
+        </aside>
+
+        <!-- Conversación -->
+        <section class="ch-conv" aria-live="off">
+          <div class="ch-empty" id="ch-vacio">
+            <span class="ch-empty-icon" aria-hidden="true"><svg class="icon"><use href="/img/icons.svg#icon-message-circle"></use></svg></span>
+            <strong>Elige una sala</strong>
+            <p>Cada proyecto tiene su propia sala. Solo la ven sus integrantes.</p>
+          </div>
+
+          <div class="ch-conv-in" id="ch-conv" hidden>
+            <header class="ch-conv-head">
+              <button type="button" class="ch-back" id="ch-volver" aria-label="Volver a las salas">
+                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-arrow-left"></use></svg>
+              </button>
+              <span class="ch-room-mark" id="ch-marca" aria-hidden="true"></span>
+              <div class="ch-conv-title">
+                <h2 id="ch-titulo">Proyecto</h2>
+                <button type="button" class="ch-members-btn" id="ch-miembros-btn" aria-expanded="false" aria-controls="ch-miembros">
+                  <span class="ch-faces" id="ch-caras"></span><span id="ch-miembros-txt">integrantes</span>
+                </button>
+              </div>
+              <div class="ch-conv-actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="ch-resumir">
+                  <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-sparkles"></use></svg><span>Resumir con IA</span>
+                </button>
+                <a class="ch-icon-btn" id="ch-foro" href="foros.html" title="Ir al foro del proyecto" aria-label="Ir al foro del proyecto">
+                  <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-message"></use></svg>
+                </a>
+              </div>
+              <div class="ch-members" id="ch-miembros" hidden></div>
+            </header>
+
+            <div class="ch-summary" id="ch-resumen" hidden></div>
+
+            <div class="ch-messages" id="ch-mensajes" tabindex="0" aria-label="Mensajes">
+              <button type="button" class="ch-older" id="ch-anteriores" hidden>Ver mensajes anteriores</button>
+              <ol class="ch-list" id="ch-lista"></ol>
+            </div>
+            <button type="button" class="ch-new-pill" id="ch-nuevos" hidden>
+              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-chevron-down"></use></svg><span>Mensajes nuevos</span>
+            </button>
+
+            <form class="ch-composer" id="ch-form" autocomplete="off">
+              <p class="ch-readonly" id="ch-solo-lectura" hidden>Este proyecto está cerrado: su chat quedó en solo lectura.</p>
+              <div class="ch-composer-in">
+                <textarea id="ch-texto" rows="1" th:attr="maxlength=${maxCaracteres}" maxlength="2000"
+                          placeholder="Escribe un mensaje…" aria-label="Mensaje"></textarea>
+                <button type="submit" class="ch-send" id="ch-enviar" aria-label="Enviar mensaje" disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5z" fill="currentColor"/></svg>
+                </button>
+              </div>
+              <p class="ch-hint"><kbd>Enter</kbd> envía · <kbd>Shift</kbd>+<kbd>Enter</kbd> nueva línea</p>
+            </form>
+          </div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  window.SBAI_CHAT = { salaInicial: /*[[${salaInicial}]]*/ null, max: /*[[${maxCaracteres}]]*/ 2000 };
+</script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/chat.js"></script>
+</body>
+</html>
