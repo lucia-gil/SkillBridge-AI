@@ -370,7 +370,7 @@ td.cell-actions > * + * { margin-left: var(--space-3); }
 .photo-drop.has-file { border-style: solid; border-color: color-mix(in srgb, var(--green-fg) 45%, transparent); }
 .account-hero form .btn[type="submit"]:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 .account-hero > div:last-child form + form .btn { background: transparent; border-color: transparent; color: var(--red-fg); padding-left: 0; }
-.account-hero > div:last-child form + form .btn:hover { text-decoration: underline; }
+.account-hero > div:last-child form + form .btn:hover { text-decoration: none; }
 
 /* Cualquier otro <input type="file"> del sistema: botón con el estilo de la app */
 input[type="file"].input { padding: 6px; height: auto; cursor: pointer; }

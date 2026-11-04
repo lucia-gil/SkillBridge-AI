@@ -487,7 +487,7 @@
 .event-detail-label { font-size: var(--fs-2xs); font-weight: var(--fw-semibold); color: var(--text-tertiary); }
 .event-detail-value { font-size: var(--fs-sm); color: var(--text-primary); word-break: break-word; }
 .event-detail-value a { color: var(--blue-link); text-decoration: none; }
-.event-detail-value a:hover { text-decoration: underline; }
+.event-detail-value a:hover { color: var(--blue-fg-strong); text-decoration: none; }
 .event-detail-desc-label { display: block; margin-bottom: 6px; font-size: var(--fs-2xs); font-weight: var(--fw-semibold); color: var(--text-tertiary); }
 .event-detail-desc-text { font-size: var(--fs-sm); line-height: 1.6; color: var(--text-secondary); white-space: pre-wrap; }
 :root[data-theme="dark"] .event-detail-value a { color: var(--blue-fg); }

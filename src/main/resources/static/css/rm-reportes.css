@@ -201,14 +201,14 @@
 .rr-muted { color: var(--text-tertiary); font-size: var(--fs-xs); }
 .rr-block { display: block; }
 .rr-person { display: flex; align-items: center; gap: 10px; min-width: 0; color: inherit; text-decoration: none; }
-.rr-person:hover .rr-person-name { color: var(--blue-link); text-decoration: underline; }
+.rr-person:hover .rr-person-name { color: var(--blue-link); }
 .rr-person-text { display: flex; flex-direction: column; min-width: 0; }
 .rr-person-name { font-weight: 600; color: var(--text-primary); white-space: nowrap; }
 .rr-person-role { font-size: var(--fs-xs); color: var(--text-tertiary); white-space: nowrap; }
 .rr-proj { display: flex; flex-direction: column; color: inherit; text-decoration: none; }
 .rr-proj b { color: var(--text-primary); }
 .rr-proj small { font-size: var(--fs-xs); color: var(--text-tertiary); }
-.rr-proj:hover b { color: var(--blue-link); text-decoration: underline; }
+.rr-proj:hover b { color: var(--blue-link); }
 
 .rr-chips { display: flex; flex-wrap: wrap; gap: 4px; max-width: 280px; }
 .rr-chips span { padding: 2px 8px; border-radius: 6px; font-size: 11.5px; background: var(--surface-sunken); border: 1px solid var(--border-subtle); color: var(--text-secondary); white-space: nowrap; }

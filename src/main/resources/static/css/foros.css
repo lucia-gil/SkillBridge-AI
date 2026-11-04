@@ -350,7 +350,7 @@ mark.fr-hl { padding: 0 1px; border-radius: 3px; background: var(--amber-bg); co
 .fr-similar-title { display: flex; align-items: center; gap: 6px; margin-bottom: var(--space-2); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--amber-fg); }
 .fr-similar-title .icon { width: 14px; height: 14px; }
 .fr-similar a { display: flex; justify-content: space-between; gap: var(--space-3); padding: 4px 0; font-size: var(--fs-xs); color: var(--text-primary); text-decoration: none; }
-.fr-similar a:hover span:first-child { text-decoration: underline; }
+.fr-similar a:hover span:first-child { color: var(--blue-link); }
 .fr-similar a span:last-child { flex-shrink: 0; color: var(--text-secondary); }
 .fr-topic-suggest { display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-secondary); }
 .fr-topic-suggest .icon { width: 13px; height: 13px; color: var(--violet-fg); }

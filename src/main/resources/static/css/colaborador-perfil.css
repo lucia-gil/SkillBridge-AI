@@ -185,7 +185,7 @@
 .cp-job-desc { margin-top: 8px; font-size: var(--fs-sm); line-height: 1.6; color: var(--text-secondary); max-width: 72ch; }
 .cp-job-desc.is-clamped { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .cp-more { margin-top: 2px; padding: 0; border: 0; background: none; font: inherit; font-size: var(--fs-xs); font-weight: 600; color: var(--blue-link); cursor: pointer; }
-.cp-more:hover { text-decoration: underline; }
+.cp-more:hover { color: var(--blue-fg-strong); text-decoration: none; }
 
 .cp-tech { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
 .cp-tech li {
@@ -236,7 +236,7 @@
 .cp-level[data-paso="4"] .cp-level-bar i:nth-child(-n+4) { background: var(--tone-fg); }
 .cp-skill-cert { font-size: 11px; color: var(--amber-fg); }
 a.cp-skill-cert.is-ok { color: var(--text-tertiary); text-decoration: none; }
-a.cp-skill-cert.is-ok:hover { color: var(--blue-link); text-decoration: underline; }
+a.cp-skill-cert.is-ok:hover { color: var(--blue-link); text-decoration: none; }
 .cp-valid { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-xs); font-weight: 600; color: var(--green-fg); white-space: nowrap; }
 .cp-valid .icon { width: 16px; height: 16px; }
 .cp-filter-empty { font-size: var(--fs-sm); color: var(--text-tertiary); }

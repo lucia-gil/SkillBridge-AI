@@ -23,7 +23,7 @@ h1, h2, h3, h4, h5, h6 { margin: 0; font-weight: var(--fw-semibold); line-height
 p { margin: 0; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 a { color: var(--blue-link); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a:hover { text-decoration: none; }
 button { font-family: inherit; }
 input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
 img, svg { display: block; }

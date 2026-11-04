@@ -140,7 +140,8 @@
 }
 .cx-pill .icon { width: 13px; height: 13px; }
 .cx-pill:hover { filter: brightness(.97); }
-.cx-clear { border: 0; background: none; color: var(--text-tertiary); font: inherit; font-size: var(--fs-xs); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.cx-clear { border: 0; background: none; color: var(--text-tertiary); font: inherit; font-size: var(--fs-xs); font-weight: 600; cursor: pointer; text-decoration: none; }
+.cx-clear:hover { color: var(--blue-link); }
 .cx-clear:hover { color: var(--text-primary); }
 
 /* ── Grilla de tarjetas ────────────────────────────────────────── */

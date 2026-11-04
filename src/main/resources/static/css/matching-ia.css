@@ -32,7 +32,7 @@
 .mia-card-top { display: flex; align-items: center; gap: 10px; }
 .mia-who { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .mia-who a, .mia-who b { font-size: var(--fs-sm); font-weight: 600; color: var(--text-primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mia-who a:hover { color: var(--blue-link); text-decoration: underline; }
+.mia-who a:hover { color: var(--blue-link); text-decoration: none; }
 .mia-who small { font-size: var(--fs-xs); color: var(--text-tertiary); }
 .mia-top-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 650; background: var(--violet-bg); color: var(--violet-fg); white-space: nowrap; }
 .mia-score { --p: 0; flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--violet-fg) calc(var(--p) * 1%), var(--border-subtle) 0); }
@@ -85,7 +85,7 @@
 .mia-chip.is-src { background: var(--violet-bg); border-color: var(--violet-border); color: var(--violet-fg); }
 .mia-chip.is-muted { color: var(--text-tertiary); font-weight: 400; }
 .mia-ver { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; font-size: var(--fs-xs); font-weight: 600; color: var(--blue-link); text-decoration: none; }
-.mia-ver:hover { text-decoration: underline; }
+.mia-ver:hover { color: var(--blue-fg-strong); text-decoration: none; }
 .mia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; margin: 0; padding: 0; }
 
 @media (max-width: 640px) {
