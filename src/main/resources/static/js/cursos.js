@@ -235,19 +235,6 @@
       "</div></article>";
   }
 
-  function rutaDestacada(c, i) {
-    var pct = porcentaje(c), n = (c.pasos || []).length, hechosSet = new Set(hechos(c));
-    var puntos = (c.pasos || []).slice(0, 8).map(function (p, k) { return '<i class="' + (hechosSet.has(k) ? "on" : "") + '"></i>'; }).join("");
-    var lg = tech(c.habilidad);
-    return '<button type="button" class="cx-path cx-reveal" style="--i:' + i + ";--plat:" + plat(c.plataforma).color + '" data-abrir="' + c.id + '">' +
-      '<span class="cx-path-top"><span class="cx-type">' + icono((TIPOS[c.tipo] || TIPOS.RUTA).icon) + esc((TIPOS[c.tipo] || TIPOS.RUTA).label) + "</span>" +
-      (lg ? '<span class="cx-path-tech">' + lg + "</span>" : "") + "</span>" +
-      '<strong class="cx-path-title">' + esc(c.titulo) + "</strong>" +
-      '<span class="cx-path-dots">' + puntos + "</span>" +
-      '<span class="cx-path-foot"><span>' + n + " pasos · " + horas(c.duracionHoras) + "</span><b>" + (pct ? pct + "%" : "Empezar →") + "</b></span>" +
-      '<span class="cx-path-bar"><span style="width:' + pct + '%"></span></span></button>';
-  }
-
   function estructura() {
     var rutas = CURSOS.filter(function (c) { return c.tipo === "RUTA" || c.tipo === "ESPECIALIZACION"; });
     var nGratis = CURSOS.filter(function (c) { return c.gratuito; }).length;
@@ -271,12 +258,6 @@
             cifra(nGratis, "Gratuitos", "icon-zap", "is-green") +
             cifra(nCert, "Con certificado", "icon-award", "is-amber") +
           "</div></section>";
-
-    var seccionRutas = MODO === "catalogo" && rutas.length
-      ? '<section class="cx-section"><div class="cx-section-head"><div><h2>' + icono("icon-route") + "Rutas y especializaciones</h2><p>Caminos paso a paso. Marca tu avance y retómalo cuando quieras.</p></div>" +
-          '<div class="cx-scroll-btns"><button type="button" class="cx-icon-btn" data-scroll="-1" aria-label="Anterior">' + icono("icon-chevron-left") + '</button><button type="button" class="cx-icon-btn" data-scroll="1" aria-label="Siguiente">' + icono("icon-chevron-right") + "</button></div></div>" +
-          '<div class="cx-paths" id="cx-paths">' + ordenar(rutas).map(rutaDestacada).join("") + "</div></section>"
-      : "";
 
     var tabs = '<div class="cx-tabs" role="tablist" aria-label="Tipo de recurso">' +
       [["", "Todo", "icon-grid"]].concat(Object.keys(TIPOS).map(function (k) { return [k, TIPOS[k].plural, TIPOS[k].icon]; }))
@@ -311,7 +292,7 @@
         "</select>" +
       "</div></div>";
 
-    app.innerHTML = hero + seccionRutas +
+    app.innerHTML = hero +
       '<section class="cx-section"><div class="cx-section-head"><div><h2>' + icono("icon-book") + (MODO === "admin" ? "Recursos" : "Explora el catálogo") + '</h2><p id="cx-resumen"></p></div></div>' +
       tabs + filtros + '<div class="cx-active" id="cx-active"></div>' +
       '<div class="cx-grid" id="cx-grid" aria-live="polite"></div>' +
@@ -443,14 +424,6 @@
   }
 
   function refrescarTodo() {
-    var paths = document.getElementById("cx-paths");
-    if (paths) {
-      var rutas = CURSOS.filter(function (c) { return c.tipo === "RUTA" || c.tipo === "ESPECIALIZACION"; });
-      var sl = paths.scrollLeft;
-      paths.innerHTML = ordenar(rutas).map(rutaDestacada).join("");
-      paths.scrollLeft = sl;
-      paths.querySelectorAll(".cx-reveal").forEach(function (el) { el.classList.add("is-in"); });
-    }
     pintarLista();
   }
 
@@ -484,10 +457,6 @@
         sincronizarSelects(); pintarLista(); return;
       }
       if (e.target.closest("[data-limpiar]")) { limpiar(); return; }
-      if ((el = e.target.closest("[data-scroll]"))) {
-        var cont = document.getElementById("cx-paths");
-        cont.scrollBy({ left: +el.getAttribute("data-scroll") * cont.clientWidth * 0.8, behavior: "smooth" }); return;
-      }
       clicComun(e);
     });
     document.addEventListener("click", function (e) { if (!app.contains(e.target)) clicComun(e); });
