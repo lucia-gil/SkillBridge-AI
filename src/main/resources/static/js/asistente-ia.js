@@ -22,6 +22,14 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  // Mascota del asistente: la imagen va encima del ícono; si el archivo no está, se ve el ícono.
+  var MASCOTA = '<img src="/img/chatcito.jpg" alt="">';
+  function sinImagen(img) { if (img && img.parentNode) img.parentNode.removeChild(img); }
+  document.addEventListener("error", function (e) {
+    var t = e.target;
+    if (t && t.tagName === "IMG" && t.closest && t.closest(".as-bot-avatar, .as-empty-icon")) sinImagen(t);
+  }, true);
+  $(".as-empty-icon img").each(function () { if (this.complete && !this.naturalWidth) sinImagen(this); });
   function icon(n, cls) { return '<svg class="icon ' + (cls || "") + '" aria-hidden="true"><use href="/img/icons.svg#' + n + '"></use></svg>'; }
 
   /** Markdown mínimo y seguro: **negrita**, viñetas "- " / "* " / "1. " y saltos de línea. */
@@ -50,7 +58,7 @@
       return '<a class="as-accion" href="' + esc(a.url) + '">' + esc(a.etiqueta) + icon("icon-chevron-right", "icon-sm") + "</a>";
     }).join("");
     return '<div class="as-msg is-bot' + (m.error ? " is-error" : "") + '"><span class="as-bot-avatar sm" aria-hidden="true">' +
-        icon(m.error ? "icon-alert-circle" : "icon-sparkles") + "</span><div class=\"as-msg-body\"><div class=\"as-bubble\">" + formato(m.texto) + "</div>" +
+        (m.error ? icon("icon-alert-circle") : icon("icon-sparkles") + MASCOTA) + "</span><div class=\"as-msg-body\"><div class=\"as-bubble\">" + formato(m.texto) + "</div>" +
         (acciones ? '<div class="as-acciones">' + acciones + "</div>" : "") +
         '<span class="as-meta">Asistente SkillBridge' + (m.hora ? " · " + esc(m.hora) : "") + "</span></div></div>";
   }
@@ -64,7 +72,7 @@
 
   function escribiendo(on) {
     $msgs.find(".as-typing").remove();
-    if (on) $msgs.append('<div class="as-msg is-bot as-typing"><span class="as-bot-avatar sm">' + icon("icon-sparkles") +
+    if (on) $msgs.append('<div class="as-msg is-bot as-typing"><span class="as-bot-avatar sm">' + icon("icon-sparkles") + MASCOTA +
         '</span><div class="as-bubble"><i></i><i></i><i></i><span class="sr-only">El asistente está escribiendo…</span></div></div>');
   }
 
