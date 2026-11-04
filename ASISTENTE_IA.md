@@ -236,3 +236,24 @@ amablemente que no puede ayudar con eso y redirige a lo que sí sabe.
   automáticamente la **explicación de las recomendaciones del Talent
   Matching** (tabla `recomendaciones_ia_log`, columna `explicacion`) y el
   **resumen automático de hilos del foro** (historia US-6.2 del backlog).
+
+## Resiliencia: varios modelos y un proveedor de respaldo
+
+La capa gratuita de Gemini a veces responde **503** (modelo saturado) o
+**429** (cuota agotada, que se cuenta por modelo). Para que el asistente y
+los resúmenes no fallen al primer error, `AsistenteIaService` prueba una
+cadena de proveedores:
+
+1. Los modelos de `gemini.modelos`, en orden (por defecto
+   `gemini-3.8-flash`, `gemini-flash-latest`, `gemini-flash-lite-latest`;
+   se cambia con la variable `GEMINI_MODELOS`).
+2. Un proveedor de respaldo compatible con la API de OpenAI
+   (`POST /chat/completions` con `Authorization: Bearer`), solo si existe
+   `IA_RESPALDO_API_KEY`. Por defecto Groq (`llama-3.3-70b-versatile`); se
+   cambia con `IA_RESPALDO_URL` e `IA_RESPALDO_MODELO` (OpenRouter, Mistral...).
+
+Ante 500/502/503/504 o un timeout, reintenta el mismo modelo dos veces
+(1 s y 2,5 s de pausa); ante 429, 404 u otro error pasa directo al
+siguiente. Cada fallo queda en el log con el código y el cuerpo de la
+respuesta (`Asistente IA: Gemini <modelo> respondio <código> - ...`).
+Las llamadas tienen un timeout de 10 s para conectar y 40 s para responder.

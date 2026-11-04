@@ -8,9 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,23 +43,47 @@ import java.util.Map;
 public class AsistenteIaService {
 
     private static final Logger log = LoggerFactory.getLogger(AsistenteIaService.class);
-    private static final String MODELO = "gemini-3.8-flash";
-    private static final String GEMINI_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/" + MODELO + ":generateContent";
+    private static final String GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models/";
+    /** Pausas entre reintentos ante errores pasajeros (500/502/503/504 o timeout). */
+    private static final long[] ESPERAS_MS = {1000, 2500};
 
     private final String apiKey;
+    private final List<String> modelos;
+    private final String respaldoUrl;
+    private final String respaldoKey;
+    private final String respaldoModelo;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
-    public AsistenteIaService(@Value("${gemini.api.key:}") String apiKey, ObjectMapper objectMapper) {
+    public AsistenteIaService(@Value("${gemini.api.key:}") String apiKey,
+                              @Value("${gemini.modelos:gemini-3.8-flash,gemini-flash-latest,gemini-flash-lite-latest}") String modelos,
+                              @Value("${ia.respaldo.url:https://api.groq.com/openai/v1/chat/completions}") String respaldoUrl,
+                              @Value("${ia.respaldo.api-key:}") String respaldoKey,
+                              @Value("${ia.respaldo.modelo:llama-3.3-70b-versatile}") String respaldoModelo,
+                              ObjectMapper objectMapper) {
         this.apiKey = apiKey;
+        this.modelos = Arrays.stream(modelos.split(",")).map(String::trim).filter(m -> !m.isEmpty()).distinct().toList();
+        this.respaldoUrl = respaldoUrl;
+        this.respaldoKey = respaldoKey;
+        this.respaldoModelo = respaldoModelo;
         this.objectMapper = objectMapper;
-        this.restClient = RestClient.create();
+        SimpleClientHttpRequestFactory http = new SimpleClientHttpRequestFactory();
+        http.setConnectTimeout(Duration.ofSeconds(10));
+        http.setReadTimeout(Duration.ofSeconds(40));
+        this.restClient = RestClient.builder().requestFactory(http).build();
     }
 
     /** true si hay una clave configurada (secretos.properties local o variable de entorno GEMINI_API_KEY). */
     public boolean configurado() {
+        return tieneGemini() || tieneRespaldo();
+    }
+
+    private boolean tieneGemini() {
         return apiKey != null && !apiKey.isBlank();
+    }
+
+    private boolean tieneRespaldo() {
+        return respaldoKey != null && !respaldoKey.isBlank() && respaldoUrl != null && !respaldoUrl.isBlank();
     }
 
     /** Resultado de una llamada a Gemini: el texto y si es una respuesta real (ok) o un aviso de error. */
@@ -106,12 +134,77 @@ public class AsistenteIaService {
         return exigirRespuesta(llamarGemini(prompt, conversacion, 600));
     }
 
+    /**
+     * Cadena de proveedores: prueba cada modelo de Gemini (gemini.modelos, en
+     * orden) y, si todos fallan, el proveedor de respaldo compatible con la
+     * API de OpenAI (Groq, OpenRouter, Mistral...; ia.respaldo.*), si tiene
+     * clave. Ante un error pasajero (500/502/503/504 o timeout) reintenta el
+     * mismo modelo con una pausa; ante 429 (cuota de la capa gratuita, que
+     * en Gemini es por modelo) o 404 pasa directo al siguiente.
+     */
     private Resultado llamarGemini(String promptSistema, String mensajeUsuario, int maxOutputTokens) {
         if (!configurado()) {
-            log.warn("Asistente IA: no hay gemini.api.key configurada (ver secretos.properties.example)");
+            log.warn("Asistente IA: no hay gemini.api.key ni ia.respaldo.api-key configuradas (ver secretos.properties.example)");
             return new Resultado("El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Gemini.", false);
         }
 
+        boolean huboLimite = false;
+        if (tieneGemini()) {
+            for (String modelo : modelos) {
+                Intento r = conReintentos("Gemini " + modelo, () -> pedirGemini(modelo, promptSistema, mensajeUsuario, maxOutputTokens));
+                if (r.texto() != null) return new Resultado(r.texto(), true);
+                huboLimite |= r.limite();
+            }
+        }
+        if (tieneRespaldo()) {
+            Intento r = conReintentos("respaldo " + respaldoModelo, () -> pedirRespaldo(promptSistema, mensajeUsuario, maxOutputTokens));
+            if (r.texto() != null) return new Resultado(r.texto(), true);
+            huboLimite |= r.limite();
+        }
+        return new Resultado(huboLimite
+                ? "El asistente alcanzó el límite de solicitudes de la capa gratuita. Intenta de nuevo en un minuto."
+                : "No pude conectarme al asistente en este momento. Intenta de nuevo en unos segundos.", false);
+    }
+
+    /** Resultado de un proveedor: el texto (null si falló) y si el fallo fue por límite de cuota. */
+    private record Intento(String texto, boolean limite) {}
+
+    @FunctionalInterface
+    private interface Peticion { String enviar() throws Exception; }
+
+    private Intento conReintentos(String proveedor, Peticion peticion) {
+        for (int i = 0; ; i++) {
+            try {
+                String texto = peticion.enviar();
+                if (texto != null && !texto.isBlank()) {
+                    if (i > 0) log.info("Asistente IA: {} respondio al reintento {}", proveedor, i);
+                    return new Intento(texto.trim(), false);
+                }
+                log.warn("Asistente IA: {} devolvio una respuesta vacia", proveedor);
+                return new Intento(null, false);
+            } catch (RestClientResponseException ex) {
+                int status = ex.getStatusCode().value();
+                log.warn("Asistente IA: {} respondio {} - {}", proveedor, status, recortar(ex.getResponseBodyAsString()));
+                if (status == 429) return new Intento(null, true);
+                boolean pasajero = status == 500 || status == 502 || status == 503 || status == 504;
+                if (!pasajero || i >= ESPERAS_MS.length) return new Intento(null, false);
+            } catch (ResourceAccessException ex) {
+                log.warn("Asistente IA: {} sin conexion o sin respuesta a tiempo: {}", proveedor, ex.getMessage());
+                if (i >= ESPERAS_MS.length) return new Intento(null, false);
+            } catch (Exception ex) {
+                log.error("Asistente IA: error inesperado con " + proveedor, ex);
+                return new Intento(null, false);
+            }
+            try {
+                Thread.sleep(ESPERAS_MS[i]);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return new Intento(null, false);
+            }
+        }
+    }
+
+    private String pedirGemini(String modelo, String promptSistema, String mensajeUsuario, int maxOutputTokens) throws Exception {
         Map<String, Object> cuerpo = new LinkedHashMap<>();
         cuerpo.put("systemInstruction", Map.of(
                 "parts", List.of(Map.of("text", promptSistema))
@@ -129,34 +222,47 @@ public class AsistenteIaService {
                 "thinkingConfig", Map.of("thinkingLevel", "LOW")
         ));
 
-        try {
-            String respuestaCruda = restClient.post()
-                    .uri(GEMINI_URL)
-                    .header("x-goog-api-key", apiKey)
-                    .header("Content-Type", "application/json")
-                    .body(cuerpo)
-                    .retrieve()
-                    .body(String.class);
+        String respuestaCruda = restClient.post()
+                .uri(GEMINI_BASE + modelo + ":generateContent")
+                .header("x-goog-api-key", apiKey)
+                .header("Content-Type", "application/json")
+                .body(cuerpo)
+                .retrieve()
+                .body(String.class);
 
-            JsonNode raiz = objectMapper.readTree(respuestaCruda);
-            JsonNode contenido = raiz.path("candidates").path(0).path("content").path("parts").path(0).path("text");
-            if (contenido.isMissingNode() || contenido.asText().isBlank()) {
-                log.warn("Asistente IA: respuesta de Gemini sin contenido util: {}", respuestaCruda);
-                return new Resultado("No pude generar una respuesta en este momento. Intenta reformular tu pregunta.", false);
-            }
-            return new Resultado(contenido.asText().trim(), true);
-
-        } catch (RestClientResponseException ex) {
-            // Error devuelto por Gemini (401/403 clave invalida, 429 limite de la capa gratuita, etc.)
-            log.error("Asistente IA: Gemini respondio {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            if (ex.getStatusCode().value() == 429) {
-                return new Resultado("El asistente alcanzó el límite de solicitudes de la capa gratuita. Intenta de nuevo en un minuto.", false);
-            }
-            return new Resultado("No pude conectarme al asistente en este momento. Intenta de nuevo en unos segundos.", false);
-        } catch (Exception ex) {
-            log.error("Asistente IA: error inesperado al consumir Gemini", ex);
-            return new Resultado("Ocurrió un error inesperado al conectar con el asistente. Intenta de nuevo.", false);
+        JsonNode partes = objectMapper.readTree(respuestaCruda).path("candidates").path(0).path("content").path("parts");
+        StringBuilder texto = new StringBuilder();
+        for (JsonNode parte : partes) {
+            if (!parte.path("thought").asBoolean(false)) texto.append(parte.path("text").asText(""));
         }
+        return texto.toString();
+    }
+
+    /** Proveedor de respaldo con la API de OpenAI (POST /chat/completions, cabecera Authorization: Bearer). */
+    private String pedirRespaldo(String promptSistema, String mensajeUsuario, int maxOutputTokens) throws Exception {
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("model", respaldoModelo);
+        cuerpo.put("messages", List.of(
+                Map.of("role", "system", "content", promptSistema),
+                Map.of("role", "user", "content", mensajeUsuario)
+        ));
+        cuerpo.put("temperature", 0.4);
+        cuerpo.put("max_tokens", maxOutputTokens);
+
+        String respuestaCruda = restClient.post()
+                .uri(respaldoUrl)
+                .header("Authorization", "Bearer " + respaldoKey)
+                .header("Content-Type", "application/json")
+                .body(cuerpo)
+                .retrieve()
+                .body(String.class);
+        return objectMapper.readTree(respuestaCruda).path("choices").path(0).path("message").path("content").asText("");
+    }
+
+    private static String recortar(String s) {
+        if (s == null) return "";
+        s = s.replaceAll("\\s+", " ");
+        return s.length() > 300 ? s.substring(0, 300) + "..." : s;
     }
 
     /** Contexto minimo: quien es, su rol y el alcance de lo que puede/no puede saber. */

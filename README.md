@@ -31,7 +31,8 @@ Copia `src/main/resources/secretos.properties.example` como `src/main/resources/
 | `DB_USERNAME` | Usuario de MySQL | `root` |
 | `DB_PASSWORD` | Clave de MySQL | vacía |
 | `MAIL_PASSWORD` | Contraseña de aplicación de Gmail (correos de invitación, recuperación y notificaciones) | la app arranca, pero no se envían correos |
-| `GEMINI_API_KEY` | Asistente IA y resumen de foros ([clave gratis](https://aistudio.google.com/apikey)) | el asistente responde que no está configurado |
+| `GEMINI_API_KEY` | Asistente IA y resúmenes de foros y chat ([clave gratis](https://aistudio.google.com/apikey)) | el asistente responde que no está configurado |
+| `IA_RESPALDO_API_KEY` | Opcional: segundo proveedor de IA si Gemini falla (cualquier API compatible con OpenAI; por defecto Groq, [clave gratis](https://console.groq.com/keys)) | solo se usa Gemini |
 
 En el servidor se usan las mismas variables como variables de entorno (`export DB_PASSWORD='...'`), que tienen prioridad sobre `secretos.properties`.
 
