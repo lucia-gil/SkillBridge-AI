@@ -65,6 +65,18 @@ public class InicializadorTablasExtra implements CommandLineRunner {
         }
         catalogoDeFormacion();
         chatDeProyectos();
+        memoriaDelAsistente();
+    }
+
+    // ───────── Memoria del Asistente IA (chatbot) ─────────
+
+    private void memoriaDelAsistente() {
+        try {
+            jdbc.execute("CREATE TABLE IF NOT EXISTS asistente_conversaciones (     id                   BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,     usuario_id           BIGINT UNSIGNED NOT NULL,     rol                  VARCHAR(30) NOT NULL,     titulo               VARCHAR(120) NOT NULL,     fecha_creacion       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,     fecha_actualizacion  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,     INDEX idx_asist_conv_usuario (usuario_id, rol, fecha_actualizacion),     CONSTRAINT fk_asist_conv_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            jdbc.execute("CREATE TABLE IF NOT EXISTS asistente_mensajes (     id               BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,     conversacion_id  BIGINT UNSIGNED NOT NULL,     autor            VARCHAR(10) NOT NULL,     contenido        TEXT NOT NULL,     fecha            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,     INDEX idx_asist_msg_conv (conversacion_id, id),     CONSTRAINT fk_asist_msg_conv FOREIGN KEY (conversacion_id) REFERENCES asistente_conversaciones(id) ON DELETE CASCADE ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (Exception e) {
+            log.warn("No se pudieron verificar/crear las tablas del Asistente IA: {}", e.getMessage());
+        }
     }
 
     // ───────── Chat de proyectos (RF07) ─────────

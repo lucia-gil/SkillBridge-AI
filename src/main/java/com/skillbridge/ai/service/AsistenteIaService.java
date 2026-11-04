@@ -89,6 +89,17 @@ public class AsistenteIaService {
     /** Resultado de una llamada a Gemini: el texto y si es una respuesta real (ok) o un aviso de error. */
     public record Resultado(String texto, boolean ok) {}
 
+    /** Un turno de la conversación: deUsuario=true si lo escribió la persona, false si fue el asistente. */
+    public record Turno(boolean deUsuario, String texto) {}
+
+    /**
+     * Chatbot con memoria (AsistenteConversacionService): prompt de sistema
+     * con el contexto real del usuario + los turnos anteriores + el mensaje nuevo.
+     */
+    public Resultado conversar(String promptSistema, List<Turno> turnos, int maxOutputTokens) {
+        return llamar(promptSistema, turnos, maxOutputTokens);
+    }
+
     /** Chat del asistente: si falla, devuelve igual un aviso amable para mostrar en la conversación. */
     public String responder(UsuarioSesion sesion, String mensajeUsuario) {
         return llamarGemini(promptSistema(sesion), mensajeUsuario, 800).texto();
@@ -152,6 +163,10 @@ public class AsistenteIaService {
      * en Gemini es por modelo) o 404 pasa directo al siguiente.
      */
     private Resultado llamarGemini(String promptSistema, String mensajeUsuario, int maxOutputTokens) {
+        return llamar(promptSistema, List.of(new Turno(true, mensajeUsuario)), maxOutputTokens);
+    }
+
+    private Resultado llamar(String promptSistema, List<Turno> turnos, int maxOutputTokens) {
         if (!configurado()) {
             log.warn("Asistente IA: no hay gemini.api.key ni ia.respaldo.api-key configuradas (ver secretos.properties.example)");
             return new Resultado("El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Gemini.", false);
@@ -160,13 +175,13 @@ public class AsistenteIaService {
         boolean huboLimite = false;
         if (tieneGemini()) {
             for (String modelo : modelos) {
-                Intento r = conReintentos("Gemini " + modelo, () -> pedirGemini(modelo, promptSistema, mensajeUsuario, maxOutputTokens));
+                Intento r = conReintentos("Gemini " + modelo, () -> pedirGemini(modelo, promptSistema, turnos, maxOutputTokens));
                 if (r.texto() != null) return new Resultado(r.texto(), true);
                 huboLimite |= r.limite();
             }
         }
         if (tieneRespaldo()) {
-            Intento r = conReintentos("respaldo " + respaldoModelo, () -> pedirRespaldo(promptSistema, mensajeUsuario, maxOutputTokens));
+            Intento r = conReintentos("respaldo " + respaldoModelo, () -> pedirRespaldo(promptSistema, turnos, maxOutputTokens));
             if (r.texto() != null) return new Resultado(r.texto(), true);
             huboLimite |= r.limite();
         }
@@ -213,14 +228,15 @@ public class AsistenteIaService {
         }
     }
 
-    private String pedirGemini(String modelo, String promptSistema, String mensajeUsuario, int maxOutputTokens) throws Exception {
+    private String pedirGemini(String modelo, String promptSistema, List<Turno> turnos, int maxOutputTokens) throws Exception {
         Map<String, Object> cuerpo = new LinkedHashMap<>();
         cuerpo.put("systemInstruction", Map.of(
                 "parts", List.of(Map.of("text", promptSistema))
         ));
-        cuerpo.put("contents", List.of(
-                Map.of("role", "user", "parts", List.of(Map.of("text", mensajeUsuario)))
-        ));
+        // Gemini: roles "user" y "model", alternados (la memoria va como turnos previos)
+        cuerpo.put("contents", turnos.stream()
+                .map(t -> Map.of("role", t.deUsuario() ? "user" : "model", "parts", List.of(Map.of("text", t.texto()))))
+                .toList());
         // "thinkingLevel": "LOW" porque son tareas simples (responder una
         // pregunta corta o resumir un hilo), no razonamiento complejo - sin
         // esto, el modelo gasta buena parte de maxOutputTokens "pensando"
@@ -248,13 +264,13 @@ public class AsistenteIaService {
     }
 
     /** Proveedor de respaldo con la API de OpenAI (POST /chat/completions, cabecera Authorization: Bearer). */
-    private String pedirRespaldo(String promptSistema, String mensajeUsuario, int maxOutputTokens) throws Exception {
+    private String pedirRespaldo(String promptSistema, List<Turno> turnos, int maxOutputTokens) throws Exception {
         Map<String, Object> cuerpo = new LinkedHashMap<>();
         cuerpo.put("model", respaldoModelo);
-        cuerpo.put("messages", List.of(
-                Map.of("role", "system", "content", promptSistema),
-                Map.of("role", "user", "content", mensajeUsuario)
-        ));
+        List<Map<String, String>> mensajes = new java.util.ArrayList<>();
+        mensajes.add(Map.of("role", "system", "content", promptSistema));
+        turnos.forEach(t -> mensajes.add(Map.of("role", t.deUsuario() ? "user" : "assistant", "content", t.texto())));
+        cuerpo.put("messages", mensajes);
         cuerpo.put("temperature", 0.4);
         cuerpo.put("max_tokens", maxOutputTokens);
 

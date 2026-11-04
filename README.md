@@ -78,7 +78,15 @@ Menú de cada rol (definido en `service/NavService`):
 | **Colaborador** (`/colaborador/**`) | Inicio, Mi perfil (habilidades y certificados), Mis proyectos, Entregables, Calendario, Foros, Chat, Cursos, Asistente IA, Notificaciones |
 | Todos (menú del usuario, arriba a la derecha) | Mi cuenta (datos, foto, contraseña, doble factor TOTP), Notificaciones, buscador global (`Ctrl+K`) |
 
-Detalles del Asistente IA y del resumen de foros con Gemini: ver [`ASISTENTE_IA.md`](ASISTENTE_IA.md).
+### Asistente IA (chatbot con contexto y memoria)
+
+Una sola pantalla para los 4 roles (`compartido/asistente-ia.html`, `AsistenteIaController`), con jQuery/AJAX contra el REST `/api/asistente/**`:
+
+- **Contexto real** (`AsistenteContextoService`): en cada mensaje se leen de la base los datos de quien pregunta según su vista. El Colaborador ve su perfil, habilidades, proyectos, carga y entregables; el PM, sus proyectos con equipo, vacantes, huecos y entregables; el RM, la capacidad del equipo, la banca, las solicitudes y las vacantes, y si pregunta "¿a quién pongo en Portal Andes?" se agrega el ranking de AI Talent Matching; el Administrador, cifras globales. El panel "Contexto cargado" muestra esos mismos datos.
+- **Memoria** (`AsistenteConversacionService`): cada turno se guarda en `asistente_conversaciones` / `asistente_mensajes`; la IA recibe los últimos 12 turnos, y el panel "Historial" permite retomar o eliminar conversaciones.
+- Las respuestas pueden traer enlaces de acción (por ejemplo "Ver Portal Andes" o "Buscar talento para…").
+
+Detalles de la conexión con Gemini, el proveedor de respaldo y el resumen de foros: ver [`ASISTENTE_IA.md`](ASISTENTE_IA.md).
 
 ### Chat de proyectos (RF07)
 
@@ -162,7 +170,7 @@ Con `spring.jpa.hibernate.ddl-auto=none`, Hibernate no toca la BD. Para que una 
 | `InicializadorEsquemaV9` | enlaces y datos del perfil profesional, `proyectos.github_url` |
 | `InicializadorEsquemaV10` | columnas del resumen IA de foros |
 | `InicializadorRazonCancelacion` | `proyectos.razon_cancelacion` |
-| `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos`, `curso_pasos` y `chat_lecturas`, columnas del catálogo de formación y, la primera vez, un catálogo de cursos y conversaciones de chat de ejemplo |
+| `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos`, `curso_pasos`, `chat_lecturas`, `asistente_conversaciones` y `asistente_mensajes`, columnas del catálogo de formación y, la primera vez, un catálogo de cursos y conversaciones de chat de ejemplo |
 | `InicializadorTopicosForo` | asigna tópico a los hilos que no tengan |
 | `DataSeeder` | tipos de notificación `asignacion` y `foro_respuesta` |
 | `ReparadorTildes` | corrige textos con tildes guardadas dos veces ("IvÃ¡n" → "Iván"); si no está seguro, no toca el valor |

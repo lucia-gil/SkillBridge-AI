@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<!--
+  compartido/asistente-ia.html — Asistente IA (chatbot) de los 4 roles
+  (AsistenteIaController). La conversación la maneja js/asistente-ia.js con
+  jQuery/AJAX contra el servicio REST /api/asistente/**. El historial se
+  guarda en la base (asistente_conversaciones / asistente_mensajes) y el
+  contexto se arma con los datos reales del usuario (AsistenteContextoService).
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente IA · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/asistente-ia.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content page-content-wide as-page" id="page-content">
+
+      <div class="as" id="as-app" th:attr="data-inicial=${conversacionInicial},data-max=${maxCaracteres},data-iniciales=${user.iniciales()}">
+
+        <!-- Historial -->
+        <aside class="as-hist" id="as-hist" aria-label="Conversaciones guardadas">
+          <button type="button" class="btn btn-primary btn-block as-nueva" id="as-nueva">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Nueva conversación</button>
+          <p class="as-label">Historial</p>
+          <ul class="as-hist-list" id="as-lista">
+            <li class="as-skel" aria-hidden="true"></li><li class="as-skel" aria-hidden="true"></li><li class="as-skel" aria-hidden="true"></li>
+          </ul>
+        </aside>
+
+        <!-- Conversación -->
+        <section class="as-chat" aria-label="Conversación con el Asistente IA">
+          <header class="as-chat-head">
+            <button type="button" class="as-icon-btn as-solo-movil" id="as-ver-hist" aria-controls="as-hist" aria-expanded="false" title="Historial">
+              <svg class="icon"><use href="/img/icons.svg#icon-menu"></use></svg></button>
+            <span class="as-bot-avatar" aria-hidden="true"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></span>
+            <div class="as-chat-title">
+              <h2 id="as-titulo">Nueva conversación</h2>
+              <p><span class="as-dot" aria-hidden="true"></span>Conoce tus datos actuales y recuerda esta conversación</p>
+            </div>
+            <button type="button" class="as-icon-btn" id="as-borrar" hidden title="Eliminar conversación">
+              <svg class="icon"><use href="/img/icons.svg#icon-trash"></use></svg></button>
+          </header>
+
+          <div class="as-msgs" id="as-msgs" aria-live="polite">
+            <!-- Estado inicial: saludo + sugerencias -->
+            <div class="as-empty" id="as-empty">
+              <span class="as-empty-icon" aria-hidden="true"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></span>
+              <h3 th:text="'Hola, ' + ${#strings.arraySplit(user.nombre(), ' ')[0]} + '. ¿En qué te ayudo?'">Hola. ¿En qué te ayudo?</h3>
+              <p>Respondo con tus datos reales de SkillBridge y recuerdo lo que hablamos en esta conversación.</p>
+              <div class="as-sugs">
+                <button type="button" class="as-sug" th:each="s : ${sugerencias}" data-as-sug>
+                  <svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg><span th:text="${s}">Sugerencia</span></button>
+              </div>
+            </div>
+          </div>
+
+          <form class="as-composer" id="as-form" autocomplete="off">
+            <textarea id="as-input" rows="1" th:attr="maxlength=${maxCaracteres}" placeholder="Pregunta sobre tus proyectos, tu equipo o tus habilidades…" aria-label="Mensaje para el Asistente IA"></textarea>
+            <button type="submit" class="as-send" id="as-send" disabled aria-label="Enviar"><svg class="icon"><use href="/img/icons.svg#icon-arrow-up"></use></svg></button>
+          </form>
+          <p class="as-foot"><span th:text="${alcance}">Alcance</span> <span class="as-keys"><kbd>Enter</kbd> envía · <kbd>Shift</kbd>+<kbd>Enter</kbd> nueva línea</span></p>
+        </section>
+
+        <!-- Contexto -->
+        <aside class="as-ctx" aria-label="Contexto que conoce el asistente">
+          <p class="as-label">Contexto cargado <span class="as-live">en vivo</span></p>
+          <p class="as-ctx-hint">Esto es lo que el asistente sabe de ti ahora mismo, leído de la base de datos.</p>
+          <ul class="as-ctx-list">
+            <li th:each="t : ${tarjetas}" th:attr="data-tono=${t.tono()}">
+              <a th:if="${t.enlace() != null}" th:href="${t.enlace()}">
+                <span class="as-ctx-icon"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${t.icono()}"></use></svg></span>
+                <span class="as-ctx-text"><b th:text="${t.titulo()}">Título</b><small th:text="${t.detalle()}">Detalle</small></span>
+                <svg class="icon icon-sm as-ctx-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg>
+              </a>
+              <div th:if="${t.enlace() == null}" class="as-ctx-static">
+                <span class="as-ctx-icon"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${t.icono()}"></use></svg></span>
+                <span class="as-ctx-text"><b th:text="${t.titulo()}">Título</b><small th:text="${t.detalle()}">Detalle</small></span>
+              </div>
+            </li>
+          </ul>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/asistente-ia.js"></script>
+</body>
+</html>

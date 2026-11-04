@@ -680,6 +680,32 @@ CREATE TABLE conocimiento_embeddings (
 CREATE INDEX idx_embeddings_origen ON conocimiento_embeddings(tipo_origen, referencia_id);
 
 -- ---------------------------------------------------------------------
+-- ASISTENTE_CONVERSACIONES / ASISTENTE_MENSAJES — memoria del Asistente IA
+--     (chatbot). Una conversación por tema, separada por la vista (rol) desde
+--     la que se habló; autor = 'usuario' o 'asistente'.
+-- ---------------------------------------------------------------------
+CREATE TABLE asistente_conversaciones (
+    id                   BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    usuario_id           BIGINT UNSIGNED NOT NULL,
+    rol                  VARCHAR(30) NOT NULL,
+    titulo               VARCHAR(120) NOT NULL,
+    fecha_creacion       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_asist_conv_usuario (usuario_id, rol, fecha_actualizacion),
+    CONSTRAINT fk_asist_conv_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE asistente_mensajes (
+    id               BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    conversacion_id  BIGINT UNSIGNED NOT NULL,
+    autor            VARCHAR(10) NOT NULL,
+    contenido        TEXT NOT NULL,
+    fecha            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_asist_msg_conv (conversacion_id, id),
+    CONSTRAINT fk_asist_msg_conv FOREIGN KEY (conversacion_id) REFERENCES asistente_conversaciones(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
 -- 21. RECOMENDACIONES_IA_LOG — Trazabilidad del AI Talent Matching (RF05)
 -- ---------------------------------------------------------------------
 CREATE TABLE recomendaciones_ia_log (
