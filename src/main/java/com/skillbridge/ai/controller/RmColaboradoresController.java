@@ -219,8 +219,15 @@ public class RmColaboradoresController {
             redirectAttributes.addFlashAttribute("error", "Indica el motivo: queda registrado en Auditoría.");
             return "redirect:/resource-manager/colaboradores.html";
         }
-        Perfil p = perfilRepository.findById(perfilId)
-                .orElseThrow(() -> new OperacionInvalidaException("El colaborador ya no existe."));
+        // buscarConUsuario (join fetch): abajo se lee p.getUsuario() (rol,
+        // nombre, correo) y con open-in-view=false la relacion LAZY ya no se
+        // puede cargar fuera de la transaccion -> LazyInitializationException
+        // (500 al pulsar "No disponible" / "Disponible").
+        Perfil p = perfilRepository.buscarConUsuario(perfilId).orElse(null);
+        if (p == null) {
+            redirectAttributes.addFlashAttribute("error", "El colaborador ya no existe.");
+            return "redirect:/resource-manager/colaboradores.html";
+        }
 
         // El RM no tiene autoridad sobre cuentas Admin: Admin y RM "existen
         // por encima" de los proyectos (ver comentario de la tabla
