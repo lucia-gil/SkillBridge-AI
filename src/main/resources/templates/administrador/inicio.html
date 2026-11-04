@@ -64,6 +64,18 @@
         </div>
       </section>
 
+      <section class="admin-home-overview" aria-label="Accesos y actividad">
+        <div class="admin-home-stat"><span>Usuarios registrados</span><strong th:text="${totalUsuarios}">0</strong><a href="usuarios.html">Administrar usuarios →</a></div>
+        <div class="admin-home-stat"><span>Cursos publicados</span><strong th:text="${cursosPublicados}">0</strong><a href="cursos.html">Gestionar cursos →</a></div>
+        <div class="admin-home-stat"><span>Proyectos registrados</span><strong th:text="${totalProyectos}">0</strong><a href="proyectos.html">Ver proyectos →</a></div>
+        <div class="admin-home-stat"><span>Eventos en 24 horas</span><strong th:text="${eventos24h}">0</strong><a href="auditoria.html">Revisar auditoría →</a></div>
+      </section>
+
+      <section class="admin-home-actions" aria-label="Acciones frecuentes">
+        <div><span class="admin-section-caption">ACCESOS RÁPIDOS</span><h2>Gestiona lo importante</h2><p>Continúa con las tareas habituales desde un solo lugar.</p></div>
+        <div class="admin-home-actions-grid"><a href="usuarios.html">Usuarios y roles <span>Gestionar accesos →</span></a><a href="cursos.html">Cursos <span th:text="${totalCursos} + ' en el catálogo →'">Ver catálogo →</span></a><a href="habilidades.html">Habilidades <span>Actualizar catálogo →</span></a><a href="reportes.html">Reportes <span>Consultar indicadores →</span></a></div>
+      </section>
+
       <div class="detail-grid" style="margin-top:var(--space-6);">
         <section class="card card-pad">
           <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Proyectos por estado</h3>
@@ -133,6 +145,12 @@
             <span class="rank-name" style="font-size:var(--fs-sm); font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
             <div data-escala="ranking" class="progress-bar" th:attr="data-etiqueta=${s.vacantes()} + ' persona(s)'"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
           </div>
+      </section>
+
+      <section class="card card-pad admin-home-activity">
+        <div class="admin-section-head"><div><span class="admin-section-caption">TRAZABILIDAD</span><h2>Actividad reciente</h2></div><a href="auditoria.html" class="btn btn-secondary btn-sm">Ver auditoría</a></div>
+        <p th:if="${eventosRecientes.isEmpty()}" class="admin-home-empty">Aún no hay eventos registrados. Las acciones del equipo aparecerán aquí.</p>
+        <div th:each="evento : ${eventosRecientes}" class="admin-home-event"><span class="admin-home-event-mark" aria-hidden="true"></span><div><strong th:text="${evento.accion}">Acción</strong><small th:text="${evento.usuarioLabel}">Usuario</small></div><time th:text="${evento.fechaLabel}">Fecha</time></div>
       </section>
 
     </main>

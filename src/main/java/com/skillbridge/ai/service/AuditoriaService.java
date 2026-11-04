@@ -7,6 +7,9 @@ import com.skillbridge.ai.model.Usuario;
 import com.skillbridge.ai.repository.AuditoriaLogRepository;
 import com.skillbridge.ai.repository.UsuarioRepository;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
@@ -92,6 +95,16 @@ public class AuditoriaService {
                         log.getAccion(),
                         log.getDetalle()))
                 .collect(Collectors.toList());
+    }
+
+    public Page<AuditoriaFila> buscar(LocalDateTime desde, LocalDateTime hasta,
+                                      String usuario, String accion, Pageable pageable) {
+        Map<Long, String> nombres = new HashMap<>();
+        return auditoriaLogRepository.buscar(desde, hasta,
+                usuario == null ? "" : usuario.trim(), accion == null ? "" : accion.trim(), pageable)
+                .map(log -> new AuditoriaFila(
+                        log.getFecha() == null ? "" : log.getFecha().format(FORMATO),
+                        etiquetaUsuario(log.getUsuarioId(), nombres), log.getAccion(), log.getDetalle()));
     }
 
     private String etiquetaUsuario(Long usuarioId, Map<Long, String> cache) {

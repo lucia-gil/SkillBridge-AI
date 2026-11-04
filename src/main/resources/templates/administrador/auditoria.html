@@ -1,213 +1,26 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head>
-<meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Auditoría · SkillBridge AI</title>
-<link rel="stylesheet" href="/css/tokens.css">
-<link rel="stylesheet" href="/css/base.css">
-<link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/layout.css">
-<link rel="stylesheet" href="/css/polish.css">
-<link rel="stylesheet" href="/css/kpi-hero.css">
-<link rel="stylesheet" href="/css/admin.css">
-</head>
-<body class="admin-app">
-<div class="app-shell">
-  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
-  <div class="main-content">
-    <div th:replace="~{fragments/topbar :: topbar}"></div>
-    <main class="page-content" id="page-content">
-
-      <section class="kpi-hero">
-        <div class="kpi-hero-head">
-          <div>
-            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-shield"></use></svg>Administración · Seguridad</span>
-            <h2 class="kpi-hero-title">Auditoría</h2>
-            <p class="kpi-hero-sub">Eventos registrados en la plataforma</p>
-          </div>
-        </div>
-        <div class="kpi-hero-grid">
-          <article class="hero-card">
-            <div class="hero-card-top">
-              <span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
-              <span class="hero-card-label">Eventos de severidad alta</span>
-            </div>
-            <div class="hero-card-value" th:text="${altaCount}">0</div>
-            <p class="hero-card-meta">requieren revisión</p>
-          </article>
-          <article class="hero-card">
-            <div class="hero-card-top">
-              <span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span>
-              <span class="hero-card-label">Eventos de severidad media</span>
-            </div>
-            <div class="hero-card-value" th:text="${mediaCount}">0</div>
-            <p class="hero-card-meta">conviene monitorear</p>
-          </article>
-          <article class="hero-card">
-            <div class="hero-card-top">
-              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-info"></use></svg></span>
-              <span class="hero-card-label">Eventos informativos</span>
-            </div>
-            <div class="hero-card-value" th:text="${infoCount}">0</div>
-            <p class="hero-card-meta">actividad normal</p>
-          </article>
-          <article class="hero-card">
-            <div class="hero-card-top">
-              <span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-bar-chart"></use></svg></span>
-              <span class="hero-card-label">TOTAL (ÚLTIMOS 200)</span>
-            </div>
-            <div class="hero-card-value" th:text="${eventos.size()}">0</div>
-            <p class="hero-card-meta">registros recientes</p>
-          </article>
-        </div>
-      </section>
-
-      <div class="detail-grid" style="margin-top:var(--space-6); grid-template-columns: 2.4fr 1fr; align-items: stretch;">
-        <section class="card" style="height:100%;">
-          <div class="table-toolbar">
-            <div>
-              <strong th:text="${eventos.size()} + ' eventos recientes'">0 eventos</strong>
-              <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Registro de acciones sobre roles, proyectos y asignaciones</p>
-            </div>
-            <div class="table-filters">
-              <select class="select" data-filter-scope="audit" data-filter-key="tipo">
-                <option value="todos">Tipo: todos</option>
-                <option value="seguridad">Seguridad</option><option value="roles">Roles y usuarios</option>
-                <option value="asignaciones">Proyectos y asignaciones</option><option value="ia">Sistema</option>
-              </select>
-              <select class="select" data-filter-scope="audit" data-filter-key="severidad">
-                <option value="todos">Severidad: todas</option><option value="Alta">Alta</option><option value="Media">Media</option><option value="Info">Info</option>
-              </select>
-            </div>
-          </div>
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th><th>Origen</th><th>Severidad</th></tr></thead>
-              <tbody>
-                <tr th:each="a : ${eventos}" data-filter-row="audit" th:attr="data-f-tipo=${a.tipoCrudo}, data-f-severidad=${a.severidadCrudo}">
-                  <td class="mono text-tertiary" style="font-size:var(--fs-xs);" th:text="${a.fechaLabel}">fecha</td>
-                  <td th:text="${a.usuarioLabel}">Usuario</td>
-                  <td class="cell-primary" th:text="${a.accion}">Acción</td>
-                  <td th:text="${a.detalle}">Detalle</td>
-                  <td class="mono text-tertiary" style="font-size:var(--fs-xs);" th:text="${a.origenLabel}">Origen</td>
-                  <td><span class="badge" th:classappend="${a.severidadBadgeClass}" th:text="${a.severidadCrudo}">Severidad</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="state-panel" data-filter-empty="audit" hidden>
-            <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-shield"></use></svg></span>
-            <span class="state-panel-title">Sin eventos con estos filtros</span>
-          </div>
-          <div class="table-footer">
-            <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="audit-visible-count">0</span> de <span id="audit-filtered-count">0</span> eventos</span>
-            <div class="pagination"><button class="page-btn" id="audit-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="audit-page-label" style="font-size:var(--fs-xs)">Página 1</span><input type="number" id="audit-page-jump" min="1" value="1" aria-label="Ir a la página" class="input" style="width:3.4em; text-align:center; font-size:var(--fs-xs); padding:2px 4px;"><button class="page-btn" id="audit-next" type="button" aria-label="Página siguiente">›</button></div>
-          </div>
-        </section>
-
-        <section class="card card-pad" style="height:100%;">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Usuarios con más eventos</h3>
-          <div th:if="${topUsuarios.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Sin eventos registrados todavía.</div>
-          <div th:each="u : ${topUsuarios}" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
-            <span class="avatar avatar-sm" th:text="${u.iniciales}">MR</span>
-            <span style="flex:1; font-size:var(--fs-sm); font-weight:500;" th:text="${u.nombre}">Nombre</span>
-            <span class="mono text-tertiary" style="font-size:var(--fs-xs);" th:text="${u.eventos} + ' eventos'">0 eventos</span>
-          </div>
-        </section>
-      </div>
-
-    </main>
-  </div>
-</div>
-
-<script src="/js/toast.js"></script>
-<script src="/js/dropdown.js"></script>
-<script src="/js/table-filter.js"></script>
-<script src="/js/topbar-actions.js"></script>
-<script th:inline="javascript">
-document.addEventListener("DOMContentLoaded", function () {
-  window.SBAI.tableFilter.init(document);
-
-  // Paginación de la tabla, encima del filtrado de table-filter.js: no se
-  // tocan los filtros de Tipo/Severidad, solo se agrega que de los
-  // resultados que coinciden se muestren de a 6 (mismo patron que
-  // administrador/usuarios.html, habilidades.html y proyectos.html).
-  (function () {
-    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="audit"]'));
-    if (!rows.length) return;
-
-    var tipoSelect = document.querySelector('[data-filter-scope="audit"][data-filter-key="tipo"]');
-    var severidadSelect = document.querySelector('[data-filter-scope="audit"][data-filter-key="severidad"]');
-    var emptyPanel = document.querySelector('[data-filter-empty="audit"]');
-    var visibleCount = document.getElementById("audit-visible-count");
-    var filteredCount = document.getElementById("audit-filtered-count");
-    var pageLabel = document.getElementById("audit-page-label");
-    var previous = document.getElementById("audit-prev");
-    var next = document.getElementById("audit-next");
-    var pageJump = document.getElementById("audit-page-jump");
-    var pageSize = 6;
-    var page = 1;
-
-    function matches(row) {
-      var tipo = tipoSelect ? tipoSelect.value : "todos";
-      if (tipo && tipo !== "todos" && row.dataset.fTipo !== tipo) return false;
-      var severidad = severidadSelect ? severidadSelect.value : "todos";
-      if (severidad && severidad !== "todos" && row.dataset.fSeveridad !== severidad) return false;
-      return true;
-    }
-
-    function render() {
-      var matched = rows.filter(matches);
-      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
-      page = Math.min(page, pages);
-      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
-      rows.forEach(function (row) { row.hidden = true; });
-      visible.forEach(function (row) { row.hidden = false; });
-      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
-      visibleCount.textContent = visible.length;
-      filteredCount.textContent = matched.length;
-      pageLabel.textContent = "Página " + page + " de " + pages;
-      previous.disabled = page === 1;
-      next.disabled = page === pages;
-      if (pageJump) {
-        pageJump.max = pages;
-        if (document.activeElement !== pageJump) pageJump.value = page;
-      }
-    }
-
-    [tipoSelect, severidadSelect].forEach(function (ctrl) {
-      if (!ctrl) return;
-      ctrl.addEventListener("change", function () { page = 1; render(); });
-    });
-    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
-    next.addEventListener("click", function () {
-      var matched = rows.filter(matches);
-      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
-      if (page < pages) { page++; render(); }
-    });
-    if (pageJump) {
-      function irAPagina() {
-        var matched = rows.filter(matches);
-        var pages = Math.max(1, Math.ceil(matched.length / pageSize));
-        var destino = parseInt(pageJump.value, 10);
-        if (isNaN(destino)) return;
-        page = Math.min(Math.max(destino, 1), pages);
-        render();
-      }
-      pageJump.addEventListener("change", irAPagina);
-      pageJump.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); irAPagina(); } });
-    }
-    render();
-  })();
-});
-</script>
-<script src="/js/global-search.js"></script>
-<script src="/js/predictive.js"></script>
-<script src="/js/battery-progress.js"></script>
-<script src="/js/paginacion.js"></script>
-<script src="/js/mobile-nav.js"></script>
-<script src="/js/admin-ui.js"></script>
-</body>
-</html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Auditoría · SkillBridge AI</title>
+<link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/layout.css"><link rel="stylesheet" href="/css/polish.css"><link rel="stylesheet" href="/css/kpi-hero.css"><link rel="stylesheet" href="/css/admin.css">
+</head><body class="admin-app"><div class="app-shell"><div th:replace="~{fragments/sidebar :: sidebar}"></div><div class="main-content"><div th:replace="~{fragments/topbar :: topbar}"></div>
+<main class="page-content admin-audit-page">
+  <header class="admin-audit-intro"><div><span class="admin-section-caption">SEGURIDAD Y TRAZABILIDAD</span><h1>Auditoría</h1><p>Consulta acciones de usuarios y del sistema, con filtros aplicados a todos los registros.</p></div><a class="btn btn-secondary" href="/administrador/reportes.html">Ver reportes</a></header>
+  <section class="admin-audit-summary" aria-label="Resumen de esta página"><div><strong th:text="${pagina.totalElements}">0</strong><span>Eventos encontrados</span></div><div><strong th:text="${altaCount}">0</strong><span>Severidad alta en esta página</span></div><div><strong th:text="${mediaCount}">0</strong><span>Severidad media en esta página</span></div><div><strong th:text="${infoCount}">0</strong><span>Informativos en esta página</span></div></section>
+  <section class="card admin-audit-main"><div class="admin-audit-section-head"><div><h2>Registro de eventos</h2><p>Ordenado del más reciente al más antiguo.</p></div></div>
+    <form class="admin-audit-filters" method="get" action="/administrador/auditoria.html">
+      <label>Desde<input class="input" type="date" name="desde" th:value="${desde}"></label><label>Hasta<input class="input" type="date" name="hasta" th:value="${hasta}"></label>
+      <label>Usuario<input class="input" type="search" name="usuario" th:value="${usuarioFiltro}" maxlength="100" placeholder="Nombre del usuario"></label>
+      <label>Acción<input class="input" type="search" name="accion" th:value="${accionFiltro}" maxlength="100" placeholder="Ej. LOGIN o CURSO"></label>
+      <button class="btn btn-primary" type="submit">Aplicar filtros</button><a class="btn btn-secondary" href="/administrador/auditoria.html">Limpiar</a>
+    </form>
+    <div th:if="${pagina.empty}" class="admin-audit-empty"><strong>Sin eventos para esta búsqueda</strong><p>Prueba otro rango de fechas, usuario o acción.</p><a href="/administrador/auditoria.html" class="btn btn-secondary">Ver todos los eventos</a></div>
+    <div class="table-scroll" th:unless="${pagina.empty}"><table class="data-table admin-audit-table"><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th><th>Tipo</th><th>Severidad</th></tr></thead><tbody>
+      <tr th:each="a : ${eventos}"><td class="mono" th:text="${a.fechaLabel}">Fecha</td><td th:text="${a.usuarioLabel}">Usuario</td><td><strong th:text="${a.accion}">Acción</strong></td><td class="admin-audit-detail" th:text="${a.detalle}">Detalle</td><td th:text="${a.tipoLabel}">Tipo</td><td><span class="badge" th:classappend="${a.severidadBadgeClass}" th:text="${a.severidadCrudo}">Info</span></td></tr>
+    </tbody></table></div>
+    <div class="admin-audit-footer"><span th:text="'Mostrando ' + ${eventos.size()} + ' de ' + ${pagina.totalElements} + ' eventos'">0 eventos</span>
+      <nav class="admin-audit-pagination" th:if="${pagina.totalPages > 1}" aria-label="Páginas de auditoría"><a th:if="${pagina.hasPrevious()}" th:href="@{/administrador/auditoria.html(desde=${desde},hasta=${hasta},usuario=${usuarioFiltro},accion=${accionFiltro},page=${pagina.number - 1})}">← Anterior</a><span th:text="'Página ' + ${pagina.number + 1} + ' de ' + ${pagina.totalPages}">Página 1</span><a th:if="${pagina.hasNext()}" th:href="@{/administrador/auditoria.html(desde=${desde},hasta=${hasta},usuario=${usuarioFiltro},accion=${accionFiltro},page=${pagina.number + 1})}">Siguiente →</a></nav>
+    </div>
+  </section>
+  <section class="admin-audit-bottom"><div class="card card-pad"><div class="admin-audit-section-head"><div><span class="admin-section-caption">PARTICIPACIÓN</span><h2>Usuarios con más eventos</h2><p>Actividad acumulada registrada.</p></div></div><p th:if="${topUsuarios.isEmpty()}" class="admin-home-empty">Todavía no hay actividad de usuarios.</p><div th:each="u : ${topUsuarios}" class="admin-audit-user"><span class="avatar avatar-sm" th:text="${u.iniciales}">AS</span><strong th:text="${u.nombre}">Usuario</strong><span th:text="${u.eventos} + ' eventos'">0 eventos</span></div></div>
+    <div class="card card-pad admin-audit-guide"><span class="admin-section-caption">CÓMO LEER EL REGISTRO</span><h2>Seguimiento claro</h2><p>Filtra por fecha, persona o código de acción para investigar un cambio. La severidad y el tipo son clasificaciones visuales calculadas a partir de la acción.</p><a href="/administrador/usuarios.html">Revisar usuarios y roles →</a></div></section>
+</main></div></div><script src="/js/toast.js"></script><script src="/js/dropdown.js"></script><script src="/js/topbar-actions.js"></script><script src="/js/global-search.js"></script><script src="/js/predictive.js"></script><script src="/js/mobile-nav.js"></script><script src="/js/admin-ui.js"></script></body></html>

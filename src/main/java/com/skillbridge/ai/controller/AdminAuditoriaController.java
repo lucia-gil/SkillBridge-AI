@@ -11,6 +11,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import java.time.LocalDate;
 
 import java.util.List;
 import java.util.Map;
@@ -30,10 +36,17 @@ public class AdminAuditoriaController {
     }
 
     @GetMapping("/auditoria.html")
-    public String auditoria(HttpSession session, Model model) {
+    public String auditoria(HttpSession session, Model model,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "") String usuario, @RequestParam(defaultValue = "") String accion,
+            @RequestParam(defaultValue = "0") int page) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
 
-        List<AuditoriaFila> eventos = auditoriaService.listarRecientes();
+        Page<AuditoriaFila> pagina = auditoriaService.buscar(
+                desde == null ? null : desde.atStartOfDay(), hasta == null ? null : hasta.plusDays(1).atStartOfDay(),
+                usuario, accion, PageRequest.of(Math.max(0, page), 12, Sort.by(Sort.Direction.DESC, "fecha")));
+        List<AuditoriaFila> eventos = pagina.getContent();
         List<TopUsuarioAuditoria> topUsuarios = auditoriaService.topUsuarios(5);
         Map<String, Long> porSeveridad = eventos.stream()
                 .collect(Collectors.groupingBy(AuditoriaFila::getSeveridadCrudo, Collectors.counting()));
@@ -42,6 +55,11 @@ public class AdminAuditoriaController {
                 "Trazabilidad completa de acciones en la plataforma");
 
         model.addAttribute("eventos", eventos);
+        model.addAttribute("pagina", pagina);
+        model.addAttribute("desde", desde);
+        model.addAttribute("hasta", hasta);
+        model.addAttribute("usuarioFiltro", usuario);
+        model.addAttribute("accionFiltro", accion);
         model.addAttribute("topUsuarios", topUsuarios);
         model.addAttribute("altaCount", porSeveridad.getOrDefault("Alta", 0L));
         model.addAttribute("mediaCount", porSeveridad.getOrDefault("Media", 0L));

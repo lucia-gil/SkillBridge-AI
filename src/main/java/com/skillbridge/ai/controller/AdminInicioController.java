@@ -9,6 +9,10 @@ import com.skillbridge.ai.service.HabilidadService;
 import com.skillbridge.ai.service.ReporteService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.service.UsuarioService;
+import com.skillbridge.ai.service.AuditoriaService;
+import com.skillbridge.ai.repository.CursoRepository;
+import com.skillbridge.ai.repository.AuditoriaLogRepository;
+import java.time.LocalDateTime;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
@@ -42,13 +46,21 @@ public class AdminInicioController {
     private final ReporteService reporteService;
     private final HabilidadService habilidadService;
     private final ShellModelBuilder shellModelBuilder;
+    private final CursoRepository cursoRepository;
+    private final AuditoriaService auditoriaService;
+    private final AuditoriaLogRepository auditoriaLogRepository;
 
     public AdminInicioController(UsuarioService usuarioService, ReporteService reporteService,
-                                  HabilidadService habilidadService, ShellModelBuilder shellModelBuilder) {
+                                  HabilidadService habilidadService, ShellModelBuilder shellModelBuilder,
+                                  CursoRepository cursoRepository, AuditoriaService auditoriaService,
+                                  AuditoriaLogRepository auditoriaLogRepository) {
         this.usuarioService = usuarioService;
         this.reporteService = reporteService;
         this.habilidadService = habilidadService;
         this.shellModelBuilder = shellModelBuilder;
+        this.cursoRepository = cursoRepository;
+        this.auditoriaService = auditoriaService;
+        this.auditoriaLogRepository = auditoriaLogRepository;
     }
 
     @GetMapping("/inicio.html")
@@ -81,6 +93,11 @@ public class AdminInicioController {
 
         model.addAttribute("topHabilidades", topHabilidades);
         model.addAttribute("maxDeclarada", maxDeclarada);
+        model.addAttribute("cursosPublicados", cursoRepository.countByEstado("PUBLICADO"));
+        model.addAttribute("totalCursos", cursoRepository.count());
+        model.addAttribute("eventos24h", auditoriaLogRepository.countByFechaAfter(LocalDateTime.now().minusDays(1)));
+        model.addAttribute("eventosRecientes", auditoriaService.listarRecientes().stream().limit(5).toList());
+        model.addAttribute("totalProyectos", proyectosPorEstado.stream().mapToLong(EstadoProyectoConConteo::getConteo).sum());
 
         return "administrador/inicio";
     }
