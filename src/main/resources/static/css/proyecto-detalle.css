@@ -42,8 +42,16 @@
 /* ── Distribución ─────────────────────────────────────────── */
 .pd-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: var(--space-6); margin-top: var(--space-6); align-items: start; }
 .pd-main, .pd-side { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+/* La columna lateral no estira la fila: toma el alto de la columna principal
+   (height 0 + min-height 100%) y la lista de candidatos ocupa el resto con scroll. */
+.pd-side { align-self: stretch; height: 0; min-height: max(100%, 640px); }
+.pd-side > .card { flex: none; }
+.pd-side > .pd-sug { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.pd-side > .pd-sug:not(:has(.pd-sug-list)) { flex: none; }
 @media (max-width: 1100px) {
   .pd-grid { grid-template-columns: minmax(0, 1fr); }
+  .pd-side { height: auto !important; min-height: 0 !important; }
+  .pd-sug-list { flex: none !important; max-height: 520px !important; }
 }
 
 .pd-card { padding: var(--space-6); }
@@ -131,7 +139,7 @@
 .pd-sug { border-top: 3px solid var(--violet-fg); }
 .pd-sug-list {
   margin: 0 -6px 0 0; padding: 0 6px 0 0; list-style: none; display: flex; flex-direction: column; gap: 10px;
-  max-height: 520px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+  flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
 }
 .pd-sug-list li { padding: 12px; border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); background: var(--surface-sunken); }
 .pd-sug-top { display: flex; align-items: center; gap: 10px; }
