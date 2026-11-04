@@ -55,7 +55,7 @@
     var R = 66, STROKE = 20, C = 2 * Math.PI * R, GAP = datos.filter(function (s) { return s.valor > 0; }).length > 1 ? 3 : 0;
     var activos = accion === "filtro" ? (D.estadosActivos || []) : [];
 
-    var svg = el("svg", { viewBox: "0 0 168 168", role: "img", "aria-label": cont.closest(".rr-chart-card").querySelector("h3").textContent + ": " +
+    var svg = el("svg", { viewBox: "0 0 168 168", role: "img", "aria-label": cont.closest(".rr-tile").querySelector("h3").textContent + ": " +
       datos.map(function (s) { return s.etiqueta + " " + s.valor; }).join(", ") });
     svg.appendChild(el("circle", { class: "track", cx: 84, cy: 84, r: R, "stroke-width": STROKE }));
     var g = el("g", { transform: "rotate(-90 84 84)" });
@@ -146,12 +146,10 @@
     var html = "";
     if (tipo === "cargos") {
       var escala = Math.max(100, Math.max.apply(null, datos.map(function (b) { return b.valor; })));
-      var lim = (D.limite || 100) * 100 / escala;
       datos.forEach(function (b) {
         html += '<div class="rr-bar" data-tip="' + esc("<b>" + esc(b.etiqueta) + "</b>Carga promedio " + b.valor + "% · " + b.detalle) + '">' +
           '<span class="rr-bar-lbl">' + esc(b.etiqueta) + '</span><span class="rr-bar-track">' +
-          '<span class="rr-bar-fill' + (b.valor > D.limite ? " is-over" : "") + '" style="width:0" data-w="' + (b.valor * 100 / escala) + '"></span>' +
-          '<span class="rr-bar-limit" style="left:' + lim + '%"></span></span>' +
+          '<span class="rr-bar-fill' + (b.valor > D.limite ? " is-over" : "") + '" style="width:0" data-w="' + (b.valor * 100 / escala) + '"></span></span>' +
           '<span class="rr-bar-val"><b>' + b.valor + "%</b> · " + b.referencia + "</span></div>";
       });
     } else if (tipo === "brechas") {
@@ -189,6 +187,8 @@
   function enviar() {
     if (!form || enviando) return;
     enviando = true;
+    // Al aplicar filtros se vuelve a la misma pestaña
+    form.action = form.getAttribute("action").split("#")[0] + (location.hash || "");
     form.classList.add("is-loading");
     Array.from(form.elements).forEach(function (e) {
       if (!e.name) return;
@@ -214,7 +214,7 @@
     root.setAttribute("data-cob", actual);
     filas.forEach(function (f) { f.setAttribute("data-oculta", actual && f.getAttribute("data-cob") !== actual ? "1" : "0"); });
     paginadores.habilidades && paginadores.habilidades(1);
-    document.getElementById("habilidades").scrollIntoView({ behavior: "smooth", block: "start" });
+    abrirPestana("habilidades", true);
   }
   if (form) {
     var q = form.querySelector('input[name="q"]'), espera;
@@ -262,6 +262,41 @@
     var v = b.getAttribute("data-v");
     document.querySelectorAll("tr[data-riesgo]").forEach(function (tr) { tr.hidden = v && tr.getAttribute("data-riesgo") !== v; });
   });
+
+  /* ---------------- Pestañas ---------------- */
+  var tabs = Array.from(document.querySelectorAll(".rr-tabs [data-tab]"));
+  function abrirPestana(nombre, desplazar) {
+    var existe = tabs.some(function (t) { return t.getAttribute("data-tab") === nombre; });
+    if (!existe) nombre = "resumen";
+    tabs.forEach(function (t) {
+      var on = t.getAttribute("data-tab") === nombre;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+    });
+    document.querySelectorAll("[data-panel]").forEach(function (p) { p.hidden = p.getAttribute("data-panel") !== nombre; });
+    try { history.replaceState(null, "", location.pathname + location.search + (nombre === "resumen" ? "" : "#" + nombre)); } catch (e) { /* nada */ }
+    if (desplazar) document.querySelector(".rr-tabs-wrap").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () { abrirPestana(t.getAttribute("data-tab")); });
+    t.addEventListener("keydown", function (e) {
+      var j = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : null;
+      if (j === null) return;
+      e.preventDefault();
+      var dest = tabs[(j + tabs.length) % tabs.length];
+      abrirPestana(dest.getAttribute("data-tab"));
+      dest.focus();
+    });
+  });
+  abrirPestana((location.hash || "#resumen").slice(1));
+
+  /* ---------------- Logos de tecnologías ---------------- */
+  if (window.SBAI && window.SBAI.techIcons) {
+    root.querySelectorAll("[data-tech-logo]").forEach(function (n) {
+      var html = window.SBAI.techIcons.logo(n.getAttribute("data-tech-logo"));
+      if (html) n.innerHTML = html;
+    });
+  }
 
   /* ---------------- Dibujar (y redibujar al cambiar de tema) ---------------- */
   function dibujar() {

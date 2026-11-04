@@ -149,6 +149,7 @@ public class RmReporteService {
         Map<Long, List<PerfilHabilidad>> habsDe = perfilHabilidadRepository.findAll().stream()
                 .collect(Collectors.groupingBy(ph -> ph.getId().getPerfilId()));
 
+        Set<Long> conFoto = new HashSet<>(jdbc.queryForList("SELECT id FROM usuarios WHERE foto_perfil IS NOT NULL", Long.class));
         List<Persona> todas = new ArrayList<>();
         for (Perfil p : miembros) {
             String nombre = p.getUsuario().getNombreCompleto();
@@ -156,16 +157,20 @@ public class RmReporteService {
                     ? new OcupacionColaboradorFila(p.getId(), nombre, p.getCargo(), carga.get(p.getId()), limite)
                     : OcupacionColaboradorFila.sinAsignacion(p.getId(), nombre, p.getCargo(), limite);
             int c = carga.getOrDefault(p.getId(), 0);
-            List<PerfilHabilidad> habs = habsDe.getOrDefault(p.getId(), List.of());
-            String top = habs.stream().sorted(Comparator.comparing(PerfilHabilidad::getNivel, Comparator.nullsLast(Comparator.reverseOrder())))
-                    .limit(3).map(h -> Optional.ofNullable(habPorId.get(h.getId().getHabilidadId())).map(Habilidad::getNombre).orElse("?")
-                            + " " + nivelCorto(h.getNivel())).collect(Collectors.joining(", "));
+            List<PerfilHabilidad> habs = habsDe.getOrDefault(p.getId(), List.of()).stream()
+                    .sorted(Comparator.comparing((PerfilHabilidad h) -> h.getValidadoPorId() == null)
+                            .thenComparing(PerfilHabilidad::getNivel, Comparator.nullsLast(Comparator.reverseOrder())))
+                    .toList();
+            List<HabilidadChip> chips = habs.stream().limit(3)
+                    .map(h -> new HabilidadChip(Optional.ofNullable(habPorId.get(h.getId().getHabilidadId())).map(Habilidad::getNombre).orElse("?"),
+                            nivelCorto(h.getNivel()), h.getValidadoPorId() != null)).toList();
+            String top = chips.stream().map(x -> x.nombre() + " " + x.nivel()).collect(Collectors.joining(", "));
             LocalDate libera = liberaDe.get(p.getId());
-            todas.add(new Persona(p.getId(), nombre, InicialesUtil.de(nombre), Optional.ofNullable(p.getCargo()).orElse("—"),
-                    c, Math.max(0, limite - c), oc.getEstadoLabel(), clave(oc.getEstadoLabel()),
-                    proyectosDe.getOrDefault(p.getId(), List.of()), c == 0 ? diasBanca.get(p.getId()) : null,
+            todas.add(new Persona(p.getId(), p.getUsuario().getId(), conFoto.contains(p.getUsuario().getId()), nombre, InicialesUtil.de(nombre),
+                    Optional.ofNullable(p.getCargo()).orElse("—"), c, Math.max(0, limite - c), oc.getEstadoLabel(), clave(oc.getEstadoLabel()),
+                    oc.getEstadoBadgeClass(), proyectosDe.getOrDefault(p.getId(), List.of()), c == 0 ? diasBanca.get(p.getId()) : null,
                     libera != null ? libera.format(FECHA) : null, habs.size(),
-                    (int) habs.stream().filter(h -> h.getValidadoPorId() == null).count(), top));
+                    (int) habs.stream().filter(h -> h.getValidadoPorId() == null).count(), top, chips, Math.max(0, habs.size() - 3)));
         }
         todas.sort(Comparator.comparingInt(Persona::carga).reversed().thenComparing(Persona::nombre));
 
@@ -265,6 +270,21 @@ public class RmReporteService {
                         c.calificadas() == 0 ? "Nadie al nivel " + c.nivelLabel().toLowerCase() : c.disponibles() + " con capacidad para " + c.proyectos() + " proyecto(s)"))
                 .limit(8).toList();
 
+        // ── Cursos publicados que cierran las brechas ───────────────────
+        List<CursoSugerido> cursos = new ArrayList<>();
+        List<Long> idsBrecha = coberturaTodas.stream().filter(CoberturaHabilidadFila::conBrecha).map(CoberturaHabilidadFila::habilidadId).toList();
+        if (!idsBrecha.isEmpty()) {
+            String in = idsBrecha.stream().map(String::valueOf).collect(Collectors.joining(","));
+            jdbc.query("SELECT h.nombre, c.titulo, c.tipo, c.plataforma, c.url, c.gratuito FROM cursos c JOIN habilidades h ON h.id = c.habilidad_id "
+                    + "WHERE c.estado = 'PUBLICADO' AND c.habilidad_id IN (" + in + ") ORDER BY c.destacado DESC, c.id DESC", rs -> {
+                if (cursos.size() >= 6) return;
+                String url = rs.getString(5);
+                String plataforma = rs.getString(4) != null ? com.skillbridge.ai.util.PlataformaCurso.porClave(rs.getString(4)).nombre()
+                        : com.skillbridge.ai.util.PlataformaCurso.detectar(url).nombre();
+                cursos.add(new CursoSugerido(rs.getString(1), rs.getString(2), tipoCurso(rs.getString(3)), plataforma, url, rs.getBoolean(6)));
+            });
+        }
+
         // ── Decisiones (propuestas) y acierto de la IA ──────────────────
         List<PropuestaFila> propuestas = new ArrayList<>();
         int[] cont = new int[3];  // aprobadas, rechazadas, pendientes
@@ -345,7 +365,7 @@ public class RmReporteService {
 
         return new ReporteRm(LocalDateTime.now(ZONA).format(FECHA_HORA), describir(f, opciones), f.vacios(), limite, kpis, hallazgos,
                 distribucion, estadosProyecto, cobertura, porCargo, brechas, personas, base.size(), proyectos, habilidades,
-                decisiones, propuestas, entregas, liberaciones, enRiesgo, opciones);
+                decisiones, propuestas, entregas, liberaciones, enRiesgo, cursos, opciones);
     }
 
     // ───────────────────────── Hallazgos ─────────────────────────
@@ -427,6 +447,11 @@ public class RmReporteService {
         if (minutos < 60) return Math.max(1, minutos) + " min";
         if (minutos < 48 * 60) return Math.round(minutos / 60.0) + " h";
         return Math.round(minutos / 1440.0) + " días";
+    }
+
+    private static String tipoCurso(String t) {
+        if (t == null) return "Curso";
+        return switch (t) { case "VIDEO" -> "Video"; case "RUTA" -> "Ruta"; case "ESPECIALIZACION" -> "Especialización"; default -> "Curso"; };
     }
 
     private static String origenLabel(String o) {

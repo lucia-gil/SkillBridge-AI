@@ -2,8 +2,9 @@
 <!--
   resource-manager/reportes.html — Dashboard de Reportes del Resource Manager
   (RmReportesController + RmReporteService). Los filtros se aplican en el
-  servidor, así la vista, el Excel y el PDF muestran lo mismo. Los gráficos
-  (donas y barras) los dibuja js/rm-reportes.js en SVG a partir de RR_DATA.
+  servidor, así la vista, el Excel y el PDF muestran lo mismo. El contenido se
+  organiza en pestañas; cada pestaña es un tablero de tarjetas conectadas.
+  Los gráficos los dibuja js/rm-reportes.js en SVG a partir de RR_DATA.
 -->
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -17,6 +18,7 @@
   <link rel="stylesheet" href="/css/layout.css">
   <link rel="stylesheet" href="/css/polish.css">
   <link rel="stylesheet" href="/css/kpi-hero.css">
+  <link rel="stylesheet" href="/css/colaboradores-rm.css">
   <link rel="stylesheet" href="/css/rm-reportes.css">
 </head>
 <body>
@@ -27,7 +29,7 @@
     <main class="page-content rr" id="page-content" th:with="k=${d.kpis()}, de=${d.decisiones()}">
 
       <!-- ═════════ Portada ═════════ -->
-      <section class="kpi-hero" id="resumen">
+      <section class="kpi-hero">
         <div class="kpi-hero-head">
           <div>
             <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-bar-chart"></use></svg>Resource Manager · Reportes</span>
@@ -75,193 +77,259 @@
 
       <!-- ═════════ Filtros ═════════ -->
       <form class="card rr-filters" method="get" action="/resource-manager/reportes.html" id="rr-filtros" role="search" aria-label="Filtros del reporte">
-        <label class="rr-search">
-          <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
-          <input type="search" name="q" th:value="${filtros.q()}" placeholder="Nombre o cargo" aria-label="Buscar por nombre o cargo" autocomplete="off">
-        </label>
-        <div class="rr-field">
-          <select class="select" name="estado" id="rr-estado" multiple data-multiselect data-placeholder="Estado de carga" data-noun="estados" aria-label="Estado de carga">
-            <option value="banca" th:selected="${filtros.estados().contains('banca')}">Sin asignación</option>
-            <option value="sub" th:selected="${filtros.estados().contains('sub')}">Subutilizado (menos de 60%)</option>
-            <option value="opt" th:selected="${filtros.estados().contains('opt')}" th:text="'Óptimo (60%–' + ${d.limiteCarga() - 11} + '%)'">Óptimo</option>
-            <option value="lim" th:selected="${filtros.estados().contains('lim')}" th:text="'Al límite (' + ${d.limiteCarga() - 10} + '%–' + ${d.limiteCarga()} + '%)'">Al límite</option>
-            <option value="sobre" th:selected="${filtros.estados().contains('sobre')}" th:text="'Sobre-asignado (más de ' + ${d.limiteCarga()} + '%)'">Sobre-asignado</option>
-          </select>
+        <div class="rr-filters-head">
+          <div class="rr-filters-title">
+            <span class="rr-filters-icon"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg></span>
+            <div><h2>Filtros</h2><p th:text="${d.filtrosLabel()}">Sin filtros</p></div>
+          </div>
+          <div class="rr-filters-actions">
+            <label class="rr-switch">
+              <input type="checkbox" name="brecha" value="true" th:checked="${filtros.soloBrecha()}">
+              <span class="rr-switch-track" aria-hidden="true"></span>
+              <span>Solo habilidades con brecha</span>
+            </label>
+            <a class="btn btn-secondary btn-sm" href="/resource-manager/reportes.html" th:unless="${d.sinFiltros()}">
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-x"></use></svg>Quitar filtros</a>
+            <noscript><button type="submit" class="btn btn-primary btn-sm">Aplicar</button></noscript>
+          </div>
         </div>
-        <div class="rr-field">
-          <select class="select" name="cargo" aria-label="Cargo" data-rr-auto>
-            <option value="">Todos los cargos</option>
-            <option th:each="c : ${d.opciones().cargos()}" th:value="${c}" th:text="${c}" th:selected="${c == filtros.cargo()}">Cargo</option>
-          </select>
+        <div class="rr-filters-grid">
+          <label class="rr-f">
+            <span class="rr-f-label">Buscar</span>
+            <span class="rr-search">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
+              <input type="search" name="q" th:value="${filtros.q()}" placeholder="Nombre o cargo" autocomplete="off">
+            </span>
+          </label>
+          <div class="rr-f">
+            <span class="rr-f-label" id="rr-l-estado">Estado de carga</span>
+            <select class="select" name="estado" id="rr-estado" multiple data-multiselect data-placeholder="Todos" data-noun="estados" aria-labelledby="rr-l-estado">
+              <option value="banca" th:selected="${filtros.estados().contains('banca')}">Sin asignación</option>
+              <option value="sub" th:selected="${filtros.estados().contains('sub')}">Subutilizado (menos de 60%)</option>
+              <option value="opt" th:selected="${filtros.estados().contains('opt')}" th:text="'Óptimo (60%–' + ${d.limiteCarga() - 11} + '%)'">Óptimo</option>
+              <option value="lim" th:selected="${filtros.estados().contains('lim')}" th:text="'Al límite (' + ${d.limiteCarga() - 10} + '%–' + ${d.limiteCarga()} + '%)'">Al límite</option>
+              <option value="sobre" th:selected="${filtros.estados().contains('sobre')}" th:text="'Sobre-asignado (más de ' + ${d.limiteCarga()} + '%)'">Sobre-asignado</option>
+            </select>
+          </div>
+          <label class="rr-f">
+            <span class="rr-f-label">Cargo</span>
+            <select class="select" name="cargo" data-rr-auto>
+              <option value="">Todos</option>
+              <option th:each="c : ${d.opciones().cargos()}" th:value="${c}" th:text="${c}" th:selected="${c == filtros.cargo()}">Cargo</option>
+            </select>
+          </label>
+          <label class="rr-f">
+            <span class="rr-f-label">Proyecto</span>
+            <select class="select" name="proyecto" data-rr-auto>
+              <option value="">Todos</option>
+              <option th:each="p : ${d.opciones().proyectos()}" th:value="${p.valor()}" th:text="${p.etiqueta()}" th:selected="${filtros.proyectoId() != null and p.valor() == '' + filtros.proyectoId()}">Proyecto</option>
+            </select>
+          </label>
+          <label class="rr-f">
+            <span class="rr-f-label">Categoría de habilidad</span>
+            <select class="select" name="categoria" data-rr-auto>
+              <option value="">Todas</option>
+              <option th:each="c : ${d.opciones().categorias()}" th:value="${c.valor()}" th:text="${c.etiqueta()}" th:selected="${filtros.categoriaId() != null and c.valor() == '' + filtros.categoriaId()}">Categoría</option>
+            </select>
+          </label>
+          <label class="rr-f">
+            <span class="rr-f-label">Ocupación mínima <output id="rr-min-out" th:text="${filtros.minimo()} + '%'">0%</output></span>
+            <span class="rr-range"><input type="range" name="min" id="rr-min" min="0" max="100" step="5" th:value="${filtros.minimo()}" aria-label="Ocupación mínima"></span>
+          </label>
         </div>
-        <div class="rr-field">
-          <select class="select" name="proyecto" aria-label="Proyecto" data-rr-auto>
-            <option value="">Todos los proyectos</option>
-            <option th:each="p : ${d.opciones().proyectos()}" th:value="${p.valor()}" th:text="${p.etiqueta()}" th:selected="${filtros.proyectoId() != null and p.valor() == '' + filtros.proyectoId()}">Proyecto</option>
-          </select>
-        </div>
-        <div class="rr-field">
-          <select class="select" name="categoria" aria-label="Categoría de habilidad" data-rr-auto>
-            <option value="">Todas las categorías</option>
-            <option th:each="c : ${d.opciones().categorias()}" th:value="${c.valor()}" th:text="${c.etiqueta()}" th:selected="${filtros.categoriaId() != null and c.valor() == '' + filtros.categoriaId()}">Categoría</option>
-          </select>
-        </div>
-        <label class="rr-range">
-          <span class="rr-range-label">Ocupación desde <output id="rr-min-out" th:text="${filtros.minimo()} + '%'">0%</output></span>
-          <input type="range" name="min" id="rr-min" min="0" max="100" step="5" th:value="${filtros.minimo()}" aria-label="Ocupación mínima">
-        </label>
-        <label class="rr-switch">
-          <input type="checkbox" name="brecha" value="true" th:checked="${filtros.soloBrecha()}">
-          <span class="rr-switch-track" aria-hidden="true"></span>
-          <span>Solo brechas</span>
-        </label>
-        <a class="btn btn-tertiary btn-sm rr-clear" href="/resource-manager/reportes.html" th:unless="${d.sinFiltros()}">
-          <svg class="icon icon-sm"><use href="/img/icons.svg#icon-x"></use></svg>Quitar filtros</a>
-        <noscript><button type="submit" class="btn btn-secondary btn-sm">Aplicar</button></noscript>
       </form>
-      <div class="rr-subbar">
-        <p class="rr-filters-note"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg><span th:text="${d.filtrosLabel()}">Sin filtros</span></p>
-        <nav class="rr-nav" aria-label="Secciones del reporte">
-          <a href="#hallazgos">Hallazgos</a><a href="#capacidad">Capacidad</a><a href="#proyectos">Proyectos</a>
-          <a href="#habilidades">Habilidades</a><a href="#decisiones">Decisiones</a>
-        </nav>
-      </div>
 
-      <!-- ═════════ Hallazgos ═════════ -->
-      <section class="rr-section" id="hallazgos" aria-labelledby="rr-h-hall">
-        <header class="rr-sec-head"><div><h2 id="rr-h-hall">Hallazgos clave</h2><p>Lo más importante de este reporte, calculado con los datos actuales.</p></div></header>
-        <div class="rr-insights">
-          <article class="rr-insight" th:each="h : ${d.hallazgos()}" th:attr="data-tono=${h.tono()}">
-            <span class="rr-insight-icon"><svg class="icon"><use th:attr="href='/img/icons.svg#' + ${h.icono()}"></use></svg></span>
-            <div><h3 th:text="${h.titulo()}">Título</h3><p th:text="${h.detalle()}">Detalle</p></div>
+      <!-- ═════════ Pestañas + tablero ═════════ -->
+      <section class="rr-tabs-wrap">
+        <nav class="rr-tabs" role="tablist" aria-label="Secciones del reporte">
+          <button type="button" role="tab" id="t-resumen" aria-controls="p-resumen" aria-selected="true" data-tab="resumen">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-grid"></use></svg>Resumen</button>
+          <button type="button" role="tab" id="t-equipo" aria-controls="p-equipo" aria-selected="false" data-tab="equipo">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg>Equipo<span class="rr-tab-n" th:text="${d.personas().size()}">0</span></button>
+          <button type="button" role="tab" id="t-proyectos" aria-controls="p-proyectos" aria-selected="false" data-tab="proyectos">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-folder"></use></svg>Proyectos<span class="rr-tab-n" th:text="${d.proyectos().size()}">0</span></button>
+          <button type="button" role="tab" id="t-habilidades" aria-controls="p-habilidades" aria-selected="false" data-tab="habilidades">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-target"></use></svg>Habilidades<span class="rr-tab-n is-warn" th:if="${k.habilidadesConBrecha() > 0}" th:text="${k.habilidadesConBrecha()}">0</span></button>
+          <button type="button" role="tab" id="t-decisiones" aria-controls="p-decisiones" aria-selected="false" data-tab="decisiones">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-check-circle"></use></svg>Decisiones<span class="rr-tab-n" th:if="${de.pendientes() > 0}" th:text="${de.pendientes()}">0</span></button>
+        </nav>
+
+        <!-- ── Resumen ── -->
+        <div class="rr-board" role="tabpanel" id="p-resumen" aria-labelledby="t-resumen" data-panel="resumen">
+          <article class="rr-tile">
+            <header class="rr-tile-head"><div><h3>Estado de carga</h3><p>Clic en una porción para filtrar al equipo</p></div></header>
+            <div class="rr-donut" data-donut="carga" data-unidad="personas" data-accion="filtro"></div>
+          </article>
+          <article class="rr-tile">
+            <header class="rr-tile-head"><div><h3>Proyectos por estado</h3><p>Todo el portafolio</p></div></header>
+            <div class="rr-donut" data-donut="proyectos" data-unidad="proyectos"></div>
+          </article>
+          <article class="rr-tile">
+            <header class="rr-tile-head"><div><h3>Cobertura de habilidades</h3><p>Lo que piden los proyectos vigentes</p></div></header>
+            <div class="rr-donut" data-donut="cobertura" data-unidad="habilidades" data-accion="habilidades"></div>
+          </article>
+          <article class="rr-tile span-all">
+            <header class="rr-tile-head"><div><h3><svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg>Hallazgos clave</h3><p>Lo más importante de este reporte, calculado con los datos actuales</p></div></header>
+            <div class="rr-insights">
+              <article class="rr-insight" th:each="h : ${d.hallazgos()}" th:attr="data-tono=${h.tono()}">
+                <span class="rr-insight-icon"><svg class="icon"><use th:attr="href='/img/icons.svg#' + ${h.icono()}"></use></svg></span>
+                <div><h4 th:text="${h.titulo()}">Título</h4><p th:text="${h.detalle()}">Detalle</p></div>
+              </article>
+            </div>
           </article>
         </div>
-      </section>
 
-      <!-- ═════════ Panorama (donas) ═════════ -->
-      <section class="rr-donuts" aria-label="Panorama">
-        <article class="card rr-chart-card">
-          <header><h3>Estado de carga</h3><p>Clic en una porción para filtrar al equipo</p></header>
-          <div class="rr-donut" data-donut="carga" data-unidad="personas" data-accion="filtro"></div>
-        </article>
-        <article class="card rr-chart-card">
-          <header><h3>Proyectos por estado</h3><p>Todo el portafolio</p></header>
-          <div class="rr-donut" data-donut="proyectos" data-unidad="proyectos"></div>
-        </article>
-        <article class="card rr-chart-card">
-          <header><h3>Cobertura de habilidades</h3><p>Habilidades que piden los proyectos vigentes</p></header>
-          <div class="rr-donut" data-donut="cobertura" data-unidad="habilidades" data-accion="habilidades"></div>
-        </article>
-      </section>
-
-      <!-- ═════════ Capacidad ═════════ -->
-      <section class="rr-section" id="capacidad" aria-labelledby="rr-h-cap">
-        <header class="rr-sec-head"><div><h2 id="rr-h-cap">Capacidad del equipo</h2>
-          <p th:text="${d.personas().size()} + ' de ' + ${d.personasEvaluadas()} + ' personas · carga sumada de sus proyectos vigentes'">personas</p></div></header>
-        <div class="rr-grid-2">
-          <article class="card rr-chart-card">
-            <header><h3>Carga promedio por cargo</h3><p th:text="'La línea marca el límite de ' + ${d.limiteCarga()} + '%'">límite</p></header>
+        <!-- ── Equipo ── -->
+        <div class="rr-board is-equipo" role="tabpanel" id="p-equipo" aria-labelledby="t-equipo" data-panel="equipo" hidden>
+          <article class="rr-tile">
+            <header class="rr-tile-head"><div><h3>Carga promedio por cargo</h3><p th:text="'Suma de dedicaciones de cada persona, promediada por cargo · límite ' + ${d.limiteCarga()} + '%'">límite</p></div></header>
             <div class="rr-bars" data-bars="cargos"></div>
           </article>
-          <article class="card rr-chart-card">
-            <header><h3>Próximos 30 días</h3><p>Liberaciones y riesgo de sobrecarga con lo ya programado</p></header>
+          <article class="rr-tile">
+            <header class="rr-tile-head"><div><h3>Próximos 30 días</h3><p>Liberaciones y riesgo de sobrecarga con lo ya programado</p></div></header>
             <ul class="rr-timeline" th:unless="${d.liberaciones().isEmpty() and d.enRiesgo().isEmpty()}">
               <li th:each="r : ${d.enRiesgo()}" data-tono="red">
                 <span class="rr-tl-dot"></span>
                 <div><b th:text="${r.nombre()}">Nombre</b><small th:text="'Llegaría a ' + ${r.cargaFutura()} + '% de carga'">riesgo</small></div>
-                <span class="rr-tl-tag">Riesgo</span>
+                <span class="badge badge-red">Riesgo</span>
               </li>
               <li th:each="l : ${d.liberaciones()}" data-tono="blue">
                 <span class="rr-tl-dot"></span>
                 <div><b th:text="${l.nombre()}">Nombre</b><small th:text="'Deja ' + ${l.proyecto()} + ' · libera ' + ${l.libera()} + '%'">libera</small></div>
-                <span class="rr-tl-tag" th:text="${l.dias() == 0} ? 'Hoy' : 'En ' + ${l.dias()} + ' d'">En 5 d</span>
+                <span class="badge badge-blue" th:text="${l.dias() == 0} ? 'Hoy' : 'En ' + ${l.dias()} + ' días'">En 5 días</span>
               </li>
             </ul>
             <p class="rr-empty-line" th:if="${d.liberaciones().isEmpty() and d.enRiesgo().isEmpty()}">Nadie se libera ni supera el límite en los próximos 30 días.</p>
           </article>
+          <article class="rr-tile span-all is-table">
+            <header class="rr-tile-head"><div><h3>Ocupación por colaborador</h3>
+              <p th:text="${d.personas().size()} + ' de ' + ${d.personasEvaluadas()} + ' personas · ordenadas de mayor a menor carga'">personas</p></div></header>
+            <div class="table-scroll" th:unless="${d.personas().isEmpty()}">
+              <table class="data-table rr-table rr-team">
+                <thead><tr><th>Colaborador</th><th>Carga y estado</th><th>Proyectos</th><th>Disponibilidad</th><th>Habilidades principales</th></tr></thead>
+                <tbody>
+                  <tr th:each="p : ${d.personas()}" data-rr-row="personas">
+                    <td>
+                      <a class="cl-person" th:href="@{/resource-manager/colaboradores/{id}(id=${p.perfilId()})}">
+                        <span class="cl-avatar" th:classappend="${p.tieneFoto()} ? 'has-photo'">
+                          <img th:if="${p.tieneFoto()}" th:src="@{'/perfil/foto/' + ${p.usuarioId()}}" alt="" loading="lazy">
+                          <span th:unless="${p.tieneFoto()}" th:text="${p.iniciales()}" aria-hidden="true">AB</span>
+                        </span>
+                        <span class="cl-person-text"><span class="cl-name" th:text="${p.nombre()}">Nombre</span><span class="cl-role" th:text="${p.cargo()}">Cargo</span></span>
+                      </a>
+                    </td>
+                    <td>
+                      <div class="cl-load" th:attr="data-estado=${p.estadoClave()}">
+                        <span class="cl-load-track" aria-hidden="true"><span class="cl-load-fill" th:style="'width:' + ${p.cargaBarra()} + '%'"></span></span>
+                        <span class="cl-load-value" th:text="${p.carga()} + '%'">0%</span>
+                        <span class="cl-load-label" th:text="${p.estado()} + ' · ' + ${p.libre()} + '% libre'">Estado · libre</span>
+                      </div>
+                    </td>
+                    <td>
+                      <ul class="rr-projlist" th:unless="${p.proyectos().isEmpty()}"><li th:each="x : ${p.proyectos()}" th:text="${x}">Proyecto</li></ul>
+                      <span class="cl-none" th:if="${p.proyectos().isEmpty()}">Sin proyectos</span>
+                    </td>
+                    <td>
+                      <span class="rr-avail is-warn" th:if="${p.diasEnBanca() != null}"><b th:text="${p.diasEnBanca()} + ' días'">30 días</b><small>sin proyecto</small></span>
+                      <span class="rr-avail" th:if="${p.diasEnBanca() == null and p.proximaLiberacion() != null}"><b th:text="${p.proximaLiberacion()}">fecha</b><small>se libera</small></span>
+                      <span class="cl-none" th:if="${p.diasEnBanca() == null and p.proximaLiberacion() == null}">—</span>
+                    </td>
+                    <td>
+                      <ul class="cl-skills" th:unless="${p.habilidadesTop().isEmpty()}">
+                        <li th:each="h,st : ${p.habilidadesTop()}" th:if="${st.index < 2}" th:title="${h.nombre()} + ' · ' + ${h.nivel()} + (${h.validada()} ? ' · validada' : ' · por validar')">
+                          <span class="tech-logo-sm" th:attr="data-tech-logo=${h.nombre()}"></span><span th:text="${h.nombre()}">Java</span>
+                          <svg th:if="${h.validada()}" class="icon cl-check" aria-label="validada"><use href="/img/icons.svg#icon-check-circle"></use></svg>
+                        </li>
+                        <li class="cl-more" th:if="${p.habilidades() > 2}" th:title="${p.topHabilidades()}" th:text="'+' + ${p.habilidades() - 2}">+2</li>
+                      </ul>
+                      <span class="cl-none" th:if="${p.habilidadesTop().isEmpty()}">Sin habilidades declaradas</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="rr-empty" th:if="${d.personas().isEmpty()}"><strong>Nadie coincide con estos filtros</strong><p>Prueba con otro estado de carga, cargo o proyecto.</p></div>
+            <div class="table-footer" th:unless="${d.personas().isEmpty()}" data-pager="personas">
+              <span class="text-tertiary">Mostrando <span data-visible>0</span> de <span th:text="${d.personas().size()}">0</span></span>
+              <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label>Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
+            </div>
+          </article>
         </div>
 
-        <article class="card rr-table-card">
-          <div class="table-scroll" th:unless="${d.personas().isEmpty()}">
-            <table class="data-table rr-table">
-              <thead><tr><th>Colaborador</th><th th:text="'Ocupación (límite ' + ${d.limiteCarga()} + '%)'">Ocupación</th><th class="num">Libre</th><th>Estado</th><th>Proyectos</th><th>Sin proyecto</th><th>Se libera</th><th>Habilidades</th></tr></thead>
-              <tbody>
-                <tr th:each="p : ${d.personas()}" data-rr-row="personas">
-                  <td><a class="rr-person" th:href="@{/resource-manager/colaboradores/{id}(id=${p.perfilId()})}">
-                    <span class="avatar avatar-sm" th:text="${p.iniciales()}">AB</span>
-                    <span class="rr-person-text"><span class="rr-person-name" th:text="${p.nombre()}">Nombre</span><span class="rr-person-role" th:text="${p.cargo()}">Cargo</span></span></a></td>
-                  <td><div class="rr-load" th:attr="data-estado=${p.estadoClave()}">
-                    <span class="rr-load-track"><span class="rr-load-fill" th:style="'width:' + ${p.cargaBarra()} + '%'"></span><span class="rr-load-limit" th:style="'left:' + ${d.limiteCarga() > 100 ? 100 : d.limiteCarga()} + '%'"></span></span>
-                    <b th:text="${p.carga()} + '%'">0%</b></div></td>
-                  <td class="num" th:text="${p.libre()} + '%'">0%</td>
-                  <td><span class="rr-pill" th:attr="data-k=${p.estadoClave()}" th:text="${p.estado()}">Estado</span></td>
-                  <td><span class="rr-chips"><span th:each="x : ${p.proyectos()}" th:text="${x}">Proyecto</span><em th:if="${p.proyectos().isEmpty()}">—</em></span></td>
-                  <td th:text="${p.diasEnBanca() != null} ? ${p.diasEnBanca()} + ' días' : ''"></td>
-                  <td th:text="${p.proximaLiberacion() ?: ''}"></td>
-                  <td><span class="rr-skill-count" th:text="${p.habilidades()}">0</span><small class="rr-muted" th:if="${p.habilidadesPorValidar() > 0}" th:text="' · ' + ${p.habilidadesPorValidar()} + ' por validar'"></small></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="rr-empty" th:if="${d.personas().isEmpty()}"><strong>Nadie coincide con estos filtros</strong><p>Prueba con otro estado de carga, cargo o proyecto.</p></div>
-          <div class="table-footer" th:unless="${d.personas().isEmpty()}" data-pager="personas">
-            <span class="text-tertiary">Mostrando <span data-visible>0</span> de <span th:text="${d.personas().size()}">0</span></span>
-            <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label>Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
-          </div>
-        </article>
-      </section>
-
-      <!-- ═════════ Proyectos ═════════ -->
-      <section class="rr-section" id="proyectos" aria-labelledby="rr-h-pro">
-        <header class="rr-sec-head">
-          <div><h2 id="rr-h-pro">Proyectos vigentes</h2><p>Riesgo según plazo, habilidades que nadie del equipo tiene, vacantes y entregables vencidos.</p></div>
-          <div class="rr-seg-ctl" role="group" aria-label="Filtrar por riesgo" data-filtro-riesgo>
-            <button type="button" class="is-on" data-v="">Todos</button><button type="button" data-v="alto">Alto</button><button type="button" data-v="medio">Medio</button><button type="button" data-v="bajo">Bajo</button>
-          </div>
-        </header>
-        <article class="card rr-table-card">
-          <div class="table-scroll" th:unless="${d.proyectos().isEmpty()}">
-            <table class="data-table rr-table">
-              <thead><tr><th>Proyecto</th><th>Estado</th><th>Equipo</th><th>Cobertura de habilidades</th><th>Sin cubrir</th><th>Avance</th><th>Plazo</th><th>Riesgo</th></tr></thead>
-              <tbody>
-                <tr th:each="p : ${d.proyectos()}" th:attr="data-riesgo=${p.riesgoClave()}">
-                  <td><a class="rr-proj" th:href="@{/resource-manager/proyectos/{id}.html(id=${p.id()})}"><b th:text="${p.nombre()}">Proyecto</b><small th:text="'PM ' + ${p.pm()}">PM</small></a></td>
-                  <td><span class="rr-pill" th:attr="data-k=${p.estado()}" th:text="${p.estadoLabel()}">Estado</span></td>
-                  <td><b th:text="${p.integrantes()}">0</b><small class="rr-muted" th:text="${p.vacantes() > 0} ? ' · ' + ${p.vacantes()} + ' vacante(s)' : ' · completo'"></small></td>
-                  <td><div class="rr-mini"><span class="rr-mini-track"><span class="rr-mini-fill" th:style="'width:' + ${p.coberturaPct()} + '%'" th:attr="data-ok=${p.coberturaPct() == 100}"></span></span><b th:text="${p.coberturaPct()} + '%'">0%</b></div></td>
-                  <td><span class="rr-chips is-warn"><span th:each="x : ${p.sinCubrir()}" th:text="${x}">Hab</span><em th:if="${p.sinCubrir().isEmpty()}">—</em></span></td>
-                  <td th:text="${p.avance()} + '%'">0%</td>
-                  <td><span class="rr-plazo" th:attr="data-tono=${p.plazoTono()}" th:text="${p.plazo()}">plazo</span></td>
-                  <td><span class="rr-risk" th:attr="data-k=${p.riesgoClave()}" th:title="${#strings.listJoin(p.motivos(), ' · ')}" th:text="${p.riesgo()}">Bajo</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="rr-empty" th:if="${d.proyectos().isEmpty()}"><strong>No hay proyectos vigentes con estos filtros</strong></div>
-        </article>
-      </section>
-
-      <!-- ═════════ Habilidades ═════════ -->
-      <section class="rr-section" id="habilidades" aria-labelledby="rr-h-hab">
-        <header class="rr-sec-head"><div><h2 id="rr-h-hab">Oferta contra demanda de habilidades</h2>
-          <p>Para cada habilidad que piden los proyectos: cuántas personas la tienen al nivel pedido y cuántas tienen capacidad libre.</p></div></header>
-        <div class="rr-grid-2 is-wide-right">
-          <article class="card rr-chart-card">
-            <header><h3>Brechas más críticas</h3><p>Proyectos que la piden vs. personas con capacidad</p></header>
-            <div class="rr-bars" data-bars="brechas"></div>
+        <!-- ── Proyectos ── -->
+        <div class="rr-board" role="tabpanel" id="p-proyectos" aria-labelledby="t-proyectos" data-panel="proyectos" hidden>
+          <article class="rr-tile span-all is-table">
+            <header class="rr-tile-head">
+              <div><h3>Proyectos vigentes</h3><p>Riesgo según plazo, habilidades que nadie del equipo tiene, vacantes y entregables vencidos</p></div>
+              <div class="rr-seg-ctl" role="group" aria-label="Filtrar por riesgo" data-filtro-riesgo>
+                <button type="button" class="is-on" data-v="">Todos <b th:text="${d.proyectos().size()}">0</b></button>
+                <button type="button" data-v="alto">Alto <b th:text="${#lists.size(d.proyectos().?[riesgo() == 'Alto'])}">0</b></button>
+                <button type="button" data-v="medio">Medio <b th:text="${#lists.size(d.proyectos().?[riesgo() == 'Medio'])}">0</b></button>
+                <button type="button" data-v="bajo">Bajo <b th:text="${#lists.size(d.proyectos().?[riesgo() == 'Bajo'])}">0</b></button>
+              </div>
+            </header>
+            <div class="table-scroll" th:unless="${d.proyectos().isEmpty()}">
+              <table class="data-table rr-table">
+                <thead><tr><th>Proyecto</th><th>Estado</th><th>Equipo</th><th>Cobertura de habilidades</th><th>Sin cubrir</th><th class="num">Avance</th><th>Plazo</th><th>Riesgo</th></tr></thead>
+                <tbody>
+                  <tr th:each="p : ${d.proyectos()}" th:attr="data-riesgo=${p.riesgoClave()}">
+                    <td><a class="rr-proj" th:href="@{/resource-manager/proyectos/{id}.html(id=${p.id()})}"><b th:text="${p.nombre()}">Proyecto</b><small th:text="'PM ' + ${p.pm()}">PM</small></a></td>
+                    <td><span class="badge" th:classappend="${p.estadoBadge()}" th:text="${p.estadoLabel()}">Estado</span></td>
+                    <td><span class="rr-avail"><b th:text="${p.integrantes()} + ' integrantes'">0</b><small th:text="${p.vacantes() > 0} ? ${p.vacantes()} + ' vacante(s)' : 'cupo completo'"></small></span></td>
+                    <td><div class="cl-load" th:attr="data-estado=${p.coberturaPct() == 100 ? 'opt' : 'lim'}">
+                      <span class="cl-load-track"><span class="cl-load-fill" th:style="'width:' + ${p.coberturaPct()} + '%'"></span></span>
+                      <span class="cl-load-value" th:text="${p.coberturaPct()} + '%'">0%</span></div></td>
+                    <td><ul class="cl-skills" th:unless="${p.sinCubrir().isEmpty()}"><li th:each="x : ${p.sinCubrir()}" class="is-gap"><span class="tech-logo-sm" th:attr="data-tech-logo=${x}"></span><span th:text="${x}">Hab</span></li></ul>
+                      <span class="cl-none" th:if="${p.sinCubrir().isEmpty()}">Todas cubiertas</span></td>
+                    <td class="num" th:text="${p.avance()} + '%'">0%</td>
+                    <td><span class="rr-plazo" th:attr="data-tono=${p.plazoTono()}" th:text="${p.plazo()}">plazo</span></td>
+                    <td><span class="badge" th:classappend="${p.riesgoBadge()}" th:title="${#strings.listJoin(p.motivos(), ' · ')}" th:text="${p.riesgo()}">Bajo</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="rr-empty" th:if="${d.proyectos().isEmpty()}"><strong>No hay proyectos vigentes con estos filtros</strong></div>
           </article>
-          <article class="card rr-table-card">
+        </div>
+
+        <!-- ── Habilidades ── -->
+        <div class="rr-board is-habilidades" role="tabpanel" id="p-habilidades" aria-labelledby="t-habilidades" data-panel="habilidades" hidden>
+          <div class="rr-stack">
+            <article class="rr-tile">
+              <header class="rr-tile-head"><div><h3>Cobertura</h3><p>Clic para filtrar la tabla</p></div></header>
+              <div class="rr-donut is-sm" data-donut="cobertura" data-unidad="habilidades" data-accion="habilidades"></div>
+            </article>
+            <article class="rr-tile">
+              <header class="rr-tile-head"><div><h3>Brechas más críticas</h3><p>Proyectos que la piden frente a personas con capacidad</p></div></header>
+              <div class="rr-bars" data-bars="brechas"></div>
+            </article>
+            <article class="rr-tile">
+              <header class="rr-tile-head"><div><h3><svg class="icon icon-sm"><use href="/img/icons.svg#icon-graduation"></use></svg>Cursos para cerrar brechas</h3><p>Recursos publicados en Cursos para esas habilidades</p></div></header>
+              <ul class="rr-courses" th:unless="${d.cursosSugeridos().isEmpty()}">
+                <li th:each="c : ${d.cursosSugeridos()}">
+                  <a th:href="${c.url()}" target="_blank" rel="noopener noreferrer">
+                    <span class="tech-logo-sm" th:attr="data-tech-logo=${c.habilidad()}"></span>
+                    <span class="rr-course-text"><b th:text="${c.titulo()}">Curso</b><small th:text="${c.tipo()} + ' · ' + ${c.plataforma()} + ' · ' + ${c.habilidad()} + (${c.gratuito()} ? ' · gratis' : '')">tipo</small></span>
+                    <svg class="icon icon-sm"><use href="/img/icons.svg#icon-external-link"></use></svg>
+                  </a>
+                </li>
+              </ul>
+              <p class="rr-empty-line" th:if="${d.cursosSugeridos().isEmpty()}">No hay brechas o todavía no hay cursos publicados para esas habilidades.</p>
+            </article>
+          </div>
+          <article class="rr-tile is-table">
+            <header class="rr-tile-head"><div><h3>Oferta contra demanda</h3><p>Personas con el nivel pedido y cuántas tienen capacidad libre</p></div></header>
             <div class="table-scroll" th:unless="${d.habilidades().isEmpty()}">
               <table class="data-table rr-table">
-                <thead><tr><th>Habilidad</th><th>Nivel pedido</th><th class="num">Proyectos</th><th class="num">Con el nivel</th><th class="num">Con capacidad</th><th>Cobertura</th></tr></thead>
+                <thead><tr><th>Habilidad</th><th>Nivel pedido</th><th class="num" title="Proyectos que la piden">Piden</th><th class="num" title="Personas con el nivel pedido">Con nivel</th><th class="num" title="De ellas, con capacidad libre">Libres</th><th>Cobertura</th></tr></thead>
                 <tbody>
                   <tr th:each="c : ${d.habilidades()}" data-rr-row="habilidades" th:attr="data-cob=${c.estado()}">
-                    <td><b th:text="${c.nombre()}">Hab</b><small class="rr-muted rr-block" th:text="${c.categoria()}">Cat</small></td>
+                    <td><span class="rr-skill"><span class="tech-logo-sm" th:attr="data-tech-logo=${c.nombre()}"></span><span><b th:text="${c.nombre()}">Hab</b><small th:text="${c.categoria()}">Cat</small></span></span></td>
                     <td th:text="${c.nivelLabel()}">Nivel</td>
                     <td class="num" th:title="${#strings.listJoin(c.proyectosNombres(), ', ')}" th:text="${c.proyectos()}">0</td>
                     <td class="num" th:text="${c.calificadas()}">0</td>
                     <td class="num" th:text="${c.disponibles()}">0</td>
-                    <td><span class="rr-pill" th:attr="data-k=${c.estado() == 'Sin cobertura' ? 'sin' : (c.estado() == 'Ajustada' ? 'ajustada' : 'cubierta')}" th:text="${c.estado()}">Cubierta</span></td>
+                    <td><span class="badge" th:classappend="${c.estadoBadgeClass()}" th:text="${c.estado()}">Cubierta</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -273,60 +341,56 @@
             </div>
           </article>
         </div>
-      </section>
 
-      <!-- ═════════ Decisiones y entregas ═════════ -->
-      <section class="rr-section" id="decisiones" aria-labelledby="rr-h-dec">
-        <header class="rr-sec-head"><div><h2 id="rr-h-dec">Decisiones y cumplimiento</h2>
-          <p>Propuestas de asignación, acierto de AI Talent Matching y entregas a tiempo.</p></div></header>
-        <div class="rr-grid-3">
-          <article class="card rr-chart-card">
-            <header><h3>Resultado de las propuestas</h3><p th:text="${de.total()} + ' propuestas en total'">total</p></header>
+        <!-- ── Decisiones ── -->
+        <div class="rr-board" role="tabpanel" id="p-decisiones" aria-labelledby="t-decisiones" data-panel="decisiones" hidden>
+          <article class="rr-tile">
+            <header class="rr-tile-head"><div><h3>Resultado de las propuestas</h3><p th:text="${de.total()} + ' propuestas de asignación'">total</p></div></header>
             <div class="rr-donut" data-donut="propuestas" data-unidad="propuestas"></div>
           </article>
-          <article class="card rr-chart-card">
-            <header><h3>Cómo se decide</h3><p>Velocidad y calidad de las asignaciones</p></header>
+          <article class="rr-tile">
+            <header class="rr-tile-head"><div><h3>Cómo se decide</h3><p>Velocidad y calidad de las asignaciones</p></div></header>
             <dl class="rr-stats">
               <div><dt>Tasa de aprobación</dt><dd th:text="${de.tasaAprobacion()} + '%'">0%</dd></div>
-              <div><dt>Tiempo medio de respuesta</dt><dd th:text="${de.tiempoMedioResolucion() ?: '—'}">—</dd></div>
+              <div><dt>Tiempo de respuesta</dt><dd th:text="${de.tiempoMedioResolucion() ?: '—'}">—</dd></div>
               <div><dt>Puntaje de las aprobadas</dt><dd th:text="${de.scorePromedioAprobadas()} + '/100'">0</dd></div>
-              <div><dt>Acierto de la IA</dt><dd th:text="${de.iaRecomendaciones() > 0} ? ${de.iaAciertoPct()} + '%' : '—'">—</dd>
-                <small th:text="${de.iaAciertos()} + ' de ' + ${de.iaRecomendaciones()} + ' recomendadas asignadas'"></small></div>
+              <div><dt>Acierto de la IA</dt><dd th:text="${de.iaRecomendaciones() > 0} ? ${de.iaAciertoPct()} + '%' : '—'">—</dd></div>
             </dl>
             <div class="rr-bars is-compact" data-bars="origen"></div>
           </article>
-          <article class="card rr-chart-card">
-            <header><h3>Cumplimiento de entregas</h3><p th:text="${d.entregas().entregables()} + ' entregables publicados'">entregables</p></header>
+          <article class="rr-tile">
+            <header class="rr-tile-head"><div><h3>Cumplimiento de entregas</h3><p th:text="${d.entregas().entregables()} + ' entregables publicados'">entregables</p></div></header>
             <div class="rr-gauge" th:style="'--p:' + ${d.entregas().aTiempoPct()}">
               <div class="rr-gauge-ring"><b th:text="${d.entregas().entregas() > 0} ? ${d.entregas().aTiempoPct()} + '%' : '—'">0%</b><small>a tiempo</small></div>
             </div>
             <dl class="rr-stats is-row">
               <div><dt>Entregas</dt><dd th:text="${d.entregas().entregas()}">0</dd></div>
-              <div><dt>Calificación media</dt><dd th:text="${d.entregas().revisadas() > 0} ? ${d.entregas().calificacionPromedioPct()} + '%' : '—'">—</dd></div>
-              <div><dt>Vencidos abiertos</dt><dd th:text="${d.entregas().vencidosSinEntrega()}">0</dd></div>
+              <div><dt>Calificación</dt><dd th:text="${d.entregas().revisadas() > 0} ? ${d.entregas().calificacionPromedioPct()} + '%' : '—'">—</dd></div>
+              <div><dt>Vencidos</dt><dd th:text="${d.entregas().vencidosSinEntrega()}">0</dd></div>
             </dl>
           </article>
+          <article class="rr-tile span-all is-table">
+            <header class="rr-tile-head"><div><h3>Historial de propuestas</h3><p>Más recientes primero · pasa el cursor por el estado para ver el comentario</p></div></header>
+            <div class="table-scroll" th:unless="${d.propuestas().isEmpty()}">
+              <table class="data-table rr-table">
+                <thead><tr><th>Fecha</th><th>Proyecto</th><th>Candidato</th><th>Solicitó</th><th>Origen</th><th class="num">Puntaje</th><th class="num">Dedicación</th><th>Estado</th></tr></thead>
+                <tbody>
+                  <tr th:each="p : ${d.propuestas()}" data-rr-row="propuestas">
+                    <td th:text="${p.fecha()}">fecha</td><td><b th:text="${p.proyecto()}">Proyecto</b></td><td th:text="${p.candidato()}">Candidato</td>
+                    <td th:text="${p.solicitante()}">PM</td><td th:text="${p.origen()}">Origen</td><td class="num" th:text="${p.score()}">0</td>
+                    <td class="num" th:text="${p.dedicacion()} + '%'">0%</td>
+                    <td><span class="badge" th:classappend="${p.estadoBadge()}" th:title="${p.motivo()}" th:text="${p.estado()}">Estado</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="rr-empty" th:if="${d.propuestas().isEmpty()}"><strong>Todavía no hay propuestas de asignación</strong></div>
+            <div class="table-footer" th:unless="${d.propuestas().isEmpty()}" data-pager="propuestas">
+              <span class="text-tertiary">Mostrando <span data-visible>0</span> de <span th:text="${d.propuestas().size()}">0</span></span>
+              <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label>Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
+            </div>
+          </article>
         </div>
-        <article class="card rr-table-card" th:unless="${d.propuestas().isEmpty()}">
-          <header class="rr-table-head"><h3>Historial de propuestas</h3></header>
-          <div class="table-scroll">
-            <table class="data-table rr-table">
-              <thead><tr><th>Fecha</th><th>Proyecto</th><th>Candidato</th><th>Solicitó</th><th>Origen</th><th class="num">Puntaje</th><th class="num">Dedicación</th><th>Estado</th></tr></thead>
-              <tbody>
-                <tr th:each="p : ${d.propuestas()}" data-rr-row="propuestas">
-                  <td th:text="${p.fecha()}">fecha</td><td><b th:text="${p.proyecto()}">Proyecto</b></td><td th:text="${p.candidato()}">Candidato</td>
-                  <td th:text="${p.solicitante()}">PM</td><td th:text="${p.origen()}">Origen</td><td class="num" th:text="${p.score()}">0</td>
-                  <td class="num" th:text="${p.dedicacion()} + '%'">0%</td>
-                  <td><span class="rr-pill" th:attr="data-k=${p.estado() == 'Aprobada' ? 'aprobada' : (p.estado() == 'Rechazada' ? 'rechazada' : 'pendiente')}" th:title="${p.motivo()}" th:text="${p.estado()}">Estado</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="table-footer" data-pager="propuestas">
-            <span class="text-tertiary">Mostrando <span data-visible>0</span> de <span th:text="${d.propuestas().size()}">0</span></span>
-            <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label>Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
-          </div>
-        </article>
       </section>
 
       <div class="rr-tooltip" id="rr-tooltip" role="tooltip" hidden></div>
@@ -352,6 +416,7 @@
 <script src="/js/dropdown.js"></script>
 <script src="/js/multiselect.js"></script>
 <script src="/js/topbar-actions.js"></script>
+<script src="/js/tech-icons.js"></script>
 <script src="/js/rm-reportes.js"></script>
 <script src="/js/global-search.js"></script>
 <script src="/js/paginacion.js"></script>
