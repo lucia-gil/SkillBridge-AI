@@ -174,3 +174,14 @@
   .pd .kpi-hero-head { flex-direction: column; }
   .pd-hero-actions { justify-content: flex-start; }
 }
+
+/* ── Descripción ──────────────────────────────────────────── */
+.pd-desc-full { margin: 0; max-width: 80ch; font-size: var(--fs-sm); line-height: 1.7; color: var(--text-secondary); white-space: pre-line; overflow-wrap: anywhere; }
+.pd-facts {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: var(--space-5) 0 0;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; background: var(--border-subtle);
+}
+.pd-facts > div { padding: 10px 14px; background: var(--surface); min-width: 0; }
+.pd-facts dt { font-size: 11px; font-weight: 650; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-tertiary); }
+.pd-facts dd { margin: 4px 0 0; font-size: var(--fs-sm); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) { .pd-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

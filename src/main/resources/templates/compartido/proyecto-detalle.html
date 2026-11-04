@@ -90,6 +90,24 @@
       <div class="pd-grid">
         <div class="pd-main">
 
+          <!-- ── Descripción ───────────────────────────────────── -->
+          <section class="card pd-card" aria-labelledby="pd-h-desc">
+            <header class="pd-card-head">
+              <div><h3 id="pd-h-desc">Descripción del proyecto</h3>
+                <p>Objetivo, alcance y datos clave.</p></div>
+            </header>
+            <p class="pd-desc-full" th:if="${d.descripcion != null and !#strings.isEmpty(d.descripcion)}" th:text="${d.descripcion}">Descripción</p>
+            <p class="pd-empty" th:if="${d.descripcion == null or #strings.isEmpty(d.descripcion)}">Este proyecto todavía no tiene descripción.</p>
+            <dl class="pd-facts">
+              <div><dt>Project Manager</dt><dd th:text="${v.pmNombre()}">Nombre</dd></div>
+              <div><dt>Inicio</dt><dd th:text="${d.fechaInicioLabel ?: '—'}">fecha</dd></div>
+              <div><dt>Fin estimado</dt><dd th:text="${d.fechaFinLabel ?: '—'}">fecha</dd></div>
+              <div><dt>Duración</dt><dd th:text="${v.duracionLabel()}">—</dd></div>
+              <div><dt>Equipo requerido</dt><dd th:text="${d.colaboradoresRequeridos} + (${d.colaboradoresRequeridos == 1} ? ' colaborador' : ' colaboradores')">0</dd></div>
+              <div><dt>Estado</dt><dd><span class="badge" th:classappend="${d.estadoBadgeClass}" th:text="${d.estadoLabel}">Estado</span></dd></div>
+            </dl>
+          </section>
+
           <!-- ── Stack y habilidades ───────────────────────────── -->
           <section class="card pd-card" aria-labelledby="pd-h-hab">
             <header class="pd-card-head">

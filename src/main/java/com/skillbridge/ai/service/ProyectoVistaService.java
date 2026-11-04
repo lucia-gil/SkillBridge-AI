@@ -64,7 +64,8 @@ public class ProyectoVistaService {
                         List<Cobertura> cobertura, long coberturaCompleta,
                         List<Miembro> equipo, List<EntregableFila> entregables, long entregablesAbiertos,
                         long entregablesVencidos, long hilosForo, Long salaChatId,
-                        List<MatchingCandidato> sugeridos, boolean admiteIntegrantes, int dedicacionReferencia) {
+                        List<MatchingCandidato> sugeridos, boolean admiteIntegrantes, int dedicacionReferencia,
+                        String duracionLabel) {
         public long huecos() { return cobertura.stream().filter(Cobertura::hueco).count(); }
     }
 
@@ -166,7 +167,7 @@ public class ProyectoVistaService {
         String[] plazo = plazo(p);
         return new Vista(detalle, pmNombre, vacantes, propuestaRepository.countByProyectoIdAndEstado(proyectoId, "pendiente"),
                 equipo.size(), plazo[0], plazo[1], cobertura, completa, equipo, entregables, abiertos, vencidos,
-                hilos, salaId, sugeridos, admite, DEDICACION_REFERENCIA);
+                hilos, salaId, sugeridos, admite, DEDICACION_REFERENCIA, duracion(p));
     }
 
     /** "Faltan 42 días", "Venció hace 3 días", "Empieza en 5 días"... y su tono. */
@@ -185,6 +186,17 @@ public class ProyectoVistaService {
         if (d < 0) return new String[]{"Venció hace " + (-d) + (d == -1 ? " día" : " días"), "red"};
         if (d == 0) return new String[]{"Vence hoy", "red"};
         return new String[]{"Faltan " + d + (d == 1 ? " día" : " días"), d <= 14 ? "amber" : "green"};
+    }
+
+    /** "3 semanas", "5 meses", "1 año y 2 meses"... o "—" si falta una fecha. */
+    private static String duracion(Proyecto p) {
+        if (p.getFechaInicio() == null || p.getFechaFinEstimada() == null) return "—";
+        long dias = ChronoUnit.DAYS.between(p.getFechaInicio(), p.getFechaFinEstimada());
+        if (dias < 60) { long sem = Math.max(1, Math.round(dias / 7.0)); return sem + (sem == 1 ? " semana" : " semanas"); }
+        long meses = Math.round(dias / 30.44);
+        if (meses < 12) return meses + " meses";
+        long anios = meses / 12, resto = meses % 12;
+        return anios + (anios == 1 ? " año" : " años") + (resto == 0 ? "" : " y " + resto + (resto == 1 ? " mes" : " meses"));
     }
 
     private static String nivelLabel(int n) {
