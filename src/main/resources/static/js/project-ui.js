@@ -104,7 +104,16 @@
       '<div class="field"><label>Avance</label><select class="select" data-k="avance">' + opt("", "Cualquiera") + opt("0-25", "0% – 25%") + opt("26-50", "26% – 50%") + opt("51-75", "51% – 75%") + opt("76-100", "76% – 100%") + "</select></div>" +
       (bar.getAttribute("data-hide") === "miembros" ? "" : '<div class="field"><label>Miembros</label><select class="select" data-k="miembros">' + opt("", "Cualquiera") + opt("1-3", "1 a 3") + opt("4-6", "4 a 6") + opt("7+", "7 o más") + "</select></div>") +
       '<button type="button" class="btn btn-tertiary btn-sm filter-reset">Limpiar filtros</button>';
+    var aplicando = false;
     function aplicar() {
+      // El "change" que se dispara abajo vuelve a llamar a aplicar() desde el
+      // listener de los filtros de tarjetas: sin este freno era recursión
+      // infinita ("Maximum call stack size exceeded") en colaborador/proyectos.
+      if (aplicando) return;
+      aplicando = true;
+      try { aplicarFiltros(); } finally { aplicando = false; }
+    }
+    function aplicarFiltros() {
       // Vuelve a disparar el ciclo de filtrado/paginación propio de la página.
       var trigger = document.querySelector('[data-filter-scope="' + scope + '"][data-filter-key="estado"], [data-filter-scope="' + scope + '"][data-filter-key="q"]');
       if (trigger) trigger.dispatchEvent(new Event(trigger.tagName === "SELECT" ? "change" : "input", { bubbles: true }));

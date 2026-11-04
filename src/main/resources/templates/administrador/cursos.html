@@ -61,7 +61,7 @@
     <label class="wide">Descripción<textarea class="input" name="descripcion" maxlength="5000" rows="3"></textarea></label>
     <label class="wide">URL del curso<input class="input" type="url" name="url" maxlength="500" placeholder="https://..."></label>
     <label>Categoría<select class="select" name="categoriaId"><option value="">Sin categoría</option><option th:each="cat : ${categorias}" th:value="${cat.id}" th:text="${cat.nombre}"></option></select></label>
-    <label>Habilidad<select class="select" name="habilidadId"><option value="">Sin habilidad</option><option th:each="h : ${habilidades}" th:value="${h.id}" th:text="${h.nombre}" th:attr="data-categoria-id=${h.categoria.id}"></option></select><small>Se filtra según la categoría elegida.</small></label>
+    <label>Habilidad<select class="select" name="habilidadId" data-tech-icons><option value="">Sin habilidad</option><option th:each="h : ${habilidades}" th:value="${h.id}" th:text="${h.nombre}" th:attr="data-categoria-id=${h.categoria.id}"></option></select><small>Se filtra según la categoría elegida.</small></label>
     <label>Nivel<select class="select" name="nivel"><option value="BASICO">Básico</option><option value="INTERMEDIO">Intermedio</option><option value="AVANZADO">Avanzado</option><option value="EXPERTO">Experto</option></select></label></div>
   <div class="course-dialog-actions"><button type="button" class="btn btn-secondary" id="cancelar-curso">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
 </form></dialog>

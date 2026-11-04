@@ -30,11 +30,12 @@
               <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
               <input type="search" id="cl-buscar" placeholder="Buscar por nombre, correo o habilidad" aria-label="Buscar en el directorio" autocomplete="off">
             </label>
-            <select class="select cl-select" id="filtro-habilidad" aria-label="Filtrar por habilidad">
+            <select class="select cl-select" id="filtro-habilidad" aria-label="Filtrar por habilidad" data-tech-icons>
               <option value="">Todas las habilidades</option>
               <option th:each="h : ${catalogoHabilidades}"
                       th:value="${h.id}"
-                      th:text="${h.nombre} + ' (' + ${h.categoria.nombre} + ')'"
+                      th:text="${h.nombre}"
+                      th:attr="data-group=${h.categoria.nombre}"
                       th:selected="${habilidadIdSeleccionada != null and habilidadIdSeleccionada == h.id}">
               </option>
             </select>
