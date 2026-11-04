@@ -109,6 +109,19 @@ Arquitectura **híbrida y explicable** (`MatchingIaService`, REST `MatchingApiCo
 
 En la vista de detalle del proyecto, **"Analizar con IA"** hace los pasos 2 a 4 para el proyecto abierto. Proponer (PM) o asignar (RM) siguen siendo decisiones de una persona, con confirmación.
 
+### Reportes del Resource Manager (dashboard + Excel + PDF)
+
+`resource-manager/reportes.html` (`RmReportesController`, `RmReporteService`) reúne con los mismos filtros (búsqueda, estado de carga, cargo, proyecto, categoría de habilidad, ocupación mínima y solo brechas) lo que guarda la base:
+
+- **Capacidad:** ocupación, banca (días sin proyecto), próximas liberaciones y riesgo de sobrecarga.
+- **Proyectos:** equipo, vacantes, cobertura de habilidades, plazo y un nivel de riesgo con sus motivos.
+- **Habilidades:** oferta contra demanda y brechas.
+- **Decisiones:** propuestas (resultado, origen, tiempo de respuesta) y acierto de la IA.
+- **Entregas:** cumplimiento a tiempo y calificación promedio.
+- **Hallazgos clave:** conclusiones calculadas automáticamente.
+
+Los gráficos (donas interactivas con tooltip y clic para filtrar, y barras con la línea del límite) se dibujan en SVG con `js/rm-reportes.js`, sin librerías. `RmReporteExportService` genera el **Excel** (portada con indicadores y hallazgos, 4 gráficos nativos editables, hojas de detalle con autofiltro, barras de datos y colores por estado) y el **PDF ejecutivo** (A4 horizontal, donas y barras dibujadas, tablas por sección y "Página N de M").
+
 ### Buscador inteligente (Ctrl+K)
 
 El buscador del topbar sigue mostrando coincidencias al instante mientras escribes (`GET /cuenta/buscar`). Si lo escrito parece una pregunta ("¿quién sabe Docker y está libre?", "proyectos de nube atrasados", "gente en la banca"), aparece **Preguntar a la IA ↵**. Solo al elegirla se llama con jQuery/AJAX a `POST /cuenta/buscar-ia` (`BuscadorIaService`): la IA convierte la pregunta en filtros (personas o proyectos, habilidades, nivel, % libre, banca, estados, atrasados, vacantes) y Java busca en la base con el alcance de cada rol (el Colaborador no ve a otras personas). Si la IA no responde, un intérprete por palabras clave arma los filtros.
