@@ -1,6 +1,7 @@
 /**
  * rm-inicio.js — Inicio del Resource Manager.
- *  - Pestañas (ui-kit.js): "Gestión de la banca" / "Alertas de carga" / "Se liberan pronto".
+ *  - Pestañas (ui-kit.js): "Con capacidad libre" / "Se liberan pronto". Las alertas de
+ *    carga están en la tarjeta "Requiere tu atención" de la columna derecha.
  *  - Carrusel de disponibles: flechas en su propia barra, contador "1–3 de 4";
  *    avanza de a una vista completa y oculta las flechas si todo cabe.
  *  - [data-rmi-go="banca"]: botón que cambia de pestaña.

@@ -29,8 +29,14 @@
       <section class="kpi-hero" th:with="b=${p.balance()}">
         <div class="kpi-hero-head">
           <div>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-home"></use></svg>Resource Manager · Panel del día</span>
             <h2 class="kpi-hero-title" th:text="'¡Hola, ' + ${user != null and user.nombre != null and !#strings.isEmpty(user.nombre) ? #strings.arraySplit(user.nombre, ' ')[0] : 'equipo'} + '!'">¡Hola!</h2>
-            <p class="kpi-hero-sub">Esto es lo que pasa hoy con la carga y la disponibilidad de tu equipo.</p>
+            <p class="kpi-hero-sub rmi-insight">
+              Hoy:
+              <b th:text="${p.solicitudesTotal() == 0} ? 'ninguna solicitud por revisar' : ${p.solicitudesTotal()} + (${p.solicitudesTotal() == 1} ? ' solicitud por revisar' : ' solicitudes por revisar')">1 solicitud por revisar</b>,
+              <b th:text="${alertasCarga == 0} ? 'sin alertas de carga' : ${alertasCarga} + (${alertasCarga == 1} ? ' alerta de carga' : ' alertas de carga')">sin alertas de carga</b>
+              y <b th:text="${disponiblesTotal} + (${disponiblesTotal == 1} ? ' persona lista' : ' personas listas')">3 personas listas</b> para un proyecto.
+            </p>
           </div>
           <a class="kpi-hero-action" href="ai-talent-matching.html" th:if="${p.solicitudesTotal() > 0}">
             <svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg>
@@ -115,24 +121,21 @@
         </div>
       </section>
 
-      <!-- ═════════════ Dos columnas: izquierda (banca + línea de tiempo), derecha (solicitudes + habilidades) ═════════════ -->
+      <!-- ═════════════ Dos columnas: izquierda (disponibilidad + línea de tiempo), derecha (requiere tu atención + habilidades) ═════════════ -->
       <div class="rmi-layout">
         <div class="rmi-col">
           <section class="card card-pad rmi-central">
             <div class="rmi-head">
               <div>
                 <h3>Disponibilidad del equipo</h3>
-                <p class="rmi-sub">Personas con capacidad libre, alertas de carga y quién se libera pronto.</p>
+                <p class="rmi-sub">Quién puede tomar un proyecto y quién se libera pronto.</p>
               </div>
               <a href="ocupacion.html" class="btn btn-secondary btn-sm">Ver ocupación completa</a>
             </div>
 
             <div class="tabs rmi-tabs" role="tablist" data-tabs>
-              <button type="button" class="tab-btn" data-tab="banca" th:classappend="${alertasCarga == 0} ? 'active'">
-                Gestión de la banca <span class="counter-badge" th:text="${disponiblesTotal}">0</span>
-              </button>
-              <button type="button" class="tab-btn" data-tab="alertas" th:classappend="${alertasCarga > 0} ? 'active'">
-                Alertas de carga <span class="counter-badge" th:text="${alertasCarga}">0</span>
+              <button type="button" class="tab-btn active" data-tab="banca">
+                Con capacidad libre <span class="counter-badge" th:text="${disponiblesTotal}">0</span>
               </button>
               <button type="button" class="tab-btn" data-tab="liberados">
                 Se liberan pronto <span class="counter-badge" th:text="${p.liberados().size()}">0</span>
@@ -206,36 +209,6 @@
                     </div>
                   </article>
                 </div>
-              </div>
-            </div>
-
-            <!-- Pestaña: alertas -->
-            <div class="rmi-panel" data-tab-panel="alertas" hidden>
-              <div class="rmi-list" th:if="${alertasCarga > 0}">
-                <div class="callout danger" th:each="o : ${sobrecargados}">
-                  <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
-                  <span class="callout-body"><strong th:text="${o.nombre}">Nombre</strong> está sobre-asignado hoy
-                    (<span th:text="${o.promedio}">0</span>% de carga) — <a href="asignaciones.html">rebalancear</a>.</span>
-                </div>
-                <div class="callout warn" th:each="r : ${p.prediccion().enRiesgo()}">
-                  <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
-                  <span class="callout-body"><strong th:text="${r.nombre()}">Nombre</strong> llegará a
-                    <strong th:text="${r.cargaFutura()} + '%'">0%</strong> en los próximos <span th:text="${p.prediccion().dias()}">14</span> días
-                    por asignaciones ya programadas — <a th:href="@{'/resource-manager/colaboradores/' + ${r.perfilId()}}">ver detalle</a>.</span>
-                </div>
-              </div>
-              <div class="rmi-calm" th:if="${alertasCarga == 0}">
-                <svg class="rmi-calm-art" viewBox="0 0 120 90" aria-hidden="true">
-                  <ellipse cx="60" cy="80" rx="44" ry="6" class="rmi-art-shadow"></ellipse>
-                  <rect x="22" y="22" width="76" height="52" rx="10" class="rmi-art-card"></rect>
-                  <path d="M34 60 L48 46 L60 54 L84 34" class="rmi-art-line"></path>
-                  <circle cx="84" cy="34" r="5" class="rmi-art-dot"></circle>
-                  <circle cx="94" cy="18" r="12" class="rmi-art-badge"></circle>
-                  <path d="M88.5 18.5l4 4 7-8" class="rmi-art-check"></path>
-                </svg>
-                <strong>Sin alertas de carga</strong>
-                <span>Nadie supera el <span th:text="${p.limiteCarga()}">100</span>% hoy ni lo hará en los próximos <span th:text="${p.prediccion().dias()}">14</span> días con lo que ya está programado.</span>
-                <button type="button" class="btn btn-secondary btn-sm" data-rmi-go="banca">Ver quién está disponible</button>
               </div>
             </div>
 
@@ -324,23 +297,48 @@
         </div>
 
         <div class="rmi-col">
-          <!-- Buzón de solicitudes de PMs -->
-          <section class="card card-pad rmi-inbox">
+          <!-- Lo que requiere acción del RM, lo más urgente primero -->
+          <section class="card card-pad rmi-inbox rmi-attn" th:with="pendientes=${p.solicitudesTotal() + alertasCarga}">
             <div class="rmi-head">
               <div>
-                <h3>Solicitudes de Project Managers</h3>
-                <p class="rmi-sub" th:text="${p.solicitudesTotal() == 0} ? 'Bandeja al día' : ${p.solicitudesTotal()} + ' pendiente(s) de tu revisión'">pendientes</p>
+                <h3>Requiere tu atención</h3>
+                <p class="rmi-sub" th:text="${pendientes == 0} ? 'Todo al día' : ${pendientes} + (${pendientes == 1} ? ' asunto pendiente' : ' asuntos pendientes')">pendientes</p>
               </div>
-              <span class="counter-badge rmi-inbox-count" th:if="${p.solicitudesTotal() > 0}" th:text="${p.solicitudesTotal()}">0</span>
+              <span class="counter-badge rmi-inbox-count" th:if="${pendientes > 0}" th:text="${pendientes}">0</span>
             </div>
 
-            <div class="state-panel rmi-empty" th:if="${p.solicitudes().isEmpty()}">
-              <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span>
-              <span class="state-panel-title">No hay solicitudes pendientes</span>
-              <span class="state-panel-desc">Cuando un PM proponga a alguien para su proyecto, aparecerá aquí.</span>
+            <div class="rmi-calm is-compact" th:if="${pendientes == 0}">
+              <span class="rmi-calm-icon" aria-hidden="true"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span>
+              <strong>Todo al día</strong>
+              <span>Sin solicitudes de Project Managers y nadie supera el <span th:text="${p.limiteCarga()}">100</span>% en los próximos <span th:text="${p.prediccion().dias()}">14</span> días.</span>
             </div>
 
-            <ul class="rmi-requests" th:unless="${p.solicitudes().isEmpty()}">
+            <th:block th:if="${alertasCarga > 0}">
+              <h4 class="rmi-attn-title is-alert">
+                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-alert-triangle"></use></svg>
+                Alertas de carga <b th:text="${alertasCarga}">0</b>
+              </h4>
+              <div class="rmi-list" th:if="${alertasCarga > 0}">
+                <div class="callout danger" th:each="o : ${sobrecargados}">
+                  <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
+                  <span class="callout-body"><strong th:text="${o.nombre}">Nombre</strong> está sobre-asignado hoy
+                    (<span th:text="${o.promedio}">0</span>% de carga) — <a href="asignaciones.html">rebalancear</a>.</span>
+                </div>
+                <div class="callout warn" th:each="r : ${p.prediccion().enRiesgo()}">
+                  <span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
+                  <span class="callout-body"><strong th:text="${r.nombre()}">Nombre</strong> llegará a
+                    <strong th:text="${r.cargaFutura()} + '%'">0%</strong> en los próximos <span th:text="${p.prediccion().dias()}">14</span> días
+                    por asignaciones ya programadas — <a th:href="@{'/resource-manager/colaboradores/' + ${r.perfilId()}}">ver detalle</a>.</span>
+                </div>
+              </div>
+            </th:block>
+
+            <th:block th:if="${p.solicitudesTotal() > 0}">
+              <h4 class="rmi-attn-title">
+                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-users"></use></svg>
+                Solicitudes de Project Managers <b th:text="${p.solicitudesTotal()}">0</b>
+              </h4>
+              <ul class="rmi-requests" th:unless="${p.solicitudes().isEmpty()}">
               <li th:each="s : ${p.solicitudes()}">
                 <span class="avatar avatar-sm" th:text="${s.candidatoIniciales()}">AB</span>
                 <span class="rmi-row-main">
@@ -359,10 +357,10 @@
                 </span>
               </li>
             </ul>
-
-            <a href="ai-talent-matching.html" class="btn btn-primary btn-sm rmi-inbox-cta" th:if="${p.solicitudesTotal() > 0}">
-              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-check-circle"></use></svg>Revisar solicitudes
-            </a>
+              <a href="ai-talent-matching.html" class="btn btn-primary btn-sm rmi-inbox-cta">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-check-circle"></use></svg>Revisar solicitudes
+              </a>
+            </th:block>
           </section>
 
           <section class="card card-pad rmi-skills-card">

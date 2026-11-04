@@ -35,8 +35,8 @@
 
 /* ── Encabezados de tarjeta ─────────────────────────────── */
 .rmi-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); }
-.rmi-head h3 { font-size: var(--fs-md); }
-.rmi-sub { font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: 2px; }
+.rmi-head h3 { font-size: 17px; font-weight: 650; letter-spacing: -.015em; }
+.rmi-sub { font-size: var(--fs-sm); color: var(--text-tertiary); margin-top: 3px; }
 .rmi-subtitle { font-size: var(--fs-sm); font-weight: var(--fw-semibold); margin: var(--space-6) 0 var(--space-3); }
 .rmi-muted { color: var(--text-tertiary); font-size: var(--fs-xs); }
 .rmi-tabs { margin-bottom: var(--space-4); overflow-x: auto; scrollbar-width: none; }
@@ -227,3 +227,23 @@ a.rmi-row-title:hover { color: var(--blue-link); }
 :root[data-theme="dark"] .rmi-tabs .tab-btn.active .counter-badge { background: var(--blue-fg); }
 :root[data-theme="dark"] .rmi-dots i.on { background: var(--blue-fg); }
 :root[data-theme="dark"] .rmi-art-fg { stroke: var(--blue-fg); }
+
+
+/* ── Rediseño: frase del día en la portada ── */
+.rmi-insight { font-size: var(--fs-base); }
+.rmi-insight b { color: #fff; font-weight: 600; }
+
+/* ── "Requiere tu atención": alertas y solicitudes, lo urgente primero ── */
+.rmi-attn-title {
+  display: flex; align-items: center; gap: 8px; margin: var(--space-4) 0 var(--space-3);
+  font-size: var(--fs-sm); font-weight: 650; color: var(--text-primary);
+}
+.rmi-head + .rmi-attn-title { margin-top: 0; }
+.rmi-attn-title .icon { width: 16px; height: 16px; color: var(--violet-fg); }
+.rmi-attn-title.is-alert .icon { color: var(--red-fg); }
+.rmi-attn-title b { margin-left: auto; min-width: 22px; padding: 1px 8px; border-radius: 99px; background: var(--surface-sunken); color: var(--text-secondary); font-size: 11.5px; text-align: center; }
+.rmi-attn .rmi-list + .rmi-attn-title { border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); }
+.rmi-attn .rmi-list .callout { padding: 10px 12px; font-size: var(--fs-sm); }
+.rmi-calm.is-compact { padding: var(--space-5) var(--space-3); gap: 6px; }
+.rmi-calm-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: var(--green-bg); color: var(--green-fg); margin-bottom: 4px; }
+.rmi-calm-icon .icon { width: 22px; height: 22px; }
