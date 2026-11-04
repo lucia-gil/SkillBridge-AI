@@ -65,13 +65,15 @@ public class ProyectoService {
     private final ObjectMapper objectMapper;
     private final PropuestaAsignacionRepository propuestaRepository;
     private final ArchivoProyectoRepository archivoProyectoRepository;
+    private final com.skillbridge.ai.repository.RecomendacionIaLogRepository recomendacionIaLogRepository;
 
     public ProyectoService(ProyectoRepository proyectoRepository, AsignacionRepository asignacionRepository,
                             PerfilRepository perfilRepository, EntregableRepository entregableRepository,
                             ForoPublicacionRepository foroPublicacionRepository, AuditoriaService auditoriaService,
                             NotificacionService notificacionService, ConfiguracionService configuracionService,
                             ObjectMapper objectMapper, PropuestaAsignacionRepository propuestaRepository,
-                            ArchivoProyectoRepository archivoProyectoRepository) {
+                            ArchivoProyectoRepository archivoProyectoRepository,
+                            com.skillbridge.ai.repository.RecomendacionIaLogRepository recomendacionIaLogRepository) {
         this.proyectoRepository = proyectoRepository;
         this.asignacionRepository = asignacionRepository;
         this.perfilRepository = perfilRepository;
@@ -83,6 +85,7 @@ public class ProyectoService {
         this.objectMapper = objectMapper;
         this.propuestaRepository = propuestaRepository;
         this.archivoProyectoRepository = archivoProyectoRepository;
+        this.recomendacionIaLogRepository = recomendacionIaLogRepository;
     }
 
     // ───────────────────────── Lectura ─────────────────────────
@@ -799,6 +802,8 @@ public class ProyectoService {
         a.setEstado("activa");
         a.setFechaInicio(fechaInicio != null ? fechaInicio : LocalDate.now());
         asignacionRepository.save(a);
+        // RF05: si la IA había recomendado a esta persona, la recomendación fue acertada
+        recomendacionIaLogRepository.marcarAsignado(proyectoId, perfilId);
 
         auditoriaService.registrar(actorUsuarioId, "ASIGNACION_CREADA", "asignacion", a.getId(), null,
                 AuditoriaService.json("rol_en_proyecto", Roles.COLABORADOR),

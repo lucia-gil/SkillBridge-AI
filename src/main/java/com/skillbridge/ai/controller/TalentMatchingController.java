@@ -22,9 +22,21 @@ public class TalentMatchingController {
     private final TalentMatchingService matchingService;
     private final ShellModelBuilder shellModelBuilder;
 
-    public TalentMatchingController(TalentMatchingService matchingService, ShellModelBuilder shellModelBuilder) {
+    private final com.skillbridge.ai.service.MatchingIaService matchingIaService;
+
+    public TalentMatchingController(TalentMatchingService matchingService, ShellModelBuilder shellModelBuilder,
+                                    com.skillbridge.ai.service.MatchingIaService matchingIaService) {
         this.matchingService = matchingService;
         this.shellModelBuilder = shellModelBuilder;
+        this.matchingIaService = matchingIaService;
+    }
+
+    /** Datos del panel "Pregúntale a la IA": ejemplos y acierto de las recomendaciones. */
+    private void panelIa(Model model, Long pmPerfilId) {
+        model.addAttribute("ejemplosIa", matchingIaService.ejemplos(pmPerfilId));
+        long[] a = matchingIaService.acierto();
+        model.addAttribute("iaRecomendaciones", a[0]);
+        model.addAttribute("iaAciertos", a[1]);
     }
 
     @GetMapping("/project-manager/ai-talent-matching.html")
@@ -58,6 +70,7 @@ public class TalentMatchingController {
         model.addAttribute("proyectoNombre", nombreProyecto); model.addAttribute("dedicacion", dedicacion);
         model.addAttribute("pesoHabilidades", ph); model.addAttribute("pesoExperiencia", pe); model.addAttribute("pesoDisponibilidad", pd);
         model.addAttribute("candidatos", candidatos);
+        panelIa(model, sesion.getPerfilId());
         return "project-manager/ai-talent-matching";
     }
 
@@ -85,6 +98,7 @@ public class TalentMatchingController {
                 pendientes.size() + " propuesta(s) pendiente(s)", Map.of("ai-talent-matching.html", pendientes.size()));
         model.addAttribute("pendientes", pendientes); model.addAttribute("resueltas", resueltas);
         model.addAttribute("compatibles", compatibles); model.addAttribute("conSobrecarga", pendientes.size() - compatibles);
+        panelIa(model, null);
         return "resource-manager/ai-talent-matching";
     }
 

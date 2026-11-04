@@ -317,6 +317,7 @@ public class ProyectosPmController {
         if (volver != null && volver.matches("proyecto-\\d+")) {
             return "redirect:/project-manager/proyectos/" + volver.substring("proyecto-".length()) + ".html";
         }
+        if ("matching".equals(volver)) return "redirect:/project-manager/ai-talent-matching.html";
         return "redirect:" + ("asignaciones".equals(volver)
                 ? "/project-manager/asignaciones.html"
                 : "/project-manager/proyectos.html");

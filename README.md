@@ -90,6 +90,17 @@ Arquitectura: servicio web **REST** (`ChatApiController`, `/api/chat/**`, JSON) 
 
 `/project-manager/proyectos/{id}.html` (solo el PM que lo lidera) y `/resource-manager/proyectos/{id}.html` (cualquier proyecto), plantilla `compartido/proyecto-detalle.html` (`ProyectoVistaController`, `ProyectoVistaService`). Muestra estado, avance, plazo, stack, **cobertura de habilidades** (quién del equipo cubre cada habilidad requerida y dónde hay huecos), equipo con su carga total, entregables, chat/foro/archivos y **candidatos sugeridos** con el mismo puntaje de AI Talent Matching: el PM los propone al RM y el RM los asigna directo. Se llega desde el nombre del proyecto en Proyectos/Asignaciones/Inicio, desde "Encaja en …" del Inicio del RM y desde el buscador global.
 
+### AI Talent Matching con IA (RF05)
+
+Arquitectura **híbrida y explicable** (`MatchingIaService`, REST `MatchingApiController` en `/api/matching/**`, consumido con jQuery/AJAX desde `js/matching-ia.js`):
+
+1. **Pregúntale a la IA** (pantalla AI Talent Matching del PM y del RM): una petición en lenguaje natural ("Necesito 2 backend con Spring Boot y Docker para Portal Andes al 50%") se convierte en filtros (proyecto, habilidades, cantidad y dedicación). Si la IA no responde, un intérprete por palabras clave hace lo mismo.
+2. **Java calcula el ranking** con los datos reales (`TalentMatchingService`): la IA nunca inventa candidatos ni cambia el puntaje.
+3. **La IA explica** cada recomendación y resume a quién priorizar. Si falla, se muestran las explicaciones calculadas por el sistema.
+4. Cada recomendación queda en `recomendaciones_ia_log`; `fue_asignado` se marca cuando esa persona termina asignada al proyecto, y la pantalla muestra el **acierto de la IA**.
+
+En la vista de detalle del proyecto, **"Analizar con IA"** hace los pasos 2 a 4 para el proyecto abierto. Proponer (PM) o asignar (RM) siguen siendo decisiones de una persona, con confirmación.
+
 ### Catálogo de formación (Cursos)
 
 El Administrador publica en *Cursos* cuatro tipos de recurso: **cursos**, **videos**, **rutas** (roadmaps por pasos) y **especializaciones** (programas de varios cursos). Cada recurso tiene enlace, plataforma (se detecta sola por el enlace: YouTube, Coursera, Microsoft Learn, roadmap.sh, freeCodeCamp…, ver `util/PlataformaCurso`), categoría y habilidad, nivel, duración, idioma, si es gratuito, si da certificado y si es destacado. Las rutas y especializaciones guardan sus pasos en orden (`curso_pasos`).

@@ -1,0 +1,100 @@
+/* ============================================================
+   SkillBridge AI — AI Talent Matching con IA (js/matching-ia.js):
+   tarjetas de candidato con explicación de la IA, panel
+   "Pregúntale a la IA" y estados de carga. Todo cuelga de .mia-*.
+   ============================================================ */
+
+/* ── Botón "Analizar con IA" (vista del proyecto) ─────────── */
+.mia-btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.mia-btn .icon { color: var(--violet-fg); }
+.mia-btn.is-busy { opacity: .7; cursor: progress; }
+
+/* ── Cargando ─────────────────────────────────────────────── */
+.mia-loading { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: var(--radius-lg); background: var(--violet-bg); color: var(--violet-fg); font-size: var(--fs-sm); font-weight: 550; margin-bottom: 12px; }
+.mia-spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: mia-giro .8s linear infinite; flex-shrink: 0; }
+@keyframes mia-giro { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mia-spinner { animation-duration: 2.4s; } }
+
+/* ── Resumen del análisis ─────────────────────────────────── */
+.mia-resumen { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; margin-bottom: 12px; border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); background: var(--surface-sunken); }
+.mia-resumen > .icon { flex-shrink: 0; margin-top: 2px; color: var(--text-tertiary); }
+.mia-resumen b { font-size: var(--fs-sm); color: var(--text-primary); }
+.mia-resumen p { margin: 3px 0 0; font-size: var(--fs-sm); line-height: 1.55; color: var(--text-secondary); }
+.mia-resumen.is-ia { border-color: var(--violet-border); background: var(--violet-bg); }
+.mia-resumen.is-ia > .icon, .mia-resumen.is-ia b { color: var(--violet-fg); }
+.mia-resumen.is-error { border-color: var(--red-border); background: var(--red-bg); }
+.mia-resumen.is-error > .icon, .mia-resumen.is-error b { color: var(--red-fg); }
+.mia-aviso { display: block; margin-top: 6px; font-size: var(--fs-xs); color: var(--amber-fg); }
+
+/* ── Tarjeta de candidato ─────────────────────────────────── */
+.mia-card { list-style: none; padding: 14px; border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); background: var(--surface-sunken); }
+.mia-card.is-top { border-color: var(--violet-border); box-shadow: inset 3px 0 0 var(--violet-fg); }
+.mia-card-top { display: flex; align-items: center; gap: 10px; }
+.mia-who { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.mia-who a, .mia-who b { font-size: var(--fs-sm); font-weight: 600; color: var(--text-primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mia-who a:hover { color: var(--blue-link); text-decoration: underline; }
+.mia-who small { font-size: var(--fs-xs); color: var(--text-tertiary); }
+.mia-top-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 650; background: var(--violet-bg); color: var(--violet-fg); white-space: nowrap; }
+.mia-score { --p: 0; flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--violet-fg) calc(var(--p) * 1%), var(--border-subtle) 0); }
+.mia-score b { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); font-size: 13px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.mia-why { display: flex; gap: 8px; margin: 10px 0 0; padding: 9px 11px; border-radius: var(--radius-md); background: var(--surface); font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.mia-why .icon { flex-shrink: 0; margin-top: 2px; color: var(--text-tertiary); }
+.mia-why.is-ia { background: var(--violet-bg); color: var(--text-primary); }
+.mia-why.is-ia .icon { color: var(--violet-fg); }
+
+.mia-skills { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 0; padding: 0; list-style: none; }
+.mia-skills li { padding: 2px 8px; border: 1px solid var(--border-subtle); border-radius: 999px; background: var(--surface); font-size: 11.5px; color: var(--text-tertiary); }
+.mia-skills li.is-ok { border-color: var(--green-border); background: var(--green-bg); color: var(--green-fg); font-weight: 600; }
+.mia-skills li.is-ok::before { content: "✓ "; }
+
+.mia-crits { display: grid; gap: 5px; margin-top: 10px; }
+.mia-crit { display: grid; grid-template-columns: 92px minmax(0, 1fr) 36px; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-tertiary); }
+.mia-crit b { text-align: right; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.mia-crit-bar { height: 5px; border-radius: 999px; background: var(--border-subtle); overflow: hidden; }
+.mia-crit-bar i { display: block; height: 100%; border-radius: inherit; background: var(--blue-fg); }
+
+.mia-facts { margin: 10px 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.mia-facts b { display: block; color: var(--text-primary); }
+.mia-form { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mia-form label { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-tertiary); }
+.mia-form .input { width: 62px; height: 30px; padding: 0 6px; text-align: center; }
+
+/* ── Panel "Pregúntale a la IA" ───────────────────────────── */
+.mia-panel { padding: var(--space-6); margin-top: var(--space-6); border-top: 3px solid var(--violet-fg); }
+.mia-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.mia-panel-head h2 { display: flex; align-items: center; gap: 8px; font-size: var(--fs-md); font-weight: var(--fw-semibold); color: var(--text-primary); }
+.mia-panel-head h2 .icon { color: var(--violet-fg); }
+.mia-panel-head p { margin-top: 4px; max-width: 72ch; font-size: var(--fs-xs); line-height: 1.5; color: var(--text-tertiary); }
+.mia-acierto { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--surface-sunken); border: 1px solid var(--border-subtle); font-size: var(--fs-xs); color: var(--text-secondary); white-space: nowrap; }
+.mia-acierto b { color: var(--text-primary); }
+
+.mia-ask { display: flex; gap: 10px; align-items: stretch; }
+.mia-ask textarea { flex: 1; min-height: 52px; resize: vertical; padding: 12px 14px; line-height: 1.45; }
+.mia-ask .btn { align-self: stretch; min-width: 150px; }
+.mia-ejemplos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.mia-ejemplos small { font-size: var(--fs-xs); color: var(--text-tertiary); align-self: center; }
+.mia-ejemplos button { padding: 5px 11px; border-radius: 999px; border: 1px dashed var(--border-default); background: transparent; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.mia-ejemplos button:hover { border-style: solid; border-color: var(--violet-fg); color: var(--violet-fg); }
+.mia-out:not(:empty) { margin-top: var(--space-5); }
+
+.mia-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 12px; }
+.mia-filtros > small { font-size: var(--fs-xs); color: var(--text-tertiary); margin-right: 2px; }
+.mia-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-subtle); background: var(--surface-sunken); font-size: 12px; font-weight: 550; color: var(--text-primary); }
+.mia-chip.is-proj { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue-fg); }
+.mia-chip.is-src { background: var(--violet-bg); border-color: var(--violet-border); color: var(--violet-fg); }
+.mia-chip.is-muted { color: var(--text-tertiary); font-weight: 400; }
+.mia-ver { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; font-size: var(--fs-xs); font-weight: 600; color: var(--blue-link); text-decoration: none; }
+.mia-ver:hover { text-decoration: underline; }
+.mia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; margin: 0; padding: 0; }
+
+@media (max-width: 640px) {
+  .mia-ask { flex-direction: column; }
+  .mia-ask .btn { min-height: 42px; }
+  .mia-ver { margin-left: 0; }
+}
+
+.page-content > .mia-panel:first-child { margin-top: 0; }
+.mia-panel + .card { margin-top: var(--space-6); }
+.pd-sug .pd-card-head { flex-wrap: wrap; }
+.pd-sug .pd-card-head h3 { white-space: nowrap; }

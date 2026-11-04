@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/css/polish.css">
   <link rel="stylesheet" href="/css/kpi-hero.css">
   <link rel="stylesheet" href="/css/proyecto-detalle.css">
+  <link rel="stylesheet" href="/css/matching-ia.css">
 </head>
 <body>
 <div class="app-shell">
@@ -201,7 +202,10 @@
           <section class="card pd-card pd-sug" id="candidatos" aria-labelledby="pd-h-sug">
             <header class="pd-card-head">
               <div><h3 id="pd-h-sug"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg>Candidatos sugeridos</h3>
-                <p th:if="${!v.sugeridos().isEmpty()}" th:text="'Mismo puntaje de AI Talent Matching, con ' + ${v.dedicacionReferencia()} + '% de dedicación'">Ranking</p></div>
+                <p class="pd-sug-sub" th:if="${!v.sugeridos().isEmpty()}" th:text="'Mismo puntaje de AI Talent Matching, con ' + ${v.dedicacionReferencia()} + '% de dedicación'">Ranking</p></div>
+              <button type="button" class="btn btn-secondary btn-sm mia-btn" data-mia-analizar th:if="${!v.sugeridos().isEmpty()}"
+                      th:attr="data-proyecto=${d.id},data-area=${area},data-volver=${esPm ? 'proyecto-' + d.id : 'proyecto'}"
+                      title="La IA explica por qué recomienda a cada persona"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg><span>Analizar con IA</span></button>
             </header>
             <p class="pd-empty" th:if="${!v.admiteIntegrantes()}">El proyecto no admite nuevos integrantes en este estado.</p>
             <p class="pd-empty" th:if="${v.admiteIntegrantes() and v.vacantes() == 0}">El equipo está completo: no hay vacantes abiertas.</p>
@@ -258,5 +262,6 @@
 <script src="/js/global-search.js"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/proyecto-detalle.js"></script>
+<script src="/js/matching-ia.js"></script>
 </body>
 </html>

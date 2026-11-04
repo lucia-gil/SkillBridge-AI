@@ -104,7 +104,34 @@ public class TalentMatchingService {
                 .filter(MatchingCandidato::isCargaCompatible).limit(limite).toList();
     }
 
+    /**
+     * Ranking para AI Talent Matching con IA (MatchingIaService): pesos
+     * configurados y, si la petición en lenguaje natural pidió habilidades
+     * concretas, esas reemplazan a las del proyecto. Solo candidatos cuya
+     * carga quede dentro del límite.
+     */
+    @Transactional(readOnly = true)
+    public List<MatchingCandidato> rankingParaIa(Long proyectoId, int dedicacion, Map<Long, Integer> requisitosPedidos, int limite) {
+        Proyecto proyecto = proyectoRepository.findById(proyectoId).orElseThrow(() -> new OperacionInvalidaException("El proyecto no existe."));
+        if (!ProyectoService.admiteNuevosIntegrantes(proyecto)) throw new OperacionInvalidaException("\"" + proyecto.getNombre() + "\" no admite nuevos integrantes en su estado actual.");
+        if (vacantes(proyecto) < 1) throw new OperacionInvalidaException("\"" + proyecto.getNombre() + "\" ya no tiene vacantes disponibles.");
+        if (dedicacion < 1 || dedicacion > 100) throw new OperacionInvalidaException("La dedicación debe estar entre 1% y 100%.");
+        int[] pesos = pesosConfigurados();
+        return rankear(proyecto, dedicacion, pesos[0], pesos[1], pesos[2], requisitosPedidos).stream()
+                .filter(MatchingCandidato::isCargaCompatible).limit(limite).toList();
+    }
+
+    /** Vacantes libres del proyecto (colaboradores requeridos menos los activos). */
+    @Transactional(readOnly = true)
+    public long vacantesDe(Long proyectoId) {
+        return proyectoRepository.findById(proyectoId).map(this::vacantes).orElse(0L);
+    }
+
     private List<MatchingCandidato> rankear(Proyecto proyecto, int dedicacion, int ph, int pe, int pd) {
+        return rankear(proyecto, dedicacion, ph, pe, pd, null);
+    }
+
+    private List<MatchingCandidato> rankear(Proyecto proyecto, int dedicacion, int ph, int pe, int pd, Map<Long, Integer> requisitosPedidos) {
         Long proyectoId = proyecto.getId();
         var cfg = configuracionService.obtenerMapa();
         int limiteCarga = proyectoService.limiteCargaConfigurado();
@@ -112,7 +139,8 @@ public class TalentMatchingService {
 
         Map<Long, Habilidad> habilidades = habilidadRepository.findAll().stream()
                 .collect(Collectors.toMap(Habilidad::getId, Function.identity()));
-        Map<Long, Integer> requisitos = requisitos(proyecto, habilidades);
+        Map<Long, Integer> requisitos = requisitosPedidos != null && !requisitosPedidos.isEmpty()
+                ? new HashMap<>(requisitosPedidos) : requisitos(proyecto, habilidades);
         Set<Long> equipo = asignacionRepository.listarEquipoDeProyecto(proyectoId, "activa").stream()
                 .map(Asignacion::getPerfilId).collect(Collectors.toSet());
 

@@ -95,6 +95,15 @@ public class AsistenteIaService {
     }
 
     /**
+     * Llamada genérica para otras funciones con IA (AI Talent Matching):
+     * devuelve el texto y si es una respuesta real, sin lanzar excepción,
+     * para que quien llama decida su plan B.
+     */
+    public Resultado consultar(String promptSistema, String mensaje, int maxOutputTokens) {
+        return llamarGemini(promptSistema, mensaje, maxOutputTokens);
+    }
+
+    /**
      * Para lo que se GUARDA (resúmenes): si la IA no está disponible lanza
      * OperacionInvalidaException con el aviso, así nunca se persiste un
      * mensaje de error como si fuera un resumen.

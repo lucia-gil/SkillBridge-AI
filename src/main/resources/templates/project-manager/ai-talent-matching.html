@@ -3,10 +3,12 @@
   <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>AI Talent Matching · SkillBridge AI</title>
 <link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/matching-ia.css">
 <style>
 .matching-controls{display:grid;grid-template-columns:2fr repeat(4,minmax(105px,1fr)) auto;gap:var(--space-3);align-items:end}.matching-layout{display:grid;grid-template-columns:minmax(360px,.9fr) minmax(440px,1.1fr);gap:var(--space-5);margin-top:var(--space-5);align-items:start}.candidate-list{display:flex;flex-direction:column;gap:var(--space-3)}.candidate-row{cursor:pointer}.candidate-row.is-selected{border-color:var(--navy-700);background:var(--navy-100)}.score-value{display:block;font-size:var(--fs-md);font-weight:750;color:var(--navy-700)}.candidate-detail[hidden]{display:none!important}.criteria-bar-row{margin-top:var(--space-4)}.skills-list{display:grid;gap:8px;margin-top:var(--space-3)}.skill-match-row{display:flex;justify-content:space-between;gap:var(--space-3);font-size:var(--fs-xs)}@media(max-width:1100px){.matching-controls{grid-template-columns:1fr 1fr 1fr}.matching-layout{grid-template-columns:minmax(0,1fr)}}@media(max-width:700px){.matching-controls{grid-template-columns:minmax(0,1fr)}}
 </style></head><body>
 <div class="app-shell"><div th:replace="~{fragments/sidebar :: sidebar}"></div><div class="main-content"><div th:replace="~{fragments/topbar :: topbar}"></div><main class="page-content" id="page-content">
+<div th:replace="~{fragments/matching-ia :: panel('project-manager')}"></div>
 <section class="card card-pad"><form class="matching-controls" method="get" action="/project-manager/ai-talent-matching.html">
 <div class="field"><label class="field-label">Proyecto con vacantes</label><select class="select" name="proyectoId" th:disabled="${proyectos.isEmpty()}"><option th:each="p:${proyectos}" th:value="${p.id}" th:selected="${p.id == proyectoId}" th:text="${p.nombre + ' · ' + p.vacantes + ' vacante(s)'}">Proyecto</option></select></div>
 <div class="field"><label class="field-label">Dedicación</label><input class="input clamp-100" type="number" min="1" max="100" name="dedicacion" th:value="${dedicacion}"></div>
@@ -54,4 +56,5 @@ document.querySelectorAll('input.clamp-100[type="number"]').forEach(function (in
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
 <script src="/js/mobile-nav.js"></script>
+<script src="/js/matching-ia.js"></script>
 </body></html>

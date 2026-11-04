@@ -1,0 +1,29 @@
+<!--
+  fragments/matching-ia.html — Panel "Pregúntale a la IA" de AI Talent
+  Matching (PM y RM). Lo maneja js/matching-ia.js contra /api/matching/consulta.
+-->
+<section th:fragment="panel(area)" class="card mia-panel" data-mia-panel th:attr="data-area=${area}" aria-labelledby="mia-h">
+  <div class="mia-panel-head">
+    <div>
+      <h2 id="mia-h"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg>Pregúntale a la IA</h2>
+      <p>Describe a quién necesitas. La IA convierte tu petición en filtros, el sistema calcula el puntaje con los datos reales
+        (habilidades, experiencia y disponibilidad) y la IA explica cada recomendación. La decisión final siempre es tuya.</p>
+    </div>
+    <span class="mia-acierto" th:if="${iaRecomendaciones > 0}"
+          th:title="'Personas recomendadas por la IA que luego fueron asignadas al proyecto'">
+      <svg class="icon icon-sm"><use href="/img/icons.svg#icon-target"></use></svg>
+      Acierto de la IA: <b th:text="${iaAciertos * 100 / iaRecomendaciones} + '%'">0%</b>
+      <span th:text="'(' + ${iaAciertos} + ' de ' + ${iaRecomendaciones} + ' recomendaciones asignadas)'"></span>
+    </span>
+  </div>
+  <form class="mia-ask" autocomplete="off">
+    <textarea class="input" rows="2" maxlength="500" aria-label="Petición para la IA"
+              placeholder="Ej.: Necesito 2 backend con Spring Boot y Docker para Portal Andes al 50%"></textarea>
+    <button type="submit" class="btn btn-primary"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-search-check"></use></svg>Buscar talento</button>
+  </form>
+  <div class="mia-ejemplos" th:if="${!ejemplosIa.isEmpty()}">
+    <small>Prueba con:</small>
+    <button type="button" data-mia-ejemplo th:each="e : ${ejemplosIa}" th:text="${e}">Ejemplo</button>
+  </div>
+  <div class="mia-out" aria-live="polite"></div>
+</section>

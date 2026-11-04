@@ -192,6 +192,7 @@ public class RmAsignacionesController {
             // el Service (ej. "Ana ya tiene 90% de carga activa...").
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
+        if ("matching".equals(volver)) return "redirect:/resource-manager/ai-talent-matching.html";
         return "proyecto".equals(volver)
                 ? "redirect:/resource-manager/proyectos/" + id + ".html"
                 : "redirect:/resource-manager/asignaciones.html";
