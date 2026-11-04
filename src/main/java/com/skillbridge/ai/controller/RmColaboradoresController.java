@@ -129,7 +129,10 @@ public class RmColaboradoresController {
 
                     return new ColaboradorFila(p.getId(), p.getUsuario().getNombreCompleto(), p.getUsuario().getCorreo(),
                             p.getCargo(), ocupacion, estadoVista, habilidades,
-                            p.getUsuario().tieneFotoPerfil(), p.getUsuario().getId()).conLimite(limite);
+                            p.getUsuario().tieneFotoPerfil(), p.getUsuario().getId()).conLimite(limite)
+                            .conParticipacion(
+                                    "activo".equals(estadoVista) ? usuarioService.proyectosQueLidera(p.getId()) : List.of(),
+                                    "activo".equals(estadoVista) ? usuarioService.proyectosDondeColabora(p.getId()) : List.of());
                 })
                 .filter(java.util.Objects::nonNull)
                 .sorted(Comparator.comparing(ColaboradorFila::getNombre))

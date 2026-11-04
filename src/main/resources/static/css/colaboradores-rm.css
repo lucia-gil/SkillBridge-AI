@@ -130,6 +130,11 @@
 .cl-quiet.is-ok:hover { background: var(--green-bg); border-color: var(--green-border); }
 .cl-quiet:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 .cl-note { font-size: var(--fs-xs); color: var(--text-tertiary); }
+/* Mismo ancho para "No disponible", "Disponible" y la nota de cuenta
+   suspendida: así "Ver perfil" queda en la misma columna en todas las filas. */
+.cl-actions .cl-quiet, .cl-actions .cl-note { width: 132px; }
+.cl-actions .cl-quiet { justify-content: flex-start; }
+.cl-actions .cl-note { display: inline-block; white-space: normal; text-align: left; line-height: 1.3; padding-left: 10px; }
 
 .cl-noresults { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 36px 20px; color: var(--text-tertiary); font-size: var(--fs-sm); }
 .cl-noresults[hidden] { display: none; }
@@ -139,7 +144,9 @@
 /* ── Anchos intermedios: el botón discreto queda solo con ícono ── */
 @media (max-width: 1280px) {
   .cl-quiet span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .cl-quiet { width: 32px; padding: 0; justify-content: center; }
+  .cl-quiet, .cl-actions .cl-quiet { width: 32px; padding: 0; justify-content: center; }
+  .cl-actions .cl-note { width: 32px; padding: 0; overflow: hidden; white-space: nowrap; text-overflow: clip; color: transparent; position: relative; }
+  .cl-actions .cl-note::before { content: "—"; position: absolute; inset: 0; text-align: center; color: var(--text-tertiary); }
   .cl-skills { max-width: 260px; }
 }
 
@@ -163,7 +170,9 @@
   .cl-load-label { grid-column: auto; margin: 0; }
   .cl-actions { grid-column: 1 / -1; display: flex; gap: 8px; text-align: left; }
   .cl-actions .btn { flex: 1; justify-content: center; margin: 0; }
-  .cl-quiet { width: auto; padding: 0 12px; border-color: var(--border-subtle); }
+  .cl-quiet, .cl-actions .cl-quiet { width: auto; padding: 0 12px; border-color: var(--border-subtle); }
+  .cl-actions .cl-note { width: auto; color: var(--text-tertiary); overflow: visible; white-space: normal; padding-left: 0; }
+  .cl-actions .cl-note::before { content: none; }
   .cl-quiet span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
 }
 @media (prefers-reduced-motion: reduce) {

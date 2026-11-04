@@ -106,6 +106,24 @@ public class ColaboradorFila {
 
     public int getLimite() { return limite; }
 
+    // Participación actual en proyectos: el modal "No disponible" la usa para
+    // avisar ANTES de confirmar (si lidera, no se puede; si colabora, qué
+    // asignaciones se finalizan). Misma regla que UsuarioService.salirDeProyectos.
+    private List<String> proyectosQueLidera = List.of();
+    private List<String> proyectosDondeColabora = List.of();
+
+    public ColaboradorFila conParticipacion(List<String> lidera, List<String> colabora) {
+        this.proyectosQueLidera = lidera != null ? lidera : List.of();
+        this.proyectosDondeColabora = colabora != null ? colabora : List.of();
+        return this;
+    }
+
+    public List<String> getProyectosQueLidera() { return proyectosQueLidera; }
+    public List<String> getProyectosDondeColabora() { return proyectosDondeColabora; }
+    /** Unidos con "|" para pasarlos en un data-* (los nombres de proyecto no llevan "|"). */
+    public String getLideraTexto() { return String.join("|", proyectosQueLidera); }
+    public String getColaboraTexto() { return String.join("|", proyectosDondeColabora); }
+
     /** Mismos estados que Reportes/Ocupación: banca, sub, opt, lim, sobre. */
     public String getCargaClave() {
         if (ocupacion == 0) return "banca";

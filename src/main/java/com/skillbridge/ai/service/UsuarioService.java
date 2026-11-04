@@ -117,6 +117,16 @@ public class UsuarioService {
         boolean vacia() { return lidera.isEmpty() && colabora.isEmpty(); }
     }
 
+    /** Nombres de los proyectos que este perfil lidera hoy (bloquean marcarlo no disponible). */
+    public List<String> proyectosQueLidera(Long perfilId) {
+        return participacionDe(perfilId).lidera();
+    }
+
+    /** "Proyecto (40%)" de cada proyecto donde colabora hoy (esas asignaciones se finalizarían). */
+    public List<String> proyectosDondeColabora(Long perfilId) {
+        return participacionDe(perfilId).colabora();
+    }
+
     private Participacion participacionDe(Long perfilId) {
         List<String> lidera = new ArrayList<>();
         List<String> colabora = new ArrayList<>();

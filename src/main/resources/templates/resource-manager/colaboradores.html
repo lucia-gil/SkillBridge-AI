@@ -106,7 +106,7 @@
                 <!-- Modelo v7: el RM gestiona la DISPONIBILIDAD del perfil para proyectos;
                      la cuenta (acceso a la plataforma) la gestiona el Administrador. -->
                 <button type="button" th:if="${c.estado == 'activo' and c.perfilId != miPerfilId}" class="cl-quiet is-danger"
-                        th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}, aria-label='Marcar a ' + ${c.nombre} + ' como no disponible'"
+                        th:attr="data-suspender=${c.perfilId}, data-nombre=${c.nombre}, data-lidera=${c.lideraTexto}, data-colabora=${c.colaboraTexto}, aria-label='Marcar a ' + ${c.nombre} + ' como no disponible'"
                         title="Marcar no disponible">
                   <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-user-x"></use></svg><span>No disponible</span>
                 </button>
@@ -115,7 +115,7 @@
                         title="Marcar disponible">
                   <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-user-check"></use></svg><span>Disponible</span>
                 </button>
-                <span class="cl-note" th:if="${c.estado == 'cuenta_suspendida'}">La reactiva el Administrador</span>
+                <span class="cl-note" title="La cuenta la reactiva el Administrador en Usuarios y roles" th:if="${c.estado == 'cuenta_suspendida'}">La reactiva el Administrador</span>
               </td>
             </tr>
             </tbody>

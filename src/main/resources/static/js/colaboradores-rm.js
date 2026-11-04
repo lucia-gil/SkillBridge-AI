@@ -97,18 +97,39 @@
 
   function acciones() {
     var submitForm = window.SBAI && window.SBAI.submitForm;
+    function lista(attr) {
+      return (attr || "").split("|").map(function (x) { return x.trim(); }).filter(Boolean);
+    }
     document.querySelectorAll("[data-suspender]").forEach(function (btn) {
       btn.addEventListener("click", function () {
+        var nombre = btn.dataset.nombre;
+        var lidera = lista(btn.dataset.lidera);
+        var colabora = lista(btn.dataset.colabora);
+
+        // Si lidera proyectos, el backend lo rechaza (UsuarioService.salirDeProyectos):
+        // se avisa ANTES, sin pedir motivo, y se ofrece ir directo a "Cambiar PM".
+        if (lidera.length) {
+          SBAI.modal.confirm({
+            title: nombre + " no se puede marcar como no disponible todavía",
+            desc: "Es Project Manager de " + (lidera.length === 1 ? "un proyecto activo" : lidera.length + " proyectos activos") +
+                  ". Primero asigna otro PM con “Cambiar PM” en Asignaciones; después podrás marcarlo como no disponible.",
+            variant: "warning", icon: "icon-user-x",
+            subject: { nombre: nombre, meta: "Lidera: " + lidera.join(", ") },
+            confirmLabel: "Ir a Asignaciones", cancelLabel: "Volver",
+            onConfirm: function () { window.location.href = "/resource-manager/asignaciones.html"; }
+          });
+          return;
+        }
+
         SBAI.modal.confirm({
-          title: "¿Marcar a " + btn.dataset.nombre + " como no disponible?",
+          title: "¿Marcar a " + nombre + " como no disponible?",
           desc: "Deja de aparecer para asignaciones y propuestas hasta que lo vuelvas a marcar disponible. Sigue pudiendo iniciar sesión; su historial se conserva.",
           variant: "warning", icon: "icon-user-x",
-          subject: { nombre: btn.dataset.nombre },
-          // Modelo v7: un perfil suspendido no sigue en proyectos.
-          consequences: [
-            "Si colabora en proyectos, esas asignaciones se finalizan y su carga se libera.",
-            "Si lidera algún proyecto, no se podrá suspender hasta usar “Cambiar PM” en Asignaciones."
-          ],
+          subject: { nombre: nombre },
+          // Modelo v7: un perfil no disponible no sigue en proyectos.
+          consequences: colabora.length
+            ? ["Se finalizarán sus asignaciones en: " + colabora.join(", ") + ", y su carga se libera."]
+            : ["No tiene asignaciones activas: no se finaliza ninguna."],
           reason: { label: "Motivo", required: true, placeholder: "Ej.: licencia prolongada.",
             presets: ["Licencia prolongada", "Terminó su contrato", "Solicitud del área"] },
           confirmLabel: "Marcar no disponible", cancelLabel: "Volver",
