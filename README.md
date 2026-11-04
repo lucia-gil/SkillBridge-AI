@@ -13,8 +13,10 @@ Plataforma interna de gestión de talento y proyectos (empresa ficticia **NexaCo
 Con MySQL 8 corriendo:
 
 ```bash
-mysql -u root -p < db/skillbridge_db.sql
+mysql --default-character-set=utf8mb4 -u root -p < db/skillbridge_db.sql
 ```
+
+> Si usas la consola de MySQL, cárgalo siempre en UTF-8 (`mysql --default-character-set=utf8mb4 -u root -p < db/skillbridge_db.sql`); en Workbench basta con abrirlo y ejecutar. Si alguna vez quedaron nombres como "IvÃ¡n" en vez de "Iván" (datos cargados con scripts antiguos), la app los repara sola al arrancar (`config/ReparadorTildes`).
 
 `db/skillbridge_db.sql` es el **único script** del proyecto: crea el esquema `skillbridge_db` con todas las tablas, la siembra base (administrador, catálogos, configuración) y los datos de demo. Si el esquema ya existe, el script falla a propósito para no borrar datos; para empezar de cero, descomenta la línea `DROP SCHEMA IF EXISTS skillbridge_db;` del inicio.
 
@@ -141,6 +143,7 @@ Con `spring.jpa.hibernate.ddl-auto=none`, Hibernate no toca la BD. Para que una 
 | `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos` y `curso_pasos`, columnas del catálogo de formación y, la primera vez, un catálogo de ejemplo con recursos gratuitos |
 | `InicializadorTopicosForo` | asigna tópico a los hilos que no tengan |
 | `DataSeeder` | tipos de notificación `asignacion` y `foro_respuesta` |
+| `ReparadorTildes` | corrige textos con tildes guardadas dos veces ("IvÃ¡n" → "Iván"); si no está seguro, no toca el valor |
 
 **Si cambias el esquema:** agrega el cambio en `db/skillbridge_db.sql` (para instalaciones nuevas) **y** un inicializador idempotente (para las bases que ya existen). No vuelvas a crear scripts de migración sueltos.
 
