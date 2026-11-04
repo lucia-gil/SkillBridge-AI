@@ -20,9 +20,29 @@ import java.util.Map;
 public class BuscadorController {
 
     private final BuscadorService buscadorService;
+    private final com.skillbridge.ai.service.BuscadorIaService buscadorIaService;
 
-    public BuscadorController(BuscadorService buscadorService) {
+    public BuscadorController(BuscadorService buscadorService, com.skillbridge.ai.service.BuscadorIaService buscadorIaService) {
         this.buscadorService = buscadorService;
+        this.buscadorIaService = buscadorIaService;
+    }
+
+    public record PreguntaRequest(String q) {}
+
+    /**
+     * Buscador inteligente: la pregunta en lenguaje natural se convierte en
+     * filtros (IA o palabras clave) y Java busca con el alcance del rol.
+     * POST con JSON (jQuery/AJAX + token CSRF, ver js/global-search.js).
+     */
+    @org.springframework.web.bind.annotation.PostMapping("/cuenta/buscar-ia")
+    public org.springframework.http.ResponseEntity<?> preguntar(@org.springframework.web.bind.annotation.RequestBody PreguntaRequest body, HttpSession session) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        if (sesion == null) return org.springframework.http.ResponseEntity.status(401).body(Map.of("error", "Tu sesión expiró."));
+        try {
+            return org.springframework.http.ResponseEntity.ok(buscadorIaService.preguntar(body.q(), sesion));
+        } catch (com.skillbridge.ai.util.OperacionInvalidaException ex) {
+            return org.springframework.http.ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
     }
 
     @GetMapping("/cuenta/buscar")

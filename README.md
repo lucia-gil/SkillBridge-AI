@@ -109,6 +109,10 @@ Arquitectura **híbrida y explicable** (`MatchingIaService`, REST `MatchingApiCo
 
 En la vista de detalle del proyecto, **"Analizar con IA"** hace los pasos 2 a 4 para el proyecto abierto. Proponer (PM) o asignar (RM) siguen siendo decisiones de una persona, con confirmación.
 
+### Buscador inteligente (Ctrl+K)
+
+El buscador del topbar sigue mostrando coincidencias al instante mientras escribes (`GET /cuenta/buscar`). Si lo escrito parece una pregunta ("¿quién sabe Docker y está libre?", "proyectos de nube atrasados", "gente en la banca"), aparece **Preguntar a la IA ↵**. Solo al elegirla se llama con jQuery/AJAX a `POST /cuenta/buscar-ia` (`BuscadorIaService`): la IA convierte la pregunta en filtros (personas o proyectos, habilidades, nivel, % libre, banca, estados, atrasados, vacantes) y Java busca en la base con el alcance de cada rol (el Colaborador no ve a otras personas). Si la IA no responde, un intérprete por palabras clave arma los filtros.
+
 ### Catálogo de formación (Cursos)
 
 El Administrador publica en *Cursos* cuatro tipos de recurso: **cursos**, **videos**, **rutas** (roadmaps por pasos) y **especializaciones** (programas de varios cursos). Cada recurso tiene enlace, plataforma (se detecta sola por el enlace: YouTube, Coursera, Microsoft Learn, roadmap.sh, freeCodeCamp…, ver `util/PlataformaCurso`), categoría y habilidad, nivel, duración, idioma, si es gratuito, si da certificado y si es destacado. Las rutas y especializaciones guardan sus pasos en orden (`curso_pasos`).

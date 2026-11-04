@@ -3,6 +3,12 @@
  * Consulta /cuenta/buscar desde 2 letras (con debounce), agrupa resultados
  * por tipo, resalta la coincidencia y se maneja con teclado
  * (flechas, Enter, Esc). Ctrl/Cmd+K enfoca el campo desde cualquier pantalla.
+ *
+ * Buscador inteligente (Paso 6): si lo escrito parece una pregunta
+ * ("¿quién sabe Docker y está libre?", "proyectos de nube atrasados")
+ * aparece "Preguntar a la IA ↵". Solo al elegirla se llama, con jQuery/AJAX,
+ * a POST /cuenta/buscar-ia: la IA convierte la pregunta en filtros y el
+ * servidor busca en la base con el alcance de tu rol.
  */
 (function () {
   "use strict";
@@ -22,6 +28,12 @@
     if (i < 0 || !q) return esc(t);
     return esc(t.slice(0, i)) + "<mark>" + esc(t.slice(i, i + q.length)) + "</mark>" + esc(t.slice(i + q.length));
   }
+  // ¿Parece una pregunta? (signo de interrogación, palabra interrogativa o 3+ palabras)
+  var INTERROGATIVAS = /^(quien|quienes|que|cual|cuales|cuanto|cuantos|cuantas|donde|como|hay|dame|muestra|muestrame|lista|busca|necesito|proyectos|personas|colaboradores)\b/;
+  function esPregunta(q) {
+    var n = norm(q).replace(/[¿?¡!]/g, "").trim();
+    return /[?¿]/.test(q) || INTERROGATIVAS.test(n) || n.split(/\s+/).length >= 3;
+  }
   function icono(id) {
     return '<svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#' + id + '"></use></svg>';
   }
@@ -37,15 +49,26 @@
     function abrir() { panel.hidden = false; root.classList.add("open"); input.setAttribute("aria-expanded", "true"); }
     function cerrar() { panel.hidden = true; root.classList.remove("open"); input.setAttribute("aria-expanded", "false"); active = -1; }
 
+    function itemIa(q, i) {
+      return '<a class="gs-item gs-ia" role="option" id="gs-opt-' + i + '" data-i="' + i + '" href="#" data-ia>' +
+        '<span class="gs-item-icon">' + icono("icon-sparkles") + "</span>" +
+        '<span class="gs-item-text"><span class="gs-item-title">Preguntar a la IA: “' + esc(q) + '”</span>' +
+        '<span class="gs-item-sub">Entiende preguntas y busca con tus datos reales</span></span>' +
+        '<span class="gs-item-go">↵</span></a>';
+    }
+
     function pintar(data, q) {
-      items = data;
-      if (!data.length) {
+      var pregunta = esPregunta(q), conIa = pregunta || q.split(/\s+/).length >= 2;
+      items = data.slice();
+      if (!data.length && !conIa) {
         panel.innerHTML = '<div class="gs-empty">' + icono("icon-search") +
           '<span>Sin resultados para “' + esc(q) + '”. Prueba con otras letras.</span></div>';
         abrir(); return;
       }
       var html = "", grupo = null;
-      data.forEach(function (it, i) {
+      if (conIa && pregunta) { items.unshift({ ia: true }); html += itemIa(q, 0); }
+      data.forEach(function (it, j) {
+        var i = j + (conIa && pregunta ? 1 : 0);
         if (it.tipo !== grupo) { grupo = it.tipo; html += '<div class="gs-group">' + esc(grupo) + "</div>"; }
         html += '<a class="gs-item" role="option" id="gs-opt-' + i + '" data-i="' + i + '" href="' + esc(it.url) + '">' +
           '<span class="gs-item-icon">' + icono(it.icono) + "</span>" +
@@ -53,9 +76,49 @@
           '<span class="gs-item-sub">' + esc(it.detalle) + "</span></span>" +
           '<span class="gs-item-go">↵</span></a>';
       });
+      if (conIa && !pregunta) { items.push({ ia: true }); html += itemIa(q, items.length - 1); }
+      if (!data.length) html += '<div class="gs-hint">No hay coincidencias exactas; pregúntale a la IA.</div>';
       panel.innerHTML = html;
       active = 0; marcar();
       abrir();
+    }
+
+    // ---- Buscador inteligente ----
+    function preguntarIa(q) {
+      if (!(window.SBAI && window.SBAI.api)) return;
+      var mine = ++reqId;
+      items = []; active = -1;
+      panel.innerHTML = '<div class="gs-loading gs-ia-loading"><span class="gs-spinner"></span>La IA está interpretando tu pregunta…</div>';
+      abrir();
+      window.SBAI.api.post("/cuenta/buscar-ia", { q: q })
+        .done(function (r) {
+          if (mine !== reqId) return;
+          items = r.resultados;
+          var html = '<div class="gs-ia-head">' + icono("icon-sparkles") + "<div><b>" + esc(r.interpretacion) + "</b>" +
+            '<div class="gs-ia-chips">' + r.chips.map(function (c) { return "<span>" + esc(c) + "</span>"; }).join("") +
+            '<span class="gs-ia-src">' + (r.porIa ? "Interpretado por la IA" : "Por palabras clave") + "</span></div>" +
+            (r.aviso ? '<small class="gs-ia-aviso">' + esc(r.aviso) + "</small>" : "") + "</div></div>";
+          r.resultados.forEach(function (it, i) {
+            html += '<a class="gs-item" role="option" id="gs-opt-' + i + '" data-i="' + i + '" href="' + esc(it.url) + '">' +
+              '<span class="gs-item-icon">' + icono(it.icono) + "</span>" +
+              '<span class="gs-item-text"><span class="gs-item-title">' + esc(it.titulo) + "</span>" +
+              '<span class="gs-item-sub">' + esc(it.detalle) + "</span></span>" +
+              '<span class="gs-item-go">↵</span></a>';
+          });
+          if (!r.resultados.length) html += '<div class="gs-hint">Prueba con otras palabras o menos filtros.</div>';
+          panel.innerHTML = html;
+          active = r.resultados.length ? 0 : -1; marcar();
+        })
+        .fail(function (xhr) {
+          if (mine !== reqId) return;
+          panel.innerHTML = '<div class="gs-empty">' + icono("icon-alert-circle") + "<span>" + esc(window.SBAI.api.mensajeError(xhr)) + "</span></div>";
+        });
+    }
+
+    function elegir(el) {
+      if (!el) return;
+      if (el.hasAttribute("data-ia")) preguntarIa(input.value.trim());
+      else window.location.href = el.getAttribute("href");
     }
 
     function marcar() {
@@ -97,8 +160,12 @@
         active = (active + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length; marcar();
       } else if (e.key === "Enter") {
         var el = panel.querySelector(".gs-item.active");
-        if (el) { e.preventDefault(); window.location.href = el.getAttribute("href"); }
+        if (el) { e.preventDefault(); elegir(el); }
       } else if (e.key === "Escape") { cerrar(); input.blur(); }
+    });
+    panel.addEventListener("click", function (e) {
+      var el = e.target.closest(".gs-item[data-ia]");
+      if (el) { e.preventDefault(); elegir(el); }
     });
     panel.addEventListener("mousemove", function (e) {
       var el = e.target.closest(".gs-item"); if (!el) return;

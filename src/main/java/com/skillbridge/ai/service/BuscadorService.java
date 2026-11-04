@@ -70,26 +70,8 @@ public class BuscadorService {
         boolean ve_personas = ve_todo || Roles.PROJECT_MANAGER.equals(rol);
 
         // ---- Proyectos ----
-        List<Proyecto> proyectos;
         Set<Long> gestionados = new LinkedHashSet<>();
-        if (ve_todo) {
-            proyectos = proyectoRepository.findAllByOrderByFechaCreacionDesc();
-        } else {
-            Set<Long> vistos = new LinkedHashSet<>();
-            List<Proyecto> propios = new ArrayList<>();
-            if (sesion.getPerfilId() != null) {
-                for (Asignacion a : asignacionRepository.listarPorPerfil(sesion.getPerfilId())) {
-                    if (a.getProyecto() != null && vistos.add(a.getProyecto().getId())) propios.add(a.getProyecto());
-                }
-                if (Roles.PROJECT_MANAGER.equals(rol)) {
-                    for (Proyecto p : asignacionRepository.listarProyectosGestionados(sesion.getPerfilId())) {
-                        gestionados.add(p.getId());
-                        if (vistos.add(p.getId())) propios.add(p);
-                    }
-                }
-            }
-            proyectos = propios;
-        }
+        List<Proyecto> proyectos = proyectosVisibles(sesion, gestionados);
         int n = 0;
         for (Proyecto p : proyectos) {
             if (n >= MAX_POR_GRUPO) break;
@@ -130,8 +112,34 @@ public class BuscadorService {
         return salida;
     }
 
+    /**
+     * Proyectos que puede ver quien busca: Admin y RM todos; PM y Colaborador
+     * solo aquellos en los que participa (y el PM, los que lidera, que se
+     * agregan a "gestionados"). Lo comparte BuscadorIaService.
+     */
+    List<Proyecto> proyectosVisibles(UsuarioSesion sesion, Set<Long> gestionados) {
+        String rol = sesion.getRolEfectivo();
+        if (Roles.ADMINISTRADOR.equals(rol) || Roles.RESOURCE_MANAGER.equals(rol)) {
+            return proyectoRepository.findAllByOrderByFechaCreacionDesc();
+        }
+        Set<Long> vistos = new LinkedHashSet<>();
+        List<Proyecto> propios = new ArrayList<>();
+        if (sesion.getPerfilId() != null) {
+            for (Asignacion a : asignacionRepository.listarPorPerfil(sesion.getPerfilId())) {
+                if (a.getProyecto() != null && vistos.add(a.getProyecto().getId())) propios.add(a.getProyecto());
+            }
+            if (Roles.PROJECT_MANAGER.equals(rol)) {
+                for (Proyecto p : asignacionRepository.listarProyectosGestionados(sesion.getPerfilId())) {
+                    gestionados.add(p.getId());
+                    if (vistos.add(p.getId())) propios.add(p);
+                }
+            }
+        }
+        return propios;
+    }
+
     /** Destino de un proyecto en el buscador global. */
-    private static String destinoProyecto(String slug, Proyecto p, boolean loGestiona) {
+    static String destinoProyecto(String slug, Proyecto p, boolean loGestiona) {
         // RM y el PM que lo lidera: vista de detalle del proyecto
         if ("resource-manager".equals(slug)) return "/resource-manager/proyectos/" + p.getId() + ".html";
         if ("project-manager".equals(slug) && loGestiona) return "/project-manager/proyectos/" + p.getId() + ".html";
@@ -144,7 +152,7 @@ public class BuscadorService {
      * colaborador. PM: Asignaciones filtrado por la persona (la tabla
      * ahora tambien busca por nombre de integrante).
      */
-    private static String destinoColaborador(String slug, Long perfilId, String nombre) {
+    static String destinoColaborador(String slug, Long perfilId, String nombre) {
         String b = codificar(nombre);
         switch (slug) {
             case "administrador": return "/administrador/usuarios.html?buscar=" + b;
@@ -165,7 +173,7 @@ public class BuscadorService {
         return "/" + slug + "/inicio.html";
     }
 
-    private static String etiquetaEstado(String estado) {
+    static String etiquetaEstado(String estado) {
         if (estado == null) return "";
         switch (estado) {
             case "planificacion": return "Planificación";
@@ -181,7 +189,7 @@ public class BuscadorService {
         return java.net.URLEncoder.encode(s == null ? "" : s, java.nio.charset.StandardCharsets.UTF_8);
     }
 
-    private static Map<String, Object> item(String tipo, String icono, String titulo, String detalle, String url) {
+    static Map<String, Object> item(String tipo, String icono, String titulo, String detalle, String url) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("tipo", tipo);
         m.put("icono", icono);
