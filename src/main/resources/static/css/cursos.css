@@ -273,6 +273,16 @@
 .cx-icon-btn.is-on .icon { fill: currentColor; }
 :root[data-theme="dark"] .cx-icon-btn.is-on { background: rgba(255,196,0,.16); color: #FFD54A; }
 
+/* Paginación (mismos botones .page-btn que el resto del sitio) */
+.cx-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 4px; }
+.cx-pager[hidden] { display: none; }
+.cx-pager-info { font-size: var(--fs-xs); color: var(--text-tertiary); }
+.cx-pager .pagination { display: flex; align-items: center; gap: 6px; }
+.cx-pager .page-btn { height: 36px; min-width: 36px; }
+.cx-pager .page-btn:disabled { opacity: .45; cursor: not-allowed; }
+.cx-pager-gap { padding: 0 2px; color: var(--text-tertiary); }
+@media (max-width: 480px) { .cx-pager { justify-content: center; } }
+
 .cx-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 56px 20px; text-align: center; border: 1.5px dashed var(--border-default); border-radius: 18px; color: var(--text-tertiary); }
 .cx-empty[hidden] { display: none; }
 .cx-empty .icon { width: 34px; height: 34px; padding: 7px; border-radius: 12px; background: var(--surface-sunken); }

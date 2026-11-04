@@ -296,16 +296,26 @@
       '<section class="cx-section"><div class="cx-section-head"><div><h2>' + icono("icon-book") + (MODO === "admin" ? "Recursos" : "Explora el catálogo") + '</h2><p id="cx-resumen"></p></div></div>' +
       tabs + filtros + '<div class="cx-active" id="cx-active"></div>' +
       '<div class="cx-grid" id="cx-grid" aria-live="polite"></div>' +
+      '<nav class="cx-pager" id="cx-pager" aria-label="Páginas del catálogo" hidden></nav>' +
       '<div class="cx-empty" id="cx-empty" hidden>' + icono("icon-search") + '<strong>No encontramos recursos con esos filtros</strong><p>Prueba con otra palabra o limpia los filtros.</p><button type="button" class="btn btn-secondary btn-sm" data-limpiar>Limpiar filtros</button></div>' +
       "</section>";
   }
 
   var ETIQUETAS_F = { categoria: "Categoría", habilidad: "Habilidad", nivel: "Nivel", plataforma: "Plataforma", idioma: "Idioma", estado: "Estado" };
+  // Paginación: 12 por página (4 filas de 3). Si cambia algún filtro o la
+  // búsqueda se vuelve a la página 1; marcar progreso o guardar no la cambia.
+  var POR_PAGINA = 12, PAGINA = 1, firmaFiltros = null;
   function pintarLista() {
     var lista = ordenar(CURSOS.filter(function (c) { return coincide(c); }));
+    var firma = JSON.stringify(F);
+    if (firma !== firmaFiltros) { PAGINA = 1; firmaFiltros = firma; }
+    var paginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
+    PAGINA = Math.min(Math.max(1, PAGINA), paginas);
+    var desde = (PAGINA - 1) * POR_PAGINA;
     var grid = document.getElementById("cx-grid");
-    grid.innerHTML = lista.map(tarjeta).join("");
+    grid.innerHTML = lista.slice(desde, desde + POR_PAGINA).map(tarjeta).join("");
     document.getElementById("cx-empty").hidden = lista.length > 0;
+    pintarPaginacion(lista.length, paginas, desde);
     // contadores por tipo (con el resto de filtros aplicados)
     var base = CURSOS.filter(function (c) { return coincide(c, true); });
     document.querySelectorAll("[data-n-tipo]").forEach(function (b) {
@@ -335,6 +345,28 @@
       : "";
     revelar();
     escribirUrl();
+  }
+
+  function pintarPaginacion(total, paginas, desde) {
+    var nav = document.getElementById("cx-pager");
+    if (!nav) return;
+    nav.hidden = paginas <= 1;
+    if (paginas <= 1) { nav.innerHTML = ""; return; }
+    // Números con "…" si hay muchas páginas: 1 … 4 5 6 … 12
+    var nums = [];
+    for (var n = 1; n <= paginas; n++) {
+      if (n === 1 || n === paginas || Math.abs(n - PAGINA) <= 1) nums.push(n);
+      else if (nums[nums.length - 1] !== "…") nums.push("…");
+    }
+    nav.innerHTML = '<span class="cx-pager-info">Mostrando ' + (desde + 1) + "–" + Math.min(desde + POR_PAGINA, total) + " de " + total + "</span>" +
+      '<div class="pagination">' +
+        '<button type="button" class="page-btn" data-pagina="' + (PAGINA - 1) + '"' + (PAGINA === 1 ? " disabled" : "") + ' aria-label="Página anterior">‹</button>' +
+        nums.map(function (n) {
+          return n === "…" ? '<span class="cx-pager-gap" aria-hidden="true">…</span>'
+            : '<button type="button" class="page-btn page-num' + (n === PAGINA ? " active" : "") + '" data-pagina="' + n + '"' + (n === PAGINA ? ' aria-current="page"' : "") + ' aria-label="Página ' + n + '">' + n + "</button>";
+        }).join("") +
+        '<button type="button" class="page-btn" data-pagina="' + (PAGINA + 1) + '"' + (PAGINA === paginas ? " disabled" : "") + ' aria-label="Página siguiente">›</button>' +
+      "</div>";
   }
 
   function moverTinta() {
@@ -457,6 +489,14 @@
         sincronizarSelects(); pintarLista(); return;
       }
       if (e.target.closest("[data-limpiar]")) { limpiar(); return; }
+      if ((el = e.target.closest("[data-pagina]"))) {
+        if (el.disabled) return;
+        PAGINA = +el.getAttribute("data-pagina");
+        pintarLista();
+        var tabs = document.querySelector(".cx-tabs");
+        if (tabs) window.scrollTo({ top: tabs.getBoundingClientRect().top + window.scrollY - 96, behavior: "smooth" });
+        return;
+      }
       clicComun(e);
     });
     document.addEventListener("click", function (e) { if (!app.contains(e.target)) clicComun(e); });
