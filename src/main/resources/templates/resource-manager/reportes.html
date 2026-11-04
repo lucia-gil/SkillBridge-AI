@@ -251,7 +251,7 @@
             <div class="rr-empty" th:if="${d.personas().isEmpty()}"><strong>Nadie coincide con estos filtros</strong><p>Prueba con otro estado de carga, cargo o proyecto.</p></div>
             <div class="table-footer" th:unless="${d.personas().isEmpty()}" data-pager="personas">
               <span class="text-tertiary">Mostrando <span data-visible>0</span> de <span th:text="${d.personas().size()}">0</span></span>
-              <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label>Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
+              <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label id="rr-personas-page-label">Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
             </div>
           </article>
         </div>
@@ -337,7 +337,7 @@
             <div class="rr-empty" th:if="${d.habilidades().isEmpty()}"><strong>No hay habilidades pedidas con estos filtros</strong></div>
             <div class="table-footer" th:unless="${d.habilidades().isEmpty()}" data-pager="habilidades">
               <span class="text-tertiary">Mostrando <span data-visible>0</span> de <span th:text="${d.habilidades().size()}">0</span></span>
-              <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label>Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
+              <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label id="rr-habilidades-page-label">Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
             </div>
           </article>
         </div>
@@ -387,7 +387,7 @@
             <div class="rr-empty" th:if="${d.propuestas().isEmpty()}"><strong>Todavía no hay propuestas de asignación</strong></div>
             <div class="table-footer" th:unless="${d.propuestas().isEmpty()}" data-pager="propuestas">
               <span class="text-tertiary">Mostrando <span data-visible>0</span> de <span th:text="${d.propuestas().size()}">0</span></span>
-              <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label>Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
+              <div class="pagination"><button class="page-btn" type="button" data-prev aria-label="Página anterior">‹</button><span class="text-tertiary" data-label id="rr-propuestas-page-label">Página 1</span><button class="page-btn" type="button" data-next aria-label="Página siguiente">›</button></div>
             </div>
           </article>
         </div>

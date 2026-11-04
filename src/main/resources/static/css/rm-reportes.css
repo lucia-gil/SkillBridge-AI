@@ -228,7 +228,7 @@
 .rr-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 32px 20px; text-align: center; }
 .rr-empty strong { color: var(--text-primary); }
 .rr-empty p { font-size: var(--fs-sm); color: var(--text-tertiary); }
-.rr-table-card .table-footer { font-size: var(--fs-xs); }
+.rr-tile .table-footer { font-size: var(--fs-xs); }
 
 /* Tooltip */
 .rr-tooltip {
