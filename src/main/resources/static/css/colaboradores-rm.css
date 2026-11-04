@@ -150,8 +150,8 @@
   .cl-skills { max-width: 260px; }
 }
 
-/* ── Celular: cada fila es una tarjeta ────────────────────── */
-@media (max-width: 760px) {
+/* ── Tablet y celular: cada fila es una tarjeta (a 768px la tabla de 5 columnas no cabía) ── */
+@media (max-width: 960px) {
   .cl-head { padding: 16px 16px 12px; }
   .cl-states { padding: 0 16px 14px; }
   .cl-limit { width: 100%; margin-left: 0; }

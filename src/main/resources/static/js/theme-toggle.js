@@ -1,57 +1,72 @@
 /**
- * theme-toggle.js — Interruptor de modo claro/oscuro para las páginas que
- * NO usan fragments/topbar.html + topbar-actions.js (ese par ya trae su
- * propia lógica de tema, sin cambios, para no arriesgar las vistas que ya
- * funcionan en producción).
+ * theme-toggle.js — ÚNICO controlador del modo claro/oscuro de todo el sitio.
  *
- * Usan este archivo:
- *  - Páginas públicas/de acceso sin topbar (login, registro, recuperar y
- *    restablecer contraseña, landing): el botón #theme-toggle-btn vive
- *    directo en su HTML.
- *  - Páginas legacy armadas por shell.js (asistente-ia.html de los 4 roles,
- *    proyecto-detalle.html): el botón se inyecta dinámicamente dentro del
- *    topbar generado por shell.js, así que este script usa DELEGACIÓN DE
- *    EVENTOS (document.addEventListener en vez de buscar el botón por id
- *    al cargar) para que el clic funcione sin importar si el botón ya
- *    existía en el DOM o lo agregó shell.js después.
+ * - El tema guardado ya lo aplica, antes del primer pintado, un script de una
+ *   línea en el <head> de cada plantilla (sin él, cada página se pintaba en
+ *   claro y pasaba a oscuro al terminar de cargar: un destello que parecía
+ *   que el modo oscuro "se perdía" al navegar o al volver atrás).
+ * - Se carga desde fragments/seguridad.html (todas las páginas con topbar) y
+ *   directamente en las páginas públicas; está protegido contra doble carga.
+ * - Botón: cualquier #theme-toggle-btn o [data-theme-toggle] (delegación de
+ *   eventos, funciona también si el botón se inserta después, p. ej. shell.js).
+ * - Al cambiar, se desactivan las transiciones un instante: antes TODA la
+ *   página animaba sus colores a la vez y el cambio se sentía trabado.
+ * - Se resincroniza al volver con "atrás" (bfcache) y entre pestañas.
  */
 (function () {
   "use strict";
+  if (window.__sbaiTema) return;
+  window.__sbaiTema = true;
 
   var THEME_KEY = "sbai-theme";
+  var raiz = document.documentElement;
 
-  function aplicarTema(tema) {
-    if (tema === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
+  function guardado() {
+    try { return window.localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light"; } catch (e) { return "light"; }
+  }
+  function actual() { return raiz.getAttribute("data-theme") === "dark" ? "dark" : "light"; }
+
+  function etiquetar(tema) {
+    var texto = tema === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
+    document.querySelectorAll("#theme-toggle-btn, [data-theme-toggle]").forEach(function (b) {
+      b.setAttribute("aria-label", texto);
+      b.setAttribute("title", texto);
+      b.setAttribute("aria-pressed", tema === "dark" ? "true" : "false");
+    });
+  }
+
+  function aplicar(tema, conTransicionCortada) {
+    if (conTransicionCortada) raiz.classList.add("tema-cambiando");
+    if (tema === "dark") raiz.setAttribute("data-theme", "dark");
+    else raiz.removeAttribute("data-theme");
+    etiquetar(tema);
+    if (conTransicionCortada) {
+      // Dos frames: el navegador pinta el tema nuevo sin animar y luego
+      // vuelven las transiciones normales (hover, etc.).
+      requestAnimationFrame(function () { requestAnimationFrame(function () { raiz.classList.remove("tema-cambiando"); }); });
     }
-    var etiqueta = tema === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
-    var botones = document.querySelectorAll("#theme-toggle-btn");
-    for (var i = 0; i < botones.length; i++) {
-      botones[i].setAttribute("aria-label", etiqueta);
-    }
   }
 
-  function temaActual() {
-    return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-  }
-
-  function initTema() {
-    var guardado = null;
-    try { guardado = window.localStorage.getItem(THEME_KEY); } catch (e) { /* localStorage no disponible */ }
-    aplicarTema(guardado === "dark" ? "dark" : "light");
-  }
-
-  // Se aplica de inmediato (no espera DOMContentLoaded) para evitar un
-  // parpadeo de tema claro antes de pintar la pagina.
-  initTema();
+  // Por si alguna página no tiene el script del <head>.
+  if (actual() !== guardado()) aplicar(guardado(), false);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { etiquetar(actual()); });
+  else etiquetar(actual());
 
   document.addEventListener("click", function (e) {
-    var btn = e.target.closest && e.target.closest("#theme-toggle-btn");
+    var btn = e.target.closest && e.target.closest("#theme-toggle-btn, [data-theme-toggle]");
     if (!btn) return;
-    var nuevo = temaActual() === "dark" ? "light" : "dark";
-    aplicarTema(nuevo);
-    try { window.localStorage.setItem(THEME_KEY, nuevo); } catch (e2) { /* ignorar */ }
+    var nuevo = actual() === "dark" ? "light" : "dark";
+    aplicar(nuevo, true);
+    try { window.localStorage.setItem(THEME_KEY, nuevo); } catch (e2) { /* sin localStorage: solo esta página */ }
+    btn.classList.remove("tt-anim"); void btn.offsetWidth; btn.classList.add("tt-anim");
   });
+
+  // Volver con "atrás"/"adelante" desde la caché del navegador: la página
+  // se restaura tal como estaba, aunque el tema se haya cambiado después.
+  window.addEventListener("pageshow", function () { if (actual() !== guardado()) aplicar(guardado(), true); });
+  // Otra pestaña cambió el tema.
+  window.addEventListener("storage", function (e) { if (e.key === THEME_KEY) aplicar(guardado(), true); });
+
+  window.SBAI = window.SBAI || {};
+  window.SBAI.tema = { actual: actual, aplicar: function (t) { aplicar(t, true); try { localStorage.setItem(THEME_KEY, t); } catch (e) {} } };
 })();

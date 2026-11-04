@@ -17,16 +17,7 @@
     var(--canvas);
 }
 
-.admin-app .topbar {
-  backdrop-filter: blur(12px);
-  background: color-mix(in srgb, var(--surface) 91%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--border-subtle) 82%, transparent);
-}
 
-.admin-app .topbar-title {
-  font-size: clamp(15px, 1.25vw, 18px);
-  letter-spacing: -.025em;
-}
 
 .admin-app .page-content {
   padding-top: clamp(24px, 3vw, 40px);
@@ -183,8 +174,7 @@
   transform: translateY(-1px);
 }
 
-.admin-app .btn-icon-only,
-.admin-app .topbar-icon-btn {
+.admin-app .btn-icon-only {
   border-radius: 10px;
 }
 
@@ -192,10 +182,6 @@
   box-shadow: 8px 0 28px rgba(11,31,58,.08);
 }
 
-.admin-app .sidebar-brand {
-  padding-top: 24px;
-  padding-bottom: 20px;
-}
 
 .admin-app .sidebar-role-badge {
   margin-bottom: 18px;
@@ -467,9 +453,6 @@
     padding-right: 22px;
   }
 
-  .admin-app .topbar-actions .topbar-ai-btn span {
-    display: none;
-  }
 }
 
 @media (max-width: 860px) {
@@ -537,7 +520,7 @@
 
   .admin-app .table-filters {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .admin-app .table-filters .input,

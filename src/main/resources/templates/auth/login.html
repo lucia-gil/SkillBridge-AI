@@ -2,6 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Iniciar sesión · SkillBridge AI</title>
   <link rel="icon" type="image/png" href="/img/logo-icon.png">
@@ -117,7 +118,7 @@
   </style>
 </head>
 <body>
-<button type="button" id="theme-toggle-btn" class="btn btn-secondary btn-icon-only" aria-label="Cambiar a modo oscuro" style="position:fixed; top:var(--space-4); right:var(--space-4); z-index:var(--z-topbar);"><svg class="icon"><use href="/img/icons.svg#icon-monitor"></use></svg></button>
+<button type="button" id="theme-toggle-btn" class="btn btn-secondary btn-icon-only" aria-label="Cambiar a modo oscuro" style="position:fixed; top:var(--space-4); right:var(--space-4); z-index:var(--z-topbar);"><svg class="icon tt-icon tt-moon" aria-hidden="true"><use href="/img/icons.svg#icon-moon"></use></svg><svg class="icon tt-icon tt-sun" aria-hidden="true"><use href="/img/icons.svg#icon-sun"></use></svg></button>
 
 <svg style="display:none"><use></use></svg>
 

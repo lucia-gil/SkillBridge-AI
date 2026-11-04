@@ -802,8 +802,22 @@
 /* =========================================================
    Panel lateral de detalle / info
    ========================================================= */
-.detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-5); align-items: start; }
-@media (max-width: 1080px) { .detail-grid { grid-template-columns: 1fr; } }
+/* minmax(0, …): sin esto, una columna no se encoge por debajo de su contenido
+   y en celular la página entera se desbordaba hacia la derecha. */
+.detail-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+@media (max-width: 1080px) { .detail-grid { grid-template-columns: minmax(0, 1fr); } }
+.detail-grid > * { min-width: 0; }
+/* Mi perfil (colaborador): en celular las acciones de cada habilidad bajan a su propia línea */
+@media (max-width: 600px) {
+  [data-habilidad-row] { flex-wrap: wrap; }
+  [data-habilidad-row] > .cell-actions { flex: 1 1 100% !important; justify-content: flex-start !important; }
+}
+/* Filas "proyecto + avance + estado + dedicación" (colaborador/inicio): en celular bajan de línea */
+@media (max-width: 600px) {
+  .fila-proyecto { flex-wrap: wrap; padding: var(--space-4) !important; row-gap: var(--space-2) !important; }
+  .fila-proyecto > .fila-proyecto-avance { order: 5; flex: 1 1 100%; width: auto !important; }
+  .fila-proyecto > .label-mono { width: auto !important; }
+}
 .info-row { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle); font-size: var(--fs-sm); }
 .info-row:last-child { border-bottom: none; }
 .info-row-label { color: var(--text-tertiary); }
@@ -1232,8 +1246,10 @@ td.cell-actions > * + * { margin-left: 6px !important; }
    <select class="select">. El botón copia las clases del select, así que
    hereda alto/ancho de cada contexto (.table-filters, .cal-filters...).
    ═══════════════════════════════════════════════════════════════════ */
-.sx-native {
-  position: absolute !important; width: 1px !important; min-width: 0 !important; height: 1px !important;
+/* :not(#sx) suma especificidad de id: el select oculto debe ganarle a reglas
+   como ".admin-app .table-filters .select { width: 100% !important }". */
+.sx-native:not(#sx) {
+  position: absolute !important; max-width: 1px !important; width: 1px !important; min-width: 0 !important; height: 1px !important;
   margin: -1px !important; padding: 0 !important; border: 0 !important; overflow: hidden !important;
   clip: rect(0 0 0 0) !important; white-space: nowrap !important; opacity: 0 !important; pointer-events: none !important;
 }
@@ -1244,6 +1260,7 @@ td.cell-actions > * + * { margin-left: 6px !important; }
   transition: border-color var(--dur-fast, .12s) ease, box-shadow var(--dur-fast, .12s) ease, background-color var(--dur-fast, .12s) ease;
 }
 .select.sx-trigger[hidden] { display: none; }
+.select.sx-trigger { max-width: 100%; overflow: hidden; }
 .select.sx-trigger:hover:not(:disabled) { background-color: var(--surface-sunken); }
 .select.sx-trigger:focus-visible, .select.sx-trigger.is-open { outline: none; border-color: var(--blue-accent); box-shadow: var(--shadow-focus); }
 .select.sx-trigger:disabled { cursor: not-allowed; opacity: .6; }

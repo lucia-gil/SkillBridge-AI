@@ -13,6 +13,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkillBridge AI · El talento correcto, en el proyecto correcto</title>
     <link rel="icon" type="image/png" href="/img/logo-icon.png">
@@ -40,7 +41,7 @@
         </nav>
         <div class="landing-nav-actions">
             <button type="button" id="theme-toggle-btn" class="btn btn-secondary btn-sm btn-icon-only" aria-label="Cambiar a modo oscuro">
-                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-monitor"></use></svg>
+                <svg class="icon icon-sm tt-icon tt-moon" aria-hidden="true"><use href="/img/icons.svg#icon-moon"></use></svg><svg class="icon icon-sm tt-icon tt-sun" aria-hidden="true"><use href="/img/icons.svg#icon-sun"></use></svg>
             </button>
             <a th:href="@{/auth/login.html}" class="btn btn-primary btn-sm">Iniciar sesión</a>
         </div>

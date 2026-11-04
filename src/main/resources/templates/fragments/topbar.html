@@ -6,6 +6,7 @@
 <body>
 
 <header class="topbar" th:fragment="topbar">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 
   <!-- Token CSRF de Spring Security para formularios/fetch armados por JS -->
   <th:block th:replace="~{fragments/seguridad :: csrf}"></th:block>
@@ -26,7 +27,7 @@
   <div class="gs" data-global-search role="search">
     <label class="gs-field">
       <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
-      <input type="text" class="gs-input" placeholder="Buscar colaboradores, proyectos o habilidades…"
+      <input type="text" class="gs-input" placeholder="Buscar personas, proyectos o habilidades…"
              autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-label="Buscar en SkillBridge AI">
       <button type="button" class="gs-clear" hidden aria-label="Limpiar búsqueda">
         <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -50,10 +51,10 @@
          lidera al menos un proyecto (ver security/SesionSegura.autoridades). -->
     <nav class="segmented view-switch" sec:authorize="hasAuthority('project_manager')" aria-label="Ver como">
       <span class="view-switch-label">Ver como</span>
-      <a class="segmented-btn" href="/project-manager/inicio.html"
+      <a class="segmented-btn" href="/project-manager/inicio.html" data-short="PM"
          th:classappend="${vistaActualEsPm} ? 'active'"
          th:attr="aria-current=${vistaActualEsPm} ? 'page' : null">Project Manager</a>
-      <a class="segmented-btn" href="/colaborador/inicio.html"
+      <a class="segmented-btn" href="/colaborador/inicio.html" data-short="Colab."
          th:classappend="${!vistaActualEsPm} ? 'active'"
          th:attr="aria-current=${!vistaActualEsPm} ? 'page' : null">Colaborador</a>
     </nav>
@@ -83,9 +84,7 @@
             id="theme-toggle-btn"
             aria-label="Cambiar a modo oscuro">
 
-      <svg class="icon">
-        <use href="/img/icons.svg#icon-monitor"></use>
-      </svg>
+      <svg class="icon tt-icon tt-moon" aria-hidden="true"><use href="/img/icons.svg#icon-moon"></use></svg><svg class="icon tt-icon tt-sun" aria-hidden="true"><use href="/img/icons.svg#icon-sun"></use></svg>
 
     </button>
 
@@ -230,12 +229,10 @@
         </span>
 
 
-        <!-- NOMBRE -->
-
-        <span
-                class="topbar-user-name"
-                th:text="${user.nombre}">
-          Nombre
+        <!-- NOMBRE + ROL -->
+        <span class="topbar-user-text">
+          <span class="topbar-user-name" th:text="${user.nombre}">Nombre</span>
+          <span class="topbar-user-role" th:text="${roleLabel}">Rol</span>
         </span>
 
 

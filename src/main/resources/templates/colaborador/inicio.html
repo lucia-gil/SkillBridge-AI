@@ -2,6 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inicio · SkillBridge AI</title>
 <link rel="stylesheet" href="/css/tokens.css">
@@ -76,13 +77,13 @@
             </div>
             <div class="card-body-flush">
               <div th:if="${proyectosActivos.isEmpty()}" style="padding:var(--space-6); text-align:center;" class="text-tertiary">No tienes proyectos activos por ahora.</div>
-              <div th:each="row : ${proyectosActivos}" style="display:flex; align-items:center; gap:var(--space-4); padding:var(--space-5) var(--space-6); border-bottom:1px solid var(--border-subtle);">
+              <div th:each="row : ${proyectosActivos}" class="fila-proyecto" style="display:flex; align-items:center; gap:var(--space-4); padding:var(--space-5) var(--space-6); border-bottom:1px solid var(--border-subtle);">
                 <span class="avatar" style="border-radius:var(--radius-md); background:var(--navy-700);" th:text="${#strings.substring(row.nombre, 0, 1)}">P</span>
                 <div style="flex:1; min-width:0;">
                   <div style="font-weight:600;" th:text="${row.nombre}">Proyecto</div>
                   <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${row.rolLabel}">Rol</div>
                 </div>
-                <div style="width:160px;"><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${row.avance} + '%;'"></div></div><span class="progress-value" th:text="${row.avance} + '%'">0%</span></div></div>
+                <div class="fila-proyecto-avance" style="width:160px;"><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${row.avance} + '%;'"></div></div><span class="progress-value" th:text="${row.avance} + '%'">0%</span></div></div>
                 <span class="badge" th:classappend="${row.estadoBadgeClass}" th:text="${row.estadoLabel}">Estado</span>
                 <span class="label-mono" style="width:110px; text-align:right;" th:text="${row.cargaPorcentaje} + '% dedicación'">0%</span>
               </div>

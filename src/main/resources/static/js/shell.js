@@ -69,10 +69,10 @@
             '<div class="topbar-heading"><span class="topbar-title">' + (opts.title || "") + '</span>' +
             '<span class="topbar-subtitle">' + (opts.subtitle || "") + "</span></div>" +
             '<button type="button" class="topbar-search" data-open-command-palette><svg class="icon"><use href="' + window.SBAI.state.STATIC + 'img/icons.svg#icon-search"></use></svg>' +
-            '<span>Buscar colaboradores, proyectos o habilidades…</span><kbd>⌘K</kbd></button>' +
+            '<span>Buscar personas, proyectos o habilidades…</span><kbd>⌘K</kbd></button>' +
             '<div class="topbar-actions">' +
             '<a class="topbar-ai-btn" href="asistente-ia.html">' + icon("icon-sparkles") + "<span>Asistente IA</span></a>" +
-            '<button type="button" class="topbar-icon-btn" id="theme-toggle-btn" aria-label="Cambiar a modo oscuro">' + icon("icon-monitor") + "</button>" +
+            '<button type="button" class="topbar-icon-btn" id="theme-toggle-btn" aria-label="Cambiar a modo oscuro">' + '<svg class="icon tt-icon tt-moon" aria-hidden="true"><use href="/img/icons.svg#icon-moon"></use></svg><svg class="icon tt-icon tt-sun" aria-hidden="true"><use href="/img/icons.svg#icon-sun"></use></svg>' + "</button>" +
             '<div class="dropdown">' +
             '<button type="button" class="topbar-icon-btn" data-dropdown-trigger="notif-panel" aria-label="Notificaciones">' + icon("icon-bell") +
             (unread > 0 ? '<span class="counter-badge" data-unread-badge>' + unread + "</span>" : "") + "</button>" +

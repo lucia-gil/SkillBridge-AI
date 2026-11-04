@@ -76,41 +76,18 @@
   window.SBAI = window.SBAI || {};
   window.SBAI.submitForm = submitForm;
 
-  var THEME_KEY = "sbai-theme";
-
-  function aplicarTema(tema) {
-    if (tema === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-    }
-    var btn = document.getElementById("theme-toggle-btn");
-    if (btn) {
-      btn.setAttribute(
-        "aria-label",
-        tema === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
-      );
-    }
-  }
-
-  function initTema() {
-    var guardado = null;
-    try { guardado = window.localStorage.getItem(THEME_KEY); } catch (e) { /* localStorage no disponible */ }
-    aplicarTema(guardado === "dark" ? "dark" : "light");
-  }
+  // El modo claro/oscuro lo maneja SOLO theme-toggle.js (cargado desde
+  // fragments/seguridad.html): aquí ya no hay lógica de tema.
 
   document.addEventListener("DOMContentLoaded", function () {
     if (window.SBAI.dropdown) window.SBAI.dropdown.init(document);
 
-    initTema();
-    var themeBtn = document.getElementById("theme-toggle-btn");
-    if (themeBtn) {
-      themeBtn.addEventListener("click", function () {
-        var actual = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-        var nuevo = actual === "dark" ? "light" : "dark";
-        aplicarTema(nuevo);
-        try { window.localStorage.setItem(THEME_KEY, nuevo); } catch (e) { /* ignorar */ }
-      });
+    // Sombra suave en el topbar cuando la página ya no está arriba del todo.
+    var topbar = document.querySelector(".topbar");
+    if (topbar) {
+      var marcar = function () { topbar.classList.toggle("is-scrolled", window.scrollY > 4); };
+      window.addEventListener("scroll", marcar, { passive: true });
+      marcar();
     }
 
     document.body.addEventListener("click", function (e) {

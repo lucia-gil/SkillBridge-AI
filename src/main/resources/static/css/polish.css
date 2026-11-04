@@ -678,3 +678,171 @@ input[type="file"]::file-selector-button:hover { background: var(--blue-bg); }
   background: var(--green-fg); color: #fff; flex-shrink: 0; vertical-align: middle;
 }
 .check-badge .icon { width: 12px; height: 12px; stroke: currentColor; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Topbar v2 — más alto, con jerarquía clara y el mismo diseño en los 4
+   roles (antes admin.css lo redefinía solo para el Administrador).
+   ═══════════════════════════════════════════════════════════════════ */
+:root { --topbar-h: 76px; }
+
+.topbar {
+  height: var(--topbar-h);
+  padding: 0 var(--space-7, 28px);
+  gap: var(--space-5);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  -webkit-backdrop-filter: saturate(1.5) blur(14px);
+  backdrop-filter: saturate(1.5) blur(14px);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: box-shadow var(--dur-base, .18s) ease, background-color var(--dur-base, .18s) ease;
+}
+.topbar.is-scrolled { box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .35); }
+:root[data-theme="dark"] .topbar.is-scrolled { box-shadow: 0 12px 32px -16px rgba(0, 0, 0, .7); }
+
+/* El logo del sidebar queda centrado a la altura del topbar */
+.sidebar-brand { height: var(--topbar-h); padding-top: 0; padding-bottom: 0; box-sizing: border-box; }
+
+/* Título de la página: se encoge con "…" antes de empujar las acciones */
+.topbar-heading { gap: 3px; flex: 0 1 auto; min-width: 120px; }
+.topbar-title { font-size: 19px; line-height: 1.2; font-weight: 700; letter-spacing: -.02em; }
+.topbar-subtitle { font-size: 13px; line-height: 1.3; }
+
+/* Buscador global */
+.gs { flex: 1 1 360px; max-width: 520px; min-width: 150px; container-type: inline-size; }
+.gs-input:focus, .gs-input:focus-visible { outline: none; box-shadow: none; }
+.gs-field {
+  height: 46px; padding: 0 var(--space-3) 0 var(--space-4); gap: var(--space-3);
+  border-radius: 14px; border-color: transparent;
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+.gs-field:hover { border-color: transparent; box-shadow: inset 0 0 0 1px var(--border-strong); }
+.gs.open .gs-field, .gs-field:focus-within { border-color: var(--blue-accent); box-shadow: var(--shadow-focus); }
+.gs-field > .icon { width: 18px; height: 18px; }
+.gs-input { font-size: var(--fs-sm); }
+.gs-field kbd {
+  padding: 3px 7px; border-radius: 6px; border-color: var(--border-default);
+  background: var(--surface); color: var(--text-tertiary); font-size: 10.5px; letter-spacing: .02em;
+  box-shadow: 0 1px 0 var(--border-default); white-space: nowrap; flex: none;
+}
+/* Si el buscador queda angosto (p. ej. con "Ver como" del PM), sin atajo */
+@container (max-width: 300px) { .gs-field kbd { display: none; } }
+@media (max-width: 1600px) { .view-switch-label { display: none; } }
+/* Con "Ver como" (PM) el topbar va más lleno: el Asistente IA queda como ícono antes */
+@media (max-width: 1440px) {
+  .topbar:has(.view-switch) .topbar-ai-btn { width: 44px; padding: 0; justify-content: center; }
+  .topbar:has(.view-switch) .topbar-ai-btn span { display: none; }
+}
+
+/* Acciones */
+.topbar-actions { gap: 6px; }
+.topbar-icon-btn {
+  width: 44px; height: 44px; border-radius: 12px; color: var(--text-secondary);
+  transition: background-color var(--dur-fast, .12s) ease, color var(--dur-fast, .12s) ease, transform var(--dur-fast, .12s) ease;
+}
+.topbar-icon-btn:hover { background: var(--surface-sunken); color: var(--text-primary); }
+.topbar-icon-btn:active { transform: scale(.94); }
+.topbar-icon-btn:focus-visible, .topbar-user-btn:focus-visible, .topbar-ai-btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.topbar-icon-btn .icon { width: 20px; height: 20px; }
+.topbar-icon-btn .counter-badge {
+  top: 6px; right: 6px; min-width: 18px; height: 18px; font-size: 10.5px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* Asistente IA: botón destacado */
+.topbar-ai-btn {
+  height: 44px; padding: 0 var(--space-4); gap: var(--space-2); border-radius: 12px; border: 0;
+  background: linear-gradient(135deg, var(--navy-700) 0%, #3E6FD8 100%);
+  color: #fff; text-decoration: none; white-space: nowrap;
+  box-shadow: 0 6px 16px -8px rgba(30, 64, 175, .65), inset 0 1px 0 rgba(255, 255, 255, .14);
+  transition: transform var(--dur-fast, .12s) ease, box-shadow var(--dur-fast, .12s) ease, filter var(--dur-fast, .12s) ease;
+}
+.topbar-ai-btn:hover { background: linear-gradient(135deg, var(--navy-700) 0%, #3E6FD8 100%); filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 10px 22px -10px rgba(30, 64, 175, .75), inset 0 1px 0 rgba(255, 255, 255, .14); }
+.topbar-ai-btn:active { transform: none; }
+.topbar-ai-btn .icon { color: #fff; width: 18px; height: 18px; }
+:root[data-theme="dark"] .topbar-ai-btn,
+:root[data-theme="dark"] .topbar-ai-btn:hover { background: linear-gradient(135deg, #2B4C8F 0%, #4F7FE0 100%); color: #fff; }
+:root[data-theme="dark"] .topbar-ai-btn .icon { color: #fff; }
+
+/* Usuario: píldora con foto, nombre y rol, separada del resto */
+.topbar-actions > .dropdown:last-child { margin-left: 6px; padding-left: 12px; border-left: 1px solid var(--border-subtle); }
+.topbar-user-btn {
+  min-height: 48px; gap: 10px; padding: 4px 10px 4px 4px; border-radius: 999px;
+  border: 1px solid transparent; background: transparent;
+  transition: background-color var(--dur-fast, .12s) ease, border-color var(--dur-fast, .12s) ease;
+}
+.topbar-user-btn:hover { background: var(--surface-sunken); border-color: var(--border-subtle); }
+.topbar-user-avatar { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--border-default); }
+.topbar-user-avatar .avatar, .topbar-user-photo { width: 38px; height: 38px; font-size: 13px; }
+.topbar-user-text { display: flex; flex-direction: column; min-width: 0; text-align: left; line-height: 1.2; }
+.topbar-user-name { max-width: 160px; font-size: var(--fs-sm); font-weight: 650; }
+.topbar-user-role { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--text-tertiary); }
+.topbar-user-btn > .icon { width: 16px; height: 16px; transition: transform var(--dur-base, .18s) ease; }
+.topbar-user-btn[aria-expanded="true"] > .icon { transform: rotate(180deg); }
+
+/* Botón de tema: luna en claro, sol en oscuro, con un pequeño giro al cambiar */
+.tt-icon.tt-sun { display: none; }
+:root[data-theme="dark"] .tt-icon.tt-sun { display: inline-block; }
+:root[data-theme="dark"] .tt-icon.tt-moon { display: none; }
+.tt-anim .tt-icon { animation: tt-giro .35s var(--ease-standard, ease); }
+@keyframes tt-giro { from { transform: rotate(-90deg) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Opción de tema en el menú del usuario */
+.tt-label-claro { display: none; }
+:root[data-theme="dark"] .tt-label-claro { display: inline; }
+:root[data-theme="dark"] .tt-label-oscuro { display: none; }
+@media (max-width: 380px) {
+  /* Pantallas muy angostas: el tema se cambia desde el menú del usuario */
+  .topbar #theme-toggle-btn { display: none; }
+}
+
+/* Mientras cambia el tema no se anima nada: el cambio es instantáneo. */
+html.tema-cambiando *, html.tema-cambiando *::before, html.tema-cambiando *::after { transition: none !important; }
+
+/* ── Responsive del topbar ── */
+@media (max-width: 1280px) {
+  .topbar { padding: 0 var(--space-5); gap: var(--space-4); }
+  .topbar-user-text { display: none; }
+  .topbar-user-btn { padding: 4px; }
+}
+@media (max-width: 1100px) {
+  .topbar-ai-btn { width: 44px; padding: 0; justify-content: center; }
+  .topbar-ai-btn span { display: none; }
+  .topbar-subtitle { display: none; }
+}
+@media (max-width: 860px) {
+  :root { --topbar-h: 64px; }
+  .topbar { padding: 0 var(--space-3); gap: var(--space-2); }
+  .gs-field { height: 42px; border-radius: 12px; }
+  .topbar-icon-btn, .topbar-ai-btn { width: 40px; height: 40px; }
+  .topbar-actions { gap: 2px; }
+  .topbar-actions > .dropdown:last-child { margin-left: 2px; padding-left: 6px; }
+  .topbar-user-btn { min-height: 40px; padding: 2px; }
+  .topbar-user-btn > .icon { display: none; }
+  .topbar-user-avatar, .topbar-user-avatar .avatar, .topbar-user-photo { width: 34px; height: 34px; flex-basis: 34px; }
+}
+@media (max-width: 860px) {
+  .gs { min-width: 0; }
+  /* "Ver como" con etiquetas cortas: PM / Colab. */
+  .view-switch .segmented-btn[data-short] { font-size: 0; padding: 6px 10px; }
+  .view-switch .segmented-btn[data-short]::after { content: attr(data-short); font-size: var(--fs-xs); }
+}
+@media (max-width: 480px) {
+  /* Teléfono: el título ya está en la página; el buscador es una lupa que
+     se despliega a todo el ancho al tocarla. */
+  .topbar { gap: 4px; }
+  .topbar-heading { display: none; }
+  .topbar-icon-btn, .topbar-ai-btn, .topbar-menu-btn { width: 38px; height: 38px; }
+  .topbar-actions { gap: 0; margin-left: auto; }
+  .topbar-actions > .dropdown:last-child { margin-left: 2px; padding-left: 4px; }
+  .topbar-user-avatar, .topbar-user-avatar .avatar, .topbar-user-photo { width: 32px; height: 32px; flex-basis: 32px; }
+  .gs { flex: 0 0 38px; }
+  .gs:not(.open):not(:focus-within) .gs-field { width: 38px; height: 38px; padding: 0; justify-content: center; cursor: pointer; }
+  .gs:not(.open):not(:focus-within) .gs-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .gs.open, .gs:focus-within { position: absolute; left: 8px; right: 8px; z-index: 5; flex: none; }
+  .gs.open .gs-field, .gs:focus-within .gs-field { background: var(--surface); }
+  .view-switch .segmented-btn[data-short] { padding: 5px 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt-anim .tt-icon { animation: none; }
+  .topbar-ai-btn, .topbar-icon-btn, .topbar-user-btn > .icon { transition: none; }
+}
