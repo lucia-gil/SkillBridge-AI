@@ -164,6 +164,21 @@
         </div>
 
         <aside class="pd-side">
+          <!-- ── Espacios del proyecto ────────────────────────── -->
+          <section class="card pd-card" aria-labelledby="pd-h-esp">
+            <header class="pd-card-head"><div><h3 id="pd-h-esp">Espacios del proyecto</h3></div></header>
+            <ul class="pd-links">
+              <li th:if="${esPm}"><a th:href="@{/project-manager/chat.html(proyecto=${d.id})}"><svg class="icon"><use href="/img/icons.svg#icon-message-circle"></use></svg><span>Chat del equipo</span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
+              <li th:if="${esPm}"><a th:href="@{/project-manager/foros.html}"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg><span>Foro <small th:text="'· ' + ${v.hilosForo()} + ' hilo(s)'"></small></span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
+              <li th:unless="${esPm}"><span class="pd-link-static"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg><span>Foro <small th:text="'· ' + ${v.hilosForo()} + ' hilo(s)'"></small></span></span></li>
+              <li th:if="${d.githubUrl != null and !#strings.isEmpty(d.githubUrl)}"><a th:href="${d.githubUrl}" target="_blank" rel="noopener noreferrer"><svg class="icon pd-gh"><use href="/img/icons.svg#icon-github"></use></svg><span>Repositorio en GitHub</span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
+            </ul>
+            <h4 class="pd-sub">Archivos de contexto</h4>
+            <p class="pd-empty" th:if="${d.archivos.isEmpty()}">Sin archivos subidos.</p>
+            <ul class="pd-files" th:unless="${d.archivos.isEmpty()}">
+              <li th:each="a : ${d.archivos}"><a th:href="@{/archivos-proyecto/{id}(id=${a.id})}" target="_blank" rel="noopener"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${a.nombre}">archivo.pdf</span></a><small th:text="${a.fechaSubidaLabel}">fecha</small></li>
+            </ul>
+          </section>
           <!-- ── Candidatos sugeridos ─────────────────────────── -->
           <section class="card pd-card pd-sug" id="candidatos" aria-labelledby="pd-h-sug">
             <header class="pd-card-head">
@@ -188,7 +203,8 @@
                   <li th:each="h : ${c.habilidades}" th:classappend="${h.nivelCandidato() >= h.nivelRequerido()} ? 'is-ok'"
                       th:title="'Pide ' + ${h.requeridoLabel()} + ' · tiene ' + ${h.candidatoLabel()}" th:text="${h.nombre()}">Java</li>
                 </ul>
-                <p class="pd-sug-why" th:text="${c.experienciaAnios} + ' año(s) de experiencia · ' + ${c.disponibilidad} + '% disponible · carga ' + ${c.cargaActual} + '% → ' + ${c.cargaProyectada} + '%'">Explicación</p>
+                <p class="pd-sug-why"><span th:text="${c.experienciaAnios} + ' año(s) de experiencia · ' + ${c.disponibilidad} + '% disponible'">Experiencia</span>
+                  <span class="pd-sug-carga" th:text="'Carga ' + ${c.cargaActual} + '% → ' + ${c.cargaProyectada} + '%'">Carga</span></p>
                 <form th:if="${esPm}" method="post" th:action="@{/project-manager/proyectos/{id}/proponer(id=${d.id})}" class="pd-sug-form">
                   <input type="hidden" name="perfilId" th:value="${c.perfilId}">
                   <input type="hidden" name="volver" th:value="'proyecto-' + ${d.id}">
@@ -207,21 +223,6 @@
             </ol>
           </section>
 
-          <!-- ── Espacios del proyecto ────────────────────────── -->
-          <section class="card pd-card" aria-labelledby="pd-h-esp">
-            <header class="pd-card-head"><div><h3 id="pd-h-esp">Espacios del proyecto</h3></div></header>
-            <ul class="pd-links">
-              <li th:if="${esPm}"><a th:href="@{/project-manager/chat.html(proyecto=${d.id})}"><svg class="icon"><use href="/img/icons.svg#icon-message-circle"></use></svg><span>Chat del equipo</span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
-              <li th:if="${esPm}"><a th:href="@{/project-manager/foros.html}"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg><span>Foro <small th:text="'· ' + ${v.hilosForo()} + ' hilo(s)'"></small></span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
-              <li th:unless="${esPm}"><span class="pd-link-static"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg><span>Foro <small th:text="'· ' + ${v.hilosForo()} + ' hilo(s)'"></small></span></span></li>
-              <li th:if="${d.githubUrl != null and !#strings.isEmpty(d.githubUrl)}"><a th:href="${d.githubUrl}" target="_blank" rel="noopener noreferrer"><svg class="icon"><use href="/img/icons.svg#icon-external-link"></use></svg><span>Repositorio</span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
-            </ul>
-            <h4 class="pd-sub">Archivos de contexto</h4>
-            <p class="pd-empty" th:if="${d.archivos.isEmpty()}">Sin archivos subidos.</p>
-            <ul class="pd-files" th:unless="${d.archivos.isEmpty()}">
-              <li th:each="a : ${d.archivos}"><a th:href="@{/archivos-proyecto/{id}(id=${a.id})}" target="_blank" rel="noopener"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${a.nombre}">archivo.pdf</span></a><small th:text="${a.fechaSubidaLabel}">fecha</small></li>
-            </ul>
-          </section>
         </aside>
       </div>
     </main>

@@ -129,7 +129,10 @@
 
 /* ── Candidatos sugeridos ─────────────────────────────────── */
 .pd-sug { border-top: 3px solid var(--violet-fg); }
-.pd-sug-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: sug; }
+.pd-sug-list {
+  margin: 0 -6px 0 0; padding: 0 6px 0 0; list-style: none; display: flex; flex-direction: column; gap: 10px;
+  max-height: 520px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+}
 .pd-sug-list li { padding: 12px; border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); background: var(--surface-sunken); }
 .pd-sug-top { display: flex; align-items: center; gap: 10px; }
 .pd-sug-who { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -145,6 +148,7 @@
 .pd-sug-skills li { padding: 2px 8px; border: 1px solid var(--border-subtle); border-radius: 999px; background: var(--surface); font-size: 11.5px; color: var(--text-tertiary); }
 .pd-sug-skills li.is-ok { border-color: var(--green-border); background: var(--green-bg); color: var(--green-fg); font-weight: 600; }
 .pd-sug-skills li.is-ok::before { content: "✓ "; }
+.pd-sug-carga { display: block; margin-top: 2px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
 .pd-sug-why { margin: 8px 0 10px; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
 .pd-sug-form { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .pd-sug-form label { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-tertiary); }
@@ -159,6 +163,7 @@
 .pd-links small { color: var(--text-tertiary); font-weight: 400; }
 .pd-links .icon { color: var(--text-tertiary); }
 .pd-go { opacity: .6; }
+.pd-links .pd-gh { color: var(--text-primary); }
 .pd-files li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
 .pd-files a { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--fs-sm); color: var(--blue-link); text-decoration: none; }
 .pd-files a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
