@@ -90,7 +90,12 @@ public class AsistenteIaService {
     public record Resultado(String texto, boolean ok) {}
 
     /** Un turno de la conversación: deUsuario=true si lo escribió la persona, false si fue el asistente. */
-    public record Turno(boolean deUsuario, String texto) {}
+    public record Turno(boolean deUsuario, String texto, List<Archivo> archivos) {
+        public Turno(boolean deUsuario, String texto) { this(deUsuario, texto, List.of()); }
+    }
+
+    /** Imagen o PDF que viaja junto a un turno (Gemini los lee como inline_data). */
+    public record Archivo(String nombre, String mime, byte[] datos) {}
 
     /**
      * Chatbot con memoria (AsistenteConversacionService): prompt de sistema
@@ -234,9 +239,15 @@ public class AsistenteIaService {
                 "parts", List.of(Map.of("text", promptSistema))
         ));
         // Gemini: roles "user" y "model", alternados (la memoria va como turnos previos)
-        cuerpo.put("contents", turnos.stream()
-                .map(t -> Map.of("role", t.deUsuario() ? "user" : "model", "parts", List.of(Map.of("text", t.texto()))))
-                .toList());
+        cuerpo.put("contents", turnos.stream().map(t -> {
+            List<Map<String, Object>> partes = new java.util.ArrayList<>();
+            partes.add(Map.of("text", t.texto()));
+            for (Archivo a : t.archivos()) {
+                partes.add(Map.of("inline_data", Map.of("mime_type", a.mime(),
+                        "data", java.util.Base64.getEncoder().encodeToString(a.datos()))));
+            }
+            return Map.of("role", t.deUsuario() ? "user" : "model", "parts", partes);
+        }).toList());
         // "thinkingLevel": "LOW" porque son tareas simples (responder una
         // pregunta corta o resumir un hilo), no razonamiento complejo - sin
         // esto, el modelo gasta buena parte de maxOutputTokens "pensando"
@@ -269,7 +280,11 @@ public class AsistenteIaService {
         cuerpo.put("model", respaldoModelo);
         List<Map<String, String>> mensajes = new java.util.ArrayList<>();
         mensajes.add(Map.of("role", "system", "content", promptSistema));
-        turnos.forEach(t -> mensajes.add(Map.of("role", t.deUsuario() ? "user" : "assistant", "content", t.texto())));
+        // El respaldo (API de OpenAI) solo recibe texto: se le avisa qué se adjuntó.
+        turnos.forEach(t -> mensajes.add(Map.of("role", t.deUsuario() ? "user" : "assistant", "content",
+                t.archivos().isEmpty() ? t.texto() : t.texto() + "\n\n[El usuario adjuntó " + t.archivos().stream().map(Archivo::nombre)
+                        .collect(java.util.stream.Collectors.joining(", ")) + ", pero este proveedor no puede ver imágenes ni PDF: "
+                        + "dilo con amabilidad y responde con lo que puedas.]")));
         cuerpo.put("messages", mensajes);
         cuerpo.put("temperature", 0.4);
         cuerpo.put("max_tokens", maxOutputTokens);

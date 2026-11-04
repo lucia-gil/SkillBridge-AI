@@ -48,6 +48,10 @@
               <h2 id="as-titulo">Nueva conversación</h2>
               <p><span class="as-dot" aria-hidden="true"></span>Conoce tus datos actuales y recuerda esta conversación</p>
             </div>
+            <button type="button" class="as-icon-btn" id="as-renombrar" hidden title="Cambiar el nombre">
+              <svg class="icon"><use href="/img/icons.svg#icon-edit"></use></svg></button>
+            <button type="button" class="as-icon-btn" id="as-fijar" hidden title="Fijar conversación" aria-pressed="false">
+              <svg class="icon"><use href="/img/icons.svg#icon-pin"></use></svg></button>
             <button type="button" class="as-icon-btn" id="as-borrar" hidden title="Eliminar conversación">
               <svg class="icon"><use href="/img/icons.svg#icon-trash"></use></svg></button>
           </header>
@@ -66,9 +70,16 @@
           </div>
 
           <form class="as-composer" id="as-form" autocomplete="off">
-            <textarea id="as-input" rows="1" th:attr="maxlength=${maxCaracteres}" placeholder="Pregunta sobre tus proyectos, tu equipo o tus habilidades…" aria-label="Mensaje para el Asistente IA"></textarea>
-            <button type="submit" class="as-send" id="as-send" disabled aria-label="Enviar"><svg class="icon"><use href="/img/icons.svg#icon-arrow-up"></use></svg></button>
+            <ul class="as-adjuntos" id="as-adjuntos" hidden aria-label="Archivos adjuntos"></ul>
+            <div class="as-composer-row">
+              <button type="button" class="as-clip" id="as-clip" th:attr="data-max=${maxAdjuntos}" title="Adjuntar imágenes, PDF o archivos de texto (máx. 5 MB)" aria-label="Adjuntar archivo">
+                <svg class="icon"><use href="/img/icons.svg#icon-paperclip"></use></svg></button>
+              <input type="file" id="as-file" multiple hidden accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,.txt,.csv,.md,.json,.log,.xml,.sql,.java,.js,.html,.css,.yml,.yaml,.properties">
+              <textarea id="as-input" rows="1" th:attr="maxlength=${maxCaracteres}" placeholder="Pregunta sobre tus proyectos, tu equipo o tus habilidades…" aria-label="Mensaje para el Asistente IA"></textarea>
+              <button type="submit" class="as-send" id="as-send" disabled aria-label="Enviar"><svg class="icon"><use href="/img/icons.svg#icon-arrow-up"></use></svg></button>
+            </div>
           </form>
+          <div class="as-drop" id="as-drop" hidden><svg class="icon"><use href="/img/icons.svg#icon-paperclip"></use></svg><b>Suelta aquí tus archivos</b><small>Imágenes, PDF o texto · hasta 5 MB</small></div>
           <p class="as-foot"><span th:text="${alcance}">Alcance</span> <span class="as-keys"><kbd>Enter</kbd> envía · <kbd>Shift</kbd>+<kbd>Enter</kbd> nueva línea</span></p>
         </section>
 

@@ -74,9 +74,11 @@ public class InicializadorTablasExtra implements CommandLineRunner {
         try {
             jdbc.execute("CREATE TABLE IF NOT EXISTS asistente_conversaciones (     id                   BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,     usuario_id           BIGINT UNSIGNED NOT NULL,     rol                  VARCHAR(30) NOT NULL,     titulo               VARCHAR(120) NOT NULL,     fecha_creacion       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,     fecha_actualizacion  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,     INDEX idx_asist_conv_usuario (usuario_id, rol, fecha_actualizacion),     CONSTRAINT fk_asist_conv_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             jdbc.execute("CREATE TABLE IF NOT EXISTS asistente_mensajes (     id               BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,     conversacion_id  BIGINT UNSIGNED NOT NULL,     autor            VARCHAR(10) NOT NULL,     contenido        TEXT NOT NULL,     fecha            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,     INDEX idx_asist_msg_conv (conversacion_id, id),     CONSTRAINT fk_asist_msg_conv FOREIGN KEY (conversacion_id) REFERENCES asistente_conversaciones(id) ON DELETE CASCADE ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            jdbc.execute("CREATE TABLE IF NOT EXISTS asistente_adjuntos (     id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,     mensaje_id  BIGINT UNSIGNED NOT NULL,     nombre      VARCHAR(255) NOT NULL,     tipo        VARCHAR(100) NOT NULL,     tamano      INT UNSIGNED NOT NULL,     datos       MEDIUMBLOB NOT NULL,     fecha       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,     INDEX idx_asist_adj_msg (mensaje_id),     CONSTRAINT fk_asist_adj_msg FOREIGN KEY (mensaje_id) REFERENCES asistente_mensajes(id) ON DELETE CASCADE ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         } catch (Exception e) {
             log.warn("No se pudieron verificar/crear las tablas del Asistente IA: {}", e.getMessage());
         }
+        agregarSiFalta("asistente_conversaciones", "fijada", "TINYINT(1) NOT NULL DEFAULT 0");
     }
 
     // ───────── Chat de proyectos (RF07) ─────────

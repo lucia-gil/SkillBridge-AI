@@ -23,6 +23,10 @@ public class AsistenteConversacion {
     @Column(name = "titulo", nullable = false, length = 120)
     private String titulo;
 
+    /** Fijada arriba del historial. */
+    @Column(name = "fijada", nullable = false)
+    private boolean fijada;
+
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
 
@@ -40,6 +44,9 @@ public class AsistenteConversacion {
     }
 
     public void tocar() { this.fechaActualizacion = LocalDateTime.now(); }
+    public void renombrar(String titulo) { this.titulo = titulo; }
+    public void fijar(boolean fijada) { this.fijada = fijada; }
+    public boolean isFijada() { return fijada; }
 
     public Long getId() { return id; }
     public Long getUsuarioId() { return usuarioId; }

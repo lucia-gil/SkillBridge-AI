@@ -689,6 +689,7 @@ CREATE TABLE asistente_conversaciones (
     usuario_id           BIGINT UNSIGNED NOT NULL,
     rol                  VARCHAR(30) NOT NULL,
     titulo               VARCHAR(120) NOT NULL,
+    fijada               TINYINT(1) NOT NULL DEFAULT 0,
     fecha_creacion       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_asist_conv_usuario (usuario_id, rol, fecha_actualizacion),
@@ -703,6 +704,19 @@ CREATE TABLE asistente_mensajes (
     fecha            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_asist_msg_conv (conversacion_id, id),
     CONSTRAINT fk_asist_msg_conv FOREIGN KEY (conversacion_id) REFERENCES asistente_conversaciones(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Archivos e imágenes que el usuario adjunta a un mensaje del Asistente IA.
+CREATE TABLE asistente_adjuntos (
+    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    mensaje_id  BIGINT UNSIGNED NOT NULL,
+    nombre      VARCHAR(255) NOT NULL,
+    tipo        VARCHAR(100) NOT NULL,
+    tamano      INT UNSIGNED NOT NULL,
+    datos       MEDIUMBLOB NOT NULL,
+    fecha       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_asist_adj_msg (mensaje_id),
+    CONSTRAINT fk_asist_adj_msg FOREIGN KEY (mensaje_id) REFERENCES asistente_mensajes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------

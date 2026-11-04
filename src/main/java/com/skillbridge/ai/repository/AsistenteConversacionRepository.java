@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface AsistenteConversacionRepository extends JpaRepository<AsistenteConversacion, Long> {
-    List<AsistenteConversacion> findTop30ByUsuarioIdAndRolOrderByFechaActualizacionDesc(Long usuarioId, String rol);
+    List<AsistenteConversacion> findTop30ByUsuarioIdAndRolOrderByFijadaDescFechaActualizacionDesc(Long usuarioId, String rol);
 }
