@@ -99,7 +99,7 @@
                       th:style="'background:' + ${ {'var(--navy-700)','var(--blue-fg)','var(--violet-fg)','var(--green-fg)','var(--amber-fg)'}[stat.index % 5] } + ';'"
                       th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
                 <div style="min-width:0;">
-                  <div style="font-weight:600; font-size:var(--fs-sm);" th:text="${p.nombre}">Proyecto</div>
+                  <a class="cell-link" style="display:block; font-weight:600; font-size:var(--fs-sm);" th:href="@{/project-manager/proyectos/{id}.html(id=${p.id})}" th:text="${p.nombre}">Proyecto</a>
                   <div class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${p.pmNombre}">PM</div>
                 </div>
               </div>

@@ -71,6 +71,7 @@ public class BuscadorService {
 
         // ---- Proyectos ----
         List<Proyecto> proyectos;
+        Set<Long> gestionados = new LinkedHashSet<>();
         if (ve_todo) {
             proyectos = proyectoRepository.findAllByOrderByFechaCreacionDesc();
         } else {
@@ -82,6 +83,7 @@ public class BuscadorService {
                 }
                 if (Roles.PROJECT_MANAGER.equals(rol)) {
                     for (Proyecto p : asignacionRepository.listarProyectosGestionados(sesion.getPerfilId())) {
+                        gestionados.add(p.getId());
                         if (vistos.add(p.getId())) propios.add(p);
                     }
                 }
@@ -94,7 +96,7 @@ public class BuscadorService {
             String texto = normalizar(p.getNombre());
             if (texto.contains(q)) {
                 salida.add(item("Proyectos", "icon-folder", p.getNombre(), etiquetaEstado(p.getEstado()),
-                        destinoProyecto(slug, p.getNombre())));
+                        destinoProyecto(slug, p, gestionados.contains(p.getId()))));
                 n++;
             }
         }
@@ -128,13 +130,12 @@ public class BuscadorService {
         return salida;
     }
 
-    /**
-     * El Resource Manager no tiene una vista "proyectos.html" propia (antes
-     * el enlace daba 404): sus proyectos viven en Asignaciones.
-     */
-    private static String destinoProyecto(String slug, String nombre) {
-        String b = codificar(nombre);
-        if ("resource-manager".equals(slug)) return "/resource-manager/asignaciones.html?buscar=" + b;
+    /** Destino de un proyecto en el buscador global. */
+    private static String destinoProyecto(String slug, Proyecto p, boolean loGestiona) {
+        // RM y el PM que lo lidera: vista de detalle del proyecto
+        if ("resource-manager".equals(slug)) return "/resource-manager/proyectos/" + p.getId() + ".html";
+        if ("project-manager".equals(slug) && loGestiona) return "/project-manager/proyectos/" + p.getId() + ".html";
+        String b = codificar(p.getNombre());
         return "/" + slug + "/proyectos.html?buscar=" + b;
     }
 

@@ -200,7 +200,7 @@
 
                     <div class="rmi-suggest" th:if="${d.sugerenciaProyecto() != null}">
                       <svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg>
-                      <span>Encaja en <a href="asignaciones.html" th:text="${d.sugerenciaProyecto()}">Proyecto</a>
+                      <span>Encaja en <a th:href="@{/resource-manager/proyectos/{id}.html(id=${d.sugerenciaProyectoId()})}" th:text="${d.sugerenciaProyecto()}">Proyecto</a>
                         <span class="rmi-muted" th:text="'· ' + ${#strings.listJoin(d.sugerenciaHabilidades(), ', ')}">· skills</span></span>
                     </div>
                     <div class="rmi-suggest is-none" th:if="${d.sugerenciaProyecto() == null}">

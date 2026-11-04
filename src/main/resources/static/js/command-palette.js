@@ -67,10 +67,6 @@
     close();
     if (type === "Proyectos") {
       var p = MOCK.findProject(title);
-      if (currentRole === "project-manager" && title === "Núcleo Retail") {
-        window.location.href = "proyecto-detalle.html";
-        return;
-      }
       window.SBAI.toast.show("<strong>" + title + "</strong> · " + p.cliente + " · avance " + p.avance + "% · " + p.estado, { icon: "icon-folder" });
       return;
     }

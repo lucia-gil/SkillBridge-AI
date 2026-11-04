@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<!--
+  compartido/proyecto-detalle.html — Vista de detalle de un proyecto para el
+  Project Manager (solo sus proyectos) y el Resource Manager (todos)
+  (ProyectoVistaController + ProyectoVistaService).
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${v.detalle().nombre} + ' · SkillBridge AI'">Proyecto · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
+  <link rel="stylesheet" href="/css/proyecto-detalle.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content pd" id="page-content" th:with="d=${v.detalle()}">
+
+      <!-- ── Portada ─────────────────────────────────────────── -->
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div class="pd-hero-text">
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-folder"></use></svg>
+              <span th:text="${esPm} ? 'Project Manager · Proyecto' : 'Resource Manager · Proyecto'">Proyecto</span></span>
+            <h2 class="kpi-hero-title"><span th:text="${d.nombre}">Proyecto</span>
+              <span class="pd-estado" th:attr="data-estado=${d.estadoCrudo}" th:text="${d.estadoLabel}">Activo</span></h2>
+            <p class="kpi-hero-sub pd-desc" th:if="${d.descripcion != null and !#strings.isEmpty(d.descripcion)}" th:text="${d.descripcion}">Descripción</p>
+            <p class="pd-meta">
+              <span><svg class="icon icon-sm"><use href="/img/icons.svg#icon-user"></use></svg>PM <b th:text="${v.pmNombre()}">Nombre</b></span>
+              <span><svg class="icon icon-sm"><use href="/img/icons.svg#icon-calendar"></use></svg><span th:text="${d.fechaInicioLabel} + ' → ' + ${d.fechaFinLabel ?: 'sin fecha'}">fechas</span></span>
+            </p>
+          </div>
+          <div class="pd-hero-actions">
+            <a class="kpi-hero-action" th:if="${esPm and v.admiteIntegrantes() and v.vacantes() > 0}" th:href="@{/project-manager/ai-talent-matching.html(proyectoId=${d.id})}">
+              <svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg><span>Buscar talento con IA</span></a>
+            <a class="kpi-hero-action" th:unless="${esPm}" th:href="@{/resource-manager/asignaciones.html(buscar=${d.nombre})}">
+              <svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg><span>Gestionar en asignaciones</span></a>
+          </div>
+        </div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-trending-up"></use></svg></span><span class="hero-card-label">Avance estimado</span></div>
+            <div class="hero-card-value" th:text="${d.avance} + '%'">0%</div>
+            <div class="pd-mini-bar" aria-hidden="true"><span th:style="'width:' + ${d.avance} + '%'"></span></div>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></span><span class="hero-card-label">Equipo</span></div>
+            <div class="hero-card-value"><span th:text="${v.integrantes()}">0</span> <small th:text="${v.integrantes() == 1} ? 'integrante' : 'integrantes'">integrantes</small></div>
+            <p class="hero-card-meta">
+              <b th:class="${v.vacantes() > 0} ? 'tone-amber' : 'tone-green'" th:text="${v.vacantes() == 0} ? 'Cupo completo' : (${v.vacantes() == 1} ? '1 vacante' : ${v.vacantes()} + ' vacantes')">vacantes</b>
+              <span th:if="${v.propuestasPendientes() > 0}" th:text="' · ' + ${v.propuestasPendientes()} + ' propuesta(s) por revisar'"></span>
+            </p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-shield-check"></use></svg></span><span class="hero-card-label">Habilidades cubiertas</span></div>
+            <div class="hero-card-value"><span th:text="${v.coberturaCompleta()}">0</span><small th:text="' / ' + ${v.cobertura().size()}"> / 0</small></div>
+            <p class="hero-card-meta" th:if="${v.cobertura().isEmpty()}">El proyecto no declara habilidades</p>
+            <p class="hero-card-meta" th:unless="${v.cobertura().isEmpty()}">
+              <b th:class="${v.huecos() > 0} ? 'tone-red' : 'tone-green'" th:text="${v.huecos() == 0} ? 'Sin huecos' : (${v.huecos() == 1} ? '1 sin cubrir' : ${v.huecos()} + ' sin cubrir')">huecos</b></p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon" th:classappend="'tone-' + ${v.plazoTono()}"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span><span class="hero-card-label">Plazo</span></div>
+            <div class="hero-card-value pd-plazo" th:text="${v.plazoLabel()}">Faltan 0 días</div>
+            <p class="hero-card-meta" th:text="'Fin estimado: ' + ${d.fechaFinLabel ?: '—'}">Fin estimado</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Avisos de estado -->
+      <div class="pd-aviso is-amber" th:if="${d.estadoCrudo == 'en_pausa'}">
+        <svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg>
+        <div><b>Proyecto en pausa</b><span th:if="${d.fechaPausaLabel != null}" th:text="' desde el ' + ${d.fechaPausaLabel}"></span>.
+          <span th:if="${d.motivoPausa != null}" th:text="'Motivo: ' + ${d.motivoPausa} + '.'"></span>
+          <span th:if="${d.fechaReanudacionLabel != null}" th:text="'Reanudación estimada: ' + ${d.fechaReanudacionLabel} + (${d.reanudacionVencida} ? ' (vencida)' : '') + '.'"></span></div>
+      </div>
+      <div class="pd-aviso is-red" th:if="${d.estadoCrudo == 'cancelado' and d.razonCancelacion != null}">
+        <svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg>
+        <div><b>Proyecto cancelado.</b> <span th:text="${d.razonCancelacion}"></span></div>
+      </div>
+
+      <div class="pd-grid">
+        <div class="pd-main">
+
+          <!-- ── Stack y habilidades ───────────────────────────── -->
+          <section class="card pd-card" aria-labelledby="pd-h-hab">
+            <header class="pd-card-head">
+              <div><h3 id="pd-h-hab">Stack y habilidades requeridas</h3>
+                <p>Quién del equipo actual cubre cada habilidad que pide el proyecto.</p></div>
+            </header>
+            <ul class="pd-stack" th:if="${!d.tecnologias.isEmpty()}">
+              <li th:each="t : ${d.tecnologias}"><span class="tech-logo-sm" th:attr="data-tech-logo=${t}"></span><span th:text="${t}">Java</span></li>
+            </ul>
+            <p class="pd-empty" th:if="${v.cobertura().isEmpty()}">Este proyecto todavía no tiene habilidades requeridas.</p>
+            <ul class="pd-cob" th:unless="${v.cobertura().isEmpty()}">
+              <li th:each="c : ${v.cobertura()}" th:attr="data-estado=${c.estado()}">
+                <span class="pd-cob-dot" aria-hidden="true"></span>
+                <div class="pd-cob-hab"><b th:text="${c.habilidad()}">Java</b><small th:text="'Nivel ' + ${c.nivelLabel()}">Nivel</small></div>
+                <div class="pd-cob-quien">
+                  <th:block th:if="${c.cubierta()}"><span class="pd-chip is-ok" th:each="n : ${c.cubren()}" th:text="${n}">Nombre</span></th:block>
+                  <th:block th:if="${!c.cubierta() and !c.parcial().isEmpty()}">
+                    <span class="pd-chip is-partial" th:each="n : ${c.parcial()}" th:text="${n}" th:title="'Tiene la habilidad, pero con un nivel menor al requerido'">Nombre</span></th:block>
+                  <span class="pd-cob-hueco" th:if="${c.hueco()}">Nadie del equipo la tiene</span>
+                </div>
+                <span class="pd-cob-tag" th:text="${c.cubierta()} ? 'Cubierta' : (${c.hueco()} ? 'Hueco' : 'Nivel bajo')">Cubierta</span>
+              </li>
+            </ul>
+          </section>
+
+          <!-- ── Equipo ─────────────────────────────────────────── -->
+          <section class="card pd-card" aria-labelledby="pd-h-eq">
+            <header class="pd-card-head">
+              <div><h3 id="pd-h-eq">Equipo</h3>
+                <p th:text="${d.colaboradoresRequeridos} + ' colaborador(es) requeridos · carga total de cada persona en todos sus proyectos'">Equipo</p></div>
+            </header>
+            <p class="pd-empty" th:if="${v.equipo().isEmpty()}">Todavía no hay integrantes activos.</p>
+            <ul class="pd-team" th:unless="${v.equipo().isEmpty()}">
+              <li th:each="m : ${v.equipo()}" th:attr="data-tono=${m.tono()}">
+                <span class="avatar avatar-sm" th:text="${m.iniciales()}">AB</span>
+                <div class="pd-team-who">
+                  <a th:unless="${esPm}" th:href="@{/resource-manager/colaboradores/{id}(id=${m.perfilId()})}" th:text="${m.nombre()}">Nombre</a>
+                  <b th:if="${esPm}" th:text="${m.nombre()}">Nombre</b>
+                  <small><span th:text="${m.cargo()}">Cargo</span><span class="pd-pm-tag" th:if="${m.esPm()}">PM</span></small>
+                </div>
+                <div class="pd-team-load" th:title="${m.cargaProyecto()} + '% en este proyecto · ' + ${m.cargaTotal()} + '% en total'">
+                  <div class="pd-load-bar"><span class="is-total" th:style="'width:' + ${m.cargaTotal() > 100 ? 100 : m.cargaTotal()} + '%'"></span><span class="is-here" th:style="'width:' + ${m.cargaProyecto() > 100 ? 100 : m.cargaProyecto()} + '%'"></span></div>
+                  <small><b th:text="${m.cargaProyecto()} + '%'">50%</b> aquí · <span th:text="${m.cargaTotal()} + '% total'">80% total</span></small>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <!-- ── Entregables ───────────────────────────────────── -->
+          <section class="card pd-card" aria-labelledby="pd-h-ent">
+            <header class="pd-card-head">
+              <div><h3 id="pd-h-ent">Entregables</h3>
+                <p><span th:text="${v.entregablesAbiertos()} + ' abierto(s)'">0 abiertos</span><span th:if="${v.entregablesVencidos() > 0}" class="tone-red-text" th:text="' · ' + ${v.entregablesVencidos()} + ' vencido(s)'"></span></p></div>
+              <a th:if="${esPm}" class="btn btn-secondary btn-sm" th:href="@{/project-manager/proyectos/{id}/entregables.html(id=${d.id})}">Gestionar</a>
+            </header>
+            <p class="pd-empty" th:if="${v.entregables().isEmpty()}">Aún no hay entregables publicados.</p>
+            <ul class="pd-ent" th:unless="${v.entregables().isEmpty()}">
+              <li th:each="e,st : ${v.entregables()}" th:if="${st.index < 5}">
+                <div class="pd-ent-main">
+                  <a th:if="${esPm}" th:href="@{/project-manager/entregables/{id}.html(id=${e.id})}" th:text="${e.titulo}">Entregable</a>
+                  <b th:unless="${esPm}" th:text="${e.titulo}">Entregable</b>
+                  <small th:text="'Cierra ' + ${e.fechaCierreLabel}">Cierra</small>
+                </div>
+                <div class="pd-ent-prog" th:title="${e.totalEntregados} + ' de ' + ${e.totalEquipo} + ' entregaron'">
+                  <div class="pd-load-bar"><span class="is-here" th:style="'width:' + ${e.totalEquipo > 0 ? (e.totalEntregados * 100 / e.totalEquipo) : 0} + '%'"></span></div>
+                  <small th:text="${e.totalEntregados} + '/' + ${e.totalEquipo}">0/0</small>
+                </div>
+                <span class="badge" th:classappend="${e.estadoBadgeClass}" th:text="${e.estadoLabel}">Estado</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <aside class="pd-side">
+          <!-- ── Candidatos sugeridos ─────────────────────────── -->
+          <section class="card pd-card pd-sug" id="candidatos" aria-labelledby="pd-h-sug">
+            <header class="pd-card-head">
+              <div><h3 id="pd-h-sug"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg>Candidatos sugeridos</h3>
+                <p th:if="${!v.sugeridos().isEmpty()}" th:text="'Mismo puntaje de AI Talent Matching, con ' + ${v.dedicacionReferencia()} + '% de dedicación'">Ranking</p></div>
+            </header>
+            <p class="pd-empty" th:if="${!v.admiteIntegrantes()}">El proyecto no admite nuevos integrantes en este estado.</p>
+            <p class="pd-empty" th:if="${v.admiteIntegrantes() and v.vacantes() == 0}">El equipo está completo: no hay vacantes abiertas.</p>
+            <p class="pd-empty" th:if="${v.admiteIntegrantes() and v.vacantes() > 0 and v.sugeridos().isEmpty()}">No hay personas con capacidad libre para este proyecto ahora.</p>
+            <ol class="pd-sug-list" th:unless="${v.sugeridos().isEmpty()}">
+              <li th:each="c : ${v.sugeridos()}">
+                <div class="pd-sug-top">
+                  <span class="avatar avatar-sm" th:text="${c.iniciales}">AB</span>
+                  <div class="pd-sug-who">
+                    <a th:unless="${esPm}" th:href="@{/resource-manager/colaboradores/{id}(id=${c.perfilId})}" th:text="${c.nombre}">Nombre</a>
+                    <b th:if="${esPm}" th:text="${c.nombre}">Nombre</b>
+                    <small th:text="${c.cargo}">Cargo</small>
+                  </div>
+                  <span class="pd-score" th:style="'--p:' + ${c.scoreTotal}" th:title="'Habilidades ' + ${c.scoreHabilidades} + '% · Experiencia ' + ${c.scoreExperiencia} + '% · Disponibilidad ' + ${c.scoreDisponibilidad} + '%'"><b th:text="${c.scoreTotal}">80</b></span>
+                </div>
+                <ul class="pd-sug-skills" th:if="${!c.habilidades.isEmpty()}">
+                  <li th:each="h : ${c.habilidades}" th:classappend="${h.nivelCandidato() >= h.nivelRequerido()} ? 'is-ok'"
+                      th:title="'Pide ' + ${h.requeridoLabel()} + ' · tiene ' + ${h.candidatoLabel()}" th:text="${h.nombre()}">Java</li>
+                </ul>
+                <p class="pd-sug-why" th:text="${c.experienciaAnios} + ' año(s) de experiencia · ' + ${c.disponibilidad} + '% disponible · carga ' + ${c.cargaActual} + '% → ' + ${c.cargaProyectada} + '%'">Explicación</p>
+                <form th:if="${esPm}" method="post" th:action="@{/project-manager/proyectos/{id}/proponer(id=${d.id})}" class="pd-sug-form">
+                  <input type="hidden" name="perfilId" th:value="${c.perfilId}">
+                  <input type="hidden" name="volver" th:value="'proyecto-' + ${d.id}">
+                  <label><span>Dedicación</span><input type="number" name="cargaPorcentaje" min="1" max="100" th:value="${v.dedicacionReferencia()}" class="input">%</label>
+                  <button type="submit" class="btn btn-secondary btn-sm">Proponer al RM</button>
+                </form>
+                <form th:unless="${esPm}" method="post" th:action="@{/resource-manager/proyectos/{id}/asignar(id=${d.id})}" class="pd-sug-form"
+                      data-confirm-variant="primary" data-confirm-label="Asignar"
+                      th:attr="data-confirm-title=${'¿Asignar a ' + c.nombre + '?'},data-confirm-desc=${'Se suma al equipo de ' + d.nombre + ' con ' + v.dedicacionReferencia() + '% de dedicación. Su carga pasaría de ' + c.cargaActual + '% a ' + c.cargaProyectada + '%.'},data-carga-actual=${c.cargaActual},data-nombre=${c.nombre},data-proyecto=${d.nombre}">
+                  <input type="hidden" name="perfilId" th:value="${c.perfilId}">
+                  <input type="hidden" name="volver" value="proyecto">
+                  <label><span>Dedicación</span><input type="number" name="cargaPorcentaje" min="1" max="100" th:value="${v.dedicacionReferencia()}" class="input">%</label>
+                  <button type="submit" class="btn btn-primary btn-sm">Asignar</button>
+                </form>
+              </li>
+            </ol>
+          </section>
+
+          <!-- ── Espacios del proyecto ────────────────────────── -->
+          <section class="card pd-card" aria-labelledby="pd-h-esp">
+            <header class="pd-card-head"><div><h3 id="pd-h-esp">Espacios del proyecto</h3></div></header>
+            <ul class="pd-links">
+              <li th:if="${esPm}"><a th:href="@{/project-manager/chat.html(proyecto=${d.id})}"><svg class="icon"><use href="/img/icons.svg#icon-message-circle"></use></svg><span>Chat del equipo</span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
+              <li th:if="${esPm}"><a th:href="@{/project-manager/foros.html}"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg><span>Foro <small th:text="'· ' + ${v.hilosForo()} + ' hilo(s)'"></small></span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
+              <li th:unless="${esPm}"><span class="pd-link-static"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg><span>Foro <small th:text="'· ' + ${v.hilosForo()} + ' hilo(s)'"></small></span></span></li>
+              <li th:if="${d.githubUrl != null and !#strings.isEmpty(d.githubUrl)}"><a th:href="${d.githubUrl}" target="_blank" rel="noopener noreferrer"><svg class="icon"><use href="/img/icons.svg#icon-external-link"></use></svg><span>Repositorio</span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
+            </ul>
+            <h4 class="pd-sub">Archivos de contexto</h4>
+            <p class="pd-empty" th:if="${d.archivos.isEmpty()}">Sin archivos subidos.</p>
+            <ul class="pd-files" th:unless="${d.archivos.isEmpty()}">
+              <li th:each="a : ${d.archivos}"><a th:href="@{/archivos-proyecto/{id}(id=${a.id})}" target="_blank" rel="noopener"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${a.nombre}">archivo.pdf</span></a><small th:text="${a.fechaSubidaLabel}">fecha</small></li>
+            </ul>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+</script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script src="/js/tech-icons.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/proyecto-detalle.js"></script>
+</body>
+</html>

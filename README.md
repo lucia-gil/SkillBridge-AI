@@ -86,6 +86,10 @@ Cada proyecto tiene una sala de chat que solo ven sus integrantes activos (PM y 
 
 Arquitectura: servicio web **REST** (`ChatApiController`, `/api/chat/**`, JSON) consumido con **jQuery/AJAX** (`js/chat.js` sobre `js/sbai-api.js`, que agrega el token CSRF). Los mensajes nuevos llegan por *polling*: cada 3 s el navegador pide `GET /api/chat/salas/{id}/mensajes?despues={ultimoId}` (15 s si la pestaña está oculta), sin necesidad de WebSockets. Incluye "Resumir con IA" (Gemini) de la conversación reciente. La primera vez se cargan conversaciones de ejemplo en los proyectos activos.
 
+### Vista de detalle de proyecto
+
+`/project-manager/proyectos/{id}.html` (solo el PM que lo lidera) y `/resource-manager/proyectos/{id}.html` (cualquier proyecto), plantilla `compartido/proyecto-detalle.html` (`ProyectoVistaController`, `ProyectoVistaService`). Muestra estado, avance, plazo, stack, **cobertura de habilidades** (quién del equipo cubre cada habilidad requerida y dónde hay huecos), equipo con su carga total, entregables, chat/foro/archivos y **candidatos sugeridos** con el mismo puntaje de AI Talent Matching: el PM los propone al RM y el RM los asigna directo. Se llega desde el nombre del proyecto en Proyectos/Asignaciones/Inicio, desde "Encaja en …" del Inicio del RM y desde el buscador global.
+
 ### Catálogo de formación (Cursos)
 
 El Administrador publica en *Cursos* cuatro tipos de recurso: **cursos**, **videos**, **rutas** (roadmaps por pasos) y **especializaciones** (programas de varios cursos). Cada recurso tiene enlace, plataforma (se detecta sola por el enlace: YouTube, Coursera, Microsoft Learn, roadmap.sh, freeCodeCamp…, ver `util/PlataformaCurso`), categoría y habilidad, nivel, duración, idioma, si es gratuito, si da certificado y si es destacado. Las rutas y especializaciones guardan sus pasos en orden (`curso_pasos`).

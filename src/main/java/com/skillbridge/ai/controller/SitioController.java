@@ -87,7 +87,6 @@ public class SitioController {
     // NotificacionesController) por eso se retiraron de esta lista: dejarlas
     // mapeadas aqui tambien produce el error de "Ambiguous mapping".
     @GetMapping({
-            "/project-manager/proyecto-detalle.html",
             "/project-manager/asistente-ia.html"
     })
     public String projectManager(HttpServletRequest request, Model model, HttpSession session) {

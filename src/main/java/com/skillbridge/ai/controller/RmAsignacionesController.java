@@ -174,6 +174,7 @@ public class RmAsignacionesController {
                           @RequestParam Long perfilId,
                           @RequestParam int cargaPorcentaje,
                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+                          @RequestParam(required = false) String volver,
                           HttpSession session,
                           RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
@@ -191,7 +192,9 @@ public class RmAsignacionesController {
             // el Service (ej. "Ana ya tiene 90% de carga activa...").
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
-        return "redirect:/resource-manager/asignaciones.html";
+        return "proyecto".equals(volver)
+                ? "redirect:/resource-manager/proyectos/" + id + ".html"
+                : "redirect:/resource-manager/asignaciones.html";
     }
 
     /**

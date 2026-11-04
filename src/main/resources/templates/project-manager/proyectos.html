@@ -79,7 +79,7 @@
               <tr th:each="p : ${proyectos}" data-filter-row="proyectos-pm" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre + ' ' + #strings.listJoin(p.tecnologias, ' '))}">
                 <td class="cell-person">
                   <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
-                  <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="2"></span></span>
+                  <span class="cell-person-text"><a class="cell-person-name cell-link" th:href="@{/project-manager/proyectos/{id}.html(id=${p.id})}" th:text="${p.nombre}">Proyecto</a><span data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="2"></span></span>
                 </td>
                 <td><span data-periodo th:attr="data-ini=${p.fechaInicioLabel},data-fin=${p.fechaFinLabel}">fechas</span></td>
                 <td><span class="miembros-pill" th:attr="data-n=${p.equipo.size()}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg><span th:text="${p.equipo.size()} + (${p.equipo.size()} == 1 ? ' miembro' : ' miembros')">0 miembros</span></span></td>

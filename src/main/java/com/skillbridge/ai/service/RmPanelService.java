@@ -264,6 +264,7 @@ public class RmPanelService {
 
             // Sugerencia: el proyecto con vacantes donde más habilidades requeridas cumple
             String sugerencia = null;
+            Long sugerenciaId = null;
             List<String> coinciden = List.of();
             Map<Long, Integer> nivelDe = suyas.stream().collect(Collectors.toMap(HabPerfil::habilidadId, HabPerfil::nivel, Math::max));
             Set<Long> yaEsta = proyectosActivosDe.getOrDefault(m.id(), Set.of());
@@ -276,11 +277,12 @@ public class RmPanelService {
                 if (match.size() > mejor) {
                     mejor = match.size();
                     sugerencia = p.nombre();
+                    sugerenciaId = p.id();
                     coinciden = match;
                 }
             }
             lista.add(new PersonaDisponible(m.id(), m.nombre(), iniciales(m.nombre()), m.cargo(), c,
-                    Math.max(0, limite - c), top, dias, sugerencia, coinciden));
+                    Math.max(0, limite - c), top, dias, sugerencia, sugerenciaId, coinciden));
         }
         lista.sort(Comparator.comparingInt(PersonaDisponible::carga)
                 .thenComparing(PersonaDisponible::diasEnBanca, Comparator.nullsLast(Comparator.<Integer>reverseOrder()))

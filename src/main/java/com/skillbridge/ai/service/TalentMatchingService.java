@@ -86,6 +86,26 @@ public class TalentMatchingService {
         if (dedicacion < 1 || dedicacion > 100) throw new OperacionInvalidaException("La dedicación debe estar entre 1% y 100%.");
         if (vacantes(proyecto) < 1) throw new OperacionInvalidaException("El proyecto ya no tiene vacantes disponibles.");
         validarPesos(ph, pe, pd);
+        return rankear(proyecto, dedicacion, ph, pe, pd);
+    }
+
+    /**
+     * Candidatos sugeridos para la vista de detalle del proyecto (PM o RM):
+     * mismo ranking que AI Talent Matching, con los pesos configurados y una
+     * dedicación de referencia. Vacío si el proyecto no admite integrantes o
+     * ya no tiene vacantes.
+     */
+    @Transactional(readOnly = true)
+    public List<MatchingCandidato> sugeridosPara(Long proyectoId, int dedicacion, int limite) {
+        Proyecto proyecto = proyectoRepository.findById(proyectoId).orElse(null);
+        if (proyecto == null || !ProyectoService.admiteNuevosIntegrantes(proyecto) || vacantes(proyecto) < 1) return List.of();
+        int[] pesos = pesosConfigurados();
+        return rankear(proyecto, dedicacion, pesos[0], pesos[1], pesos[2]).stream()
+                .filter(MatchingCandidato::isCargaCompatible).limit(limite).toList();
+    }
+
+    private List<MatchingCandidato> rankear(Proyecto proyecto, int dedicacion, int ph, int pe, int pd) {
+        Long proyectoId = proyecto.getId();
         var cfg = configuracionService.obtenerMapa();
         int limiteCarga = proyectoService.limiteCargaConfigurado();
         int maximoProyectos = entero(configuracionService.valor(cfg, "maximo_proyectos_simultaneos", "3"), 3);

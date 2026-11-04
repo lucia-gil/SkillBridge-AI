@@ -314,6 +314,9 @@ public class ProyectosPmController {
     }
 
     private String destino(String volver) {
+        if (volver != null && volver.matches("proyecto-\\d+")) {
+            return "redirect:/project-manager/proyectos/" + volver.substring("proyecto-".length()) + ".html";
+        }
         return "redirect:" + ("asignaciones".equals(volver)
                 ? "/project-manager/asignaciones.html"
                 : "/project-manager/proyectos.html");

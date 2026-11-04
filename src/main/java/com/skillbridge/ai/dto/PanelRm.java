@@ -46,7 +46,7 @@ public record PanelRm(
     /** Miembro con capacidad libre (carga menor al 30%). */
     public record PersonaDisponible(Long perfilId, String nombre, String iniciales, String cargo, int carga,
                                     int libre, List<HabilidadNivel> habilidades, Integer diasEnBanca,
-                                    String sugerenciaProyecto, List<String> sugerenciaHabilidades) {
+                                    String sugerenciaProyecto, Long sugerenciaProyectoId, List<String> sugerenciaHabilidades) {
         public boolean enBanca() { return carga == 0; }
         public boolean bancaLarga() { return diasEnBanca != null && diasEnBanca > 30; }
     }
