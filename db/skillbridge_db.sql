@@ -1911,11 +1911,30 @@ CREATE TABLE cursos (
   duracion_horas INT NOT NULL DEFAULT 1,
   fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   fecha_actualizacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  -- v11 catálogo de formación
+  tipo VARCHAR(20) NOT NULL DEFAULT 'CURSO',          -- CURSO | VIDEO | RUTA | ESPECIALIZACION
+  plataforma VARCHAR(40) NULL,                        -- clave de PlataformaCurso; NULL = se detecta por la URL
+  gratuito TINYINT(1) NOT NULL DEFAULT 1,
+  con_certificado TINYINT(1) NOT NULL DEFAULT 0,
+  idioma VARCHAR(5) NOT NULL DEFAULT 'ES',
+  destacado TINYINT(1) NOT NULL DEFAULT 0,
   CONSTRAINT fk_curso_categoria FOREIGN KEY (categoria_id) REFERENCES categorias_habilidad(id),
   CONSTRAINT fk_curso_habilidad FOREIGN KEY (habilidad_id) REFERENCES habilidades(id),
   INDEX idx_cursos_estado_titulo (estado, titulo),
   INDEX idx_cursos_categoria (categoria_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Pasos ordenados de una ruta (roadmap) o especialización
+CREATE TABLE curso_pasos (
+  curso_id BIGINT UNSIGNED NOT NULL,
+  orden INT NOT NULL,
+  titulo VARCHAR(150) NOT NULL,
+  url VARCHAR(500) NULL,
+  PRIMARY KEY (curso_id, orden),
+  CONSTRAINT fk_paso_curso FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- El catálogo inicial de recursos gratuitos lo carga la app al primer arranque
+-- (config/InicializadorTablasExtra.sembrarCatalogoDemo).
 
 -- Resumen de hilos del foro con IA (ForoService.generarResumenIa)
 ALTER TABLE foro_publicaciones

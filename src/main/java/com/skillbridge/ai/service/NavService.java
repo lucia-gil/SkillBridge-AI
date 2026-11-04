@@ -23,7 +23,7 @@ public class NavService {
                 items.add(new NavItem("Inicio", "icon-home", "inicio.html"));
                 items.add(new NavItem("Usuarios y roles", "icon-users", "usuarios.html"));
                 items.add(new NavItem("Catálogo de habilidades", "icon-book", "habilidades.html"));
-                items.add(new NavItem("Cursos", "icon-book", "cursos.html"));
+                items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
                 items.add(new NavItem("Catálogos técnicos", "icon-list", "catalogos.html"));
                 items.add(new NavItem("Proyectos", "icon-folder", "proyectos.html"));
                 items.add(new NavItem("Reportes globales", "icon-bar-chart", "reportes.html"));
@@ -36,6 +36,7 @@ public class NavService {
                 items.add(new NavItem("Asignaciones", "icon-target", "asignaciones.html"));
                 items.add(new NavItem("Colaboradores", "icon-users", "colaboradores.html"));
                 items.add(new NavItem("AI Talent Matching", "icon-search-check", "ai-talent-matching.html"));
+                items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
                 items.add(new NavItem("Reportes", "icon-bar-chart", "reportes.html"));
             }
             case "project-manager" -> {
@@ -45,6 +46,7 @@ public class NavService {
                 items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
                 items.add(new NavItem("AI Talent Matching", "icon-search-check", "ai-talent-matching.html"));
                 items.add(new NavItem("Foros", "icon-message", "foros.html"));
+                items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
                 items.add(new NavItem("Asistente IA", "icon-sparkles", "asistente-ia.html"));
                 items.add(new NavItem("Reportes", "icon-bar-chart", "reportes.html"));
             }
@@ -55,6 +57,7 @@ public class NavService {
                 items.add(new NavItem("Entregables", "icon-file-text", "entregables.html"));
                 items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
                 items.add(new NavItem("Foros", "icon-message", "foros.html"));
+                items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
                 items.add(new NavItem("Asistente IA", "icon-sparkles", "asistente-ia.html"));
                 items.add(new NavItem("Notificaciones", "icon-bell", "notificaciones.html"));
             }

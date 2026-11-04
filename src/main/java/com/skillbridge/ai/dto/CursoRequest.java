@@ -15,6 +15,17 @@ public class CursoRequest {
     private String nivel;
     @Min(1) @Max(10000)
     private int duracionHoras;
+    // ── Catálogo de formación (v11) ──
+    private String tipo = "CURSO";
+    /** Vacío = se detecta por el enlace. */
+    private String plataforma;
+    private boolean gratuito;
+    private boolean conCertificado;
+    private String idioma = "ES";
+    private boolean destacado;
+    /** Pasos de una ruta/especialización (listas paralelas del formulario). */
+    private java.util.List<String> pasoTitulo = new java.util.ArrayList<>();
+    private java.util.List<String> pasoUrl = new java.util.ArrayList<>();
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
     public String getDescripcion() { return descripcion; }
@@ -29,4 +40,20 @@ public class CursoRequest {
     public void setNivel(String nivel) { this.nivel = nivel; }
     public int getDuracionHoras() { return duracionHoras; }
     public void setDuracionHoras(int duracionHoras) { this.duracionHoras = duracionHoras; }
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
+    public String getPlataforma() { return plataforma; }
+    public void setPlataforma(String plataforma) { this.plataforma = plataforma; }
+    public boolean isGratuito() { return gratuito; }
+    public void setGratuito(boolean gratuito) { this.gratuito = gratuito; }
+    public boolean isConCertificado() { return conCertificado; }
+    public void setConCertificado(boolean conCertificado) { this.conCertificado = conCertificado; }
+    public String getIdioma() { return idioma; }
+    public void setIdioma(String idioma) { this.idioma = idioma; }
+    public boolean isDestacado() { return destacado; }
+    public void setDestacado(boolean destacado) { this.destacado = destacado; }
+    public java.util.List<String> getPasoTitulo() { return pasoTitulo; }
+    public void setPasoTitulo(java.util.List<String> pasoTitulo) { this.pasoTitulo = pasoTitulo; }
+    public java.util.List<String> getPasoUrl() { return pasoUrl; }
+    public void setPasoUrl(java.util.List<String> pasoUrl) { this.pasoUrl = pasoUrl; }
 }

@@ -15,6 +15,7 @@
  *   <option data-group="...">    → igual que optgroup, agrupa sin cambiar el HTML del select
  *   <option data-meta="...">     → texto secundario a la derecha
  *   <select data-tech-icons>     → logo de tecnología junto a cada opción (usa tech-icons.js)
+ *   <select data-icons="nombre"> → ícono propio: SBAI.selectIcons.nombre(valor, texto) devuelve HTML
  *   <select data-search="on|off">→ fuerza mostrar/ocultar el buscador (por defecto: si hay más de 7 opciones)
  *   <select data-native>         → no mejorar este select (queda el nativo)
  */
@@ -123,7 +124,13 @@
       btn.className = cls.join(" ") + " sx-trigger" + (abierto && abierto.sel === sel ? " is-open" : "");
     }
 
-    function logo(label) {
+    // Ícono de una opción: logos de tecnología (data-tech-icons) o un
+    // proveedor propio registrado en SBAI.selectIcons[nombre] (data-icons="nombre").
+    function logo(label, valor) {
+      var proveedor = sel.getAttribute("data-icons");
+      if (proveedor && window.SBAI && SBAI.selectIcons && typeof SBAI.selectIcons[proveedor] === "function") {
+        return valor ? (SBAI.selectIcons[proveedor](valor, label) || "") : "";
+      }
       return sel.hasAttribute("data-tech-icons") && window.SBAI && SBAI.techIcons && label ? SBAI.techIcons.logo(label) : "";
     }
 
@@ -133,7 +140,7 @@
       var texto = o ? (o.textContent || "").trim() : "";
       valueEl.textContent = texto || "Selecciona…";
       btn.classList.toggle("is-placeholder", !o || (o.value === "" && o.disabled));
-      var lg = o && o.value !== "" ? logo(texto) : "";
+      var lg = o && o.value !== "" ? logo(texto, o.value) : "";
       iconEl.innerHTML = lg;
       iconEl.hidden = !lg;
       btn.disabled = sel.disabled;
@@ -218,7 +225,7 @@
           if (it.group) html += '<li class="sx-group" role="presentation">' + esc(it.group) + "</li>";
         }
         n++;
-        var lg = logo(it.value !== "" ? it.label : "");
+        var lg = it.value !== "" ? logo(it.label, it.value) : "";
         html += '<li class="sx-opt' + (it.selected ? " is-selected" : "") + (it.disabled ? " is-disabled" : "") +
           (it.group ? " in-group" : "") + '" role="option" id="' + id + "-o" + it.idx + '" data-idx="' + it.idx + '"' +
           ' aria-selected="' + it.selected + '"' + (it.disabled ? ' aria-disabled="true"' : "") + ">" +

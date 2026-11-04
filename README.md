@@ -70,12 +70,18 @@ Menú de cada rol (definido en `service/NavService`):
 | Rol | Pantallas del menú |
 |---|---|
 | **Administrador** (`/administrador/**`) | Inicio, Usuarios y roles, Catálogo de habilidades, Cursos, Catálogos técnicos, Proyectos, Reportes globales, Auditoría, Configuración |
-| **Resource Manager** (`/resource-manager/**`) | Inicio, Ocupación del equipo, Asignaciones, Colaboradores (con ficha de detalle), AI Talent Matching, Reportes |
-| **Project Manager** (`/project-manager/**`) | Inicio, Proyectos (con archivos de contexto), Asignaciones, Calendario, AI Talent Matching, Foros, Asistente IA, Reportes |
-| **Colaborador** (`/colaborador/**`) | Inicio, Mi perfil (habilidades y certificados), Mis proyectos, Entregables, Calendario, Foros, Asistente IA, Notificaciones |
+| **Resource Manager** (`/resource-manager/**`) | Inicio, Ocupación del equipo, Asignaciones, Colaboradores (con ficha de detalle), AI Talent Matching, Cursos, Reportes |
+| **Project Manager** (`/project-manager/**`) | Inicio, Proyectos (con archivos de contexto), Asignaciones, Calendario, AI Talent Matching, Foros, Cursos, Asistente IA, Reportes |
+| **Colaborador** (`/colaborador/**`) | Inicio, Mi perfil (habilidades y certificados), Mis proyectos, Entregables, Calendario, Foros, Cursos, Asistente IA, Notificaciones |
 | Todos (menú del usuario, arriba a la derecha) | Mi cuenta (datos, foto, contraseña, doble factor TOTP), Notificaciones, buscador global (`Ctrl+K`) |
 
 Detalles del Asistente IA y del resumen de foros con Gemini: ver [`ASISTENTE_IA.md`](ASISTENTE_IA.md).
+
+### Catálogo de formación (Cursos)
+
+El Administrador publica en *Cursos* cuatro tipos de recurso: **cursos**, **videos**, **rutas** (roadmaps por pasos) y **especializaciones** (programas de varios cursos). Cada recurso tiene enlace, plataforma (se detecta sola por el enlace: YouTube, Coursera, Microsoft Learn, roadmap.sh, freeCodeCamp…, ver `util/PlataformaCurso`), categoría y habilidad, nivel, duración, idioma, si es gratuito, si da certificado y si es destacado. Las rutas y especializaciones guardan sus pasos en orden (`curso_pasos`).
+
+Lo **publicado** lo ven Colaborador, PM y RM en su vista *Cursos* (`CursosCatalogoController`, plantilla `compartido/cursos.html`): búsqueda, filtros (tipo, categoría, habilidad, nivel, plataforma, idioma, gratis, certificado, "Para ti" según las habilidades declaradas y guardados), reproductor de YouTube integrado y progreso de cada ruta. Guardados y progreso se guardan en el navegador de cada persona. Todo lo pinta `js/cursos.js` (el mismo archivo maneja la vista del Administrador).
 
 ### Configuración global
 
@@ -132,7 +138,7 @@ Con `spring.jpa.hibernate.ddl-auto=none`, Hibernate no toca la BD. Para que una 
 | `InicializadorEsquemaV9` | enlaces y datos del perfil profesional, `proyectos.github_url` |
 | `InicializadorEsquemaV10` | columnas del resumen IA de foros |
 | `InicializadorRazonCancelacion` | `proyectos.razon_cancelacion` |
-| `InicializadorTablasExtra` | tablas `archivos_proyecto` y `cursos` |
+| `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos` y `curso_pasos`, columnas del catálogo de formación y, la primera vez, un catálogo de ejemplo con recursos gratuitos |
 | `InicializadorTopicosForo` | asigna tópico a los hilos que no tengan |
 | `DataSeeder` | tipos de notificación `asignacion` y `foro_respuesta` |
 

@@ -63,5 +63,152 @@ public class InicializadorTablasExtra implements CommandLineRunner {
         } catch (Exception e) {
             log.warn("No se pudo verificar/crear la tabla cursos: {}", e.getMessage());
         }
+        catalogoDeFormacion();
+    }
+
+    // ───────── Catálogo de formación (v11): tipos, plataforma, rutas ─────────
+
+    private void catalogoDeFormacion() {
+        agregarSiFalta("cursos", "tipo", "VARCHAR(20) NOT NULL DEFAULT 'CURSO'");
+        agregarSiFalta("cursos", "plataforma", "VARCHAR(40) NULL");
+        agregarSiFalta("cursos", "gratuito", "TINYINT(1) NOT NULL DEFAULT 1");
+        agregarSiFalta("cursos", "con_certificado", "TINYINT(1) NOT NULL DEFAULT 0");
+        agregarSiFalta("cursos", "idioma", "VARCHAR(5) NOT NULL DEFAULT 'ES'");
+        agregarSiFalta("cursos", "destacado", "TINYINT(1) NOT NULL DEFAULT 0");
+        try {
+            jdbc.execute("CREATE TABLE IF NOT EXISTS curso_pasos ("
+                    + " curso_id BIGINT UNSIGNED NOT NULL,"
+                    + " orden INT NOT NULL,"
+                    + " titulo VARCHAR(150) NOT NULL,"
+                    + " url VARCHAR(500) NULL,"
+                    + " PRIMARY KEY (curso_id, orden),"
+                    + " CONSTRAINT fk_paso_curso FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE"
+                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (Exception e) {
+            log.warn("No se pudo verificar/crear la tabla curso_pasos: {}", e.getMessage());
+        }
+        try {
+            sembrarCatalogoDemo();
+        } catch (Exception e) {
+            log.warn("No se pudo sembrar el catálogo de formación de ejemplo: {}", e.getMessage());
+        }
+    }
+
+    private void agregarSiFalta(String tabla, String columna, String definicion) {
+        try {
+            Integer existe = jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.COLUMNS "
+                            + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                    Integer.class, tabla, columna);
+            if (existe != null && existe == 0) {
+                jdbc.execute("ALTER TABLE " + tabla + " ADD COLUMN " + columna + " " + definicion);
+                log.info("Catálogo de formación: agregada la columna {}.{}", tabla, columna);
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo verificar/agregar {}.{}: {}", tabla, columna, e.getMessage());
+        }
+    }
+
+    /**
+     * Una sola vez: si todavía no hay ningún recurso "nuevo" (con plataforma o
+     * de tipo ruta/especialización), carga un catálogo inicial de recursos
+     * GRATUITOS reales para que la vista no arranque vacía. El Administrador
+     * puede editarlos o archivarlos como cualquier otro.
+     */
+    private void sembrarCatalogoDemo() {
+        Integer nuevos = jdbc.queryForObject("SELECT COUNT(*) FROM cursos WHERE plataforma IS NOT NULL "
+                + "OR tipo IN ('RUTA','ESPECIALIZACION','VIDEO')", Integer.class);
+        if (nuevos != null && nuevos > 0) return;
+
+        long python = curso("Python para principiantes — curso completo",
+                "Variables, condicionales, bucles, funciones y estructuras de datos en un solo video de freeCodeCamp. Ideal para empezar desde cero.",
+                "https://www.youtube.com/watch?v=rfscVS0vtbw", "VIDEO", "Python", "BASICO", 5, true, false, "EN", true);
+        curso("SQL y bases de datos desde cero",
+                "Diseño de tablas, consultas, joins y buenas prácticas con un curso completo y gratuito.",
+                "https://www.youtube.com/watch?v=HXV3zeQKqGY", "VIDEO", "MySQL", "BASICO", 4, true, false, "EN", false);
+        curso("Docker para principiantes",
+                "Imágenes, contenedores, volúmenes y Docker Compose explicados paso a paso por TechWorld with Nana.",
+                "https://www.youtube.com/watch?v=3c-iBn73dDE", "VIDEO", "Docker", "INTERMEDIO", 3, true, false, "EN", true);
+        curso("Kubernetes desde cero",
+                "Pods, deployments, services e ingress con ejemplos prácticos para pasar de Docker a Kubernetes.",
+                "https://www.youtube.com/watch?v=X48VuDVv0do", "VIDEO", "Kubernetes", "INTERMEDIO", 4, true, false, "EN", false);
+        curso("React: curso para principiantes",
+                "Componentes, props, estado y hooks construyendo proyectos reales.",
+                "https://www.youtube.com/watch?v=bMknfKXIFA8", "VIDEO", "React", "BASICO", 12, true, false, "EN", false);
+        curso("Spring Boot: API REST paso a paso",
+                "Crea una API REST con Spring Boot, Spring Data JPA y PostgreSQL desde cero.",
+                "https://www.youtube.com/watch?v=9SGDpanrc8U", "VIDEO", "Spring Boot", "INTERMEDIO", 2, true, false, "EN", false);
+        curso("Responsive Web Design (certificación gratuita)",
+                "HTML y CSS modernos con proyectos prácticos. Al terminar los proyectos obtienes una certificación verificable de freeCodeCamp.",
+                "https://www.freecodecamp.org/learn/2022/responsive-web-design/", "CURSO", "React", "BASICO", 300, true, true, "ES", true);
+        curso("Fundamentos de Azure (AZ-900)",
+                "Ruta oficial y gratuita de Microsoft Learn para entender la nube, sus servicios y precios. Prepara la certificación AZ-900.",
+                "https://learn.microsoft.com/es-es/training/paths/microsoft-azure-fundamentals-describe-cloud-concepts/", "CURSO", null, "BASICO", 6, true, true, "ES", false);
+        curso("AWS Cloud Practitioner Essentials",
+                "Curso oficial gratuito de AWS Skill Builder: conceptos de nube, servicios principales, seguridad y facturación.",
+                "https://explore.skillbuilder.aws/learn/course/external/view/elearning/134/aws-cloud-practitioner-essentials", "CURSO", "AWS", "BASICO", 6, true, true, "ES", false);
+        curso("Python en Kaggle Learn",
+                "Micro-curso práctico con ejercicios en notebooks. Kaggle entrega un certificado de finalización.",
+                "https://www.kaggle.com/learn/python", "CURSO", "Python", "BASICO", 5, true, true, "EN", false);
+        curso("Introducción a la ciberseguridad",
+                "Curso gratuito de Cisco Networking Academy con insignia digital al completarlo.",
+                "https://www.netacad.com/courses/introduction-to-cybersecurity", "CURSO", null, "BASICO", 6, true, true, "ES", false);
+        curso("CS50: Introducción a las Ciencias de la Computación",
+                "El curso de Harvard en edX: algoritmos, C, Python, SQL y web. Gratis para auditar; certificado opcional.",
+                "https://www.edx.org/learn/computer-science/harvard-cs50-s-introduction-to-computer-science", "CURSO", null, "INTERMEDIO", 120, true, true, "EN", false);
+
+        long backend = curso("Ruta Backend Developer",
+                "Roadmap visual de roadmap.sh con todo lo que necesita un backend: lenguajes, bases de datos, APIs, seguridad y despliegue.",
+                "https://roadmap.sh/backend", "RUTA", "Java", "INTERMEDIO", 200, true, false, "EN", true);
+        pasos(backend, new String[][]{
+                {"Git y GitHub para principiantes", "https://www.youtube.com/watch?v=RGOj5yH7evk"},
+                {"SQL y bases de datos desde cero", "https://www.youtube.com/watch?v=HXV3zeQKqGY"},
+                {"Spring Boot: API REST paso a paso", "https://www.youtube.com/watch?v=9SGDpanrc8U"},
+                {"Docker para principiantes", "https://www.youtube.com/watch?v=3c-iBn73dDE"},
+                {"Roadmap completo en roadmap.sh", "https://roadmap.sh/backend"}});
+        long devops = curso("Ruta DevOps",
+                "Del control de versiones a Kubernetes y la nube: el camino recomendado para quien quiere entrar a DevOps.",
+                "https://roadmap.sh/devops", "RUTA", "Kubernetes", "INTERMEDIO", 150, true, false, "EN", false);
+        pasos(devops, new String[][]{
+                {"Git y GitHub para principiantes", "https://www.youtube.com/watch?v=RGOj5yH7evk"},
+                {"Docker para principiantes", "https://www.youtube.com/watch?v=3c-iBn73dDE"},
+                {"Kubernetes desde cero", "https://www.youtube.com/watch?v=X48VuDVv0do"},
+                {"AWS Cloud Practitioner Essentials", "https://explore.skillbuilder.aws/learn/course/external/view/elearning/134/aws-cloud-practitioner-essentials"},
+                {"Roadmap DevOps en roadmap.sh", "https://roadmap.sh/devops"}});
+        long fullstack = curso("Especialización Full Stack Java + React",
+                "Programa armado por el equipo con recursos gratuitos: backend con Spring Boot, base de datos, frontend con React y despliegue con Docker.",
+                null, "ESPECIALIZACION", "Spring Boot", "INTERMEDIO", 40, true, false, "ES", true);
+        pasos(fullstack, new String[][]{
+                {"SQL y bases de datos desde cero", "https://www.youtube.com/watch?v=HXV3zeQKqGY"},
+                {"Spring Boot: API REST paso a paso", "https://www.youtube.com/watch?v=9SGDpanrc8U"},
+                {"React: curso para principiantes", "https://www.youtube.com/watch?v=bMknfKXIFA8"},
+                {"Docker para principiantes", "https://www.youtube.com/watch?v=3c-iBn73dDE"}});
+        log.info("Catálogo de formación: se cargaron recursos de ejemplo (ids {} a {}).", python, fullstack);
+    }
+
+    /** Inserta un recurso; la categoría sale de la habilidad (si existe con ese nombre). */
+    private long curso(String titulo, String descripcion, String url, String tipo, String habilidad, String nivel,
+                       int horas, boolean gratuito, boolean certificado, String idioma, boolean destacado) {
+        org.springframework.jdbc.support.GeneratedKeyHolder llave = new org.springframework.jdbc.support.GeneratedKeyHolder();
+        jdbc.update(con -> {
+            java.sql.PreparedStatement ps = con.prepareStatement(
+                    "INSERT INTO cursos (titulo, descripcion, url, tipo, habilidad_id, categoria_id, nivel, estado, duracion_horas,"
+                            + " gratuito, con_certificado, idioma, destacado)"
+                            + " VALUES (?, ?, ?, ?, (SELECT id FROM habilidades WHERE nombre = ?),"
+                            + " (SELECT categoria_id FROM habilidades WHERE nombre = ?), ?, 'PUBLICADO', ?, ?, ?, ?, ?)",
+                    java.sql.Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, titulo); ps.setString(2, descripcion); ps.setString(3, url); ps.setString(4, tipo);
+            ps.setString(5, habilidad); ps.setString(6, habilidad); ps.setString(7, nivel); ps.setInt(8, horas);
+            ps.setBoolean(9, gratuito); ps.setBoolean(10, certificado); ps.setString(11, idioma); ps.setBoolean(12, destacado);
+            return ps;
+        }, llave);
+        return llave.getKey() == null ? -1 : llave.getKey().longValue();
+    }
+
+    private void pasos(long cursoId, String[][] pasos) {
+        for (int i = 0; i < pasos.length; i++) {
+            jdbc.update("INSERT INTO curso_pasos (curso_id, orden, titulo, url) VALUES (?, ?, ?, ?)",
+                    cursoId, i, pasos[i][0], pasos[i][1]);
+        }
     }
 }

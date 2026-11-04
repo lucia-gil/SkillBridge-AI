@@ -846,3 +846,107 @@ html.tema-cambiando *, html.tema-cambiando *::before, html.tema-cambiando *::aft
   .tt-anim .tt-icon { animation: none; }
   .topbar-ai-btn, .topbar-icon-btn, .topbar-user-btn > .icon { transition: none; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   Sidebar v2 — profundidad, brillo y movimiento (js/motion.js)
+   ═══════════════════════════════════════════════════════════════════ */
+.sidebar {
+  background:
+    radial-gradient(120% 40% at 0% 0%, rgba(91, 141, 239, .16), transparent 60%),
+    radial-gradient(90% 30% at 100% 100%, rgba(124, 92, 255, .12), transparent 70%),
+    linear-gradient(180deg, var(--navy-900) 0%, #0A1A33 100%);
+  border-right: 1px solid rgba(255, 255, 255, .05);
+  box-shadow: 10px 0 30px -18px rgba(5, 14, 30, .55);
+  overflow: hidden;
+}
+.sidebar::before {   /* puntitos tecnológicos que se desvanecen hacia abajo */
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image: radial-gradient(rgba(255, 255, 255, .07) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 45%);
+          mask-image: linear-gradient(180deg, #000, transparent 45%);
+}
+.sidebar > * { position: relative; }
+.sidebar-logo { transition: transform .35s var(--ease-standard, ease), filter .35s ease; }
+.sidebar-brand:hover .sidebar-logo { transform: translateY(-1px) scale(1.02); filter: drop-shadow(0 6px 14px rgba(91, 141, 239, .45)); }
+
+.sidebar-role-badge {
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, rgba(91, 141, 239, .16), rgba(124, 92, 255, .12));
+  border-color: rgba(156, 192, 255, .18); color: #B9CEF5;
+}
+.sidebar-role-badge::after {   /* destello que cruza la etiqueta de rol */
+  content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .22), transparent);
+  transform: skewX(-20deg); animation: sb-destello 6s ease-in-out infinite 1.5s;
+}
+@keyframes sb-destello { 0%, 70% { left: -60%; } 100% { left: 130%; } }
+
+.sidebar-nav { gap: 3px; padding-top: var(--space-3); scrollbar-width: none; }
+.sidebar-nav::-webkit-scrollbar { display: none; }
+.sidebar-nav.has-top { -webkit-mask-image: linear-gradient(180deg, transparent, #000 28px); mask-image: linear-gradient(180deg, transparent, #000 28px); }
+.sidebar-nav.has-bottom { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent); }
+.sidebar-nav.has-top.has-bottom { -webkit-mask-image: linear-gradient(180deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(180deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+
+.sidebar-nav-item {
+  min-height: 44px; overflow: hidden; isolation: isolate; border-radius: 12px;
+  transition: color .2s ease, background-color .2s ease, transform .2s var(--ease-standard, ease);
+}
+.sidebar-nav-item::after {   /* barrido de luz al pasar el mouse */
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: linear-gradient(90deg, rgba(91, 141, 239, .22), rgba(91, 141, 239, 0));
+  transform: translateX(-101%); transition: transform .35s var(--ease-standard, cubic-bezier(.2,.8,.2,1));
+}
+.sidebar-nav-item:hover { background: rgba(255, 255, 255, .04); }
+.sidebar-nav-item:hover::after { transform: none; }
+.sidebar-nav-item .icon { transition: transform .25s var(--ease-standard, ease), color .2s ease; }
+.sidebar-nav-item:hover .icon { transform: translateX(2px) scale(1.08); color: #9CC0FF; }
+.sidebar-nav-item:active { transform: scale(.98); }
+.sidebar-nav-item:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(156, 192, 255, .6); }
+.sidebar-nav-item.active {
+  background: linear-gradient(90deg, rgba(91, 141, 239, .28), rgba(91, 141, 239, .08));
+  box-shadow: inset 0 0 0 1px rgba(156, 192, 255, .14), 0 8px 20px -12px rgba(91, 141, 239, .6);
+  color: #fff;
+}
+.sidebar-nav-item.active .icon { color: #9CC0FF; }
+.sidebar-nav-item.active::before {
+  left: 0; width: 3px; height: 22px; border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #9CC0FF, var(--blue-accent));
+  box-shadow: 0 0 12px rgba(91, 141, 239, .9);
+  animation: sb-indicador .45s var(--ease-standard, ease) both;
+}
+@keyframes sb-indicador { from { height: 0; opacity: 0; } }
+.admin-app .sidebar-nav-item.active::before { left: 0; }
+
+/* Entrada escalonada (solo la primera vez de la sesión) */
+.sidebar.sb-intro .sidebar-nav-item { animation: sb-entrar .5s var(--ease-standard, cubic-bezier(.2,.8,.2,1)) both; animation-delay: calc(var(--i, 0) * 45ms + 80ms); }
+.sidebar.sb-intro .sidebar-role-badge, .sidebar.sb-intro .sidebar-brand { animation: sb-entrar .5s ease both; }
+@keyframes sb-entrar { from { opacity: 0; transform: translateX(-14px); } }
+
+/* Sidebar colapsado (861–1180 px): tooltip con el nombre de la sección */
+@media (min-width: 861px) and (max-width: 1180px) {
+  .sidebar { overflow: visible; }
+  .sidebar-nav { overflow: visible; }
+  .sidebar-nav-item[data-tip]:hover::before, .sidebar-nav-item[data-tip]:focus-visible::before { opacity: 1; }
+  .sidebar-nav-item { overflow: visible; }
+  .sidebar-nav-item[data-tip]:hover > .sidebar-nav-item-label, .sidebar-nav-item[data-tip]:focus-visible > .sidebar-nav-item-label {
+    display: block; position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%); z-index: 50;
+    padding: 6px 10px; border-radius: 8px; white-space: nowrap; pointer-events: none;
+    background: var(--navy-900); color: #fff; font-size: var(--fs-xs); box-shadow: 0 8px 20px -8px rgba(0,0,0,.5);
+    animation: sb-tip .15s ease both;
+  }
+  .sidebar-nav-item::after { display: none; }
+}
+@keyframes sb-tip { from { opacity: 0; transform: translate(-4px, -50%); } }
+
+/* ═══ Aparición de los bloques de la página al hacer scroll (js/motion.js) ═══ */
+.mv { opacity: 0; transform: translateY(14px); }
+.mv.mv-in { opacity: 1; transform: none; transition: opacity .55s ease, transform .6s var(--ease-standard, cubic-bezier(.2,.8,.2,1)); transition-delay: calc(var(--mv-i, 0) * 70ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-role-badge::after { animation: none; }
+  .sidebar.sb-intro .sidebar-nav-item, .sidebar-nav-item.active::before { animation: none; }
+  .sidebar-nav-item::after, .sidebar-nav-item .icon { transition: none; }
+  .mv { opacity: 1; transform: none; }
+}

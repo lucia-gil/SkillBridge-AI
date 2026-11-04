@@ -363,5 +363,25 @@
 <symbol id="icon-moon" viewBox="0 0 24 24">
   <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>
 </symbol>
+<symbol id="icon-graduation" viewBox="0 0 24 24">
+  <path d="M2.5 9 12 4.5 21.5 9 12 13.5z"/>
+  <path d="M6.5 11v4.5c0 1.4 2.5 3 5.5 3s5.5-1.6 5.5-3V11"/>
+  <path d="M21.5 9v5"/>
+</symbol>
+<symbol id="icon-play" viewBox="0 0 24 24">
+  <path d="M8 5.5v13l10.5-6.5z"/>
+</symbol>
+<symbol id="icon-route" viewBox="0 0 24 24">
+  <circle cx="6" cy="19" r="2.5"/>
+  <circle cx="18" cy="5" r="2.5"/>
+  <path d="M8.5 19h7a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7h7"/>
+</symbol>
+<symbol id="icon-award" viewBox="0 0 24 24">
+  <circle cx="12" cy="9" r="5.5"/>
+  <path d="M8.5 13.2 7 21l5-2.6 5 2.6-1.5-7.8"/>
+</symbol>
+<symbol id="icon-bookmark" viewBox="0 0 24 24">
+  <path d="M6.5 3.5h11v17L12 16.5l-5.5 4z"/>
+</symbol>
 </defs>
 </svg>

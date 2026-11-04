@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!--
+  compartido/cursos.html — Vista "Cursos" de Colaborador, Project Manager y
+  Resource Manager (CursosCatalogoController). El contenido lo pinta
+  js/cursos.js a partir del JSON de window.SBAI_CURSOS (solo lo publicado).
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cursos · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/cursos.css">
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content cx-page" id="page-content">
+      <div id="cursos-app" class="cx-app">
+        <noscript><p class="text-tertiary">Activa JavaScript para ver el catálogo de cursos.</p></noscript>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  window.SBAI_CURSOS = {
+    modo: "catalogo",
+    cursos: /*[[${cursos}]]*/ [],
+    misHabilidades: /*[[${misHabilidades}]]*/ [],
+    usuario: /*[[${claveUsuario}]]*/ 0
+  };
+</script>
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script src="/js/global-search.js"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/tech-icons.js"></script>
+<script src="/js/cursos.js"></script>
+</body>
+</html>
