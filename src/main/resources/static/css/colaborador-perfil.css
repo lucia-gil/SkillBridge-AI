@@ -33,26 +33,37 @@
 .cp [data-estado="lim"]   { --cp-state: var(--cp-lim); }
 .cp [data-estado="sobre"] { --cp-state: var(--cp-sobre); }
 
-.cp-back {
-  display: inline-flex; align-items: center; gap: 6px; margin-bottom: var(--space-4);
-  font-size: var(--fs-sm); color: var(--text-secondary); text-decoration: none;
-}
-.cp-back .icon { width: 16px; height: 16px; }
-.cp-back:hover { color: var(--text-primary); text-decoration: none; }
-
 /* ── Encabezado ───────────────────────────────────────────── */
 .cp-hero { padding: 0; overflow: hidden; }
 
 .cp-cover {
-  position: relative; height: 128px;
+  position: relative; height: 136px;
   background:
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, .13) 1px, transparent 1.5px) 0 0 / 16px 16px,
-    radial-gradient(120% 140% at 85% 0%, #2E5597 0%, transparent 60%),
-    linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 55%, #1D3F74 100%);
+    radial-gradient(110% 160% at 88% -10%, #2E5597 0%, transparent 58%),
+    linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 60%, #1D3F74 100%);
 }
-/* Mezcla de habilidades por categoría: un segmento por categoría, ancho = n.º de habilidades */
-.cp-spectrum { position: absolute; left: 0; right: 0; bottom: 0; display: flex; height: 6px; gap: 2px; }
-.cp-spectrum span { flex-basis: 0; min-width: 8px; background: var(--tone-fg); }
+/* Huella de habilidades: un tramo por categoría (ancho = n.º de habilidades),
+   alineada con la columna del nombre para que la foto no la tape. */
+.cp-spectrum {
+  position: absolute; left: calc(28px + 112px + 24px); right: 28px; bottom: 18px;
+  display: flex; gap: 4px; height: 32px; margin: 0; padding: 0; list-style: none;
+}
+.cp-spectrum li {
+  flex-basis: 0; min-width: 36px; container-type: inline-size;
+  display: flex; border-radius: 8px; background: var(--tone-fg); color: #fff; overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+}
+.cp-spectrum span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 600; letter-spacing: .005em; }
+.cp-spectrum b {
+  flex: none; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 6px; display: grid; place-items: center;
+  background: rgba(255, 255, 255, .2); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+/* Tramo angosto: solo el número (el nombre queda en el tooltip). Las consultas
+   de contenedor miden el tramo, por eso se estiliza su contenido. */
+.cp-spectrum-in { width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 6px 0 12px; }
+@container (max-width: 96px) { .cp-spectrum span { display: none; } .cp-spectrum-in { justify-content: center; padding: 0; } }
+:root[data-theme="dark"] .cp-spectrum li { color: #0B1426; box-shadow: none; }
+:root[data-theme="dark"] .cp-spectrum b { background: rgba(11, 20, 38, .18); }
 
 .cp-hero-body {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 24px;
@@ -68,13 +79,13 @@
 .cp-avatar span { color: #fff; font-size: 36px; font-weight: 600; letter-spacing: -.02em; }
 
 .cp-identity { min-width: 0; padding-top: 14px; }
-.cp-identity h1 { font-size: var(--fs-xl); font-weight: 650; letter-spacing: -.02em; line-height: 1.15; color: var(--text-primary); }
-.cp-headline { margin-top: 4px; font-size: var(--fs-base); color: var(--text-secondary); }
+.cp-identity h1 { font-size: 30px; font-weight: 700; letter-spacing: -.025em; line-height: 1.1; color: var(--text-primary); }
+.cp-headline { margin-top: 6px; font-size: 16px; line-height: 1.45; color: var(--text-secondary); }
 .cp-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; font-size: var(--fs-sm); color: var(--text-tertiary); }
 .cp-meta li { display: inline-flex; align-items: center; gap: 6px; }
 .cp-meta .icon { width: 15px; height: 15px; }
-.cp-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.cp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.cp-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.cp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 18px; }
 .cp-actions .btn .icon { width: 15px; height: 15px; }
 
 .cp-social {
@@ -90,7 +101,7 @@
 .cp-social:focus-visible, .cp-copy:focus-visible, .cp-tabs a:focus-visible, .cp-seg button:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
 /* Anillo de carga */
-.cp-load { display: flex; align-items: center; gap: 14px; padding-top: 18px; }
+.cp-load { display: flex; align-items: center; gap: 16px; margin-top: 20px; padding-left: 24px; border-left: 1px solid var(--border-subtle); }
 .cp-ring {
   --deg: 0deg;
   width: 88px; height: 88px; border-radius: 50%; flex-shrink: 0; position: relative;
@@ -111,9 +122,9 @@
   border-top: 1px solid var(--border-subtle); overflow: hidden;
 }
 /* Separadores con sombra: funcionan con cualquier número de columnas */
-.cp-stats > div { padding: 14px 20px 14px 28px; min-width: 0; box-shadow: -1px -1px 0 var(--border-subtle); }
-.cp-stats dt { font-size: var(--fs-xs); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cp-stats dd { margin: 2px 0 0; font-size: var(--fs-lg); font-weight: 650; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.cp-stats > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 2px; padding: 16px 24px 16px 28px; min-width: 0; box-shadow: -1px -1px 0 var(--border-subtle); }
+.cp-stats dt { font-size: 13px; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cp-stats dd { margin: 0; font-size: 24px; line-height: 1.1; font-weight: 700; letter-spacing: -.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
 /* Pestañas de sección (anclas) */
 .cp-tabs { display: flex; gap: 4px; padding: 0 20px; border-top: 1px solid var(--border-subtle); overflow-x: auto; scrollbar-width: none; }
@@ -131,10 +142,10 @@
 /* ── Cuerpo en dos columnas ───────────────────────────────── */
 .cp-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; margin-top: 20px; align-items: start; }
 .cp-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-.cp-aside { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 84px; min-width: 0; }
+.cp-aside { display: flex; flex-direction: column; gap: 20px; position: sticky; top: calc(var(--topbar-h) + 16px); min-width: 0; }
 
-.cp-section { padding: 24px; scroll-margin-top: 84px; }
-.cp-section h2, .cp-side h2 { font-size: var(--fs-md); font-weight: 650; letter-spacing: -.01em; color: var(--text-primary); }
+.cp-section { padding: 24px 26px; scroll-margin-top: calc(var(--topbar-h) + 16px); }
+.cp-section h2, .cp-side h2 { font-size: 17px; font-weight: 650; letter-spacing: -.015em; color: var(--text-primary); }
 .cp-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin-bottom: 18px; }
 .cp-section-head p { margin-top: 3px; font-size: var(--fs-sm); color: var(--text-tertiary); }
 .cp-section > h2 { margin-bottom: 12px; }
@@ -302,7 +313,11 @@ a.cp-skill-cert.is-ok:hover { color: var(--blue-link); text-decoration: underlin
   .cp-avatar span { font-size: 30px; }
   .cp-identity { padding-top: 4px; }
   .cp-load { padding-top: 8px; border-top: 1px solid var(--border-subtle); margin-top: 6px; }
-  .cp-cover { height: 96px; }
+  .cp-cover { height: 112px; }
+  .cp-spectrum { left: 18px; right: 18px; top: 14px; bottom: auto; height: 28px; }
+  .cp-load { margin-top: 10px; padding-left: 0; border-left: 0; }
+  .cp-identity h1 { font-size: 24px; }
+  .cp-stats dd { font-size: 20px; }
   .cp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cp-stats > div { padding: 12px 18px; }
   .cp-stats > div:last-child:nth-child(odd) { grid-column: 1 / -1; }

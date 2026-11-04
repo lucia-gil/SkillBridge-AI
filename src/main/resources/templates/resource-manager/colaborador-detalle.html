@@ -20,20 +20,18 @@
         <div th:replace="~{fragments/topbar :: topbar}"></div>
         <main class="page-content cp" id="page-content">
 
-            <a href="/resource-manager/colaboradores.html" class="cp-back">
-                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-arrow-left"></use></svg>
-                Colaboradores
-            </a>
-
             <!-- ═══════════ Encabezado ═══════════ -->
             <section class="card cp-hero" aria-labelledby="cp-nombre">
-                <!-- Portada: la franja inferior es la mezcla de habilidades por categoría -->
+                <!-- Portada: la "huella" es la mezcla de habilidades por categoría
+                     (ancho de cada tramo = n.º de habilidades de esa categoría) -->
                 <div class="cp-cover">
-                    <div class="cp-spectrum" th:unless="${vista.grupos.isEmpty()}" aria-hidden="true">
-                        <span th:each="g : ${vista.grupos}" th:attr="data-tono=${g.tono}"
-                              th:style="'flex-grow:' + ${g.habilidades.size()}"
-                              th:title="${g.categoria} + ': ' + ${g.habilidades.size()}"></span>
-                    </div>
+                    <ul class="cp-spectrum" th:unless="${vista.grupos.isEmpty()}" aria-label="Habilidades por categoría">
+                        <li th:each="g : ${vista.grupos}" th:attr="data-tono=${g.tono}"
+                            th:style="'flex-grow:' + ${g.habilidades.size()}"
+                            th:title="${g.categoria} + ': ' + ${g.habilidades.size()} + (${g.habilidades.size() == 1} ? ' habilidad' : ' habilidades')">
+                            <div class="cp-spectrum-in"><span th:text="${g.categoria}">Backend</span><b th:text="${g.habilidades.size()}">2</b></div>
+                        </li>
+                    </ul>
                 </div>
 
                 <div class="cp-hero-body">
