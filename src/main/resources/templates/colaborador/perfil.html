@@ -10,6 +10,31 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<style>
+  .skill-estado { flex: 1 1 0; min-width: 150px; display: flex; justify-content: center; align-items: center; }
+  .skill-validada { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-sm); font-weight: 600; color: #1E8E4E; white-space: nowrap; }
+  .skill-validada-icon { width: 20px; height: 20px; flex-shrink: 0; display: block; }
+  :root[data-theme="dark"] .skill-validada { color: #4ADE80; }
+  @media (max-width: 720px) { .skill-estado { flex-basis: auto; justify-content: flex-start; } .skill-estado:empty { display: none; } }
+  [data-habilidad-row] .skill-pill { white-space: nowrap; }
+  .cert-box { border: 1px solid var(--border-subtle); border-radius: var(--radius-lg, 12px); padding: var(--space-4); background: var(--surface-sunken); margin-bottom: var(--space-2); }
+  .cert-box-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--space-4); }
+  .cert-box-sub { font-size: var(--fs-xs); color: var(--text-tertiary); }
+  .cert-box .field { margin-bottom: var(--space-3); }
+  .cert-or { display: flex; align-items: center; gap: var(--space-3); margin: 0 0 var(--space-3); color: var(--text-tertiary); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .06em; }
+  .cert-or::before, .cert-or::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
+  .cert-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .cert-drop { display: flex; align-items: center; gap: var(--space-3); padding: 12px 14px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md, 10px); background: var(--surface); cursor: pointer; transition: border-color .15s, background .15s; min-width: 0; }
+  .cert-drop:hover { border-color: var(--blue-fg); background: var(--blue-bg); }
+  .cert-drop .icon { width: 18px; height: 18px; color: var(--red-fg); flex-shrink: 0; }
+  .cert-drop-text { flex: 1; min-width: 0; font-size: var(--fs-sm); color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cert-drop-text strong { color: var(--text-primary); font-weight: 600; }
+  .cert-drop.has-file { border-style: solid; border-color: var(--blue-fg); }
+  .cert-drop-clear { border: 0; background: transparent; padding: 4px; border-radius: 6px; cursor: pointer; color: var(--text-tertiary); display: inline-flex; }
+  .cert-drop-clear:hover { background: var(--surface-sunken); color: var(--text-primary); }
+  .cert-drop-clear .icon { color: inherit; width: 14px; height: 14px; }
+  .field.has-error .cert-drop, .field.has-error .input { border-color: var(--red-fg); }
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -65,7 +90,6 @@
                       <span class="skill-pill" th:attr="data-level=${h.nivelLabel}, title='Declarada el ' + ${h.declaradaDesdeLabel}"
                             th:text="${h.nombre} + ' · ' + ${h.nivelLabel}">Habilidad</span>
                     </div>
-                    <span th:if="${h.validada}" class="check-badge" style="margin-left:6px;" title="Validada por RM" aria-label="Validada por RM"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-check"></use></svg></span>
 
                     <!-- Constancia: PDF subido y/o link externo (se muestran los que existan) -->
                     <div th:if="${h.tieneCertificado}" class="cert-links">
@@ -81,11 +105,22 @@
                     <div th:unless="${h.tieneCertificado}" class="text-tertiary" style="margin-top:6px; font-size:var(--fs-xs);">Sin constancia adjunta</div>
                   </div>
 
+                  <!-- Estado de validación (columna central) -->
+                  <div class="skill-estado">
+                    <span th:if="${h.validada}" class="skill-validada" title="El Resource Manager revisó y confirmó esta habilidad">
+                      <svg class="skill-validada-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="10" cy="10" r="8.75" stroke-width="1.5"></circle>
+                        <path d="M6.4 10.3l2.4 2.4 4.8-5.1" stroke-width="1.8"></path>
+                      </svg>
+                      Validada por RM
+                    </span>
+                  </div>
+
                   <div class="cell-actions" style="flex:0 0 auto; flex-wrap:wrap; justify-content:flex-end;">
                     <button type="button" data-editar-nivel
                             th:attr="data-id=${h.habilidadId}, data-nombre=${h.nombre}, data-nivel-label=${h.nivelLabel}">Editar nivel</button>
                     <button type="button" data-editar-cert
-                            th:attr="data-id=${h.habilidadId}, data-cert-nombre=${h.certificados.isEmpty() ? '' : h.certificados[0].nombreArchivo}, data-cert-url=${h.certificados.isEmpty() ? '' : h.certificados[0].urlArchivo}, data-cert-tiene-archivo=${h.certificados.isEmpty() ? false : h.certificados[0].tieneArchivo}, data-cert-id=${h.certificados.isEmpty() ? '' : h.certificados[0].id}"
+                            th:attr="data-id=${h.habilidadId}, data-nombre=${h.nombre}, data-cert-nombre=${h.certificados.isEmpty() ? '' : h.certificados[0].nombreArchivo}, data-cert-url=${h.certificados.isEmpty() ? '' : h.certificados[0].urlArchivo}, data-cert-tiene-archivo=${h.certificados.isEmpty() ? false : h.certificados[0].tieneArchivo}, data-cert-id=${h.certificados.isEmpty() ? '' : h.certificados[0].id}"
                             th:text="${h.tieneCertificado} ? 'Editar constancia' : 'Agregar constancia'">Editar constancia</button>
                     <button type="button" class="danger" data-eliminar-habilidad
                             th:attr="data-id=${h.habilidadId}, data-nombre=${h.nombre}">Eliminar</button>
@@ -195,69 +230,173 @@
       }
     });
 
+    // ───────── Constancia de respaldo: link, PDF o ambos ─────────
+    var MAX_PDF_BYTES = 5 * 1024 * 1024;
+    function escAttr(v) {
+      return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function urlValida(v) {
+      if (!/^https?:\/\//i.test(v)) return false;
+      try { var u = new URL(v); return !!u.hostname && u.hostname.indexOf(".") > 0; } catch (e) { return false; }
+    }
+    function tamanoLabel(bytes) {
+      return bytes >= 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(1) + " MB" : Math.max(1, Math.round(bytes / 1024)) + " KB";
+    }
+
+    // Bloque de campos de la constancia, en el orden: link, PDF, nombre (opcional).
+    function camposConstancia(pre, valores) {
+      valores = valores || {};
+      var avisoPdf = valores.tieneArchivo
+        ? '<p class="field-hint">Ya tienes un PDF subido (<a href="/certificados/' + escAttr(valores.certId) + '/archivo" target="_blank" rel="noopener">verlo</a>). Si eliges otro, lo reemplaza.</p>'
+        : '';
+      return '' +
+        '<div class="cert-box" id="' + pre + '-box">' +
+          '<div class="cert-box-head"><span class="field-label">Constancia de respaldo</span>' +
+          '<span class="cert-box-sub">Agrega un link, un PDF o ambos (al menos uno).</span></div>' +
+          '<div class="field" id="' + pre + '-url-field"><label class="field-label" for="' + pre + '-url">Link del certificado</label>' +
+            '<input class="input" type="url" id="' + pre + '-url" value="' + escAttr(valores.url) + '" placeholder="https://… (Drive, Coursera, LinkedIn Learning…)" autocomplete="off">' +
+            '<span class="field-error">Escribe un link válido que empiece con http:// o https://</span></div>' +
+          '<div class="cert-or"><span>y/o</span></div>' +
+          '<div class="field" id="' + pre + '-file-field"><span class="field-label">Sube el PDF directamente</span>' +
+            '<label class="cert-drop" for="' + pre + '-file">' +
+              '<svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg>' +
+              '<span class="cert-drop-text" id="' + pre + '-file-text"><strong>Elegir PDF</strong> · máximo 5 MB</span>' +
+              '<button type="button" class="cert-drop-clear" id="' + pre + '-file-clear" hidden aria-label="Quitar PDF elegido">' +
+                '<svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-x"></use></svg></button>' +
+            '</label>' +
+            '<input type="file" id="' + pre + '-file" accept="application/pdf,.pdf" class="cert-file-input">' +
+            avisoPdf +
+            '<span class="field-error" id="' + pre + '-file-error">El archivo debe ser un PDF de máximo 5 MB.</span></div>' +
+          '<div class="field" style="margin-bottom:0;"><label class="field-label" for="' + pre + '-name">Nombre del archivo <span class="text-tertiary" style="font-weight:400;">(opcional)</span></label>' +
+            '<input class="input" type="text" id="' + pre + '-name" value="' + escAttr(valores.nombre) + '" placeholder="Ej. certificado-react.pdf">' +
+            '<p class="field-hint">Si lo dejas vacío se usa el nombre del PDF.</p></div>' +
+        '</div>';
+    }
+
+    // Conecta el selector de PDF (muestra nombre y tamaño, permite quitarlo).
+    function conectarConstancia(backdrop, pre) {
+      var input = backdrop.querySelector("#" + pre + "-file");
+      var texto = backdrop.querySelector("#" + pre + "-file-text");
+      var limpiar = backdrop.querySelector("#" + pre + "-file-clear");
+      var drop = backdrop.querySelector('label[for="' + pre + '-file"]');
+      var fileField = backdrop.querySelector("#" + pre + "-file-field");
+      var urlField = backdrop.querySelector("#" + pre + "-url-field");
+      function pintar() {
+        var f = input.files && input.files[0];
+        fileField.classList.remove("has-error");
+        if (f) {
+          texto.innerHTML = '<strong>' + escAttr(f.name) + '</strong> · ' + tamanoLabel(f.size);
+          drop.classList.add("has-file");
+          limpiar.hidden = false;
+        } else {
+          texto.innerHTML = '<strong>Elegir PDF</strong> · máximo 5 MB';
+          drop.classList.remove("has-file");
+          limpiar.hidden = true;
+        }
+      }
+      input.addEventListener("change", pintar);
+      limpiar.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); input.value = ""; pintar(); });
+      backdrop.querySelector("#" + pre + "-url").addEventListener("input", function () { urlField.classList.remove("has-error"); });
+    }
+
+    // Valida y devuelve { url, nombre, archivo } o null si hay error.
+    function leerConstancia(backdrop, pre, opciones) {
+      var urlInput = backdrop.querySelector("#" + pre + "-url");
+      var input = backdrop.querySelector("#" + pre + "-file");
+      var url = urlInput.value.trim();
+      var archivo = input.files && input.files[0] ? input.files[0] : null;
+      var ok = true;
+      if (url && !urlValida(url)) {
+        backdrop.querySelector("#" + pre + "-url-field").classList.add("has-error");
+        ok = false;
+      }
+      if (archivo) {
+        var esPdf = archivo.type === "application/pdf" || /\.pdf$/i.test(archivo.name);
+        if (!esPdf || archivo.size > MAX_PDF_BYTES) {
+          backdrop.querySelector("#" + pre + "-file-field").classList.add("has-error");
+          ok = false;
+        }
+      }
+      if (!ok) return null;
+      if (!url && !archivo && !(opciones && opciones.yaTienePdf)) {
+        SBAI.toast.show("Agrega el link de tu certificado o sube el PDF (puedes poner ambos).", { type: "error" });
+        urlInput.focus();
+        return null;
+      }
+      return { url: url, nombre: backdrop.querySelector("#" + pre + "-name").value.trim(), archivo: archivo, input: input };
+    }
+
+    // ───────── Agregar habilidad ─────────
     document.getElementById("add-skill-btn").addEventListener("click", function () {
-      var options = CATALOGO_HABILIDADES.map(function (h) { return '<option value="' + h.id + '">' + h.nombre + '</option>'; }).join("");
+      // Solo las habilidades que todavía no declaraste.
+      var declaradas = {};
+      document.querySelectorAll("[data-eliminar-habilidad]").forEach(function (b) { declaradas[String(b.dataset.id)] = true; });
+      var disponibles = CATALOGO_HABILIDADES.filter(function (h) { return !declaradas[String(h.id)]; });
+      if (!disponibles.length) {
+        SBAI.toast.show("Ya declaraste todas las habilidades del catálogo.", { type: "info" });
+        return;
+      }
+      var options = '<option value="">Elige una habilidad…</option>' + disponibles.map(function (h) {
+        return '<option value="' + escAttr(h.id) + '" data-group="' + escAttr(h.categoriaNombre || "") + '">' + escAttr(h.nombre) + '</option>';
+      }).join("");
       var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Agregar habilidad</h2><p>Se suma a tu perfil como declaración propia.</p></div>' +
               '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-              '<div class="modal-body"><div class="field"><label class="field-label">Habilidad</label><select class="select" id="new-skill-id">' + options + '</select></div>' +
-              '<div class="field"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div>' +
-              '<div class="field"><label class="field-label">Constancia de respaldo (opcional)</label>' +
-              '<input class="input" type="url" id="new-skill-cert-url" placeholder="Link a tu certificado (Drive, Coursera, LinkedIn Learning...)">' +
-              '<p class="field-hint">Un link ayuda a que el Resource Manager valide tu habilidad más rápido, pero no es obligatorio.</p></div>' +
-              '<div class="field"><label class="field-label">Nombre del archivo (opcional)</label><input class="input" type="text" id="new-skill-cert-name" placeholder="Ej. certificado-react.pdf"></div>' +
-              '<div class="field"><label class="field-label">O sube el PDF directamente (opcional)</label>' +
-              '<input class="input" type="file" id="new-skill-cert-file" accept="application/pdf">' +
-              '<p class="field-hint">Puedes agregar un link, un PDF o ambos. Máximo 5 MB.</p></div>' +
+              '<div class="modal-body">' +
+              '<div class="field-row" style="display:flex; gap:var(--space-4);">' +
+                '<div class="field" style="flex:2;"><label class="field-label">Habilidad</label><select class="select" id="new-skill-id" data-tech-icons data-search="on">' + options + '</select></div>' +
+                '<div class="field" style="flex:1;"><label class="field-label">Nivel</label><select class="select" id="new-skill-level"><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div>' +
+              '</div>' +
+              camposConstancia("new-cert") +
               '</div>' +
               '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-add-skill">Agregar</button></div></div>';
       var backdrop = SBAI.modal.open(html);
+      conectarConstancia(backdrop, "new-cert");
       backdrop.querySelector("#confirm-add-skill").addEventListener("click", function () {
         var habilidadId = backdrop.querySelector("#new-skill-id").value;
         if (!habilidadId) { SBAI.toast.show("Selecciona una habilidad del catálogo.", { type: "error" }); return; }
+        var c = leerConstancia(backdrop, "new-cert");
+        if (!c) return;
         var fields = {
           habilidadId: habilidadId,
           nivel: backdrop.querySelector("#new-skill-level").value,
-          urlArchivo: backdrop.querySelector("#new-skill-cert-url").value,
-          nombreArchivo: backdrop.querySelector("#new-skill-cert-name").value
+          urlArchivo: c.url,
+          nombreArchivo: c.nombre
         };
-        var fileInput = backdrop.querySelector("#new-skill-cert-file");
-        if (fileInput.files && fileInput.files[0]) {
-          submitFormConArchivo("/colaborador/perfil/habilidades", fields, fileInput);
+        this.disabled = true;
+        if (c.archivo) {
+          submitFormConArchivo("/colaborador/perfil/habilidades", fields, c.input);
         } else {
           submitForm("/colaborador/perfil/habilidades", fields);
         }
       });
     });
+
+    // ───────── Agregar / editar constancia ─────────
     document.querySelectorAll("[data-editar-cert]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var habilidadId = btn.dataset.id;
-        var nombreActual = btn.dataset.certNombre || "";
-        var urlActual = btn.dataset.certUrl || "";
         var tieneArchivoActual = btn.dataset.certTieneArchivo === "true";
-        var certId = btn.dataset.certId || "";
-        var avisoArchivo = tieneArchivoActual
-                ? '<p class="field-hint">Ya tienes un PDF subido (<a href="/certificados/' + certId + '/archivo" target="_blank" rel="noopener">verlo</a>). Sube uno nuevo para reemplazarlo.</p>'
-                : "";
-        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Constancia de habilidad</h2></div>' +
+        var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Constancia de habilidad</h2><p>' + escAttr(btn.dataset.nombre || "") + '</p></div>' +
                 '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
                 '<div class="modal-body">' +
-                '<div class="field"><label class="field-label">Link</label><input class="input" type="url" id="edit-cert-url" value="' + urlActual + '" placeholder="Link a tu certificado"></div>' +
-                '<div class="field"><label class="field-label">Nombre del archivo</label><input class="input" type="text" id="edit-cert-name" value="' + nombreActual + '" placeholder="Ej. certificado.pdf"></div>' +
-                '<div class="field"><label class="field-label">O sube el PDF directamente (opcional)</label>' +
-                '<input class="input" type="file" id="edit-cert-file" accept="application/pdf">' +
-                avisoArchivo +
-                '</div>' +
-                '<p class="field-hint">Deja el link vacío, no subas archivo, y guarda para quitar la constancia.</p>' +
+                camposConstancia("edit-cert", {
+                  url: btn.dataset.certUrl || "",
+                  nombre: btn.dataset.certNombre || "",
+                  tieneArchivo: tieneArchivoActual,
+                  certId: btn.dataset.certId || ""
+                }) +
                 '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="confirm-edit-cert">Guardar</button></div></div>';
         var backdrop = SBAI.modal.open(html);
+        conectarConstancia(backdrop, "edit-cert");
         backdrop.querySelector("#confirm-edit-cert").addEventListener("click", function () {
-          var fields = {
-            urlArchivo: backdrop.querySelector("#edit-cert-url").value,
-            nombreArchivo: backdrop.querySelector("#edit-cert-name").value
-          };
-          var fileInput = backdrop.querySelector("#edit-cert-file");
-          if (fileInput.files && fileInput.files[0]) {
-            submitFormConArchivo("/colaborador/perfil/habilidades/" + habilidadId + "/certificado", fields, fileInput);
+          var c = leerConstancia(backdrop, "edit-cert", { yaTienePdf: tieneArchivoActual });
+          if (!c) return;
+          var fields = { urlArchivo: c.url, nombreArchivo: c.nombre };
+          this.disabled = true;
+          if (c.archivo) {
+            submitFormConArchivo("/colaborador/perfil/habilidades/" + habilidadId + "/certificado", fields, c.input);
           } else {
             submitForm("/colaborador/perfil/habilidades/" + habilidadId + "/certificado", fields);
           }

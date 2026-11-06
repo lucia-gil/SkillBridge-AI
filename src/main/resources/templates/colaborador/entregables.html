@@ -10,6 +10,60 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<style>
+  /* ── Resumen (KPIs) ── */
+  .me-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+  .me-kpi { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+  .me-kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .me-kpi-icon .icon { width: 20px; height: 20px; }
+  .me-kpi-num { font-size: 1.5rem; font-weight: 700; line-height: 1.1; color: var(--text-primary); }
+  .me-kpi-label { font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: 2px; }
+  .tone-blue  { background: var(--blue-bg);  color: var(--blue-fg); }
+  .tone-amber { background: #FFF4E0; color: #B26A00; }
+  .tone-green { background: #E7F6EC; color: #1E8E4E; }
+  .tone-red   { background: #FDECEA; color: var(--red-fg); }
+  :root[data-theme="dark"] .tone-amber { background: rgba(245,158,11,.15); color: #FBBF24; }
+  :root[data-theme="dark"] .tone-green { background: rgba(34,197,94,.15); color: #4ADE80; }
+  :root[data-theme="dark"] .tone-red   { background: rgba(239,68,68,.15); color: #F87171; }
+
+  /* ── Barra de filtros ── */
+  .me-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-subtle); }
+  .me-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .me-tab { border: 1px solid var(--border-subtle); background: var(--surface); color: var(--text-secondary); border-radius: 999px; padding: 6px 12px; font-size: var(--fs-xs); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .me-tab:hover { border-color: var(--border-strong); }
+  .me-tab.active { background: var(--navy-700, #16213A); border-color: var(--navy-700, #16213A); color: #fff; }
+  .me-tab-count { background: rgba(127,127,127,.18); border-radius: 999px; padding: 0 6px; font-size: 11px; }
+  .me-search { position: relative; min-width: 260px; }
+  .me-search .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-tertiary); }
+  .me-search input { padding-left: 32px; height: 36px; }
+
+  /* ── Tarjetas de entregable ── */
+  .me-list { display: flex; flex-direction: column; }
+  .me-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-subtle); transition: background .15s; }
+  .me-item:hover { background: var(--surface-sunken); }
+  .me-item-icon { width: 42px; height: 42px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; }
+  .me-item-icon .icon { width: 20px; height: 20px; }
+  .me-item-title { font-weight: 600; color: var(--text-primary); text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .me-item-title:hover { text-decoration: underline; }
+  .me-item-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: var(--fs-xs); color: var(--text-tertiary); flex-wrap: wrap; }
+  .me-proj { display: inline-flex; align-items: center; gap: 4px; }
+  .me-proj .icon { width: 13px; height: 13px; }
+  .me-deadline { text-align: right; min-width: 150px; }
+  .me-deadline-date { font-size: var(--fs-sm); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .me-deadline-left { font-size: var(--fs-xs); margin-top: 2px; color: var(--text-tertiary); }
+  .me-deadline-left.is-soon { color: #B26A00; font-weight: 600; }
+  .me-deadline-left.is-late { color: var(--red-fg); font-weight: 600; }
+  .me-score { text-align: center; min-width: 74px; }
+  .me-score-num { font-family: var(--font-mono, monospace); font-size: var(--fs-md, 1rem); font-weight: 700; color: var(--text-primary); }
+  .me-score-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-tertiary); }
+  .me-item .btn { white-space: nowrap; }
+
+  @media (max-width: 960px) {
+    .me-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .me-item { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .me-deadline, .me-score { display: none; }
+  }
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -18,55 +72,90 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <section class="card">
-        <div class="table-toolbar">
-          <div>
-            <strong th:text="${entregables.size()} + ' entregables'">0 entregables</strong>
-            <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">De todos tus proyectos activos</p>
+      <!-- Resumen -->
+      <div class="me-kpis">
+        <div class="me-kpi">
+          <span class="me-kpi-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
+          <div><div class="me-kpi-num" th:text="${entregables.?[miEntrega == null and !vencido].size()}">0</div><div class="me-kpi-label">Pendientes por entregar</div></div>
+        </div>
+        <div class="me-kpi">
+          <span class="me-kpi-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+          <div><div class="me-kpi-num" th:text="${entregables.?[miEntrega != null and miEntrega.estadoCrudo == 'enviado'].size()}">0</div><div class="me-kpi-label">Entregados, en revisión</div></div>
+        </div>
+        <div class="me-kpi">
+          <span class="me-kpi-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-check"></use></svg></span>
+          <div><div class="me-kpi-num" th:text="${entregables.?[miEntrega != null and miEntrega.estadoCrudo == 'revisado'].size()}">0</div><div class="me-kpi-label">Revisados y calificados</div></div>
+        </div>
+        <div class="me-kpi">
+          <span class="me-kpi-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
+          <div><div class="me-kpi-num" th:text="${entregables.?[miEntrega == null and vencido].size()}">0</div><div class="me-kpi-label">Vencidos sin entregar</div></div>
+        </div>
+      </div>
+
+      <section class="card" style="padding:0; overflow:hidden;">
+        <div class="me-toolbar">
+          <div class="me-tabs" role="tablist" aria-label="Filtrar por estado">
+            <button type="button" class="me-tab active" data-me-tab="todos">Todos <span class="me-tab-count" data-me-count="todos">0</span></button>
+            <button type="button" class="me-tab" data-me-tab="pendiente">Pendientes <span class="me-tab-count" data-me-count="pendiente">0</span></button>
+            <button type="button" class="me-tab" data-me-tab="enviado">Entregados <span class="me-tab-count" data-me-count="enviado">0</span></button>
+            <button type="button" class="me-tab" data-me-tab="revisado">Revisados <span class="me-tab-count" data-me-count="revisado">0</span></button>
+            <button type="button" class="me-tab" data-me-tab="vencido">Vencidos <span class="me-tab-count" data-me-count="vencido">0</span></button>
           </div>
-          <div class="table-filters">
-            <select class="select" data-filter-scope="mis-entregables" data-filter-key="estado">
-              <option value="todos">Estado: todos</option>
-              <option value="sin_entregar">Sin entregar</option><option value="enviado">Entregado</option><option value="revisado">Revisado</option>
-            </select>
-          </div>
+          <label class="me-search">
+            <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
+            <input class="input" type="search" id="me-buscar" placeholder="Buscar entregable o proyecto…" aria-label="Buscar entregable o proyecto">
+          </label>
         </div>
 
-        <div th:if="${entregables.isEmpty()}" class="state-panel">
+        <div th:if="${entregables.isEmpty()}" class="state-panel" style="padding:var(--space-8) var(--space-5);">
           <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
           <span class="state-panel-title">No tienes entregables por ahora</span>
+          <span class="text-tertiary" style="font-size:var(--fs-sm);">Cuando el Project Manager de alguno de tus proyectos publique un entregable, aparecerá aquí.</span>
         </div>
 
-        <div class="table-scroll" th:unless="${entregables.isEmpty()}">
-          <table class="data-table">
-            <thead><tr><th>Entregable</th><th>Proyecto</th><th>Cierre</th><th>Mi estado</th><th>Calificación</th><th>Acciones</th></tr></thead>
-            <tbody>
-              <tr th:each="e : ${entregables}" data-filter-row="mis-entregables"
-                  th:attr="data-f-estado=${e.miEntrega != null ? e.miEntrega.estadoCrudo : 'sin_entregar'}">
-                <td class="cell-person">
-                  <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
-                  <span class="cell-person-name" th:text="${e.titulo}">Título</span>
-                </td>
-                <td th:text="${e.proyectoNombre}">Proyecto</td>
-                <td class="text-tertiary" style="font-size:var(--fs-xs);">
-                  <span th:text="${e.fechaCierreLabel}">fecha</span>
-                  <span class="badge badge-red" style="margin-left:4px;" th:if="${e.vencido and e.miEntrega == null}">Vencido</span>
-                </td>
-                <td>
-                  <span class="badge badge-neutral" th:if="${e.miEntrega == null}">Sin entregar</span>
-                  <span class="badge" th:if="${e.miEntrega != null}" th:classappend="${e.miEntrega.estadoBadgeClass}" th:text="${e.miEntrega.estadoLabel}">Estado</span>
-                </td>
-                <td class="mono" th:text="${e.miEntrega != null ? e.miEntrega.calificacionLabel : '—'} + ' / ' + ${e.puntajeMaximoLabel}">— / 20</td>
-                <td class="cell-actions"><a th:href="@{'/colaborador/entregables/' + ${e.id} + '.html'}" th:text="${e.miEntrega != null ? 'Ver mi entrega' : 'Entregar'}">Entregar</a></td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="me-list" th:unless="${entregables.isEmpty()}">
+          <div class="me-item" th:each="e : ${entregables}" data-me-row
+               th:attr="data-estado=${e.miEntrega != null ? e.miEntrega.estadoCrudo : (e.vencido ? 'vencido' : 'pendiente')},
+                        data-cierre=${e.fechaCierreLabel},
+                        data-buscar=${e.titulo + ' ' + e.proyectoNombre}">
+            <span class="me-item-icon"
+                  th:classappend="${e.miEntrega != null ? (e.miEntrega.estadoCrudo == 'revisado' ? 'tone-green' : 'tone-blue') : (e.vencido ? 'tone-red' : 'tone-amber')}">
+              <svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg>
+            </span>
+
+            <div style="min-width:0;">
+              <a class="me-item-title" th:href="@{'/colaborador/entregables/' + ${e.id} + '.html'}" th:text="${e.titulo}">Título</a>
+              <div class="me-item-meta">
+                <span class="me-proj"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-folder"></use></svg><span th:text="${e.proyectoNombre}">Proyecto</span></span>
+                <span>·</span>
+                <span class="badge badge-neutral" th:if="${e.miEntrega == null and !e.vencido}">Sin entregar</span>
+                <span class="badge badge-red" th:if="${e.miEntrega == null and e.vencido}">Vencido</span>
+                <span class="badge" th:if="${e.miEntrega != null}" th:classappend="${e.miEntrega.estadoBadgeClass}" th:text="${e.miEntrega.estadoLabel}">Estado</span>
+              </div>
+            </div>
+
+            <div class="me-deadline">
+              <div class="me-deadline-date" th:text="${e.fechaCierreLabel}">fecha</div>
+              <div class="me-deadline-left" data-me-left>Cierre</div>
+            </div>
+
+            <div class="me-score">
+              <div class="me-score-num" th:text="${e.miEntrega != null ? e.miEntrega.calificacionLabel : '—'} + ' / ' + ${e.puntajeMaximoLabel}">— / 20</div>
+              <div class="me-score-label">Nota</div>
+            </div>
+
+            <a class="btn btn-sm" th:classappend="${e.miEntrega == null ? 'btn-primary' : 'btn-secondary'}"
+               th:href="@{'/colaborador/entregables/' + ${e.id} + '.html'}"
+               th:text="${e.miEntrega == null ? 'Entregar' : 'Ver mi entrega'}">Entregar</a>
+          </div>
         </div>
-        <div class="state-panel" data-filter-empty="mis-entregables" hidden>
-          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
-          <span class="state-panel-title">Sin entregables con este estado</span>
+
+        <div class="state-panel" id="me-vacio" hidden style="padding:var(--space-8) var(--space-5);">
+          <span class="state-panel-icon"><svg class="icon"><use href="/img/icons.svg#icon-search"></use></svg></span>
+          <span class="state-panel-title">No hay entregables con este filtro</span>
         </div>
-        <div class="table-footer" th:unless="${entregables.isEmpty()}">
+
+        <div class="table-footer" th:unless="${entregables.isEmpty()}" style="padding:var(--space-3) var(--space-5);">
           <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="me-visible-count">0</span> de <span id="me-filtered-count">0</span></span>
           <div class="pagination"><button class="page-btn" id="me-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="me-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="me-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
@@ -78,51 +167,80 @@
 
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
-<script src="/js/table-filter.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 document.addEventListener("DOMContentLoaded", function () {
-  window.SBAI.tableFilter.init(document);
-  (function () {
-    var rows = Array.from(document.querySelectorAll('tr[data-filter-row="mis-entregables"]'));
-    if (!rows.length) return;
-    var estadoSelect = document.querySelector('[data-filter-scope="mis-entregables"][data-filter-key="estado"]');
-    var emptyPanel = document.querySelector('[data-filter-empty="mis-entregables"]');
-    var visibleCount = document.getElementById("me-visible-count");
-    var filteredCount = document.getElementById("me-filtered-count");
-    var pageLabel = document.getElementById("me-page-label");
-    var previous = document.getElementById("me-prev");
-    var next = document.getElementById("me-next");
-    var pageSize = 8, page = 1;
+  var rows = Array.from(document.querySelectorAll("[data-me-row]"));
+  if (!rows.length) return;
 
-    function matches(row) {
-      var estado = estadoSelect ? estadoSelect.value : "todos";
-      return !estado || estado === "todos" || row.dataset.fEstado === estado;
+  // "Cierra en 3 días" / "Venció hace 2 días" a partir de "dd/MM/yyyy HH:mm".
+  function parseFecha(txt) {
+    var m = /(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?/.exec(txt || "");
+    return m ? new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 23), +(m[5] || 59)) : null;
+  }
+  rows.forEach(function (row) {
+    var el = row.querySelector("[data-me-left]");
+    var cierre = parseFecha(row.dataset.cierre);
+    if (!el || !cierre) return;
+    var estado = row.dataset.estado;
+    var ms = cierre - new Date();
+    var dias = Math.round(Math.abs(ms) / 86400000);
+    var horas = Math.round(Math.abs(ms) / 3600000);
+    var cuanto = dias >= 1 ? dias + (dias === 1 ? " día" : " días") : horas + (horas === 1 ? " hora" : " horas");
+    if (estado === "enviado" || estado === "revisado") {
+      el.textContent = ms >= 0 ? "Cierra en " + cuanto : "Cerrado";
+    } else if (ms < 0) {
+      el.textContent = "Venció hace " + cuanto;
+      el.classList.add("is-late");
+    } else {
+      el.textContent = "Cierra en " + cuanto;
+      if (ms < 3 * 86400000) el.classList.add("is-soon");
     }
-    function render() {
-      var matched = rows.filter(matches);
-      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
-      page = Math.min(page, pages);
-      var visible = matched.slice((page - 1) * pageSize, page * pageSize);
-      rows.forEach(function (row) { row.hidden = true; });
-      visible.forEach(function (row) { row.hidden = false; });
-      if (emptyPanel) emptyPanel.hidden = matched.length !== 0;
-      visibleCount.textContent = visible.length;
-      filteredCount.textContent = matched.length;
-      pageLabel.textContent = "Página " + page + " de " + pages;
-      previous.disabled = page === 1;
-      next.disabled = page === pages;
-    }
-    if (estadoSelect) estadoSelect.addEventListener("change", function () { page = 1; render(); });
-    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
-    next.addEventListener("click", function () {
-      var matched = rows.filter(matches);
-      var pages = Math.max(1, Math.ceil(matched.length / pageSize));
-      if (page < pages) { page++; render(); }
+  });
+
+  // Contadores por pestaña
+  var conteo = { todos: rows.length, pendiente: 0, enviado: 0, revisado: 0, vencido: 0 };
+  rows.forEach(function (r) { if (conteo[r.dataset.estado] !== undefined) conteo[r.dataset.estado]++; });
+  document.querySelectorAll("[data-me-count]").forEach(function (c) { c.textContent = conteo[c.dataset.meCount] || 0; });
+
+  // Filtro (pestaña + búsqueda) y paginación
+  var tab = "todos", q = "", page = 1, pageSize = 8;
+  var vacio = document.getElementById("me-vacio");
+  var visibleCount = document.getElementById("me-visible-count");
+  var filteredCount = document.getElementById("me-filtered-count");
+  var pageLabel = document.getElementById("me-page-label");
+  var previous = document.getElementById("me-prev");
+  var next = document.getElementById("me-next");
+  function norm(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+  function coincide(r) {
+    return (tab === "todos" || r.dataset.estado === tab) && (!q || norm(r.dataset.buscar).indexOf(q) !== -1);
+  }
+  function render() {
+    var m = rows.filter(coincide);
+    var pages = Math.max(1, Math.ceil(m.length / pageSize));
+    page = Math.min(page, pages);
+    var vis = m.slice((page - 1) * pageSize, page * pageSize);
+    rows.forEach(function (r) { r.hidden = true; });
+    vis.forEach(function (r) { r.hidden = false; });
+    vacio.hidden = m.length !== 0;
+    visibleCount.textContent = vis.length;
+    filteredCount.textContent = m.length;
+    pageLabel.textContent = "Página " + page + " de " + pages;
+    previous.disabled = page === 1;
+    next.disabled = page === pages;
+  }
+  document.querySelectorAll("[data-me-tab]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll("[data-me-tab]").forEach(function (x) { x.classList.remove("active"); });
+      b.classList.add("active");
+      tab = b.dataset.meTab; page = 1; render();
     });
-    render();
-  })();
+  });
+  document.getElementById("me-buscar").addEventListener("input", function () { q = norm(this.value.trim()); page = 1; render(); });
+  previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+  next.addEventListener("click", function () { page++; render(); });
+  render();
 });
 </script>
 <script src="/js/global-search.js"></script>

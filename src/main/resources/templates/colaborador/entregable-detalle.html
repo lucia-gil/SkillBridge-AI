@@ -10,6 +10,103 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<style>
+  .ed-back { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-tertiary); text-decoration: none; margin-bottom: var(--space-4); }
+  .ed-back:hover { color: var(--text-primary); }
+  .ed-back .icon { width: 14px; height: 14px; }
+
+  /* Cabecera */
+  .ed-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; }
+  .ed-hero-main { display: flex; gap: var(--space-4); min-width: 0; flex: 1; }
+  .ed-hero-icon { width: 52px; height: 52px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--blue-bg); color: var(--blue-fg); }
+  .ed-hero-icon .icon { width: 24px; height: 24px; }
+  .ed-title { font-size: 1.375rem; font-weight: 700; color: var(--text-primary); line-height: 1.25; }
+  .ed-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: var(--fs-sm); color: var(--text-tertiary); }
+  .ed-sub .icon { width: 14px; height: 14px; }
+  .ed-countdown { min-width: 210px; padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--surface-sunken); border: 1px solid var(--border-subtle); }
+  .ed-countdown-label { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-tertiary); }
+  .ed-countdown-value { font-size: 1.125rem; font-weight: 700; color: var(--text-primary); margin-top: 2px; }
+  .ed-countdown-date { font-size: var(--fs-xs); color: var(--text-tertiary); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .ed-countdown.is-soon { background: #FFF4E0; border-color: #F5D49A; }
+  .ed-countdown.is-soon .ed-countdown-value { color: #B26A00; }
+  .ed-countdown.is-late { background: #FDECEA; border-color: #F4C1BB; }
+  .ed-countdown.is-late .ed-countdown-value { color: var(--red-fg); }
+  .ed-countdown.is-done { background: #E7F6EC; border-color: #BFE5CC; }
+  .ed-countdown.is-done .ed-countdown-value { color: #1E8E4E; }
+
+  /* Progreso: Publicado → Entregado → Revisado */
+  .ed-steps { display: flex; align-items: center; margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border-subtle); }
+  .ed-step { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .ed-step-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border-strong); color: var(--text-tertiary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-xs); font-weight: 700; background: var(--surface); }
+  .ed-step-dot .icon { width: 14px; height: 14px; }
+  .ed-step-text { font-size: var(--fs-sm); color: var(--text-tertiary); font-weight: 600; }
+  .ed-step-text small { display: block; font-weight: 400; font-size: var(--fs-xs); }
+  .ed-step.is-done .ed-step-dot { border-color: #1E8E4E; color: #1E8E4E; }
+  .ed-step.is-done .ed-step-text { color: var(--text-primary); }
+  .ed-step.is-current .ed-step-dot { border-color: var(--blue-fg); color: var(--blue-fg); box-shadow: 0 0 0 4px var(--blue-bg); }
+  .ed-step.is-current .ed-step-text { color: var(--text-primary); }
+  .ed-step-line { flex: 1; height: 2px; background: var(--border-subtle); margin: 0 var(--space-3); min-width: 24px; }
+  .ed-step-line.is-done { background: #1E8E4E; }
+
+  /* Layout de dos columnas */
+  .ed-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-6); margin-top: var(--space-6); align-items: start; }
+  .ed-grid > div { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+  .ed-card-title { display: flex; align-items: center; gap: 8px; font-size: var(--fs-md, 1rem); font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-4); }
+  .ed-card-title .icon { width: 18px; height: 18px; color: var(--text-tertiary); }
+  .ed-desc { color: var(--text-secondary); white-space: pre-wrap; line-height: 1.6; }
+
+  /* Datos laterales */
+  .ed-facts { display: flex; flex-direction: column; }
+  .ed-fact { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle); }
+  .ed-fact:last-child { border-bottom: 0; }
+  .ed-fact-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--surface-sunken); color: var(--text-tertiary); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ed-fact-icon .icon { width: 16px; height: 16px; }
+  .ed-fact-label { font-size: var(--fs-xs); color: var(--text-tertiary); }
+  .ed-fact-value { font-size: var(--fs-sm); color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Calificación */
+  .ed-grade { text-align: center; padding: var(--space-2) 0 var(--space-4); }
+  .ed-grade-num { font-size: 2.5rem; font-weight: 800; color: #1E8E4E; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ed-grade-max { font-size: 1rem; color: var(--text-tertiary); font-weight: 600; }
+  .ed-grade-bar { height: 8px; border-radius: 999px; background: var(--surface-sunken); overflow: hidden; margin-top: var(--space-3); }
+  .ed-grade-bar span { display: block; height: 100%; background: #1E8E4E; border-radius: 999px; }
+  .ed-quote { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-sunken); color: var(--text-secondary); font-size: var(--fs-sm); white-space: pre-wrap; line-height: 1.55; }
+  .ed-pending { display: flex; gap: var(--space-3); align-items: flex-start; color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.5; }
+  .ed-pending .icon { width: 18px; height: 18px; color: var(--text-tertiary); flex-shrink: 0; margin-top: 2px; }
+
+  /* Mi entrega */
+  .ed-attach { display: flex; flex-direction: column; gap: var(--space-2); }
+  .ed-attach-item { display: flex; align-items: center; gap: var(--space-3); padding: 10px 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); text-decoration: none; color: var(--text-primary); min-width: 0; }
+  .ed-attach-item:hover { border-color: var(--border-strong); background: var(--surface-sunken); text-decoration: none; }
+  .ed-attach-item .icon { width: 18px; height: 18px; flex-shrink: 0; }
+  .ed-attach-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); }
+  .ed-attach-item.is-file .icon { color: var(--red-fg); }
+  .ed-attach-item.is-link .icon { color: var(--blue-fg); }
+  .ed-attach-text { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-sunken); color: var(--text-secondary); font-size: var(--fs-sm); white-space: pre-wrap; line-height: 1.55; }
+
+  /* Formulario */
+  .ed-drop { display: flex; align-items: center; gap: var(--space-3); padding: 14px 16px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); background: var(--surface); cursor: pointer; transition: border-color .15s, background .15s; min-width: 0; }
+  .ed-drop:hover, .ed-drop.is-over { border-color: var(--blue-fg); background: var(--blue-bg); }
+  .ed-drop .icon { width: 20px; height: 20px; color: var(--text-tertiary); flex-shrink: 0; }
+  .ed-drop-text { flex: 1; min-width: 0; font-size: var(--fs-sm); color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ed-drop-text strong { color: var(--text-primary); }
+  .ed-drop.has-file { border-style: solid; border-color: var(--blue-fg); }
+  .ed-drop-clear { border: 0; background: transparent; padding: 4px; border-radius: 6px; cursor: pointer; color: var(--text-tertiary); display: inline-flex; }
+  .ed-drop-clear:hover { background: var(--surface-sunken); color: var(--text-primary); }
+  .ed-drop-clear .icon { width: 14px; height: 14px; color: inherit; }
+  .ed-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .field.has-error .input, .field.has-error .ed-drop { border-color: var(--red-fg); }
+
+  :root[data-theme="dark"] .ed-countdown.is-soon { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.35); }
+  :root[data-theme="dark"] .ed-countdown.is-late { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); }
+  :root[data-theme="dark"] .ed-countdown.is-done { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.35); }
+  :root[data-theme="dark"] .ed-grade-num, :root[data-theme="dark"] .ed-step.is-done .ed-step-dot { color: #4ADE80; }
+
+  @media (max-width: 960px) {
+    .ed-grid { grid-template-columns: minmax(0, 1fr); }
+    .ed-step-text small { display: none; }
+  }
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -18,62 +115,161 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
+      <a th:href="@{/colaborador/entregables.html}" class="ed-back">
+        <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-arrow-left"></use></svg>Volver a Mis entregables
+      </a>
+
+      <!-- Cabecera -->
       <section class="card card-pad">
-        <p class="text-tertiary" style="font-size:var(--fs-xs); margin-bottom:var(--space-2);">
-          <a th:href="@{/colaborador/entregables.html}" class="text-tertiary">← Volver a Mis entregables</a>
-        </p>
-        <h2 style="font-size:var(--fs-lg);" th:text="${entregable.titulo}">Título</h2>
-        <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;" th:text="${proyecto.nombre}">Proyecto</p>
-        <p class="text-secondary" style="margin:var(--space-3) 0 var(--space-4); white-space:pre-wrap;" th:text="${entregable.descripcion} ?: 'Sin descripción.'">Descripción</p>
-        <div class="info-row"><span class="info-row-label">Apertura</span><span class="info-row-value" th:text="${fechaAperturaLabel}">fecha</span></div>
-        <div class="info-row"><span class="info-row-label">Cierre</span><span class="info-row-value" th:text="${fechaCierreLabel}">fecha</span></div>
-        <div class="info-row"><span class="info-row-label">Puntaje máximo</span><span class="info-row-value mono" th:text="${entregable.puntajeMaximo}">20</span></div>
+        <div class="ed-hero">
+          <div class="ed-hero-main">
+            <span class="ed-hero-icon"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+            <div style="min-width:0;">
+              <h1 class="ed-title" th:text="${entregable.titulo}">Título</h1>
+              <div class="ed-sub">
+                <span style="display:inline-flex; align-items:center; gap:4px;"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-folder"></use></svg><span th:text="${proyecto.nombre}">Proyecto</span></span>
+                <span>·</span>
+                <span class="badge badge-neutral" th:unless="${fila.entrego}">Sin entregar</span>
+                <span class="badge" th:if="${fila.entrego}" th:classappend="${fila.estadoBadgeClass}" th:text="${fila.estadoLabel}">Estado</span>
+                <span th:if="${fila.entrego and fila.atrasado}" class="badge badge-amber">Atrasado</span>
+              </div>
+            </div>
+          </div>
+          <div class="ed-countdown" id="ed-countdown"
+               th:attr="data-cierre=${fechaCierreLabel}, data-estado=${fila.entrego ? fila.estadoCrudo : 'pendiente'}">
+            <div class="ed-countdown-label">Fecha de cierre</div>
+            <div class="ed-countdown-value" id="ed-countdown-value" th:text="${fechaCierreLabel}">fecha</div>
+            <div class="ed-countdown-date" th:text="${fechaCierreLabel}">fecha</div>
+          </div>
+        </div>
+
+        <div class="ed-steps" aria-label="Progreso del entregable">
+          <div class="ed-step is-done">
+            <span class="ed-step-dot"><svg class="icon"><use href="/img/icons.svg#icon-check"></use></svg></span>
+            <span class="ed-step-text">Publicado<small th:text="${fechaAperturaLabel}">fecha</small></span>
+          </div>
+          <span class="ed-step-line" th:classappend="${fila.entrego} ? 'is-done'"></span>
+          <div class="ed-step" th:classappend="${fila.entrego} ? 'is-done' : 'is-current'">
+            <span class="ed-step-dot">
+              <svg class="icon" th:if="${fila.entrego}"><use href="/img/icons.svg#icon-check"></use></svg>
+              <th:block th:unless="${fila.entrego}">2</th:block>
+            </span>
+            <span class="ed-step-text">Entregado<small th:text="${fila.entrego} ? ${fila.fechaEntregaLabel} : 'Pendiente'">fecha</small></span>
+          </div>
+          <span class="ed-step-line" th:classappend="${fila.estadoCrudo == 'revisado'} ? 'is-done'"></span>
+          <div class="ed-step" th:classappend="${fila.estadoCrudo == 'revisado'} ? 'is-done' : (${fila.entrego} ? 'is-current' : '')">
+            <span class="ed-step-dot">
+              <svg class="icon" th:if="${fila.estadoCrudo == 'revisado'}"><use href="/img/icons.svg#icon-check"></use></svg>
+              <th:block th:unless="${fila.estadoCrudo == 'revisado'}">3</th:block>
+            </span>
+            <span class="ed-step-text">Revisado<small th:text="${fila.estadoCrudo == 'revisado'} ? 'Con nota del PM' : 'Por el Project Manager'">PM</small></span>
+          </div>
+        </div>
       </section>
 
-      <!-- Revisión del PM: solo si ya calificó/comentó -->
-      <section class="card card-pad" style="margin-top:var(--space-6);" th:if="${fila.estadoCrudo == 'revisado'}">
-        <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-3);">Revisión del Project Manager</h3>
-        <div class="info-row"><span class="info-row-label">Calificación</span><span class="info-row-value mono" th:text="${fila.calificacionLabel} + ' / ' + ${entregable.puntajeMaximo}">— / 20</span></div>
-        <div style="margin-top:var(--space-3);" th:if="${fila.comentarioPm}">
-          <p class="field-label" style="margin-bottom:4px;">Comentario</p>
-          <p class="text-secondary" style="white-space:pre-wrap;" th:text="${fila.comentarioPm}">Comentario</p>
-        </div>
-      </section>
+      <div class="ed-grid">
+        <!-- Columna principal -->
+        <div>
+          <section class="card card-pad">
+            <h2 class="ed-card-title"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-book"></use></svg>Instrucciones</h2>
+            <p class="ed-desc" th:text="${entregable.descripcion} ?: 'El Project Manager no agregó instrucciones para este entregable.'">Descripción</p>
+          </section>
 
-      <!-- Mi entrega actual, si existe -->
-      <section class="card card-pad" style="margin-top:var(--space-6);" th:if="${fila.entrego}">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <h3 style="font-size:var(--fs-md);">Tu entrega</h3>
-          <span class="badge" th:classappend="${fila.estadoBadgeClass}" th:text="${fila.estadoLabel}">Estado</span>
-        </div>
-        <p class="text-tertiary" style="font-size:var(--fs-xs); margin:var(--space-2) 0 var(--space-4);">
-          Enviado el <span th:text="${fila.fechaEntregaLabel}">fecha</span>
-          <span th:if="${fila.atrasado}" class="badge badge-amber" style="margin-left:4px;">Atrasado</span>
-        </p>
-        <div style="display:flex; flex-direction:column; gap:var(--space-2); font-size:var(--fs-sm);">
-          <a th:if="${fila.urlEntrega}" th:href="${fila.urlEntrega}" target="_blank" rel="noopener">🔗 <span th:text="${fila.urlEntrega}">link</span></a>
-          <a th:if="${fila.tieneArchivo}" th:href="@{'/entregas/' + ${fila.entregaId} + '/archivo'}" target="_blank">📎 <span th:text="${fila.archivoNombre}">archivo</span></a>
-          <p th:if="${fila.texto}" class="text-secondary" style="white-space:pre-wrap;" th:text="${fila.texto}">texto</p>
-        </div>
-        <div class="btn-group" style="margin-top:var(--space-4);">
-          <button type="button" class="btn btn-secondary btn-sm" id="borrar-entrega-btn">Borrar entrega</button>
-        </div>
-      </section>
+          <!-- Mi entrega actual, si existe -->
+          <section class="card card-pad" th:if="${fila.entrego}">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3); margin-bottom:var(--space-4);">
+              <h2 class="ed-card-title" style="margin:0;"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-paperclip"></use></svg>Tu entrega</h2>
+              <span class="text-tertiary" style="font-size:var(--fs-xs);">Enviada el <span th:text="${fila.fechaEntregaLabel}">fecha</span></span>
+            </div>
+            <div class="ed-attach">
+              <a th:if="${fila.urlEntrega}" class="ed-attach-item is-link" th:href="${fila.urlEntrega}" target="_blank" rel="noopener">
+                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-external-link"></use></svg><span th:text="${fila.urlEntrega}">link</span>
+              </a>
+              <a th:if="${fila.tieneArchivo}" class="ed-attach-item is-file" th:href="@{'/entregas/' + ${fila.entregaId} + '/archivo'}" target="_blank" rel="noopener">
+                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${fila.archivoNombre}">archivo</span>
+              </a>
+              <p th:if="${fila.texto}" class="ed-attach-text" th:text="${fila.texto}">texto</p>
+            </div>
+            <div class="btn-group" style="margin-top:var(--space-4);">
+              <button type="button" class="btn btn-secondary btn-sm" id="borrar-entrega-btn">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-trash"></use></svg>Borrar entrega</button>
+            </div>
+          </section>
 
-      <!-- Formulario: entregar (o reemplazar/editar la entrega ya hecha) -->
-      <section class="card card-pad" style="margin-top:var(--space-6);">
-        <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);" th:text="${fila.entrego ? 'Editar entrega' : 'Entregar'}">Entregar</h3>
-        <div class="field"><label class="field-label">Texto (opcional)</label>
-          <textarea class="input" id="ent-texto" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);" th:text="${fila.texto}"></textarea></div>
-        <div class="field"><label class="field-label">Link (opcional)</label>
-          <input class="input" type="url" id="ent-url" th:value="${fila.urlEntrega}" placeholder="https://github.com/tu-usuario/tu-repo"></div>
-        <div class="field"><label class="field-label">Archivo (opcional — PDF, Word, Excel, imagen, ZIP o .txt, máx. 15 MB)</label>
-          <input class="input" type="file" id="ent-archivo"></div>
-        <p class="field-hint">Sube al menos uno de los tres (texto, link o archivo). Puedes entregar de nuevo antes o después del cierre; si ya pasó la fecha de cierre, tu entrega quedará marcada como atrasada.</p>
-        <div class="btn-group" style="justify-content:flex-end; margin-top:var(--space-4);">
-          <button type="button" class="btn btn-primary" id="entregar-btn" th:text="${fila.entrego ? 'Guardar cambios' : 'Entregar'}">Entregar</button>
+          <!-- Formulario: entregar (o reemplazar/editar la entrega ya hecha) -->
+          <section class="card card-pad">
+            <h2 class="ed-card-title"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-edit"></use></svg><span th:text="${fila.entrego ? 'Editar mi entrega' : 'Hacer mi entrega'}">Hacer mi entrega</span></h2>
+            <p class="text-tertiary" style="font-size:var(--fs-sm); margin:-8px 0 var(--space-4);">Sube al menos uno: un comentario, un link o un archivo. Puedes combinarlos.</p>
+
+            <div class="field"><label class="field-label" for="ent-texto">Comentario para el PM</label>
+              <textarea class="input" id="ent-texto" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);" placeholder="Cuéntale qué hiciste, qué quedó pendiente o cómo revisar tu trabajo…" th:text="${fila.texto}"></textarea></div>
+
+            <div class="field" id="ent-url-field"><label class="field-label" for="ent-url">Link</label>
+              <input class="input" type="url" id="ent-url" th:value="${fila.urlEntrega}" placeholder="https://github.com/tu-usuario/tu-repo" autocomplete="off">
+              <span class="field-error">Escribe un link válido que empiece con http:// o https://</span></div>
+
+            <div class="field" id="ent-file-field" style="margin-bottom:var(--space-2);"><span class="field-label">Archivo</span>
+              <label class="ed-drop" for="ent-archivo" id="ent-drop">
+                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-paperclip"></use></svg>
+                <span class="ed-drop-text" id="ent-drop-text"><strong>Elegir archivo</strong> o arrástralo aquí · PDF, Word, Excel, imagen, ZIP o .txt · máx. 15 MB</span>
+                <button type="button" class="ed-drop-clear" id="ent-drop-clear" hidden aria-label="Quitar archivo elegido"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-x"></use></svg></button>
+              </label>
+              <input type="file" id="ent-archivo" class="ed-file-input">
+              <p class="field-hint" th:if="${fila.tieneArchivo}">Si eliges otro archivo, reemplaza al que ya subiste.</p>
+              <span class="field-error">El archivo pesa más de 15 MB.</span></div>
+
+            <p class="field-hint" style="margin-top:var(--space-3);">Puedes volver a entregar antes o después del cierre; si ya pasó la fecha, tu entrega quedará marcada como atrasada.</p>
+            <div class="btn-group" style="justify-content:flex-end; margin-top:var(--space-4);">
+              <button type="button" class="btn btn-primary" id="entregar-btn" th:text="${fila.entrego ? 'Guardar cambios' : 'Entregar'}">Entregar</button>
+            </div>
+          </section>
         </div>
-      </section>
+
+        <!-- Columna lateral -->
+        <div>
+          <section class="card card-pad">
+            <h2 class="ed-card-title"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-award"></use></svg>Calificación</h2>
+            <th:block th:if="${fila.estadoCrudo == 'revisado'}">
+              <div class="ed-grade">
+                <span class="ed-grade-num" data-num th:text="${fila.calificacionLabel}">17</span>
+                <span class="ed-grade-max">/ <span data-num th:text="${entregable.puntajeMaximo}">20</span></span>
+                <div class="ed-grade-bar"><span id="ed-grade-fill" style="width:0%"
+                     th:attr="data-nota=${fila.calificacionLabel}, data-max=${entregable.puntajeMaximo}"></span></div>
+              </div>
+              <div th:if="${fila.comentarioPm}">
+                <p class="field-label" style="margin-bottom:4px;">Comentario del Project Manager</p>
+                <p class="ed-quote" th:text="${fila.comentarioPm}">Comentario</p>
+              </div>
+            </th:block>
+            <div class="ed-pending" th:unless="${fila.estadoCrudo == 'revisado'}">
+              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-clock"></use></svg>
+              <span th:text="${fila.entrego} ? 'Tu entrega está en revisión. Cuando el Project Manager la califique, verás aquí tu nota y su comentario.' : 'Todavía no entregas. Cuando lo hagas y el Project Manager la revise, verás aquí tu nota.'">Pendiente</span>
+            </div>
+          </section>
+
+          <section class="card card-pad">
+            <h2 class="ed-card-title"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-info"></use></svg>Detalles</h2>
+            <div class="ed-facts">
+              <div class="ed-fact">
+                <span class="ed-fact-icon"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
+                <div><div class="ed-fact-label">Proyecto</div><div class="ed-fact-value" th:text="${proyecto.nombre}">Proyecto</div></div>
+              </div>
+              <div class="ed-fact">
+                <span class="ed-fact-icon"><svg class="icon"><use href="/img/icons.svg#icon-calendar"></use></svg></span>
+                <div><div class="ed-fact-label">Apertura</div><div class="ed-fact-value" th:text="${fechaAperturaLabel}">fecha</div></div>
+              </div>
+              <div class="ed-fact">
+                <span class="ed-fact-icon"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
+                <div><div class="ed-fact-label">Cierre</div><div class="ed-fact-value" th:text="${fechaCierreLabel}">fecha</div></div>
+              </div>
+              <div class="ed-fact">
+                <span class="ed-fact-icon"><svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg></span>
+                <div><div class="ed-fact-label">Puntaje máximo</div><div class="ed-fact-value"><span data-num th:text="${entregable.puntajeMaximo}">20</span> puntos</div></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
 
     </main>
   </div>
@@ -88,6 +284,67 @@ window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null
 var ENTREGABLE_ID = /*[[${entregable.id}]]*/ 0;
 document.addEventListener("DOMContentLoaded", function () {
   var submitForm = window.SBAI.submitForm;
+  var MAX_BYTES = 15 * 1024 * 1024;
+
+  // ── Cuenta regresiva del cierre ("dd/MM/yyyy HH:mm") ──
+  (function () {
+    var box = document.getElementById("ed-countdown");
+    var val = document.getElementById("ed-countdown-value");
+    var m = /(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?/.exec(box.dataset.cierre || "");
+    if (!m) return;
+    var cierre = new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 23), +(m[5] || 59));
+    var ms = cierre - new Date();
+    var dias = Math.round(Math.abs(ms) / 86400000), horas = Math.round(Math.abs(ms) / 3600000);
+    var cuanto = dias >= 1 ? dias + (dias === 1 ? " día" : " días") : horas + (horas === 1 ? " hora" : " horas");
+    var estado = box.dataset.estado;
+    if (estado === "revisado") { val.textContent = "Revisado"; box.classList.add("is-done"); }
+    else if (estado === "enviado") { val.textContent = "Entregado"; box.classList.add("is-done"); }
+    else if (ms < 0) { val.textContent = "Venció hace " + cuanto; box.classList.add("is-late"); }
+    else { val.textContent = "Quedan " + cuanto; if (ms < 3 * 86400000) box.classList.add("is-soon"); }
+  })();
+
+  // ── Números sin ceros de sobra (20.00 → 20, 17.50 → 17.5) ──
+  document.querySelectorAll("[data-num]").forEach(function (el) {
+    el.textContent = el.textContent.trim().replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
+  });
+
+  // ── Barra de la nota ──
+  var fill = document.getElementById("ed-grade-fill");
+  if (fill) {
+    var nota = parseFloat(String(fill.dataset.nota).replace(",", "."));
+    var max = parseFloat(String(fill.dataset.max).replace(",", "."));
+    if (nota >= 0 && max > 0) setTimeout(function () { fill.style.transition = "width .6s ease"; fill.style.width = Math.min(100, nota / max * 100) + "%"; }, 50);
+  }
+
+  // ── Selector de archivo (clic o arrastrar) ──
+  var fileInput = document.getElementById("ent-archivo");
+  var drop = document.getElementById("ent-drop");
+  var dropText = document.getElementById("ent-drop-text");
+  var dropClear = document.getElementById("ent-drop-clear");
+  var fileField = document.getElementById("ent-file-field");
+  var textoInicial = dropText.innerHTML;
+  function tamano(b) { return b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function pintarArchivo() {
+    var f = fileInput.files && fileInput.files[0];
+    fileField.classList.toggle("has-error", !!(f && f.size > MAX_BYTES));
+    if (f) { dropText.innerHTML = "<strong>" + esc(f.name) + "</strong> · " + tamano(f.size); drop.classList.add("has-file"); dropClear.hidden = false; }
+    else { dropText.innerHTML = textoInicial; drop.classList.remove("has-file"); dropClear.hidden = true; }
+  }
+  fileInput.addEventListener("change", pintarArchivo);
+  dropClear.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); fileInput.value = ""; pintarArchivo(); });
+  ["dragenter", "dragover"].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("is-over"); }); });
+  ["dragleave", "drop"].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("is-over"); }); });
+  drop.addEventListener("drop", function (e) {
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; pintarArchivo(); }
+  });
+
+  var urlField = document.getElementById("ent-url-field");
+  document.getElementById("ent-url").addEventListener("input", function () { urlField.classList.remove("has-error"); });
+  function urlValida(v) {
+    if (!/^https?:\/\//i.test(v)) return false;
+    try { var u = new URL(v); return !!u.hostname && u.hostname.indexOf(".") > 0; } catch (e) { return false; }
+  }
 
   // Igual patrón que colaborador/perfil.html: un input[type=file] no puede
   // ir dentro de un form armado con inputs hidden, así que se mueve el
@@ -111,14 +368,16 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("entregar-btn").addEventListener("click", function () {
     var texto = document.getElementById("ent-texto").value.trim();
     var url = document.getElementById("ent-url").value.trim();
-    var fileInput = document.getElementById("ent-archivo");
-    var hayArchivo = fileInput.files && fileInput.files[0];
-    if (!texto && !url && !hayArchivo) {
-      SBAI.toast.show("Adjunta al menos texto, un link o un archivo.", { type: "error" });
+    var archivo = fileInput.files && fileInput.files[0];
+    if (url && !urlValida(url)) { urlField.classList.add("has-error"); return; }
+    if (archivo && archivo.size > MAX_BYTES) { fileField.classList.add("has-error"); return; }
+    if (!texto && !url && !archivo) {
+      SBAI.toast.show("Adjunta al menos un comentario, un link o un archivo.", { type: "error" });
       return;
     }
+    this.disabled = true;
     var fields = { texto: texto, urlEntrega: url };
-    if (hayArchivo) {
+    if (archivo) {
       submitFormConArchivo("/colaborador/entregables/" + ENTREGABLE_ID + "/entregar", fields, fileInput);
     } else {
       submitForm("/colaborador/entregables/" + ENTREGABLE_ID + "/entregar", fields);
