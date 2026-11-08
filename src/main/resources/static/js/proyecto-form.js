@@ -521,4 +521,97 @@
   }
 
   window.SBAI.dateRange = { create: createDateRange, sumarDias: sumarDias, aIso: aIso };
+
+  // ═══════════════════════════ Habilidades requeridas ═══════════════════════════
+  // SBAI.habilidadesRequeridas.create(host, opciones)
+  //   Lista editable de {habilidad, nivel 1-5} para "Nuevo proyecto" (modelo
+  //   v7 fase 5): filas con <select> de habilidad (catálogo con id real,
+  //   window.SBAI_CATALOGO_HAB) + <select> de nivel + quitar, y un botón
+  //   "Agregar habilidad". Es manual o se pre-llena con "Extraer con IA".
+  //     opciones.catalogo [{id, nombre, categoria}]
+  //     opciones.valores  [{habilidadId, nombre, nivelRequerido}] iniciales
+  //   Devuelve {getValues() -> [{habilidadId, nivelRequerido}], setValues(lista)}.
+  function createHabilidadesRequeridas(host, opciones) {
+    var o = opciones || {};
+    var catalogo = o.catalogo || [];
+    var filas = [];
+    host.innerHTML = '<div class="hr-filas"></div>' +
+      '<button type="button" class="btn btn-secondary btn-small hr-agregar" style="margin-top:var(--space-2);">' +
+      '<svg class="icon"><use href="/img/icons.svg#icon-plus"></use></svg> Agregar habilidad</button>';
+    var filasEl = host.querySelector(".hr-filas");
+    var btnAgregar = host.querySelector(".hr-agregar");
+
+    function porId(id) {
+      for (var i = 0; i < catalogo.length; i++) if (String(catalogo[i].id) === String(id)) return catalogo[i];
+      return null;
+    }
+
+    function opcionesDisponibles(idActual) {
+      var usados = filas.map(function (f) { return f.habilidadId; }).filter(function (id) { return id && id !== idActual; });
+      return catalogo.filter(function (h) { return usados.indexOf(h.id) === -1; });
+    }
+
+    function refrescarSelects() {
+      filas.forEach(function (f) {
+        var disponibles = opcionesDisponibles(f.habilidadId);
+        var actual = f.habilidadId;
+        f.select.innerHTML = '<option value="">Elige una habilidad…</option>' + disponibles.map(function (h) {
+          return '<option value="' + h.id + '"' + (String(h.id) === String(actual) ? " selected" : "") + '>' +
+            esc(h.nombre) + (h.categoria ? " (" + esc(h.categoria) + ")" : "") + '</option>';
+        }).join("");
+      });
+    }
+
+    function quitarFila(fila) {
+      filas = filas.filter(function (f) { return f !== fila; });
+      fila.el.remove();
+      refrescarSelects();
+    }
+
+    function agregarFila(habilidadId, nivel) {
+      var fila = { habilidadId: habilidadId || "", nivelRequerido: nivel || 3 };
+      var row = document.createElement("div");
+      row.className = "hr-fila";
+      row.style.display = "flex";
+      row.style.gap = "8px";
+      row.style.alignItems = "flex-start";
+      row.style.marginBottom = "8px";
+      row.innerHTML =
+        '<select class="input hr-select-habilidad" style="flex:1;"></select>' +
+        '<select class="input hr-select-nivel" style="width:150px;">' +
+        [1, 2, 3, 4, 5].map(function (n) {
+          return '<option value="' + n + '">Nivel ' + n + (n === 1 ? " (básico)" : n === 5 ? " (experto)" : "") + '</option>';
+        }).join("") +
+        '</select>' +
+        '<button type="button" class="btn btn-secondary btn-icon hr-quitar" aria-label="Quitar habilidad">' +
+        '<svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button>';
+      filasEl.appendChild(row);
+      fila.el = row;
+      fila.select = row.querySelector(".hr-select-habilidad");
+      fila.nivelSelect = row.querySelector(".hr-select-nivel");
+      fila.nivelSelect.value = String(fila.nivelRequerido);
+      filas.push(fila);
+      refrescarSelects();
+      fila.select.addEventListener("change", function () { fila.habilidadId = fila.select.value ? parseInt(fila.select.value, 10) : ""; refrescarSelects(); });
+      fila.nivelSelect.addEventListener("change", function () { fila.nivelRequerido = parseInt(fila.nivelSelect.value, 10) || 3; });
+      row.querySelector(".hr-quitar").addEventListener("click", function () { quitarFila(fila); });
+      return fila;
+    }
+
+    btnAgregar.addEventListener("click", function () { agregarFila("", 3); });
+    (o.valores || []).forEach(function (v) { if (v && v.habilidadId) agregarFila(v.habilidadId, v.nivelRequerido || 3); });
+
+    return {
+      getValues: function () {
+        return filas.filter(function (f) { return f.habilidadId; })
+          .map(function (f) { return { habilidadId: f.habilidadId, nivelRequerido: f.nivelRequerido || 3 }; });
+      },
+      setValues: function (lista) {
+        filas.slice().forEach(quitarFila);
+        (lista || []).forEach(function (v) { if (v && v.habilidadId) agregarFila(v.habilidadId, v.nivelRequerido || 3); });
+      }
+    };
+  }
+
+  window.SBAI.habilidadesRequeridas = { create: createHabilidadesRequeridas };
 })();

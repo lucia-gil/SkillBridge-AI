@@ -66,6 +66,8 @@ public class ProyectoService {
     private final PropuestaAsignacionRepository propuestaRepository;
     private final ArchivoProyectoRepository archivoProyectoRepository;
     private final com.skillbridge.ai.repository.RecomendacionIaLogRepository recomendacionIaLogRepository;
+    private final com.skillbridge.ai.repository.HabilidadRepository habilidadRepository;
+    private final com.skillbridge.ai.repository.ProyectoHabilidadRequeridaRepository proyectoHabilidadRequeridaRepository;
 
     public ProyectoService(ProyectoRepository proyectoRepository, AsignacionRepository asignacionRepository,
                             PerfilRepository perfilRepository, EntregableRepository entregableRepository,
@@ -73,7 +75,9 @@ public class ProyectoService {
                             NotificacionService notificacionService, ConfiguracionService configuracionService,
                             ObjectMapper objectMapper, PropuestaAsignacionRepository propuestaRepository,
                             ArchivoProyectoRepository archivoProyectoRepository,
-                            com.skillbridge.ai.repository.RecomendacionIaLogRepository recomendacionIaLogRepository) {
+                            com.skillbridge.ai.repository.RecomendacionIaLogRepository recomendacionIaLogRepository,
+                            com.skillbridge.ai.repository.HabilidadRepository habilidadRepository,
+                            com.skillbridge.ai.repository.ProyectoHabilidadRequeridaRepository proyectoHabilidadRequeridaRepository) {
         this.proyectoRepository = proyectoRepository;
         this.asignacionRepository = asignacionRepository;
         this.perfilRepository = perfilRepository;
@@ -86,6 +90,8 @@ public class ProyectoService {
         this.propuestaRepository = propuestaRepository;
         this.archivoProyectoRepository = archivoProyectoRepository;
         this.recomendacionIaLogRepository = recomendacionIaLogRepository;
+        this.habilidadRepository = habilidadRepository;
+        this.proyectoHabilidadRequeridaRepository = proyectoHabilidadRequeridaRepository;
     }
 
     // ───────────────────────── Lectura ─────────────────────────
@@ -407,6 +413,37 @@ public class ProyectoService {
                 "Se te asignó como Project Manager de \"" + p.getNombre() + "\".", "proyectos.html");
 
         return p;
+    }
+
+    /**
+     * Guarda las habilidades requeridas de un proyecto recien creado
+     * (proyecto_habilidad_requerida). Listas paralelas habilidadIds/niveles
+     * (igual convencion que "habilidad"/"perfilIds" en otros formularios):
+     * la fila i de una corresponde a la fila i de la otra. Filas invalidas
+     * (habilidad inexistente, nivel fuera de 1-5, o listas desalineadas en
+     * esa posicion) se ignoran en silencio para no bloquear la creacion del
+     * proyecto por un detalle de UI; el PM siempre puede corregirlo despues
+     * desde "Editar proyecto".
+     */
+    @Transactional
+    public void guardarHabilidadesRequeridas(Long proyectoId, List<Long> habilidadIds, List<Integer> niveles) {
+        if (habilidadIds == null || habilidadIds.isEmpty()) return;
+        java.util.LinkedHashSet<Long> vistos = new java.util.LinkedHashSet<>();
+        for (int i = 0; i < habilidadIds.size(); i++) {
+            Long habilidadId = habilidadIds.get(i);
+            if (habilidadId == null || !vistos.add(habilidadId)) continue;
+            if (!habilidadRepository.existsById(habilidadId)) continue;
+            Integer nivelCrudo = (niveles != null && i < niveles.size()) ? niveles.get(i) : null;
+            int nivel = nivelCrudo == null ? 3 : Math.max(1, Math.min(5, nivelCrudo));
+
+            com.skillbridge.ai.model.ProyectoHabilidadRequeridaId id = new com.skillbridge.ai.model.ProyectoHabilidadRequeridaId();
+            id.setProyectoId(proyectoId);
+            id.setHabilidadId(habilidadId);
+            com.skillbridge.ai.model.ProyectoHabilidadRequerida fila = new com.skillbridge.ai.model.ProyectoHabilidadRequerida();
+            fila.setId(id);
+            fila.setNivelRequerido(nivel);
+            proyectoHabilidadRequeridaRepository.save(fila);
+        }
     }
 
     /**

@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/kpi-hero.css">
 <link rel="stylesheet" href="/css/proyecto-form.css">
 </head>
 <body>
@@ -19,36 +20,45 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
 
-      <div class="kpi-grid">
-        <div class="kpi-tile accent-blue">
-          <div class="kpi-tile-icon blue">
-            <svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-folder"></use></svg>Project Manager · Proyectos</span>
+            <h2 class="kpi-hero-title">Tus proyectos</h2>
+            <p class="kpi-hero-sub">Resumen por estado de los proyectos que gestionas</p>
           </div>
-          <span class="kpi-tile-label">En planificacion</span>
-          <span class="kpi-tile-value" th:text="${kpiPlanificacion}">0</span>
         </div>
-        <div class="kpi-tile accent-green">
-          <div class="kpi-tile-icon green">
-            <svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg>
-          </div>
-          <span class="kpi-tile-label">Activos</span>
-          <span class="kpi-tile-value" th:text="${kpiActivos}">0</span>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
+              <span class="hero-card-label">En planificación</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiPlanificacion}">0</div>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></span>
+              <span class="hero-card-label">Activos</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiActivos}">0</div>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span>
+              <span class="hero-card-label">En pausa</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiEnPausa}">0</div>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></span>
+              <span class="hero-card-label">Cancelados</span>
+            </div>
+            <div class="hero-card-value" th:text="${kpiCancelados}">0</div>
+          </article>
         </div>
-        <div class="kpi-tile accent-amber">
-          <div class="kpi-tile-icon amber">
-            <svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg>
-          </div>
-          <span class="kpi-tile-label">En pausa</span>
-          <span class="kpi-tile-value" th:text="${kpiEnPausa}">0</span>
-        </div>
-        <div class="kpi-tile accent-red">
-          <div class="kpi-tile-icon red">
-            <svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg>
-          </div>
-          <span class="kpi-tile-label">Cancelados</span>
-          <span class="kpi-tile-value" th:text="${kpiCancelados}">0</span>
-        </div>
-      </div>
+      </section>
 
       <section class="card">
         <div class="table-toolbar">
@@ -244,6 +254,7 @@ window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null
 window.SBAI_DISPONIBLES = /*[[${colaboradoresDisponibles}]]*/ 0;
 window.SBAI_CATALOGO_TEC = /*[[${catalogoTecnologias}]]*/ [];
 window.SBAI_MAX_TEC = /*[[${maxTecnologias}]]*/ 12;
+window.SBAI_CATALOGO_HAB = /*[[${catalogoHabilidadesIa}]]*/ [];
 document.addEventListener("DOMContentLoaded", function () {
   if (window.SBAI.tableFilter) window.SBAI.tableFilter.init(document);
   var submitForm = window.SBAI.submitForm;
@@ -281,13 +292,28 @@ document.addEventListener("DOMContentLoaded", function () {
   // Tecnologías: chips con autocompletado contra el Catálogo de habilidades
   // (SBAI.techInput). Fechas: SBAI.dateRange (la entrega sigue al inicio,
   // atajos de duración y resumen en vivo). Ambos en /js/proyecto-form.js.
-  function camposProyectoHtml(pref, d, conColaboradores) {
+  function camposProyectoHtml(pref, d, conColaboradores, conIa) {
     var disponibles = window.SBAI_DISPONIBLES || 0;
     return '' +
       '<div class="callout danger" id="' + pref + '-error" hidden style="margin-bottom:var(--space-4);">' +
         '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
         '<span class="callout-body" id="' + pref + '-error-text"></span>' +
       '</div>' +
+      (conIa ? ('' +
+        '<div class="field" style="background:var(--surface-sunken,var(--surface-secondary)); padding:var(--space-4); border-radius:var(--radius-md); margin-bottom:var(--space-4);">' +
+          '<div class="pf-label-row"><label class="field-label" for="' + pref + '-ia-archivo">Extraer con IA (opcional)</label>' +
+          '<span class="field-hint">PDF, Word (.docx) o texto</span></div>' +
+          '<div style="display:flex; gap:8px; align-items:center;">' +
+          '<input class="input" type="file" id="' + pref + '-ia-archivo" accept=".pdf,.docx,.txt,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="flex:1;">' +
+          '<button type="button" class="btn btn-secondary" id="' + pref + '-ia-extraer">Extraer con IA</button>' +
+          '</div>' +
+          '<p class="field-hint" id="' + pref + '-ia-estado" style="margin-top:var(--space-2);"></p>' +
+          '<div class="callout warn" id="' + pref + '-ia-advertencias" hidden style="margin-top:var(--space-2);">' +
+            '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span>' +
+            '<span class="callout-body" id="' + pref + '-ia-advertencias-text"></span>' +
+          '</div>' +
+          '<p class="field-hint" style="margin-top:var(--space-2);">Sube un documento con los datos del proyecto (ficha, correo, brief) y la IA llena el formulario. Revisa y edita todo antes de crear el proyecto: nada se guarda hasta que hagas clic en "Crear proyecto".</p>' +
+        '</div>') : '') +
       '<div class="field"><label class="field-label" for="' + pref + '-nombre">Nombre</label>' +
         '<input class="input" id="' + pref + '-nombre" maxlength="150" placeholder="Ej.: Portal de clientes" value="' + escHtmlB(d.nombre) + '">' +
         '<div class="field-error"></div></div>' +
@@ -296,6 +322,10 @@ document.addEventListener("DOMContentLoaded", function () {
       '<div class="field"><div class="pf-label-row"><label class="field-label" for="' + pref + '-tech-input">Stack tecnológico</label>' +
         '<span class="field-hint">Del catálogo de habilidades</span></div>' +
         '<div id="' + pref + '-tech"></div></div>' +
+      (conIa ? ('' +
+        '<div class="field"><div class="pf-label-row"><label class="field-label">Habilidades requeridas</label>' +
+        '<span class="field-hint">Opcional; nivel 1 (básico) a 5 (experto)</span></div>' +
+        '<div id="' + pref + '-hab"></div></div>') : '') +
       '<div class="field-row">' +
         '<div class="field"><label class="field-label" for="' + pref + '-inicio">Inicio</label><input class="input" type="date" id="' + pref + '-inicio" value="' + (d.fechaInicio || "") + '"><div class="field-error"></div></div>' +
         '<div class="field"><label class="field-label" for="' + pref + '-fin">Entrega esperada</label><input class="input" type="date" id="' + pref + '-fin" value="' + (d.fechaFin || "") + '"><div class="field-error"></div></div>' +
@@ -333,9 +363,70 @@ document.addEventListener("DOMContentLoaded", function () {
     var errorText = backdrop.querySelector("#" + pref + "-error-text");
     var nombreInput = backdrop.querySelector("#" + pref + "-nombre");
     nombreInput.addEventListener("input", function () { fechas.limpiar(nombreInput); });
+
+    // Habilidades requeridas (solo "Nuevo proyecto"): manual o pre-llenada por "Extraer con IA".
+    var habContainer = backdrop.querySelector("#" + pref + "-hab");
+    var habilidades = habContainer ? SBAI.habilidadesRequeridas.create(habContainer, {
+      catalogo: window.SBAI_CATALOGO_HAB || [],
+      valores: []
+    }) : null;
+
+    // "Extraer con IA": sube un documento y pre-llena el formulario como borrador editable.
+    var iaBtn = backdrop.querySelector("#" + pref + "-ia-extraer");
+    if (iaBtn) {
+      var iaArchivo = backdrop.querySelector("#" + pref + "-ia-archivo");
+      var iaEstado = backdrop.querySelector("#" + pref + "-ia-estado");
+      var iaAdvBox = backdrop.querySelector("#" + pref + "-ia-advertencias");
+      var iaAdvText = backdrop.querySelector("#" + pref + "-ia-advertencias-text");
+      iaBtn.addEventListener("click", function () {
+        if (!iaArchivo.files || !iaArchivo.files[0]) {
+          iaEstado.textContent = "Selecciona un archivo primero.";
+          return;
+        }
+        iaBtn.disabled = true;
+        iaAdvBox.hidden = true;
+        iaEstado.textContent = "Leyendo el documento con IA… puede tardar unos segundos.";
+        var fd = new FormData();
+        fd.append("archivo", iaArchivo.files[0]);
+        fetch("/project-manager/proyectos/extraer-ia", { method: "POST", body: fd })
+          .then(function (resp) {
+            return resp.json().catch(function () { return {}; }).then(function (data) { return { ok: resp.ok, data: data }; });
+          })
+          .then(function (r) {
+            iaBtn.disabled = false;
+            if (!r.ok) {
+              iaEstado.textContent = (r.data && r.data.error) ? r.data.error : "No se pudo extraer la información del documento.";
+              return;
+            }
+            var dIa = r.data || {};
+            if (dIa.nombre) nombreInput.value = dIa.nombre;
+            if (dIa.descripcion) backdrop.querySelector("#" + pref + "-desc").value = dIa.descripcion;
+            if (dIa.tecnologias && dIa.tecnologias.length) tech.setValues(dIa.tecnologias);
+            var inicioInput = backdrop.querySelector("#" + pref + "-inicio");
+            var finInput = backdrop.querySelector("#" + pref + "-fin");
+            if (dIa.fechaInicio) { inicioInput.value = dIa.fechaInicio; inicioInput.dispatchEvent(new Event("change")); }
+            if (dIa.fechaFinEstimada) { finInput.value = dIa.fechaFinEstimada; finInput.dispatchEvent(new Event("change")); }
+            var colabInput = backdrop.querySelector("#" + pref + "-colab");
+            if (colabInput && dIa.colaboradoresRequeridos != null) colabInput.value = dIa.colaboradoresRequeridos;
+            if (habilidades && dIa.habilidadesRequeridas && dIa.habilidadesRequeridas.length) habilidades.setValues(dIa.habilidadesRequeridas);
+            fechas.limpiar(nombreInput);
+            iaEstado.textContent = "Listo. Revisa y edita los campos antes de hacer clic en \"Crear proyecto\".";
+            if (dIa.advertencias && dIa.advertencias.length) {
+              iaAdvText.textContent = dIa.advertencias.join(" ");
+              iaAdvBox.hidden = false;
+            }
+          })
+          .catch(function () {
+            iaBtn.disabled = false;
+            iaEstado.textContent = "No se pudo conectar con el Asistente IA. Intenta de nuevo.";
+          });
+      });
+    }
+
     return {
       tech: tech,
       fechas: fechas,
+      habilidades: habilidades,
       error: function (msg) { errorText.textContent = msg; errorBox.hidden = false; errorBox.scrollIntoView({ block: "nearest" }); },
       ocultarError: function () { errorBox.hidden = true; },
       /** null si todo está bien; si no, marca el campo y lo enfoca. */
@@ -366,7 +457,7 @@ document.addEventListener("DOMContentLoaded", function () {
         '<div class="modal-body">' +
         (sinEntrega ? '<div class="callout warn" style="margin-bottom:var(--space-4);"><span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span>' +
           '<span class="callout-body">Este proyecto todavía no tiene fecha de entrega. Elígela abajo (puedes usar un atajo de duración) para poder guardar.</span></div>' : '') +
-        camposProyectoHtml("ep", d, false) +
+        camposProyectoHtml("ep", d, false, false) +
         // Modelo v7 (fase 2): el estado se cambia desde "Ver detalle" -> "Estado del proyecto",
         // porque pausar/cerrar/reabrir tienen efectos sobre el equipo.
         '<p class="field-hint" style="margin-top:var(--space-2);">Para pausar, completar, cancelar o reabrir el proyecto usa <strong>Ver detalle → Estado del proyecto</strong>.</p>' +
@@ -474,7 +565,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var html = '<div class="modal modal-wide pf-modal" role="dialog" aria-modal="true" aria-labelledby="np-titulo">' +
       '<div class="modal-header"><div><h2 id="np-titulo">Nuevo proyecto</h2><p>Serás el Project Manager de este proyecto.</p></div>' +
       '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body">' + camposProyectoHtml("np", {}, true) + '</div>' +
+      '<div class="modal-body">' + camposProyectoHtml("np", {}, true, true) + '</div>' +
       '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
     var backdrop = SBAI.modal.open(html);
     var form = prepararCamposProyecto(backdrop, "np", {}, { minInicio: hoy });
@@ -500,6 +591,7 @@ document.addEventListener("DOMContentLoaded", function () {
         colabInput.focus();
         return;
       }
+      var habilidadesElegidas = form.habilidades ? form.habilidades.getValues() : [];
       submitForm("/project-manager/proyectos", {
         nombre: backdrop.querySelector("#np-nombre").value.trim(),
         descripcion: backdrop.querySelector("#np-desc").value,
@@ -507,7 +599,9 @@ document.addEventListener("DOMContentLoaded", function () {
         fechaInicio: backdrop.querySelector("#np-inicio").value,
         fechaFinEstimada: backdrop.querySelector("#np-fin").value,
         colaboradoresRequeridos: colab,
-        githubUrl: backdrop.querySelector("#np-github").value.trim()
+        githubUrl: backdrop.querySelector("#np-github").value.trim(),
+        habilidadId: habilidadesElegidas.map(function (h) { return h.habilidadId; }),
+        nivelRequerido: habilidadesElegidas.map(function (h) { return h.nivelRequerido; })
       });
     });
   });

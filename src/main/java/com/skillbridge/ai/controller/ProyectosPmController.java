@@ -4,12 +4,17 @@ import com.skillbridge.ai.service.SelectorPersonasService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.skillbridge.ai.dto.HabilidadOpcion;
 import com.skillbridge.ai.dto.MiProyectoFila;
 import com.skillbridge.ai.dto.ProyectoDetalle;
+import com.skillbridge.ai.dto.ProyectoExtraidoIa;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.model.Asignacion;
+import com.skillbridge.ai.model.Habilidad;
 import com.skillbridge.ai.repository.AsignacionRepository;
+import com.skillbridge.ai.repository.HabilidadRepository;
 import com.skillbridge.ai.service.AsignacionMasivaService;
+import com.skillbridge.ai.service.ExtraccionProyectoIaService;
 import com.skillbridge.ai.service.ProyectoService;
 import com.skillbridge.ai.service.TecnologiaCatalogoService;
 import com.skillbridge.ai.service.ShellModelBuilder;
@@ -25,12 +30,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -51,11 +60,15 @@ public class ProyectosPmController {
     private final TalentMatchingService talentMatchingService;
     private final CambioEstadoProyecto cambioEstadoProyecto;
     private final SelectorPersonasService selectorPersonasService;
+    private final ExtraccionProyectoIaService extraccionProyectoIaService;
+    private final HabilidadRepository habilidadRepository;
 
     public ProyectosPmController(ProyectoService proyectoService, AsignacionRepository asignacionRepository,
                                  ShellModelBuilder shellModelBuilder, TecnologiaCatalogoService tecnologiaCatalogoService,
                                  TalentMatchingService talentMatchingService, CambioEstadoProyecto cambioEstadoProyecto,
-                                 SelectorPersonasService selectorPersonasService) {
+                                 SelectorPersonasService selectorPersonasService,
+                                 ExtraccionProyectoIaService extraccionProyectoIaService,
+                                 HabilidadRepository habilidadRepository) {
         this.proyectoService = proyectoService;
         this.asignacionRepository = asignacionRepository;
         this.shellModelBuilder = shellModelBuilder;
@@ -63,6 +76,8 @@ public class ProyectosPmController {
         this.talentMatchingService = talentMatchingService;
         this.cambioEstadoProyecto = cambioEstadoProyecto;
         this.selectorPersonasService = selectorPersonasService;
+        this.extraccionProyectoIaService = extraccionProyectoIaService;
+        this.habilidadRepository = habilidadRepository;
     }
 
     /** "React, MySQL" -> ["React", "MySQL"] (el formulario manda los chips unidos por coma). */
@@ -101,6 +116,11 @@ public class ProyectosPmController {
         // Catálogo del Admin para el autocompletado de tecnologías (chips).
         model.addAttribute("catalogoTecnologias", tecnologiaCatalogoService.catalogo());
         model.addAttribute("maxTecnologias", TecnologiaCatalogoService.MAX_TECNOLOGIAS);
+        // Catálogo con id real (tabla habilidades), para "Habilidades requeridas" y "Extraer con IA".
+        model.addAttribute("catalogoHabilidadesIa", habilidadRepository.findAllConCategoriaOrderByNombre().stream()
+                .map(h -> new HabilidadOpcion(h.getId(), h.getNombre(),
+                        h.getCategoria() != null ? h.getCategoria().getNombre() : "Otras"))
+                .collect(Collectors.toList()));
         // Tarjetas KPI de "Proyectos" por estado (RF03).
         model.addAttribute("kpiPlanificacion", proyectos.stream().filter(p -> "planificacion".equals(p.getEstadoCrudo())).count());
         model.addAttribute("kpiActivos", proyectos.stream().filter(p -> "activo".equals(p.getEstadoCrudo())).count());
@@ -117,18 +137,39 @@ public class ProyectosPmController {
                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFinEstimada,
                         @RequestParam(defaultValue = "0") int colaboradoresRequeridos,
                         @RequestParam(required = false) String githubUrl,
+                        @RequestParam(name = "habilidadId", required = false) List<Long> habilidadId,
+                        @RequestParam(name = "nivelRequerido", required = false) List<Integer> nivelRequerido,
                         HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             List<String> lista = tecnologiaCatalogoService.normalizar(separarTecnologias(tecnologias), List.of());
             // El Project Manager del proyecto es el propio usuario que lo crea.
-            proyectoService.crear(nombre, descripcion, lista, fechaInicio, fechaFinEstimada,
+            com.skillbridge.ai.model.Proyecto p = proyectoService.crear(nombre, descripcion, lista, fechaInicio, fechaFinEstimada,
                     colaboradoresRequeridos, sesion.getPerfilId(), sesion.getUsuarioId(), githubUrl);
+            // Habilidades requeridas (manuales o pre-llenadas por "Extraer con IA"); opcional.
+            proyectoService.guardarHabilidadesRequeridas(p.getId(), habilidadId, nivelRequerido);
             redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" creado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/project-manager/proyectos.html";
+    }
+
+    /**
+     * "Extraer con IA" (RF modelo v7 fase 5): sube un documento (PDF, Word o
+     * texto) con los datos de un proyecto nuevo y devuelve un borrador JSON
+     * para pre-llenar el formulario "Nuevo proyecto". No crea nada: el PM
+     * revisa/edita el borrador y solo se guarda si confirma con "Crear proyecto".
+     */
+    @PostMapping(value = "/proyectos/extraer-ia", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    public ResponseEntity<?> extraerIa(@RequestParam("archivo") MultipartFile archivo) {
+        try {
+            ProyectoExtraidoIa borrador = extraccionProyectoIaService.extraer(archivo);
+            return ResponseEntity.ok(borrador);
+        } catch (OperacionInvalidaException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
     }
 
     /** Cambiar estado de un proyecto propio (ver CambioEstadoProyecto). */
