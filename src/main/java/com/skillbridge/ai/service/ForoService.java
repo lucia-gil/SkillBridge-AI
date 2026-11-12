@@ -561,7 +561,7 @@ public class ForoService {
 
     /**
      * Genera (o regenera) el resumen con IA de un hilo y lo guarda en
-     * foro_publicaciones.resumen_ia, para no volver a llamar a Gemini la
+     * foro_publicaciones.resumen_ia, para no volver a llamar a Claude la
      * proxima vez que alguien lo abra. Cualquiera que pueda ver el hilo
      * (ya validado por exigirMiembro) puede pedir el resumen.
      */

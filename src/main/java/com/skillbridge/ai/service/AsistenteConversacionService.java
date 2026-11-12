@@ -45,7 +45,7 @@ public class AsistenteConversacionService {
     public static final int MAX_ADJUNTOS = 3;
     public static final long MAX_BYTES = 5L * 1024 * 1024;
     private static final int MAX_TEXTO_ARCHIVO = 15000;
-    /** Lo que la IA puede leer: imágenes y PDF (Gemini) y archivos de texto (se leen como texto). */
+    /** Lo que la IA puede leer: imágenes y PDF (Claude) y archivos de texto (se leen como texto). */
     private static final Set<String> TIPOS_BINARIOS = Set.of("image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf");
     private static final Set<String> EXT_TEXTO = Set.of("txt", "csv", "md", "json", "log", "xml", "java", "sql", "js", "html", "css", "yml", "yaml", "properties");
 
@@ -183,7 +183,7 @@ public class AsistenteConversacionService {
             AsistenteIaService.Turno ultimo = turnos.remove(turnos.size() - 1);
             turnos.add(new AsistenteIaService.Turno(true, ultimo.texto(), paraIa));
         }
-        while (!turnos.isEmpty() && !turnos.get(0).deUsuario()) turnos.remove(0);   // Gemini exige empezar por el usuario
+        while (!turnos.isEmpty() && !turnos.get(0).deUsuario()) turnos.remove(0);   // Claude exige empezar por el usuario
         if (turnos.size() > TURNOS_DE_MEMORIA) turnos = new ArrayList<>(turnos.subList(turnos.size() - TURNOS_DE_MEMORIA, turnos.size()));
         while (!turnos.get(0).deUsuario()) turnos.remove(0);
 

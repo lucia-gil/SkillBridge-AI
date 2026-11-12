@@ -34,7 +34,7 @@ import java.util.Map;
  * nada aquí: solo se arma el ProyectoExtraidoIa que la vista usa para
  * pre-llenar los campos; el PM confirma con "Crear proyecto" como siempre.
  *
- * Reutiliza AsistenteIaService.consultar(...) (mismo Gemini con reintentos y
+ * Reutiliza AsistenteIaService.consultar(...) (mismo Claude con reintentos y
  * respaldo que el Asistente IA) y el catálogo de habilidades/tecnologías del
  * Administrador: la IA solo puede proponer tecnologías/habilidades que ya
  * existen en el catálogo (igual regla que TecnologiaCatalogoService), para
@@ -44,7 +44,7 @@ import java.util.Map;
 public class ExtraccionProyectoIaService {
 
     private static final long MAX_BYTES = 5L * 1024 * 1024;
-    /** Límite de texto que se manda a Gemini (fichas/briefs no suelen pasar de esto; evita prompts gigantes). */
+    /** Límite de texto que se manda a Claude (fichas/briefs no suelen pasar de esto; evita prompts gigantes). */
     private static final int MAX_CARACTERES_DOCUMENTO = 12_000;
     private static final int MAX_OUTPUT_TOKENS = 2048;
 
@@ -59,7 +59,7 @@ public class ExtraccionProyectoIaService {
         this.objectMapper = objectMapper;
     }
 
-    /** Lo que Gemini debe devolver; nombres sueltos (se resuelven contra el catálogo real después). */
+    /** Lo que Claude debe devolver; nombres sueltos (se resuelven contra el catálogo real después). */
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record ExtraccionCruda(String nombre, String descripcion, List<String> tecnologias,
                                     String fechaInicio, String fechaFinEstimada, Integer colaboradoresRequeridos,
@@ -124,7 +124,7 @@ public class ExtraccionProyectoIaService {
         }
     }
 
-    /** Gemini a veces envuelve el JSON en ```json ... ``` aunque se le pida que no lo haga. */
+    /** Claude a veces envuelve el JSON en ```json ... ``` aunque se le pida que no lo haga. */
     private static String limpiarJson(String texto) {
         if (texto == null) return "{}";
         String t = texto.trim();

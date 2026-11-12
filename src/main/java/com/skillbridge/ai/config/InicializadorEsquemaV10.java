@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * las columnas donde se guarda el resumen generado por el Asistente IA de
  * cada hilo del foro (ForoService.generarResumenIa /
  * AsistenteIaService.resumirHilo), para no tener que volver a llamar a
- * Gemini cada vez que alguien lo abre. Mismo patron que
+ * Claude cada vez que alguien lo abre. Mismo patron que
  * InicializadorEsquemaV9 (ddl-auto=none, MySQL 8 sin "ADD COLUMN IF NOT
  * EXISTS"); el SQL equivalente esta en db/skillbridge_db.sql.
  */
@@ -35,7 +35,7 @@ public class InicializadorEsquemaV10 implements CommandLineRunner {
     }
 
     /**
-     * Antes, si Gemini no respondía (sin clave, límite gratuito, error), el
+     * Antes, si Claude no respondía (sin clave, límite gratuito, error), el
      * aviso se guardaba como si fuera el resumen del hilo y quedaba fijo.
      * Se borran esos avisos para que el hilo vuelva a ofrecer "Resumir con IA".
      */

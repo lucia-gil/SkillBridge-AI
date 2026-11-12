@@ -22,18 +22,20 @@ import java.util.Map;
 /**
  * Asistente IA (administrador/, colaborador/, project-manager/ y
  * resource-manager/asistente-ia.html): le manda el mensaje del usuario a la
- * API de Google Gemini (generateContent) y devuelve la respuesta en texto
- * plano.
+ * API de Claude (Anthropic Messages API, /v1/messages) y devuelve la
+ * respuesta en texto plano.
  *
  * Mismo patron de "consumo de servicio REST" visto en clase (verifica.id /
  * api.atenea): POST + clave de API + cuerpo y respuesta en JSON. Aqui el
- * "servicio externo" es Gemini en vez de un verificador de DNI/RUC. A
- * diferencia de otras APIs que usan la cabecera "Authorization: Bearer",
- * Gemini recibe la clave en la cabecera "x-goog-api-key".
+ * "servicio externo" es Claude en vez de un verificador de DNI/RUC. La
+ * clave viaja en la cabecera "x-api-key" (no "Authorization: Bearer"), y
+ * ademas hay que mandar "anthropic-version" con la version de la API.
  *
- * Se eligio Gemini (capa gratuita, sin tarjeta) en vez de Mistral porque la
- * API de Mistral solo da acceso real con un plan de pago (Pay-as-you-go o
- * Pro) incluso con cuenta gratuita de la app Mistral.
+ * Antes la plataforma usaba Gemini (capa gratuita); se migro a Claude
+ * (Anthropic) porque el equipo compro creditos de la API de Anthropic
+ * directamente. Se conserva la misma arquitectura de cadena de proveedores
+ * (varios modelos en orden + un respaldo opcional compatible con la API de
+ * OpenAI) para no depender de un solo proveedor si falla.
  *
  * No hay historial guardado en base de datos todavia (cada mensaje se
  * manda solo con el system prompt, sin memoria de turnos anteriores) - ver
@@ -43,8 +45,10 @@ import java.util.Map;
 public class AsistenteIaService {
 
     private static final Logger log = LoggerFactory.getLogger(AsistenteIaService.class);
-    private static final String GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models/";
-    /** Pausas entre reintentos ante errores pasajeros (500/502/503/504 o timeout). */
+    private static final String CLAUDE_URL = "https://api.anthropic.com/v1/messages";
+    /** Version de la API de Claude (cabecera "anthropic-version"), la que muestra la Consola de Anthropic. */
+    private static final String ANTHROPIC_VERSION = "2026-10-21";
+    /** Pausas entre reintentos ante errores pasajeros (500/502/503/504/529 o timeout). */
     private static final long[] ESPERAS_MS = {1000, 2500};
 
     private final String apiKey;
@@ -55,8 +59,8 @@ public class AsistenteIaService {
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
-    public AsistenteIaService(@Value("${gemini.api.key:}") String apiKey,
-                              @Value("${gemini.modelos:gemini-3.8-flash,gemini-flash-latest,gemini-flash-lite-latest}") String modelos,
+    public AsistenteIaService(@Value("${anthropic.api.key:}") String apiKey,
+                              @Value("${claude.modelos:claude-sonnet-5}") String modelos,
                               @Value("${ia.respaldo.url:https://api.groq.com/openai/v1/chat/completions}") String respaldoUrl,
                               @Value("${ia.respaldo.api-key:}") String respaldoKey,
                               @Value("${ia.respaldo.modelo:llama-3.3-70b-versatile}") String respaldoModelo,
@@ -73,12 +77,12 @@ public class AsistenteIaService {
         this.restClient = RestClient.builder().requestFactory(http).build();
     }
 
-    /** true si hay una clave configurada (secretos.properties local o variable de entorno GEMINI_API_KEY). */
+    /** true si hay una clave configurada (secretos.properties local o variable de entorno ANTHROPIC_API_KEY). */
     public boolean configurado() {
-        return tieneGemini() || tieneRespaldo();
+        return tieneClaude() || tieneRespaldo();
     }
 
-    private boolean tieneGemini() {
+    private boolean tieneClaude() {
         return apiKey != null && !apiKey.isBlank();
     }
 
@@ -86,7 +90,7 @@ public class AsistenteIaService {
         return respaldoKey != null && !respaldoKey.isBlank() && respaldoUrl != null && !respaldoUrl.isBlank();
     }
 
-    /** Resultado de una llamada a Gemini: el texto y si es una respuesta real (ok) o un aviso de error. */
+    /** Resultado de una llamada a Claude: el texto y si es una respuesta real (ok) o un aviso de error. */
     public record Resultado(String texto, boolean ok) {}
 
     /** Un turno de la conversación: deUsuario=true si lo escribió la persona, false si fue el asistente. */
@@ -94,7 +98,7 @@ public class AsistenteIaService {
         public Turno(boolean deUsuario, String texto) { this(deUsuario, texto, List.of()); }
     }
 
-    /** Imagen o PDF que viaja junto a un turno (Gemini los lee como inline_data). */
+    /** Imagen o PDF que viaja junto a un turno (Claude los lee como bloques "image"/"document" en base64). */
     public record Archivo(String nombre, String mime, byte[] datos) {}
 
     /**
@@ -107,16 +111,17 @@ public class AsistenteIaService {
 
     /** Chat del asistente: si falla, devuelve igual un aviso amable para mostrar en la conversación. */
     public String responder(UsuarioSesion sesion, String mensajeUsuario) {
-        return llamarGemini(promptSistema(sesion), mensajeUsuario, 800).texto();
+        return llamarSimple(promptSistema(sesion), mensajeUsuario, 800).texto();
     }
 
     /**
-     * Llamada genérica para otras funciones con IA (AI Talent Matching):
-     * devuelve el texto y si es una respuesta real, sin lanzar excepción,
-     * para que quien llama decida su plan B.
+     * Llamada genérica para otras funciones con IA (AI Talent Matching,
+     * extracción de proyectos con IA): devuelve el texto y si es una
+     * respuesta real, sin lanzar excepción, para que quien llama decida su
+     * plan B.
      */
     public Resultado consultar(String promptSistema, String mensaje, int maxOutputTokens) {
-        return llamarGemini(promptSistema, mensaje, maxOutputTokens);
+        return llamarSimple(promptSistema, mensaje, maxOutputTokens);
     }
 
     /**
@@ -135,7 +140,7 @@ public class AsistenteIaService {
      * IA, con un prompt de sistema distinto. Lo usa
      * ForoService.generarResumenIa, que ademas guarda el resultado en
      * foro_publicaciones.resumen_ia para no volver a gastar una llamada a
-     * Gemini cada vez que alguien abre el hilo.
+     * Claude cada vez que alguien abre el hilo.
      */
     public String resumirHilo(String tituloHilo, String contenidoCompleto) {
         String prompt = "Eres el Asistente IA de SkillBridge AI. Te paso el contenido completo de un hilo del foro " +
@@ -144,7 +149,7 @@ public class AsistenteIaService {
                 "el hilo: de que trata, que se acordo o decidio (si algo quedo claro), y que queda pendiente o sin responder " +
                 "(si aplica). No inventes nada que no este en el texto. No agregues saludos ni frases de relleno, ve directo " +
                 "al resumen.";
-        return exigirRespuesta(llamarGemini(prompt, contenidoCompleto, 600));
+        return exigirRespuesta(llamarSimple(prompt, contenidoCompleto, 600));
     }
 
     /**
@@ -156,31 +161,31 @@ public class AsistenteIaService {
                 + "(cada línea: fecha y hora, autor y mensaje). Responde en español, en 3 a 5 viñetas cortas que empiecen con \"- \": "
                 + "los temas principales, lo que se decidió o quedó acordado y lo que sigue pendiente (con responsable si aparece). "
                 + "No inventes nada que no esté en los mensajes. Sin saludos ni frases de relleno.";
-        return exigirRespuesta(llamarGemini(prompt, conversacion, 600));
+        return exigirRespuesta(llamarSimple(prompt, conversacion, 600));
     }
 
     /**
-     * Cadena de proveedores: prueba cada modelo de Gemini (gemini.modelos, en
+     * Cadena de proveedores: prueba cada modelo de Claude (claude.modelos, en
      * orden) y, si todos fallan, el proveedor de respaldo compatible con la
      * API de OpenAI (Groq, OpenRouter, Mistral...; ia.respaldo.*), si tiene
-     * clave. Ante un error pasajero (500/502/503/504 o timeout) reintenta el
-     * mismo modelo con una pausa; ante 429 (cuota de la capa gratuita, que
-     * en Gemini es por modelo) o 404 pasa directo al siguiente.
+     * clave. Ante un error pasajero (500/502/503/504/529 o timeout) reintenta
+     * el mismo modelo con una pausa; ante 429 (límite de la cuenta) o 404
+     * pasa directo al siguiente.
      */
-    private Resultado llamarGemini(String promptSistema, String mensajeUsuario, int maxOutputTokens) {
+    private Resultado llamarSimple(String promptSistema, String mensajeUsuario, int maxOutputTokens) {
         return llamar(promptSistema, List.of(new Turno(true, mensajeUsuario)), maxOutputTokens);
     }
 
     private Resultado llamar(String promptSistema, List<Turno> turnos, int maxOutputTokens) {
         if (!configurado()) {
-            log.warn("Asistente IA: no hay gemini.api.key ni ia.respaldo.api-key configuradas (ver secretos.properties.example)");
-            return new Resultado("El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Gemini.", false);
+            log.warn("Asistente IA: no hay anthropic.api.key ni ia.respaldo.api-key configuradas (ver secretos.properties.example)");
+            return new Resultado("El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Claude.", false);
         }
 
         boolean huboLimite = false;
-        if (tieneGemini()) {
+        if (tieneClaude()) {
             for (String modelo : modelos) {
-                Intento r = conReintentos("Gemini " + modelo, () -> pedirGemini(modelo, promptSistema, turnos, maxOutputTokens));
+                Intento r = conReintentos("Claude " + modelo, () -> pedirClaude(modelo, promptSistema, turnos, maxOutputTokens));
                 if (r.texto() != null) return new Resultado(r.texto(), true);
                 huboLimite |= r.limite();
             }
@@ -215,7 +220,8 @@ public class AsistenteIaService {
                 int status = ex.getStatusCode().value();
                 log.warn("Asistente IA: {} respondio {} - {}", proveedor, status, recortar(ex.getResponseBodyAsString()));
                 if (status == 429) return new Intento(null, true);
-                boolean pasajero = status == 500 || status == 502 || status == 503 || status == 504;
+                // 529 = "overloaded_error" propio de Claude (sobrecarga pasajera del modelo).
+                boolean pasajero = status == 500 || status == 502 || status == 503 || status == 504 || status == 529;
                 if (!pasajero || i >= ESPERAS_MS.length) return new Intento(null, false);
             } catch (ResourceAccessException ex) {
                 log.warn("Asistente IA: {} sin conexion o sin respuesta a tiempo: {}", proveedor, ex.getMessage());
@@ -233,43 +239,48 @@ public class AsistenteIaService {
         }
     }
 
-    private String pedirGemini(String modelo, String promptSistema, List<Turno> turnos, int maxOutputTokens) throws Exception {
+    /** POST a la API de Claude (Anthropic Messages API): https://docs.claude.com/en/api/messages */
+    private String pedirClaude(String modelo, String promptSistema, List<Turno> turnos, int maxOutputTokens) throws Exception {
         Map<String, Object> cuerpo = new LinkedHashMap<>();
-        cuerpo.put("systemInstruction", Map.of(
-                "parts", List.of(Map.of("text", promptSistema))
-        ));
-        // Gemini: roles "user" y "model", alternados (la memoria va como turnos previos)
-        cuerpo.put("contents", turnos.stream().map(t -> {
-            List<Map<String, Object>> partes = new java.util.ArrayList<>();
-            partes.add(Map.of("text", t.texto()));
+        cuerpo.put("model", modelo);
+        cuerpo.put("max_tokens", maxOutputTokens);
+        cuerpo.put("system", promptSistema);
+        // Sin "temperature": claude-sonnet-5 rechaza ese campo con 400
+        // ("Extra inputs are not permitted") cuando el razonamiento extendido
+        // esta activo por defecto, asi que se deja la temperatura por defecto del modelo.
+        // Claude: roles "user" y "assistant" (la memoria va como turnos previos).
+        cuerpo.put("messages", turnos.stream().map(t -> {
+            List<Map<String, Object>> bloques = new java.util.ArrayList<>();
+            bloques.add(Map.of("type", "text", "text", t.texto()));
             for (Archivo a : t.archivos()) {
-                partes.add(Map.of("inline_data", Map.of("mime_type", a.mime(),
-                        "data", java.util.Base64.getEncoder().encodeToString(a.datos()))));
+                String mime = a.mime() == null ? "" : a.mime();
+                String datos = java.util.Base64.getEncoder().encodeToString(a.datos());
+                if (mime.startsWith("image/")) {
+                    bloques.add(Map.of("type", "image", "source",
+                            Map.of("type", "base64", "media_type", mime, "data", datos)));
+                } else if (mime.equals("application/pdf")) {
+                    bloques.add(Map.of("type", "document", "source",
+                            Map.of("type", "base64", "media_type", mime, "data", datos)));
+                } else {
+                    bloques.add(Map.of("type", "text", "text", "[El usuario adjuntó \"" + a.nombre() + "\", un archivo que no se puede mostrar directamente; avísalo con amabilidad.]"));
+                }
             }
-            return Map.of("role", t.deUsuario() ? "user" : "model", "parts", partes);
+            return Map.of("role", t.deUsuario() ? "user" : "assistant", "content", bloques);
         }).toList());
-        // "thinkingLevel": "LOW" porque son tareas simples (responder una
-        // pregunta corta o resumir un hilo), no razonamiento complejo - sin
-        // esto, el modelo gasta buena parte de maxOutputTokens "pensando"
-        // antes de escribir la respuesta visible y esta sale cortada.
-        cuerpo.put("generationConfig", Map.of(
-                "temperature", 0.4,
-                "maxOutputTokens", maxOutputTokens,
-                "thinkingConfig", Map.of("thinkingLevel", "LOW")
-        ));
 
         String respuestaCruda = restClient.post()
-                .uri(GEMINI_BASE + modelo + ":generateContent")
-                .header("x-goog-api-key", apiKey)
+                .uri(CLAUDE_URL)
+                .header("x-api-key", apiKey)
+                .header("anthropic-version", ANTHROPIC_VERSION)
                 .header("Content-Type", "application/json")
                 .body(cuerpo)
                 .retrieve()
                 .body(String.class);
 
-        JsonNode partes = objectMapper.readTree(respuestaCruda).path("candidates").path(0).path("content").path("parts");
+        JsonNode bloques = objectMapper.readTree(respuestaCruda).path("content");
         StringBuilder texto = new StringBuilder();
-        for (JsonNode parte : partes) {
-            if (!parte.path("thought").asBoolean(false)) texto.append(parte.path("text").asText(""));
+        for (JsonNode bloque : bloques) {
+            if ("text".equals(bloque.path("type").asText(""))) texto.append(bloque.path("text").asText(""));
         }
         return texto.toString();
     }
