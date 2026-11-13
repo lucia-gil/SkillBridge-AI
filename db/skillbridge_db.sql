@@ -2019,3 +2019,30 @@ CREATE TABLE IF NOT EXISTS SPRING_SESSION_ATTRIBUTES (
 -- =====================================================================
 -- Fin del script.
 -- =====================================================================
+
+-- =====================================================================
+-- Resumen profesional con IA del colaborador (colaborador/resumen-profesional.html).
+-- Una fila por perfil con el resumen tipo CV que arma Claude a partir de las
+-- constancias de sus habilidades (JSON editable). La app también la crea sola
+-- al arrancar (config/InicializadorResumenIa).
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS perfil_resumen_ia (
+    perfil_id       BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+    contenido_json  MEDIUMTEXT NOT NULL,
+    firma_fuentes   VARCHAR(64) NULL,
+    fuentes_usadas  INT NOT NULL DEFAULT 0,
+    generado_en     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    editado_en      DATETIME NULL,
+    CONSTRAINT fk_resumen_ia_perfil FOREIGN KEY (perfil_id) REFERENCES perfiles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Resumen previo de cada constancia (lo ve el Resource Manager al validar).
+CREATE TABLE IF NOT EXISTS constancia_analisis_ia (
+    perfil_id       BIGINT UNSIGNED NOT NULL,
+    habilidad_id    BIGINT UNSIGNED NOT NULL,
+    firma           VARCHAR(64) NOT NULL,
+    contenido_json  TEXT NOT NULL,
+    generado_en     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (perfil_id, habilidad_id),
+    CONSTRAINT fk_analisis_ia_perfil FOREIGN KEY (perfil_id) REFERENCES perfiles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

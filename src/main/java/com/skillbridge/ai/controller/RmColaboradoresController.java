@@ -66,6 +66,7 @@ public class RmColaboradoresController {
     private final com.skillbridge.ai.service.ProyectoService proyectoService;
     private final com.skillbridge.ai.service.PerfilVistaService perfilVistaService;
     private final com.skillbridge.ai.service.ConfiguracionService configuracionService;
+    private final com.skillbridge.ai.service.ResumenProfesionalIaService resumenProfesionalIaService;
 
     public RmColaboradoresController(PerfilRepository perfilRepository, AsignacionRepository asignacionRepository,
                                      HabilidadRepository habilidadRepository, HabilidadService habilidadService,
@@ -73,7 +74,8 @@ public class RmColaboradoresController {
                                      UsuarioService usuarioService,
                                      com.skillbridge.ai.service.ProyectoService proyectoService,
                                      com.skillbridge.ai.service.PerfilVistaService perfilVistaService,
-                                     com.skillbridge.ai.service.ConfiguracionService configuracionService) {
+                                     com.skillbridge.ai.service.ConfiguracionService configuracionService,
+                                     com.skillbridge.ai.service.ResumenProfesionalIaService resumenProfesionalIaService) {
         this.auditoriaService = auditoriaService;
         this.usuarioService = usuarioService;
         this.perfilRepository = perfilRepository;
@@ -84,6 +86,7 @@ public class RmColaboradoresController {
         this.proyectoService = proyectoService;
         this.perfilVistaService = perfilVistaService;
         this.configuracionService = configuracionService;
+        this.resumenProfesionalIaService = resumenProfesionalIaService;
     }
 
     @GetMapping("/colaboradores.html")
@@ -183,18 +186,43 @@ public class RmColaboradoresController {
 
         model.addAttribute("perfil", p);
         model.addAttribute("vista", perfilVistaService.armar(p));
+        model.addAttribute("resumenIa", resumenProfesionalIaService.obtener(perfilId).orElse(null));
+        model.addAttribute("resumenIaActualizando", resumenProfesionalIaService.estaActualizando(perfilId));
+        model.addAttribute("analisisIa", resumenProfesionalIaService.analisisGuardados(perfilId));
 
         return "resource-manager/colaborador-detalle";
     }
 
-    /** Update real: aprueba el nivel que el colaborador se autodeclaró (RF02). */
+    /**
+     * Resumen previo con IA de la constancia de una habilidad (lo pide la
+     * ventana "Validar" de la ficha). Si ya se analizó y la constancia no
+     * cambió, devuelve el guardado sin volver a llamar a Claude.
+     */
+    @PostMapping("/colaboradores/{perfilId}/habilidades/{habilidadId}/analisis-ia")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public org.springframework.http.ResponseEntity<java.util.Map<String, Object>> analisisIa(@PathVariable Long perfilId,
+                                                                                           @PathVariable Long habilidadId) {
+        try {
+            return org.springframework.http.ResponseEntity.ok(java.util.Map.of("ok", true,
+                    "analisis", resumenProfesionalIaService.analizarConstancia(perfilId, habilidadId)));
+        } catch (OperacionInvalidaException ex) {
+            return org.springframework.http.ResponseEntity.ok(java.util.Map.of("ok", false, "error", ex.getMessage()));
+        }
+    }
+
+    /** Update real: valida la habilidad (RF02); el RM puede dejar el nivel declarado o ajustarlo. */
     @PostMapping("/colaboradores/{perfilId}/habilidades/{habilidadId}/validar")
     public String validarHabilidad(@PathVariable Long perfilId, @PathVariable Long habilidadId,
+                                   @RequestParam(required = false) String nivel,
                                    HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            habilidadService.validarHabilidadDeColaborador(perfilId, habilidadId, sesion.getPerfilId());
-            redirectAttributes.addFlashAttribute("exito", "Habilidad validada.");
+            boolean cambioNivel = habilidadService.validarHabilidadDeColaborador(perfilId, habilidadId, sesion.getPerfilId(), nivel);
+            // El Resumen profesional del colaborador se arma solo con lo validado: se actualiza en segundo plano.
+            resumenProfesionalIaService.actualizarEnSegundoPlano(perfilId);
+            redirectAttributes.addFlashAttribute("exito", cambioNivel
+                    ? "Habilidad validada con nivel " + nivel.trim() + ". Su resumen profesional se está actualizando con IA."
+                    : "Habilidad validada. Su resumen profesional se está actualizando con IA.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }

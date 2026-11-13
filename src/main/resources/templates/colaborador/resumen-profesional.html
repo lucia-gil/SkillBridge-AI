@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resumen profesional · SkillBridge AI</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/polish.css">
+<style>
+  .rp-ai-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: var(--fs-xs); font-weight: 600;
+                 background: linear-gradient(90deg, #EEF0FF, #E6F6FD); color: #4B47C9; border: 1px solid #D9DCFB; }
+  .rp-ai-badge .icon { width: 13px; height: 13px; }
+  :root[data-theme="dark"] .rp-ai-badge { background: rgba(97,87,232,.16); color: #B9B5FF; border-color: rgba(97,87,232,.35); }
+
+  /* Cabecera tipo CV */
+  .rp-hero { position: relative; overflow: hidden; }
+  .rp-hero::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 92px; background: linear-gradient(110deg, #0B1F3A 0%, #1E3A64 55%, #4B47C9 100%); }
+  .rp-hero-body { position: relative; display: flex; gap: var(--space-5); align-items: flex-start; padding: 46px var(--space-6) var(--space-5); flex-wrap: wrap; }
+  .rp-hero-body .rp-id { padding-top: 54px; }
+  .rp-hero-body .rp-actions { padding-top: 58px; }
+  .rp-avatar { width: 88px; height: 88px; border-radius: 50%; border: 4px solid var(--surface); background: var(--navy-700, #16213A); color: #fff;
+               display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700; overflow: hidden; flex-shrink: 0; }
+  .rp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .rp-id { flex: 1; min-width: 240px; }
+  .rp-name { font-size: 1.375rem; font-weight: 700; color: var(--text-primary); }
+  .rp-cargo { color: var(--text-tertiary); font-size: var(--fs-sm); margin-top: 2px; }
+  .rp-titular { margin-top: var(--space-3); font-size: 1.05rem; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
+  .rp-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: var(--space-3); font-size: var(--fs-xs); color: var(--text-tertiary); }
+  .rp-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  .rp-skills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rp-skills-box { margin-top: auto; padding-top: var(--space-5); }
+  .rp-skills-label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-2);
+                     padding-top: var(--space-4); border-top: 1px solid var(--border-subtle); }
+  .rp-skill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 5px; border-radius: 999px; border: 1px solid var(--border-subtle); background: var(--surface-sunken); font-size: var(--fs-xs); color: var(--text-primary); font-weight: 600; }
+  .rp-skill small { font-weight: 500; color: var(--text-tertiary); }
+  .rp-skill .tech-logo-sm { display: inline-flex; }
+
+  /* Franja de cifras dentro de la cabecera */
+  .rp-kpis { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--border-subtle); }
+  .rp-kpi { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-6); }
+  .rp-kpi + .rp-kpi { border-left: 1px solid var(--border-subtle); }
+  .rp-kpi-ico { width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rp-kpi-ico .icon { width: 18px; height: 18px; }
+  .rp-kpi-ico.k1 { background: #E7F6EC; color: #1E8E4E; }
+  .rp-kpi-ico.k2 { background: #E6F2FD; color: #1D5FA8; }
+  .rp-kpi-ico.k3 { background: #EEF0FF; color: #4B47C9; }
+  .rp-kpi-ico.k4 { background: #FFF4E0; color: #B26A00; }
+  .rp-kpi strong { display: block; font-size: 1.25rem; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .rp-kpi span { font-size: var(--fs-xs); color: var(--text-tertiary); }
+
+  .rp-info { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg);
+             background: #EEF0FF; border: 1px solid #D9DCFB; color: #3A37A8; font-size: var(--fs-sm); margin-top: var(--space-5); }
+  .rp-info .icon { width: 18px; height: 18px; flex-shrink: 0; }
+  .rp-info .rp-mini-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #C9CCF6; border-top-color: #4B47C9; animation: rp-spin .9s linear infinite; flex-shrink: 0; }
+  @keyframes rp-spin { to { transform: rotate(360deg); } }
+  :root[data-theme="dark"] .rp-info { background: rgba(97,87,232,.14); border-color: rgba(97,87,232,.35); color: #C9C6FF; }
+
+  /* Fila 1: Resumen + Fortalezas, misma altura */
+  .rp-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--space-5); margin-top: var(--space-5); align-items: stretch; }
+  .rp-row > .card { margin: 0; display: flex; flex-direction: column; }
+  .rp-block { margin-top: var(--space-5) !important; margin-bottom: 0 !important; }
+  .rp-title { display: flex; align-items: center; gap: 10px; font-size: var(--fs-md, 1rem); font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-4); }
+  .rp-title-ico { width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-sunken); color: var(--text-secondary); flex-shrink: 0; }
+  .rp-title-ico .icon { width: 16px; height: 16px; }
+  .rp-title small { margin-left: auto; font-weight: 500; font-size: var(--fs-xs); color: var(--text-tertiary); }
+  .rp-text { color: var(--text-secondary); line-height: 1.75; white-space: pre-wrap; margin: 0; }
+
+  .rp-strengths { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .rp-strengths li { display: flex; gap: var(--space-3); align-items: flex-start; color: var(--text-primary); font-size: var(--fs-sm); line-height: 1.45;
+                     padding: 7px 10px; border-radius: 10px; background: #F3FAF5; }
+  .rp-strengths svg { width: 18px; height: 18px; flex-shrink: 0; color: #1E8E4E; margin-top: 1px; }
+  :root[data-theme="dark"] .rp-strengths li { background: rgba(34,197,94,.08); }
+
+  /* Evidencias: tarjetas en 2 columnas */
+  .rp-evid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  .rp-ev { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5); border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--surface);
+           position: relative; overflow: hidden; transition: border-color .15s, box-shadow .15s; }
+  .rp-ev::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #2A9BD8; }
+  .rp-ev.is-pdf::before { background: #E5484D; }
+  .rp-ev:hover { border-color: #C9CCF6; box-shadow: 0 6px 18px rgba(11,31,58,.07); }
+  .rp-ev-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .rp-ev-skill { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: var(--fs-sm); color: var(--text-primary); }
+  .rp-ev-skill .tech-logo-sm { display: inline-flex; }
+  .rp-ev-type { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .rp-ev-type .icon { width: 12px; height: 12px; }
+  .rp-ev.is-pdf .rp-ev-type { background: #FDECEA; color: #B42318; }
+  .rp-ev.is-link .rp-ev-type { background: #E6F2FD; color: #1D5FA8; }
+  .rp-ev-source { font-weight: 600; color: var(--text-primary); font-size: var(--fs-sm); line-height: 1.4; }
+  .rp-ev-detail { color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.55; margin: 0; }
+
+  /* Sugerencias: 3 tarjetas en fila */
+  .rp-suggest { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+  .rp-sug { padding: var(--space-4); border-radius: 12px; background: #FFF9EE; border: 1px solid #F6E3BF; font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.55; }
+  .rp-sug em { font-style: normal; display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: #F59E0B; color: #fff; font-size: 12px; font-weight: 700;
+               align-items: center; justify-content: center; margin-bottom: var(--space-2); }
+  :root[data-theme="dark"] .rp-sug { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.25); }
+
+  /* Nota final compacta */
+  .rp-foot { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-5); padding: var(--space-4) var(--space-5); border-radius: var(--radius-lg);
+             border: 1px dashed var(--border-strong, #CBD2DC); color: var(--text-tertiary); font-size: var(--fs-xs); line-height: 1.55; }
+  .rp-foot .icon { width: 18px; height: 18px; flex-shrink: 0; }
+  .rp-foot strong { color: var(--text-secondary); }
+
+  /* Estado vacío */
+  .rp-empty { text-align: center; padding: var(--space-8) var(--space-6); }
+  .rp-empty-icon { width: 64px; height: 64px; border-radius: 18px; margin: 0 auto var(--space-4); display: flex; align-items: center; justify-content: center;
+                   background: linear-gradient(135deg, #EEF0FF, #E6F6FD); color: #4B47C9; }
+  .rp-empty-icon .icon { width: 30px; height: 30px; }
+  .rp-empty h2 { font-size: 1.25rem; color: var(--text-primary); }
+  .rp-empty p { color: var(--text-secondary); max-width: 560px; margin: var(--space-2) auto 0; line-height: 1.6; }
+  .rp-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); max-width: 760px; margin: var(--space-6) auto; text-align: left; }
+  .rp-step { padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface-sunken); }
+  .rp-step b { display: block; font-size: var(--fs-sm); color: var(--text-primary); margin-bottom: 4px; }
+  .rp-step span { font-size: var(--fs-xs); color: var(--text-tertiary); line-height: 1.5; }
+  .rp-step em { font-style: normal; display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #4B47C9; color: #fff; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; margin-bottom: 8px; }
+
+  @media (max-width: 1100px) { .rp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rp-kpi:nth-child(3) { border-left: 0; } .rp-kpi:nth-child(n+3) { border-top: 1px solid var(--border-subtle); } }
+  @media (max-width: 960px) {
+    .rp-row, .rp-evid, .rp-suggest, .rp-steps { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media print {
+    .sidebar, .topbar, .rp-actions, .rp-info, .rp-no-print { display: none !important; }
+    .main-content, .page-content { margin: 0 !important; padding: 0 !important; }
+    .card, .rp-ev { box-shadow: none !important; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content" id="page-content">
+
+      <!-- ═════════════ Sin resumen todavía ═════════════ -->
+      <section class="card" th:if="${resumenIa == null}">
+        <div class="rp-empty">
+          <div class="rp-empty-icon"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></div>
+          <h2 th:text="${actualizando} ? 'Estamos armando tu resumen…' : 'Tu resumen profesional aparecerá aquí'">Tu resumen profesional aparecerá aquí</h2>
+          <p th:unless="${actualizando}">Se arma solo, con IA, a partir de las habilidades que el Resource Manager ya validó y de las constancias
+            que las respaldan. Así el equipo entiende tu perfil sin abrir archivo por archivo.</p>
+          <p th:if="${actualizando}">El Resource Manager acaba de validar una de tus habilidades y la IA está leyendo tus constancias.
+            Esta página se actualizará sola en unos segundos.</p>
+
+          <div class="rp-steps">
+            <div class="rp-step"><em>1</em><b>Adjunta tus constancias</b><span>En Mi perfil, a cada habilidad le subes un PDF, un link o ambos.</span></div>
+            <div class="rp-step"><em>2</em><b>El RM las revisa</b><span>El Resource Manager ve un resumen de cada constancia y valida tus habilidades.</span></div>
+            <div class="rp-step"><em>3</em><b>Se arma tu resumen</b><span>Con cada validación, la IA actualiza este resumen automáticamente.</span></div>
+          </div>
+
+          <p style="margin-bottom:var(--space-5);">
+            Tienes <strong th:text="${totalValidadas}">0</strong> habilidad(es) validada(s)
+            <th:block th:if="${pendientesConConstancia > 0}"> y <strong th:text="${pendientesConConstancia}">2</strong> con constancia esperando revisión</th:block>.</p>
+          <a class="btn btn-primary" th:href="@{/colaborador/perfil.html}">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-user"></use></svg>Ir a Mi perfil</a>
+        </div>
+      </section>
+
+      <!-- ═════════════ Con resumen ═════════════ -->
+      <th:block th:if="${resumenIa != null}">
+        <section class="card rp-hero">
+          <div class="rp-hero-body">
+            <span class="rp-avatar">
+              <img th:if="${user.tieneFoto}" th:src="@{/perfil/foto}" th:alt="${resumen.nombreCompleto}">
+              <span th:unless="${user.tieneFoto}" th:text="${resumen.iniciales}">DS</span>
+            </span>
+            <div class="rp-id">
+              <div class="rp-name" th:text="${resumen.nombreCompleto}">Nombre</div>
+              <div class="rp-cargo" th:text="${resumen.cargo}">Cargo</div>
+              <p class="rp-titular" th:text="${resumenIa.titular}">Titular</p>
+              <div class="rp-meta">
+                <span class="rp-ai-badge"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg>Generado con IA</span>
+                <span th:text="'actualizado el ' + ${resumenIa.generadoEnLabel}">fecha</span>
+              </div>
+            </div>
+            <div class="rp-actions">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()" title="Guardar como PDF o imprimir">
+                <svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Descargar PDF</button>
+            </div>
+          </div>
+          <div class="rp-kpis">
+            <div class="rp-kpi"><span class="rp-kpi-ico k1"><svg class="icon"><use href="/img/icons.svg#icon-shield-check"></use></svg></span>
+              <div><strong th:text="${totalValidadas}">2</strong><span>Habilidades validadas</span></div></div>
+            <div class="rp-kpi"><span class="rp-kpi-ico k2"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+              <div><strong th:text="${resumenIa.fuentesUsadas}">2</strong><span>Constancias analizadas</span></div></div>
+            <div class="rp-kpi"><span class="rp-kpi-ico k3"><svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg></span>
+              <div><strong th:text="${resumenIa.fortalezas.size()}">5</strong><span>Fortalezas detectadas</span></div></div>
+            <div class="rp-kpi"><span class="rp-kpi-ico k4"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span>
+              <div><strong th:text="${pendientesConConstancia}">2</strong><span>Por validar</span></div></div>
+          </div>
+        </section>
+
+        <div class="rp-info" th:if="${actualizando}">
+          <span class="rp-mini-spin" aria-hidden="true"></span>
+          <span>Se validó una habilidad nueva: la IA está actualizando tu resumen. Esta página se recargará sola.</span>
+        </div>
+        <div class="rp-info" th:if="${!actualizando and pendientesConConstancia > 0}">
+          <svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg>
+          <span th:text="'Tienes ' + ${pendientesConConstancia} + ' habilidad(es) con constancia esperando que el Resource Manager las valide. Cuando lo haga, se agregarán aquí.'">Pendientes</span>
+        </div>
+
+        <!-- Fila 1: resumen y fortalezas lado a lado -->
+        <div class="rp-row">
+          <section class="card card-pad">
+            <h2 class="rp-title"><span class="rp-title-ico"><svg class="icon"><use href="/img/icons.svg#icon-user"></use></svg></span>Resumen</h2>
+            <p class="rp-text" th:text="${resumenIa.resumen} ?: 'Sin resumen.'">Resumen</p>
+            <div class="rp-skills-box" th:unless="${habilidadesValidadas.isEmpty()}">
+              <div class="rp-skills-label">Habilidades validadas por el Resource Manager</div>
+              <div class="rp-skills">
+                <span class="rp-skill" th:each="h : ${habilidadesValidadas}">
+                  <span class="tech-logo-sm" th:attr="data-tech-logo=${h.nombre}"></span><span th:text="${h.nombre}">React</span><small th:text="${h.nivelLabel}">Básico</small>
+                </span>
+              </div>
+            </div>
+          </section>
+          <section class="card card-pad" th:unless="${resumenIa.fortalezas.isEmpty()}">
+            <h2 class="rp-title"><span class="rp-title-ico"><svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg></span>Fortalezas</h2>
+            <ul class="rp-strengths">
+              <li th:each="f : ${resumenIa.fortalezas}">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.75" stroke-width="1.5"></circle><path d="M6.4 10.3l2.4 2.4 4.8-5.1" stroke-width="1.8"></path></svg>
+                <span th:text="${f}">Fortaleza</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <!-- Fila 2: evidencias a todo el ancho -->
+        <section class="card card-pad rp-block" th:unless="${resumenIa.evidencias.isEmpty()}">
+          <h2 class="rp-title"><span class="rp-title-ico"><svg class="icon"><use href="/img/icons.svg#icon-award"></use></svg></span>Qué respalda cada constancia
+            <small th:text="${resumenIa.evidencias.size()} + ' constancia(s)'">2 constancias</small></h2>
+          <div class="rp-evid">
+            <div class="rp-ev" th:each="ev : ${resumenIa.evidencias}" th:classappend="${ev.esPdf} ? 'is-pdf' : 'is-link'">
+              <div class="rp-ev-head">
+                <span class="rp-ev-skill"><span class="tech-logo-sm" th:if="${ev.habilidad}" th:attr="data-tech-logo=${ev.habilidad}"></span><span th:text="${ev.habilidad} ?: '—'">React</span></span>
+                <span class="rp-ev-type"><svg class="icon"><use th:href="${ev.esPdf} ? '/img/icons.svg#icon-file-text' : '/img/icons.svg#icon-globe'" href="/img/icons.svg#icon-file-text"></use></svg><span th:text="${ev.esPdf} ? 'PDF' : 'Enlace'">PDF</span></span>
+              </div>
+              <div class="rp-ev-source" th:text="${ev.fuente}">Fuente</div>
+              <p class="rp-ev-detail" th:text="${ev.detalle}">Detalle</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Fila 3: sugerencias en tarjetas -->
+        <section class="card card-pad rp-block rp-no-print" th:unless="${resumenIa.sugerencias.isEmpty()}">
+          <h2 class="rp-title"><span class="rp-title-ico"><svg class="icon"><use href="/img/icons.svg#icon-zap"></use></svg></span>Para reforzar tu perfil</h2>
+          <div class="rp-suggest">
+            <div class="rp-sug" th:each="s, it : ${resumenIa.sugerencias}"><em th:text="${it.count}">1</em><div th:text="${s}">Sugerencia</div></div>
+          </div>
+        </section>
+
+        <div class="rp-foot rp-no-print">
+          <svg class="icon"><use href="/img/icons.svg#icon-info"></use></svg>
+          <span>Lo arma la IA solo con las habilidades que el Resource Manager validó y lo ven <strong>tú y el Resource Manager</strong>.
+            No se edita a mano: se actualiza cada vez que se valida una habilidad. Si cambias una constancia o el nivel de una habilidad validada, vuelve a revisión.</span>
+        </div>
+      </th:block>
+
+    </main>
+  </div>
+</div>
+
+<script src="/js/toast.js"></script>
+<script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
+<script src="/js/topbar-actions.js"></script>
+<script src="/js/tech-icons.js"></script>
+<script th:inline="javascript">
+window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
+var RP_ACTUALIZANDO = /*[[${actualizando}]]*/ false;
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll("[data-tech-logo]").forEach(function (el) {
+    if (window.SBAI && SBAI.techIcons) { var h = SBAI.techIcons.logo(el.getAttribute("data-tech-logo")); if (h) el.innerHTML = h; }
+  });
+  // Mientras la IA actualiza el resumen, se recarga sola cada 8 s.
+  if (RP_ACTUALIZANDO) setTimeout(function () { window.location.reload(); }, 8000);
+});
+</script>
+<script src="/js/global-search.js"></script>
+<script src="/js/predictive.js"></script>
+<script src="/js/mobile-nav.js"></script>
+</body>
+</html>

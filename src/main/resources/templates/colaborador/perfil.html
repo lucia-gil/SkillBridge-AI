@@ -17,6 +17,21 @@
   :root[data-theme="dark"] .skill-validada { color: #4ADE80; }
   @media (max-width: 720px) { .skill-estado { flex-basis: auto; justify-content: flex-start; } .skill-estado:empty { display: none; } }
   [data-habilidad-row] .skill-pill { white-space: nowrap; }
+  .rp-card { overflow: hidden; border-color: #DCDDFB; background: linear-gradient(100deg, #F5F5FF 0%, var(--surface) 55%); }
+  .rp-card-body { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-5) var(--space-6); }
+  .rp-card-icon { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+                  background: linear-gradient(135deg, #6157E8, #1FB3E0); color: #fff; }
+  .rp-card-icon .icon { width: 22px; height: 22px; }
+  .rp-card-text { flex: 1; min-width: 0; }
+  .rp-card-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .rp-card-head h2 { font-size: var(--fs-md, 1rem); font-weight: 700; color: var(--text-primary); }
+  .rp-card-chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #FFF4E0; color: #8A5300; }
+  .rp-card-titular { margin-top: 4px; font-weight: 600; color: var(--text-primary); font-size: var(--fs-sm); }
+  .rp-card-resumen { margin-top: 4px; color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.5;
+                     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .rp-card .btn { flex-shrink: 0; white-space: nowrap; }
+  :root[data-theme="dark"] .rp-card { border-color: rgba(97,87,232,.35); background: linear-gradient(100deg, rgba(97,87,232,.12) 0%, var(--surface) 60%); }
+  @media (max-width: 720px) { .rp-card-body { flex-wrap: wrap; } }
   .cert-box { border: 1px solid var(--border-subtle); border-radius: var(--radius-lg, 12px); padding: var(--space-4); background: var(--surface-sunken); margin-bottom: var(--space-2); }
   .cert-box-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--space-4); }
   .cert-box-sub { font-size: var(--fs-xs); color: var(--text-tertiary); }
@@ -70,6 +85,28 @@
                   </a>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <!-- Resumen profesional con IA (arma un CV corto a partir de las constancias) -->
+          <section class="card rp-card">
+            <div class="rp-card-body">
+              <span class="rp-card-icon" aria-hidden="true"><svg class="icon"><use href="/img/icons.svg#icon-sparkles"></use></svg></span>
+              <div class="rp-card-text">
+                <div class="rp-card-head">
+                  <h2>Resumen profesional con IA</h2>
+                  <span class="rp-card-chip" th:if="${resumenIa != null and resumenIa.desactualizado}">Actualizándose</span>
+                </div>
+                <th:block th:if="${resumenIa != null}">
+                  <p class="rp-card-titular" th:text="${resumenIa.titular}">Titular</p>
+                  <p class="rp-card-resumen" th:text="${resumenIa.resumen}">Resumen</p>
+                </th:block>
+                <p class="rp-card-resumen" th:if="${resumenIa == null}">
+                  Adjunta constancias (PDF o link) a tus habilidades. Cuando el Resource Manager las valide, la IA armará
+                  automáticamente un resumen tipo CV de tu perfil.</p>
+              </div>
+              <a class="btn btn-sm btn-secondary" th:href="@{/colaborador/resumen-profesional.html}"
+                 th:text="${resumenIa != null} ? 'Ver resumen' : 'Cómo funciona'">Ver resumen</a>
             </div>
           </section>
 

@@ -7,6 +7,7 @@ import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.CuentaService;
 import com.skillbridge.ai.service.HabilidadService;
 import com.skillbridge.ai.service.ProyectoService;
+import com.skillbridge.ai.service.ResumenProfesionalIaService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
@@ -40,13 +41,16 @@ public class ColaboradorPerfilController {
     private final HabilidadService habilidadService;
     private final CuentaService cuentaService;
     private final ShellModelBuilder shellModelBuilder;
+    private final ResumenProfesionalIaService resumenProfesionalIaService;
 
     public ColaboradorPerfilController(ProyectoService proyectoService, HabilidadService habilidadService,
-                                       CuentaService cuentaService, ShellModelBuilder shellModelBuilder) {
+                                       CuentaService cuentaService, ShellModelBuilder shellModelBuilder,
+                                       ResumenProfesionalIaService resumenProfesionalIaService) {
         this.proyectoService = proyectoService;
         this.habilidadService = habilidadService;
         this.cuentaService = cuentaService;
         this.shellModelBuilder = shellModelBuilder;
+        this.resumenProfesionalIaService = resumenProfesionalIaService;
     }
 
     @GetMapping("/perfil.html")
@@ -69,6 +73,9 @@ public class ColaboradorPerfilController {
         model.addAttribute("cargaActiva", proyectoService.cargaActivaDe(perfilId));
         model.addAttribute("limiteCarga", proyectoService.limiteCargaConfigurado());
         model.addAttribute("catalogoHabilidades", catalogo);
+        // Tarjeta "Resumen profesional con IA" arriba de las habilidades.
+        model.addAttribute("resumenIa", resumenProfesionalIaService.obtener(perfilId).orElse(null));
+        model.addAttribute("totalConstancias", habilidades.stream().mapToInt(h -> h.getCertificados().size()).sum());
         return "colaborador/perfil";
     }
 
@@ -106,6 +113,7 @@ public class ColaboradorPerfilController {
             habilidadService.actualizarCertificado(sesion.getPerfilId(), habilidadId, nombreArchivo, urlArchivo,
                     archivo, quitarArchivo, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Constancia actualizada.");
+            actualizarResumenSiCambio(sesion.getPerfilId());
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
@@ -120,10 +128,22 @@ public class ColaboradorPerfilController {
         try {
             habilidadService.editarNivelDePerfil(sesion.getPerfilId(), habilidadId, nivel, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Nivel actualizado.");
+            actualizarResumenSiCambio(sesion.getPerfilId());
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/colaborador/perfil.html";
+    }
+
+    /**
+     * Si el cambio tocó una habilidad ya validada (cambió su nivel o su
+     * constancia, o la quitó), el Resumen profesional con IA se vuelve a
+     * armar solo, en segundo plano, con lo que siga validado.
+     */
+    private void actualizarResumenSiCambio(Long perfilId) {
+        resumenProfesionalIaService.obtener(perfilId)
+                .filter(com.skillbridge.ai.dto.ResumenProfesionalIa::isDesactualizado)
+                .ifPresent(r -> resumenProfesionalIaService.actualizarEnSegundoPlano(perfilId));
     }
 
     /** Quita una habilidad declarada del perfil (y su constancia, en cascada). */
@@ -133,6 +153,7 @@ public class ColaboradorPerfilController {
         try {
             habilidadService.eliminarDePerfil(sesion.getPerfilId(), habilidadId, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Habilidad eliminada de tu perfil.");
+            actualizarResumenSiCambio(sesion.getPerfilId());
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }

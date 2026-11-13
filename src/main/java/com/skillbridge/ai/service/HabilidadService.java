@@ -270,6 +270,15 @@ public class HabilidadService {
         if (cert != null) {
             certificadoHabilidadRepository.save(cert);
         }
+        // Si la habilidad ya estaba validada, el Resource Manager la aprobó con
+        // la constancia anterior: con una constancia nueva debe volver a revisarla
+        // (y así el Resumen profesional con IA solo usa evidencias validadas).
+        perfilHabilidadRepository.findById(id).ifPresent(ph -> {
+            if (ph.getValidadoPorId() != null) {
+                ph.setValidadoPorId(null);
+                perfilHabilidadRepository.save(ph);
+            }
+        });
         auditoriaService.registrar(actorUsuarioId, "CERTIFICADO_ACTUALIZADO", "perfil_habilidad", perfilId, null, null,
                 "Constancia actualizada para habilidad " + habilidadId + ".");
     }
@@ -443,19 +452,42 @@ public class HabilidadService {
 
     /**
      * RF02: "nivel autodeclarado, editable/aprobable por el Resource
-     * Manager". Marcar validado_por_id es lo único que hace falta - el
-     * nivel en sí lo declara y ajusta el propio colaborador, el RM solo
-     * confirma que le parece correcto.
+     * Manager". Marca validado_por_id y, si el RM eligió otro nivel en la
+     * ventana "Validar" (subirlo o bajarlo según la constancia), lo deja
+     * con ese nivel.
      */
     @Transactional
     public void validarHabilidadDeColaborador(Long perfilId, Long habilidadId, Long actorPerfilId) {
+        validarHabilidadDeColaborador(perfilId, habilidadId, actorPerfilId, null);
+    }
+
+    /** @return true si el RM cambió el nivel declarado. */
+    @Transactional
+    public boolean validarHabilidadDeColaborador(Long perfilId, Long habilidadId, Long actorPerfilId, String nivelTexto) {
         PerfilHabilidadId id = new PerfilHabilidadId(perfilId, habilidadId);
         PerfilHabilidad ph = perfilHabilidadRepository.findById(id)
                 .orElseThrow(() -> new OperacionInvalidaException("Esa habilidad ya no está declarada en el perfil."));
+        boolean cambioNivel = false;
+        String detalle = "Habilidad validada para el perfil " + perfilId + ".";
+        if (nivelTexto != null && !nivelTexto.isBlank()) {
+            String t = nivelTexto.trim().toLowerCase();
+            if (!t.equals("básico") && !t.equals("basico") && !t.equals("intermedio") && !t.equals("avanzado") && !t.equals("experto")) {
+                throw new OperacionInvalidaException("Elige un nivel válido: Básico, Intermedio, Avanzado o Experto.");
+            }
+            int nuevo = nivelDesdeTexto(nivelTexto);
+            int anterior = ph.getNivel() != null ? ph.getNivel() : 0;
+            // 1 y 2 se muestran ambos como "Básico": no cuenta como cambio.
+            if (nuevo != anterior && !(nuevo == 1 && anterior == 2)) {
+                ph.setNivel(nuevo);
+                cambioNivel = true;
+                detalle = "Habilidad validada para el perfil " + perfilId + " con nivel " + nivelTexto.trim()
+                        + " (declarado: nivel " + anterior + ").";
+            }
+        }
         ph.setValidadoPorId(actorPerfilId);
         perfilHabilidadRepository.save(ph);
-        auditoriaService.registrar(actorPerfilId, "HABILIDAD_VALIDADA", "perfil_habilidad", perfilId, null, null,
-                "Habilidad validada para el perfil " + perfilId + ".");
+        auditoriaService.registrar(actorPerfilId, "HABILIDAD_VALIDADA", "perfil_habilidad", perfilId, null, null, detalle);
+        return cambioNivel;
     }
 
     private int nivelDesdeTexto(String nivelTexto) {

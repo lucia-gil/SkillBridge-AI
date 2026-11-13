@@ -45,7 +45,6 @@ import java.util.Map;
 public class AsistenteIaService {
 
     private static final Logger log = LoggerFactory.getLogger(AsistenteIaService.class);
-    private static final String CLAUDE_URL = "https://api.anthropic.com/v1/messages";
     /** Version de la API de Claude (cabecera "anthropic-version"), la que muestra la Consola de Anthropic. */
     private static final String ANTHROPIC_VERSION = "2026-10-21";
     /** Pausas entre reintentos ante errores pasajeros (500/502/503/504/529 o timeout). */
@@ -58,12 +57,16 @@ public class AsistenteIaService {
     private final String respaldoModelo;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
+    /** Mismo cliente pero con más tiempo de espera: leer varios PDF completos tarda más que un mensaje de chat. */
+    private final RestClient restClientDocumentos;
+    private final String claudeUrl;
 
     public AsistenteIaService(@Value("${anthropic.api.key:}") String apiKey,
                               @Value("${claude.modelos:claude-sonnet-5}") String modelos,
                               @Value("${ia.respaldo.url:https://api.groq.com/openai/v1/chat/completions}") String respaldoUrl,
                               @Value("${ia.respaldo.api-key:}") String respaldoKey,
                               @Value("${ia.respaldo.modelo:llama-3.3-70b-versatile}") String respaldoModelo,
+                              @Value("${anthropic.api.url:https://api.anthropic.com/v1/messages}") String claudeUrl,
                               ObjectMapper objectMapper) {
         this.apiKey = apiKey;
         this.modelos = Arrays.stream(modelos.split(",")).map(String::trim).filter(m -> !m.isEmpty()).distinct().toList();
@@ -75,6 +78,11 @@ public class AsistenteIaService {
         http.setConnectTimeout(Duration.ofSeconds(10));
         http.setReadTimeout(Duration.ofSeconds(40));
         this.restClient = RestClient.builder().requestFactory(http).build();
+        SimpleClientHttpRequestFactory httpDocs = new SimpleClientHttpRequestFactory();
+        httpDocs.setConnectTimeout(Duration.ofSeconds(10));
+        httpDocs.setReadTimeout(Duration.ofSeconds(150));
+        this.restClientDocumentos = RestClient.builder().requestFactory(httpDocs).build();
+        this.claudeUrl = claudeUrl;
     }
 
     /** true si hay una clave configurada (secretos.properties local o variable de entorno ANTHROPIC_API_KEY). */
@@ -122,6 +130,15 @@ public class AsistenteIaService {
      */
     public Resultado consultar(String promptSistema, String mensaje, int maxOutputTokens) {
         return llamarSimple(promptSistema, mensaje, maxOutputTokens);
+    }
+
+    /**
+     * Igual que consultar(...), pero adjuntando documentos (PDF) que Claude
+     * lee completos, y con un tiempo de espera mayor. Lo usa el Resumen
+     * profesional con IA del colaborador (ResumenProfesionalIaService).
+     */
+    public Resultado consultarConDocumentos(String promptSistema, String mensaje, List<Archivo> archivos, int maxOutputTokens) {
+        return llamar(promptSistema, List.of(new Turno(true, mensaje, archivos)), maxOutputTokens, true);
     }
 
     /**
@@ -177,6 +194,11 @@ public class AsistenteIaService {
     }
 
     private Resultado llamar(String promptSistema, List<Turno> turnos, int maxOutputTokens) {
+        return llamar(promptSistema, turnos, maxOutputTokens, false);
+    }
+
+    private Resultado llamar(String promptSistema, List<Turno> turnos, int maxOutputTokens, boolean conDocumentos) {
+        RestClient cliente = conDocumentos ? restClientDocumentos : restClient;
         if (!configurado()) {
             log.warn("Asistente IA: no hay anthropic.api.key ni ia.respaldo.api-key configuradas (ver secretos.properties.example)");
             return new Resultado("El Asistente IA todavía no está configurado en este servidor. Pídele a un administrador que agregue la clave de Claude.", false);
@@ -185,7 +207,7 @@ public class AsistenteIaService {
         boolean huboLimite = false;
         if (tieneClaude()) {
             for (String modelo : modelos) {
-                Intento r = conReintentos("Claude " + modelo, () -> pedirClaude(modelo, promptSistema, turnos, maxOutputTokens));
+                Intento r = conReintentos("Claude " + modelo, () -> pedirClaude(cliente, modelo, promptSistema, turnos, maxOutputTokens));
                 if (r.texto() != null) return new Resultado(r.texto(), true);
                 huboLimite |= r.limite();
             }
@@ -240,7 +262,7 @@ public class AsistenteIaService {
     }
 
     /** POST a la API de Claude (Anthropic Messages API): https://docs.claude.com/en/api/messages */
-    private String pedirClaude(String modelo, String promptSistema, List<Turno> turnos, int maxOutputTokens) throws Exception {
+    private String pedirClaude(RestClient cliente, String modelo, String promptSistema, List<Turno> turnos, int maxOutputTokens) throws Exception {
         Map<String, Object> cuerpo = new LinkedHashMap<>();
         cuerpo.put("model", modelo);
         cuerpo.put("max_tokens", maxOutputTokens);
@@ -268,8 +290,8 @@ public class AsistenteIaService {
             return Map.of("role", t.deUsuario() ? "user" : "assistant", "content", bloques);
         }).toList());
 
-        String respuestaCruda = restClient.post()
-                .uri(CLAUDE_URL)
+        String respuestaCruda = cliente.post()
+                .uri(claudeUrl)
                 .header("x-api-key", apiKey)
                 .header("anthropic-version", ANTHROPIC_VERSION)
                 .header("Content-Type", "application/json")
