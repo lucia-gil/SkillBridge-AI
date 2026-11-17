@@ -138,7 +138,8 @@ public class SecurityConfig {
             .sessionManagement(sesion -> sesion
                     .sessionFixation(fixation -> fixation.changeSessionId()))
 
-            .exceptionHandling(ex -> ex.accessDeniedHandler(accesoDenegadoHandler))
+            .exceptionHandling(ex -> ex.accessDeniedHandler(accesoDenegadoHandler)
+                    .defaultAuthenticationEntryPointFor(new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED), antMatcher("/api/asistente/**")))
 
             .headers(headers -> headers
                     .frameOptions(frame -> frame.sameOrigin())

@@ -60,11 +60,20 @@ public class AsistenteConversacionService {
     private final AsistenteContextoService contextoService;
     private final AsistenteIaService asistenteIaService;
     private final AsistenteAdjuntoRepository adjuntoRepository;
+    private final com.skillbridge.ai.service.agente.PoliticaAgente politica;
+    private final org.springframework.jdbc.core.JdbcTemplate db;
+    @org.springframework.beans.factory.annotation.Value("${agente.enabled:true}")
+    private boolean agenteHabilitado;
+    private final com.skillbridge.ai.service.agente.HerramientasAgente herramientas;
+    private final com.skillbridge.ai.service.agente.ConfirmacionAgenteService confirmaciones;
 
     public AsistenteConversacionService(AsistenteConversacionRepository conversacionRepository,
                                         AsistenteMensajeRepository mensajeRepository,
                                         AsistenteContextoService contextoService, AsistenteIaService asistenteIaService,
-                                        AsistenteAdjuntoRepository adjuntoRepository) {
+                                        AsistenteAdjuntoRepository adjuntoRepository, com.skillbridge.ai.service.agente.HerramientasAgente herramientas, com.skillbridge.ai.service.agente.ConfirmacionAgenteService confirmaciones, com.skillbridge.ai.service.agente.PoliticaAgente politica, org.springframework.jdbc.core.JdbcTemplate db) {
+        this.politica=politica; this.db=db;
+        this.confirmaciones = confirmaciones;
+        this.herramientas = herramientas;
         this.adjuntoRepository = adjuntoRepository;
         this.conversacionRepository = conversacionRepository;
         this.mensajeRepository = mensajeRepository;
@@ -80,7 +89,7 @@ public class AsistenteConversacionService {
     @Transactional(readOnly = true)
     public List<ConversacionVista> conversaciones(UsuarioSesion s) {
         return conversacionRepository.findTop30ByUsuarioIdAndRolOrderByFijadaDescFechaActualizacionDesc(s.getUsuarioId(), rolDe(s)).stream()
-                .map(c -> new ConversacionVista(c.getId(), c.getTitulo(), cuando(c.getFechaActualizacion()), c.isFijada())).toList();
+                .filter(c -> alcanceValido(c.getId(), s)).map(c -> new ConversacionVista(c.getId(), c.getTitulo(), cuando(c.getFechaActualizacion()), c.isFijada())).toList();
     }
 
     @Transactional(readOnly = true)
@@ -116,6 +125,9 @@ public class AsistenteConversacionService {
     @Transactional(readOnly = true)
     public AsistenteAdjunto adjunto(Long id, UsuarioSesion s) {
         Long dueno = adjuntoRepository.duenoDe(id);
+        Long conversacion = adjuntoRepository.conversacionDe(id);
+        if (conversacion == null) throw new OperacionInvalidaException("Ese archivo ya no existe.");
+        exigirPropia(conversacion, s);
         if (dueno == null || !dueno.equals(s.getUsuarioId())) throw new OperacionInvalidaException("Ese archivo ya no existe.");
         return adjuntoRepository.findById(id).orElseThrow(() -> new OperacionInvalidaException("Ese archivo ya no existe."));
     }
@@ -125,15 +137,14 @@ public class AsistenteConversacionService {
         conversacionRepository.delete(exigirPropia(conversacionId, s));
     }
 
-    @Transactional
     public Respuesta enviar(UsuarioSesion s, Long conversacionId, String texto) {
         return enviar(s, conversacionId, texto, List.of());
     }
 
-    @Transactional
     public Respuesta enviar(UsuarioSesion s, Long conversacionId, String texto, List<MultipartFile> archivos) {
         String mensaje = texto == null ? "" : texto.trim();
         List<MultipartFile> validos = archivos == null ? List.of() : archivos.stream().filter(f -> f != null && !f.isEmpty()).toList();
+        if (!validos.isEmpty()) throw new OperacionInvalidaException("Los adjuntos del asistente están deshabilitados. Escribe la información necesaria sin secretos.");
         if (validos.size() > MAX_ADJUNTOS) throw new OperacionInvalidaException("Puedes adjuntar hasta " + MAX_ADJUNTOS + " archivos por mensaje.");
         for (MultipartFile f : validos) {
             if (f.getSize() > MAX_BYTES) throw new OperacionInvalidaException("\"" + f.getOriginalFilename() + "\" pesa más de 5 MB.");
@@ -149,6 +160,8 @@ public class AsistenteConversacionService {
                 ? conversacionRepository.save(new AsistenteConversacion(s.getUsuarioId(), rol,
                         titulo(mensaje.isEmpty() ? nombreSeguro(validos.get(0).getOriginalFilename()) : mensaje)))
                 : exigirPropia(conversacionId, s);
+
+        if (nueva) db.update("INSERT INTO agente_alcances(conversacion_id,firma) VALUES (?,?)",conv.getId(),politica.firma(s));
 
         // Memoria: los últimos turnos de esta conversación (antes del mensaje nuevo)
         List<AsistenteMensaje> previos = new ArrayList<>(mensajeRepository.findTop12ByConversacionIdOrderByIdDesc(conv.getId()));
@@ -187,8 +200,8 @@ public class AsistenteConversacionService {
         if (turnos.size() > TURNOS_DE_MEMORIA) turnos = new ArrayList<>(turnos.subList(turnos.size() - TURNOS_DE_MEMORIA, turnos.size()));
         while (!turnos.get(0).deUsuario()) turnos.remove(0);
 
-        AsistenteContextoService.Contexto ctx = contextoService.construir(s, rol, mensajeIa);
-        AsistenteIaService.Resultado r = asistenteIaService.conversar(prompt(s, rol, ctx), turnos, 900);
+        AsistenteContextoService.Contexto ctx = new AsistenteContextoService.Contexto("", List.of(), List.of(), List.of());
+        AsistenteIaService.Resultado r = (agenteHabilitado ? asistenteIaService.conversarConHerramientas(s, turnos, herramientas, confirmaciones) : new AsistenteIaService.Resultado("El agente está deshabilitado en este entorno.", false));
         if (r.ok()) mensajeRepository.save(new AsistenteMensaje(conv.getId(), AsistenteMensaje.ASISTENTE, r.texto()));
         conv.tocar();
         conversacionRepository.save(conv);
@@ -232,25 +245,16 @@ public class AsistenteConversacionService {
         }
     }
 
-    private String prompt(UsuarioSesion s, String rol, AsistenteContextoService.Contexto ctx) {
-        return "Eres el Asistente IA de SkillBridge AI, la plataforma de gestión de talento y proyectos de NexaCorp. "
-                + "Hablas con " + s.getNombreCompleto() + ", que usa la vista " + Roles.etiqueta(rol) + ". "
-                + "Hoy es " + LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE d 'de' MMMM 'de' yyyy", new Locale("es", "PE"))) + ".\n\n"
-                + "DATOS ACTUALES DEL USUARIO (leídos de la base de datos en este momento):\n" + ctx.texto() + "\n"
-                + "REGLAS:\n"
-                + "- Responde en español, claro y directo, como un colega experto. Máximo 8 líneas salvo que pidan detalle.\n"
-                + "- Usa SOLO los datos de arriba para hablar del usuario, su equipo o sus proyectos. Si algo no aparece, dilo; no inventes nombres, cifras ni fechas.\n"
-                + "- Puedes usar viñetas que empiecen con \"- \" y **negritas** para lo importante.\n"
-                + "- Recuerda lo conversado antes en esta conversación y úsalo.\n"
-                + "- Si piden candidatos para un proyecto, usa el ranking de AI Talent Matching de los datos (si está) y recuerda que la decisión final es de una persona.\n"
-                + "- Solo ayudas con SkillBridge AI, gestión de proyectos, talento y desarrollo de software. Si preguntan otra cosa, dilo amablemente y ofrece ayuda dentro de ese alcance.";
-    }
-
     private AsistenteConversacion exigirPropia(Long id, UsuarioSesion s) {
         AsistenteConversacion c = conversacionRepository.findById(id)
                 .orElseThrow(() -> new OperacionInvalidaException("Esa conversación ya no existe."));
-        if (!c.getUsuarioId().equals(s.getUsuarioId())) throw new OperacionInvalidaException("Esa conversación ya no existe.");
+        if (!c.getUsuarioId().equals(s.getUsuarioId()) || !c.getRol().equals(rolDe(s)) || !alcanceValido(id,s)) throw new OperacionInvalidaException("Esa conversación ya no existe.");
         return c;
+    }
+
+    private boolean alcanceValido(Long id, UsuarioSesion s) {
+        var firmas=db.queryForList("SELECT firma FROM agente_alcances WHERE conversacion_id=?",String.class,id);
+        return firmas.size()==1 && firmas.get(0).equals(politica.firma(s));
     }
 
     private static String titulo(String mensaje) {

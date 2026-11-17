@@ -27,4 +27,8 @@ public interface AsistenteAdjuntoRepository extends JpaRepository<AsistenteAdjun
     @Query("select c.usuarioId from AsistenteAdjunto a, AsistenteMensaje m, AsistenteConversacion c "
             + "where a.id = :id and m.id = a.mensajeId and c.id = m.conversacionId")
     Long duenoDe(@Param("id") Long id);
+    @Query("select c.id from AsistenteAdjunto a, AsistenteMensaje m, AsistenteConversacion c "
+            + "where a.id = :id and m.id = a.mensajeId and c.id = m.conversacionId")
+    Long conversacionDe(@Param("id") Long id);
 }
+

@@ -1,0 +1,187 @@
+{
+  "archivo_base": "SkillBridge-AI-nube.zip",
+  "sha256_zip_base": "c52aa36267fbfe94b40f6cefc22d21cd4c8c46c106c0ccefafc6f44e8366f262",
+  "instrucciones": "Aplicar sobre la raíz del proyecto, junto a pom.xml. Ver LEEME_ACTUALIZACION.md.",
+  "archivos": [
+    {
+      "ruta": "ASISTENTE_IA.md",
+      "tipo": "modificado",
+      "sha256_original": "d9272939174ff1464acdfd0147c8caad1279db2a06c9a87b3dbceb2e2bf58260",
+      "sha256_actual": "85bcb3e24c2ad510ed95d386c0cad2ad5797bafff4cae13eba86d5ea83cc91b1"
+    },
+    {
+      "ruta": "LEEME_ACTUALIZACION.md",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "80475d3c4f8093a958d611497bd7fa5b4aa84beaf647b002163c13fd3986130c"
+    },
+    {
+      "ruta": "docs/Arquitectura_Agente_IA.pdf",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "b2ba479abe417cd61f193009a0ae69ceb11f527ea555a7bd7a72f537272f72e5"
+    },
+    {
+      "ruta": "docs/Guia_Pruebas_Agente_IA.pdf",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "64467500674433fd8a520d0d7bcd6e655239866d72dd407f374892115a893309"
+    },
+    {
+      "ruta": "docs/Resultados_Pruebas_Agente.md",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "ce33f1bd3dbbcb3c551a04189b4eb02de8944cb9558a6f013d30a45f8cb745ed"
+    },
+    {
+      "ruta": "docs/Transicion_Chat_Agente_IA.md",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "3f2b0eb9abb0a08b9913a58c3f0e187e4796d8f70b3df5d4c0ca457ec8cdc1d9"
+    },
+    {
+      "ruta": "pom.xml",
+      "tipo": "modificado",
+      "sha256_original": "6b7b128410286b361d27b988d242d7176eaf6a852871a0edb73d98d04b817da0",
+      "sha256_actual": "2b8c60f12d8b1b1e0b5b3bbe8c34c66a10f1863648f866324d14b412f270a552"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/config/InicializadorAgente.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "bf4fafbb80f8bc475a15688f14c77d043ab2d00d932b868843c5e49c735d3339"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/config/SecurityConfig.java",
+      "tipo": "modificado",
+      "sha256_original": "bdbf2c51af192b7d57a86a7e2a221c4113ad6b2c4b8223a4e2c312dcd084bb40",
+      "sha256_actual": "53596917b951ff5b955a9a9363abbad801e21b5b5dc264ba17f7961776ba6f5d"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/controller/AsistenteIaController.java",
+      "tipo": "modificado",
+      "sha256_original": "3831b875cd9c50a293f03cdf3781b619e0333a31ae29b5b204d3dd7101735f12",
+      "sha256_actual": "3761fd12b6f81aeca45ba59726e2188e664ef6ee91ff7eaa8187ad9a954821b4"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/controller/ConfirmacionAgenteController.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "d2c3d9adcdeea4c22a64bd609ccf4bf553c0edd3583f4fa8b08b43816873fef1"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/repository/AsistenteAdjuntoRepository.java",
+      "tipo": "modificado",
+      "sha256_original": "8f7da2bb1689dd5bf9577b49f46ee9f6614b6c373f7ed84f4bd7e24b515765ac",
+      "sha256_actual": "df03548dfbe3f2161682fe7f7a8c9b33ad2a72db109dbcf8ebc813dadac3f4bc"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/service/AsistenteConversacionService.java",
+      "tipo": "modificado",
+      "sha256_original": "27ab53266d48af152b0ceca839afe4c28d3ca8738ceb3bc5b8a8fe35b0bff5cc",
+      "sha256_actual": "f2678f343b67e58e1c5921b4115990a3a089ad6fd55b7f693cd336ff1ff00da3"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/service/AsistenteIaService.java",
+      "tipo": "modificado",
+      "sha256_original": "9077700c87b7d7e84813b0207f319b4693d45f7984e8d05a79ed761304fc4eb1",
+      "sha256_actual": "18e8fba1c18d179636cde5e47272b9fecdf26f30105692dc94ced5946e516185"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/service/agente/ArgumentosAgente.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "0cd0215ae6a45b0e76d2f042471bd4903d09fd8d2139e3cf21e9318bf326c4cc"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/service/agente/ConfirmacionAgenteService.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "de910c1d349379d00d002bac7d1fcfd55f9399edd704c1794c2e6bc8358a1c49"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/service/agente/HerramientasAgente.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "41798b2f5412f36b7988682feecf66a0f1b942f2c511e9cb5cdf7e69971ea9d0"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/service/agente/LimiteAgenteService.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "814bc795cb06fa112057e8baf3e58c55aa106b951ffb2d8e06212f19b472c1c0"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/service/agente/PoliticaAgente.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "e72da3523c1ae6e539706a13d3b1b0eb641166d762853eec06449b482bf5d3aa"
+    },
+    {
+      "ruta": "src/main/java/com/skillbridge/ai/service/agente/SalidaAgente.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "92cc093471c9b25e40543787f53be839e2294983186f554fbed0a7ea56783ea2"
+    },
+    {
+      "ruta": "src/main/resources/application-prod.properties",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "50f1166fe85c459ae638daa66a8321398a42c1794b1659e4b66baa8727562777"
+    },
+    {
+      "ruta": "src/main/resources/application.properties",
+      "tipo": "modificado",
+      "sha256_original": "2b14ee381b559ba21179b41bed4f1bdd14103a6a7f2e9fc62c99c278eafb1ff3",
+      "sha256_actual": "053205fb7abcb15e7d299fb3def25c30664a84a8d1a75b5c244c64c4e9787895"
+    },
+    {
+      "ruta": "src/main/resources/db/agente.sql",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "97303ee4beaedb506949555a79a9c8851fc3728c8ba79eb05f21a82c386ccb6f"
+    },
+    {
+      "ruta": "src/main/resources/static/js/asistente-ia.js",
+      "tipo": "modificado",
+      "sha256_original": "c239c980fee4d53322ee5e6bc9b338e881d75d4fe5659438db214e614b7fc472",
+      "sha256_actual": "38c6e17b8a78153a05b774ba0d4a0d3e31059093ab89e66a8d6c485133074f7e"
+    },
+    {
+      "ruta": "src/main/resources/templates/compartido/asistente-ia.html",
+      "tipo": "modificado",
+      "sha256_original": "ee7b91cd8539269b331e1497c48c482ecd9f9c3a11b430c68581fd50e0c588f5",
+      "sha256_actual": "f37e59ec40fb8e2c7e1e0f4b0bf368a032577a2c1d1f02009a93f2a676ffc4bd"
+    },
+    {
+      "ruta": "src/test/java/com/skillbridge/ai/service/agente/HerramientasAgenteTest.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "11239b18eec36e6df781c76bdda74e5744f25fb31ece22c4739a7b21edeaa85a"
+    },
+    {
+      "ruta": "src/test/java/com/skillbridge/ai/service/agente/PersistenciaAgenteTest.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "0023ab5ca49efd0fe39599a3331b18204e37de7d09cf0e0b628651e4e24077dc"
+    },
+    {
+      "ruta": "src/test/java/com/skillbridge/ai/service/agente/PoliticaAgenteTest.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "1b2be85d8636e83e76f2a410b9ea39171c78b640b3c1676c307c054c5d456904"
+    },
+    {
+      "ruta": "src/test/java/com/skillbridge/ai/service/agente/ProveedorAgenteTest.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "fff8047b6e495d3fac4e37ddd95fe7bcff04b17bb825c94c1bc09b512990c480"
+    },
+    {
+      "ruta": "src/test/java/com/skillbridge/ai/service/agente/SeguridadHttpAgenteTest.java",
+      "tipo": "nuevo",
+      "sha256_original": null,
+      "sha256_actual": "d15a758bca7734293232981dbdb43a14d4545120a97b4082f1c3f51fe6628c9a"
+    }
+  ]
+}

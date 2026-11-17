@@ -33,12 +33,14 @@ import java.util.Map;
 @Controller
 public class AsistenteIaController {
 
+    private final com.skillbridge.ai.service.agente.LimiteAgenteService limite;
     private final ShellModelBuilder shell;
     private final AsistenteConversacionService conversacionService;
     private final AsistenteContextoService contextoService;
 
     public AsistenteIaController(ShellModelBuilder shell, AsistenteConversacionService conversacionService,
-                                 AsistenteContextoService contextoService) {
+                                 AsistenteContextoService contextoService, com.skillbridge.ai.service.agente.LimiteAgenteService limite) {
+        this.limite=limite;
         this.shell = shell;
         this.conversacionService = conversacionService;
         this.contextoService = contextoService;
@@ -105,7 +107,7 @@ public class AsistenteIaController {
                                                                     @RequestParam(required = false) String mensaje,
                                                                     @RequestParam(name = "archivos", required = false) List<MultipartFile> archivos,
                                                                     HttpSession session) {
-        return conversacionService.enviar(sesion(session), conversacionId, mensaje, archivos);
+        return enviarLimitado(sesion(session), conversacionId, mensaje, archivos);
     }
 
     /** Ver (imágenes y PDF, en el navegador) o descargar un adjunto propio. */
@@ -126,7 +128,15 @@ public class AsistenteIaController {
     @PostMapping(value = "/api/asistente/mensaje", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public AsistenteConversacionService.Respuesta mensaje(@RequestBody MensajeRequest body, HttpSession session) {
-        return conversacionService.enviar(sesion(session), body.conversacionId(), body.mensaje());
+        return enviarLimitado(sesion(session), body.conversacionId(), body.mensaje(), List.of());
+    }
+
+    private AsistenteConversacionService.Respuesta enviarLimitado(UsuarioSesion usuario,Long id,String mensaje,List<MultipartFile> archivos) {
+        UsuarioSesion actor=new UsuarioSesion();
+        actor.setUsuarioId(usuario.getUsuarioId());actor.setPerfilId(usuario.getPerfilId());actor.setRolEfectivo(usuario.getRolEfectivo());
+        String lease=limite.adquirir(actor.getUsuarioId());
+        try { return conversacionService.enviar(actor,id,mensaje,archivos); }
+        finally { limite.liberar(usuario.getUsuarioId(),lease); }
     }
 
     @ExceptionHandler(OperacionInvalidaException.class)

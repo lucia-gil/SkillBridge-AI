@@ -371,3 +371,32 @@
     if (inicial) abrir(inicial); else mostrarVacio(true);
   });
 })(window.jQuery);
+
+/* Confirmaciones independientes del texto del modelo. No ejecutar desde Markdown. */
+(function ($) {
+  "use strict";
+  var panel = $('<section aria-live="polite" class="as-confirmaciones"></section>');
+  $("#as-form").before(panel);
+  function cargar() {
+    $.getJSON('/api/asistente/confirmaciones').done(function (filas) {
+      panel.empty();
+      filas.forEach(function (p) {
+        var caja=$('<div class="as-bubble"></div>').appendTo(panel);
+        $('<strong></strong>').text('Revisa antes de confirmar: '+p.herramienta).appendTo(caja);
+        var argumentos;try{argumentos=JSON.stringify(JSON.parse(p.argumentos),null,2);}catch(e){argumentos='Datos inválidos';return;}
+        $('<pre style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>').text(argumentos).appendTo(caja);
+        $('<p></p>').text('Esta acción utiliza exactamente estos datos. Caduca en cinco minutos.').appendTo(caja);
+        ['confirmar','cancelar'].forEach(function (accion) {
+          $('<button type="button" class="as-accion"></button>').text(accion==='confirmar'?'Confirmar cambio':'Cancelar').appendTo(caja).on('click',function(){
+            caja.find('button').prop('disabled',true);
+            $.ajax({url:'/api/asistente/confirmaciones/'+encodeURIComponent(p.id)+'/'+accion,type:'POST'})
+              .done(function(){caja.empty().append($('<p></p>').text(accion==='confirmar'?'Cambio confirmado y registrado.':'Propuesta cancelada.'));})
+              .fail(function(xhr){caja.append($('<p></p>').text((xhr.responseJSON||{}).error||'No se pudo completar. Actualiza antes de reintentar.'));});
+          });
+        });
+      });
+    });
+  }
+  $(document).ajaxComplete(function(_e,_xhr,settings){if(settings.url==='/api/asistente/mensaje')cargar();});
+  $(function(){cargar(); $('#as-file').prop('disabled',true);});
+})(jQuery);

@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS agente_confirmaciones (
+ id VARCHAR(36) PRIMARY KEY, usuario_id BIGINT NOT NULL, rol VARCHAR(30) NOT NULL,
+ herramienta VARCHAR(80) NOT NULL, argumentos TEXT NOT NULL, estado VARCHAR(20) NOT NULL,
+ creada TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, expira TIMESTAMP NOT NULL,
+ INDEX idx_agente_actor(usuario_id, estado)
+);
+CREATE TABLE IF NOT EXISTS agente_limites (
+ usuario_id BIGINT PRIMARY KEY, ventana BIGINT NOT NULL, cantidad INT NOT NULL,
+ lease_id VARCHAR(36), lease_hasta BIGINT NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS agente_auditoria (
+ id BIGINT AUTO_INCREMENT PRIMARY KEY, usuario_id BIGINT NOT NULL,
+ herramienta VARCHAR(80) NOT NULL, resultado VARCHAR(30) NOT NULL,
+ correlacion VARCHAR(36), fecha TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS agente_mutex (id INT PRIMARY KEY);
+INSERT IGNORE INTO agente_mutex(id) VALUES (1);
+CREATE TABLE IF NOT EXISTS agente_alcances (
+ conversacion_id BIGINT PRIMARY KEY, firma VARCHAR(64) NOT NULL
+);
