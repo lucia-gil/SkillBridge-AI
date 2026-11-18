@@ -163,6 +163,10 @@ La pantalla *Configuración* del Administrador edita `configuracion_global`. Cla
 - **Demanda de una habilidad**: según cuántos proyectos la requieren.
 - **Tipo / severidad / origen en Auditoría**: derivados del texto de la acción (`AuditoriaFila`).
 
+### Correos
+
+Los correos (Gmail SMTP) usan una plantilla HTML con el logo incrustado, se envían en segundo plano después de guardar cada cambio y algunos se pueden apagar en *Mi cuenta → Notificaciones*. El mapa completo de qué correo llega, a quién y cuándo (y qué casos no envían correo) está en [`Documentacion_Correos.md`](Documentacion_Correos.md).
+
 ### Servicios web REST
 
 Todos los servicios REST (`/api/**`, buscador y catálogo de habilidades) están documentados en [`Documentacion_REST/`](Documentacion_REST/README.md) con ruta, método, parámetros, ejemplo de respuesta y códigos HTTP.
