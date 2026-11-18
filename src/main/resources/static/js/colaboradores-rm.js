@@ -168,74 +168,148 @@
     });
   }
 
-  /* ── Ajustar carga (antes "Rebalancear" en Ocupación del equipo) ── */
+  /* ── Ajustar carga (antes "Rebalancear" en Ocupación del equipo) ──
+     Guarda por AJAX contra el REST de RmOcupacionController (SBAI.api agrega
+     el token CSRF): no se recarga la página, así se conservan el scroll, el
+     buscador y la tarjeta que está filtrando. Con la respuesta se repintan
+     el modal, la fila de la persona y los números de las tarjetas. */
   function esc(t) { var d = document.createElement("div"); d.textContent = t == null ? "" : t; return d.innerHTML; }
+  function icono(n) { return '<svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#' + n + '"></use></svg>'; }
+
+  /** Asignaciones activas por persona: primero las de la plantilla del servidor, luego las que devuelve el REST. */
+  var asignacionesDe = {};
+  function leerPlantillas(plantillas) {
+    plantillas.querySelectorAll("template[data-perfil]").forEach(function (tpl) {
+      asignacionesDe[tpl.getAttribute("data-perfil")] = Array.from(tpl.content.querySelectorAll("tr[data-asignacion]")).map(function (tr) {
+        var rol = tr.querySelector(".rb-rol");
+        return {
+          asignacionId: Number(tr.dataset.asignacion), carga: Number(tr.dataset.carga), esProjectManager: tr.dataset.pm === "true",
+          proyecto: tr.querySelector(".cell-primary span").textContent, rolLabel: rol ? rol.textContent : ""
+        };
+      });
+    });
+  }
+
+  function filasHtml(lista, limite) {
+    if (!lista.length) return '<tr><td colspan="3" class="text-tertiary" style="text-align:center">Sin asignaciones activas.</td></tr>';
+    return lista.map(function (a) {
+      return '<tr data-asignacion="' + a.asignacionId + '" data-carga="' + a.carga + '">' +
+        '<td class="cell-primary"><span>' + esc(a.proyecto) + '</span><span class="rb-rol">' + esc(a.rolLabel) + '</span></td>' +
+        '<td><input class="input rb-input" type="number" min="1" max="' + limite + '" value="' + a.carga + '" aria-label="Dedicación (%)"></td>' +
+        '<td class="cell-actions"><button type="button" data-rb-guardar>Guardar</button>' +
+        (a.esProjectManager ? "" : '<button type="button" class="danger" data-rb-finalizar>Finalizar</button>') + "</td></tr>";
+    }).join("");
+  }
+
+  /** Repinta la fila de la persona (barra, %, estado, botón) y recuenta las tarjetas. */
+  function actualizarFila(btn, r) {
+    var tr = btn.closest("tr[data-colaborador-row]");
+    var carga = tr.querySelector(".cl-load");
+    carga.setAttribute("data-estado", r.cargaClave);
+    carga.title = r.cargaLabel + " · límite " + r.limite + "%";
+    carga.querySelector(".cl-load-fill").style.width = r.cargaPct + "%";
+    carga.querySelector(".cl-load-value").textContent = r.ocupacion + "%";
+    carga.querySelector(".cl-load-label").textContent = r.cargaLabel;
+    if (tr.getAttribute("data-carga")) tr.setAttribute("data-carga", r.cargaClave);
+    btn.dataset.carga = r.ocupacion;
+    var sobre = r.cargaClave === "sobre";
+    var texto = (sobre ? "Rebalancear" : "Ajustar") + " la carga de " + btn.dataset.nombre;
+    btn.classList.toggle("is-alert", sobre);
+    btn.title = texto; btn.setAttribute("aria-label", texto);
+    btn.querySelector("span").textContent = sobre ? "Rebalancear" : "Ajustar";
+    if (r.ocupacion === 0) {   // sin carga: sin botón, pero con el espacio para que las columnas sigan alineadas
+      var vacio = document.createElement("span");
+      vacio.className = "cl-ajustar-vacio"; vacio.setAttribute("aria-hidden", "true");
+      btn.replaceWith(vacio);
+    }
+    document.querySelectorAll("[data-cl-carga]").forEach(function (k) {
+      var n = document.querySelectorAll('[data-colaborador-row][data-carga="' + k.getAttribute("data-cl-carga") + '"]').length;
+      k.querySelector(".hero-card-value").textContent = n;
+    });
+  }
 
   function ajustarCarga() {
     var plantillas = document.getElementById("rebalancear-templates");
     if (!plantillas) return;
     var LIMITE = Number(plantillas.getAttribute("data-limite")) || 100;
-    document.querySelectorAll("[data-rebalancear]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var tpl = plantillas.querySelector('template[data-perfil="' + btn.dataset.rebalancear + '"]');
-        var filas = tpl ? tpl.innerHTML : "";
-        var carga = Number(btn.dataset.carga);
+    var api = window.SBAI.api;
+    leerPlantillas(plantillas);
+
+    function abrir(btn) {
+      var perfil = btn.dataset.rebalancear;
+      var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
+        '<div class="modal-header"><div><h2 class="rb-titulo"></h2><p>' + esc(btn.dataset.nombre) +
+        ' · carga total <strong class="rb-total"></strong> (límite ' + LIMITE + '%)</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body"><div class="rb-aviso"></div>' +
+        '<div class="table-scroll rb-table"><table class="data-table"><thead><tr><th>Proyecto</th><th style="width:130px">Dedicación (%)</th><th>Acciones</th></tr></thead><tbody class="rb-filas"></tbody></table></div>' +
+        '<p class="text-tertiary rb-preview" style="font-size:var(--fs-xs);margin-top:var(--space-3)"></p>' +
+        '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
+      var backdrop = window.SBAI.modal.open(html);
+
+      function pintar() {
+        var carga = Number(btn.dataset.carga) || 0;
         var exceso = carga - LIMITE;
-        var html = '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
-          '<div class="modal-header"><div><h2>' + (exceso > 0 ? "Rebalancear carga" : "Ajustar carga") + '</h2><p>' + esc(btn.dataset.nombre) +
-          ' · carga total <strong>' + carga + '%</strong> (límite ' + LIMITE + '%)</p></div>' +
-          '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-          '<div class="modal-body">' +
-          (exceso > 0 ? '<div class="callout warn" style="margin-bottom:var(--space-4)"><span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
-            '<span class="callout-body">Supera el límite en <strong>' + exceso + '%</strong>. Baja la dedicación en algún proyecto o finaliza una asignación.</span></div>' : "") +
-          '<div class="table-scroll rb-table"><table class="data-table"><thead><tr><th>Proyecto</th><th style="width:130px">Dedicación (%)</th><th>Acciones</th></tr></thead><tbody>' +
-          (filas.trim() ? filas : '<tr><td colspan="3" class="text-tertiary" style="text-align:center">Sin asignaciones activas.</td></tr>') +
-          '</tbody></table></div>' +
-          '<p class="text-tertiary rb-preview" style="font-size:var(--fs-xs);margin-top:var(--space-3)"></p>' +
-          '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cerrar</button></div></div>';
-        var backdrop = window.SBAI.modal.open(html);
-        var preview = backdrop.querySelector(".rb-preview");
-        function recalcular() {
-          var total = 0;
-          backdrop.querySelectorAll("tr[data-asignacion]").forEach(function (tr) { total += Number(tr.querySelector(".rb-input").value) || 0; });
-          preview.textContent = "Con los valores escritos, la carga total quedaría en " + total + "%" + (total > LIMITE ? " (sigue por encima del límite)." : ".");
-        }
-        backdrop.querySelectorAll(".rb-input").forEach(function (i) { i.addEventListener("input", recalcular); });
+        backdrop.querySelector(".rb-titulo").textContent = exceso > 0 ? "Rebalancear carga" : "Ajustar carga";
+        backdrop.querySelector(".rb-total").textContent = carga + "%";
+        backdrop.querySelector(".rb-aviso").innerHTML = exceso > 0
+          ? '<div class="callout warn" style="margin-bottom:var(--space-4)"><span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
+            '<span class="callout-body">Supera el límite en <strong>' + exceso + '%</strong>. Baja la dedicación en algún proyecto o finaliza una asignación.</span></div>'
+          : "";
+        backdrop.querySelector(".rb-filas").innerHTML = filasHtml(asignacionesDe[perfil] || [], LIMITE);
         recalcular();
-        backdrop.querySelectorAll("[data-rb-guardar]").forEach(function (b) {
-          b.addEventListener("click", function () {
-            var tr = b.closest("tr");
-            var nuevo = Number(tr.querySelector(".rb-input").value);
-            var antes = Number(tr.dataset.carga);
-            if (!Number.isInteger(nuevo) || nuevo < 1 || nuevo > LIMITE) return window.SBAI.toast.show("La dedicación debe estar entre 1% y " + LIMITE + "%.", { type: "error" });
-            if (nuevo === antes) return window.SBAI.toast.show("No cambiaste la dedicación.", { type: "info" });
-            var proyecto = tr.querySelector(".cell-primary span").textContent;
-            window.SBAI.modal.confirm({
-              title: "¿Cambiar dedicación a " + nuevo + "%?",
-              desc: btn.dataset.nombre + " en “" + proyecto + "”: " + antes + "% → " + nuevo + "%.",
-              variant: "primary", icon: "icon-sliders",
-              reason: { label: "Motivo", required: false, placeholder: "Opcional: queda registrado en Auditoría.", presets: ["Rebalanceo por sobre-asignación", "Cambio de prioridades", "A solicitud del colaborador"] },
-              confirmLabel: "Guardar cambio", cancelLabel: "Volver",
-              onConfirm: function (d) {
-                var datos = { cargaPorcentaje: nuevo };
-                if (d.motivo) datos.motivo = d.motivo;
-                window.SBAI.submitForm("/resource-manager/asignaciones/" + tr.dataset.asignacion + "/dedicacion", datos);
-              }
-            });
+      }
+      function recalcular() {
+        var total = 0;
+        backdrop.querySelectorAll("tr[data-asignacion]").forEach(function (tr) { total += Number(tr.querySelector(".rb-input").value) || 0; });
+        backdrop.querySelector(".rb-preview").textContent = "Con los valores escritos, la carga total quedaría en " + total + "%" + (total > LIMITE ? " (sigue por encima del límite)." : ".");
+      }
+      function aplicar(r) {
+        asignacionesDe[perfil] = r.asignaciones;
+        actualizarFila(btn, r);
+        if (document.body.contains(backdrop)) pintar();
+        window.SBAI.toast.show(esc(r.mensaje), { type: "success" });
+      }
+      function fallo(xhr) {
+        window.SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" });
+      }
+
+      backdrop.addEventListener("input", function (e) { if (e.target.classList.contains("rb-input")) recalcular(); });
+      backdrop.addEventListener("click", function (e) {
+        var guardar = e.target.closest("[data-rb-guardar]"), finalizar = e.target.closest("[data-rb-finalizar]");
+        if (!guardar && !finalizar) return;
+        var tr = e.target.closest("tr[data-asignacion]");
+        var proyecto = tr.querySelector(".cell-primary span").textContent;
+        var id = tr.dataset.asignacion;
+        if (guardar) {
+          var nuevo = Number(tr.querySelector(".rb-input").value);
+          var antes = Number(tr.dataset.carga);
+          if (!Number.isInteger(nuevo) || nuevo < 1 || nuevo > LIMITE) return window.SBAI.toast.show("La dedicación debe estar entre 1% y " + LIMITE + "%.", { type: "error" });
+          if (nuevo === antes) return window.SBAI.toast.show("No cambiaste la dedicación.", { type: "info" });
+          window.SBAI.modal.confirm({
+            title: "¿Cambiar dedicación a " + nuevo + "%?",
+            desc: btn.dataset.nombre + " en “" + proyecto + "”: " + antes + "% → " + nuevo + "%.",
+            variant: "primary", icon: "icon-sliders",
+            reason: { label: "Motivo", required: false, placeholder: "Opcional: queda registrado en Auditoría.", presets: ["Rebalanceo por sobre-asignación", "Cambio de prioridades", "A solicitud del colaborador"] },
+            confirmLabel: "Guardar cambio", cancelLabel: "Volver",
+            onConfirm: function (d) {
+              api.put("/resource-manager/api/asignaciones/" + id + "/dedicacion", { cargaPorcentaje: nuevo, motivo: d.motivo || null }).done(aplicar).fail(fallo);
+            }
           });
-        });
-        backdrop.querySelectorAll("[data-rb-finalizar]").forEach(function (b) {
-          b.addEventListener("click", function () {
-            var tr = b.closest("tr");
-            window.SBAI.proyectoAcciones.finalizarAsignacion({
-              url: "/resource-manager/asignaciones/" + tr.dataset.asignacion + "/finalizar",
-              nombre: btn.dataset.nombre,
-              proyecto: tr.querySelector(".cell-primary span").textContent,
-              extra: { volver: "colaboradores" }
-            });
+        } else {
+          window.SBAI.proyectoAcciones.finalizarAsignacion({
+            nombre: btn.dataset.nombre, proyecto: proyecto,
+            alConfirmar: function (motivo) {
+              api.post("/resource-manager/api/asignaciones/" + id + "/finalizar", { motivo: motivo || null }).done(aplicar).fail(fallo);
+            }
           });
-        });
+        }
       });
+      pintar();
+    }
+
+    document.querySelectorAll("[data-rebalancear]").forEach(function (btn) {
+      btn.addEventListener("click", function () { abrir(btn); });
     });
   }
 

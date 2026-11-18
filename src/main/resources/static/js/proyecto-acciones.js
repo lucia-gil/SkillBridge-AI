@@ -7,7 +7,7 @@
     SBAI.proyectoAcciones.cambiarEstado({ url, nombre, actual, nuevo, extra, colaboradoresActivos, equipoAnterior })
     SBAI.proyectoAcciones.datosDeModal(elementoDelModal) -> { colaboradoresActivos, equipoAnterior }
     SBAI.proyectoAcciones.pedirMotivoEstado({ nombre, nuevo, onConfirm(motivo) })
-    SBAI.proyectoAcciones.finalizarAsignacion({ url, nombre, proyecto, extra })
+    SBAI.proyectoAcciones.finalizarAsignacion({ url, nombre, proyecto, extra, alConfirmar(motivo) })
 
   Se usa en: project-manager/proyectos, administrador/proyectos,
   project-manager/asignaciones y resource-manager/asignaciones.
@@ -252,6 +252,8 @@
       confirmLabel: "Finalizar asignación",
       cancelLabel: "Volver",
       onConfirm: function (d) {
+        // Con o.alConfirmar quien llama hace el envío (p. ej. por AJAX, sin recargar la página).
+        if (typeof o.alConfirmar === "function") { o.alConfirmar(d.motivo || ""); return; }
         var datos = Object.assign({}, o.extra || {});
         if (d.motivo) datos.motivo = d.motivo;
         enviar(o.url, datos);

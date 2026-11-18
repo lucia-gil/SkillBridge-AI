@@ -129,6 +129,19 @@ public class ColaboradorFila {
 
     /** Mismos estados que Reportes/Ocupación: banca, sub, opt, lim, sobre. */
     public String getCargaClave() {
+        return claveDeCarga(ocupacion, limite);
+    }
+
+    public String getCargaLabel() {
+        return etiquetaDeCarga(getCargaClave());
+    }
+
+    /**
+     * Rango de carga contra el límite de Configuración: banca (0%), sub, opt,
+     * lim (a 10 puntos del límite o menos) o sobre (pasa el límite). Lo usan la
+     * tabla de Colaboradores y el servicio REST de "Ajustar carga".
+     */
+    public static String claveDeCarga(int ocupacion, int limite) {
         if (ocupacion == 0) return "banca";
         if (ocupacion > limite) return "sobre";
         if (ocupacion >= limite - 10) return "lim";
@@ -136,8 +149,8 @@ public class ColaboradorFila {
         return "sub";
     }
 
-    public String getCargaLabel() {
-        return switch (getCargaClave()) {
+    public static String etiquetaDeCarga(String clave) {
+        return switch (clave) {
             case "banca" -> "Sin asignación";
             case "sobre" -> "Sobre-asignado";
             case "lim" -> "Al límite";

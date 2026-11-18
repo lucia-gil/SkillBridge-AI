@@ -12,6 +12,7 @@ códigos HTTP**.
 | [Confirmaciones del agente](04_confirmaciones_agente.md) | `/api/asistente/confirmaciones` | `ConfirmacionAgenteController` | `js/asistente-ia.js` |
 | [Buscador global](05_buscador.md) | `/cuenta/buscar`, `/cuenta/buscar-ia` | `BuscadorController` | `js/global-search.js` |
 | [Catálogo de habilidades (admin)](06_habilidades_admin.md) | `/administrador/api/habilidades` | `AdminHabilidadesApiController` | uso interno / pruebas |
+| [Ajustar carga (RM)](07_carga_rm.md) | `/resource-manager/api/asignaciones` | `RmOcupacionController` | `js/colaboradores-rm.js` |
 
 ## Reglas comunes
 
