@@ -75,7 +75,7 @@ Menú de cada rol (definido en `service/NavService`):
 | Rol | Pantallas del menú |
 |---|---|
 | **Administrador** (`/administrador/**`) | Inicio, Usuarios y roles, Catálogo de habilidades, Cursos, Catálogos técnicos, Proyectos, Reportes globales, Auditoría, Configuración |
-| **Resource Manager** (`/resource-manager/**`) | Inicio, Ocupación del equipo, Asignaciones, Colaboradores (con ficha de detalle), AI Talent Matching, Cursos, Reportes |
+| **Resource Manager** (`/resource-manager/**`) | Inicio, Asignaciones, Colaboradores (capacidad del equipo, Ajustar carga y ficha de detalle), AI Talent Matching, Calendario (agenda personal), Cursos, Reportes |
 | **Project Manager** (`/project-manager/**`) | Inicio, Proyectos (con archivos de contexto), Asignaciones, Calendario, AI Talent Matching, Foros, Chat, Cursos, Asistente IA, Reportes |
 | **Colaborador** (`/colaborador/**`) | Inicio, Mi perfil (habilidades y certificados), Mis proyectos, Entregables, Calendario, Foros, Chat, Cursos, Asistente IA, Notificaciones |
 | Todos (menú del usuario, arriba a la derecha) | Mi cuenta (datos, foto, contraseña, doble factor TOTP), Notificaciones, buscador global (`Ctrl+K`) |
@@ -89,6 +89,19 @@ Una sola pantalla para los 4 roles (`compartido/asistente-ia.html`, `AsistenteIa
 - Las respuestas pueden traer enlaces de acción (por ejemplo "Ver Portal Andes" o "Buscar talento para…").
 
 Detalles del agente (herramientas por rol, confirmación de escrituras, límites y auditoría): ver [`ASISTENTE_IA.md`](ASISTENTE_IA.md) y [`Documentacion_IA/`](Documentacion_IA/).
+
+### Colaboradores del Resource Manager (directorio + capacidad)
+
+`resource-manager/colaboradores.html` reúne lo que antes eran dos pantallas (la antigua "Ocupación del equipo" redirige aquí):
+
+- **Capacidad:** tarjetas con cuántas personas disponibles hay en la banca, subutilizadas, en rango óptimo, al límite o sobreasignadas (contra el límite de carga de Configuración). Al pulsar una, la tabla muestra solo a esas personas, combinado con el buscador.
+- **Directorio:** foto, cargo, dos habilidades principales (el resto en "+N"), barra de carga y estado, con filtros por habilidad y estado.
+- **Ajustar carga / Rebalancear:** desde la barra de carga se abren las asignaciones activas de la persona para cambiar la dedicación o finalizar una asignación (queda en Auditoría).
+- **Ver perfil** y marcar disponible o no disponible, como antes.
+
+### Calendario del Resource Manager
+
+`resource-manager/calendario.html` usa el mismo calendario que PM y Colaborador. Muestra la **agenda personal** del RM (tabla `eventos_personales`: solo él la ve, crea, edita y elimina) y, solo para consulta, los **hitos y entregables** de los proyectos en curso. El Asistente IA puede consultar esa agenda y **preparar eventos** (`crear_evento_agenda`), que se guardan solo cuando el RM pulsa *Confirmar cambio*.
 
 ### Chat de proyectos (RF07)
 
@@ -193,7 +206,7 @@ Con `spring.jpa.hibernate.ddl-auto=none`, Hibernate no toca la BD. Para que una 
 | `InicializadorEsquemaV9` | enlaces y datos del perfil profesional, `proyectos.github_url` |
 | `InicializadorEsquemaV10` | columnas del resumen IA de foros |
 | `InicializadorRazonCancelacion` | `proyectos.razon_cancelacion` |
-| `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos`, `curso_pasos`, `chat_lecturas`, `asistente_conversaciones` y `asistente_mensajes`, columnas del catálogo de formación y, la primera vez, un catálogo de cursos y conversaciones de chat de ejemplo |
+| `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos`, `curso_pasos`, `chat_lecturas`, `asistente_conversaciones` y `asistente_mensajes`, `eventos_personales` (agenda del RM), columnas del catálogo de formación y, la primera vez, un catálogo de cursos y conversaciones de chat de ejemplo |
 | `InicializadorTopicosForo` | asigna tópico a los hilos que no tengan |
 | `DataSeeder` | tipos de notificación `asignacion` y `foro_respuesta` |
 | `ReparadorTildes` | corrige textos con tildes guardadas dos veces ("IvÃ¡n" → "Iván"); si no está seguro, no toca el valor |
