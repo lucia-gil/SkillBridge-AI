@@ -13,8 +13,10 @@ Plataforma interna de gestión de talento y proyectos (empresa ficticia **NexaCo
 Con MySQL 8 corriendo:
 
 ```bash
-mysql --default-character-set=utf8mb4 -u root -p < db/skillbridge_db.sql
+mysql --default-character-set=utf8mb4 --init-command="SET time_zone='-05:00'" -u root -p < db/skillbridge_db.sql
 ```
+
+`--init-command` carga los datos de demo en hora de Perú (los eventos y fechas de ejemplo se calculan con `NOW()`). En Workbench, ejecuta antes `SET time_zone = '-05:00';` en la misma pestaña.
 
 > Si usas la consola de MySQL, cárgalo siempre en UTF-8 (`mysql --default-character-set=utf8mb4 -u root -p < db/skillbridge_db.sql`); en Workbench basta con abrirlo y ejecutar. Si alguna vez quedaron nombres como "IvÃ¡n" en vez de "Iván" (datos cargados con scripts antiguos), la app los repara sola al arrancar (`config/ReparadorTildes`).
 
@@ -223,5 +225,7 @@ export MAIL_PASSWORD='...'
 export ANTHROPIC_API_KEY='...'
 nohup java -jar skillbridge-ai.jar > app.log 2>&1 &
 ```
+
+**Zona horaria:** la app trabaja siempre en hora de Perú (`America/Lima`, UTC-5), aunque el EC2 o RDS estén en UTC. La fija `SkillbridgeAiApplication` para Java y `spring.datasource.hikari.connection-init-sql` para MySQL (`NOW()` y las columnas con `DEFAULT CURRENT_TIMESTAMP`). Si usas el perfil `prod`, incluye `serverTimezone=America/Lima` en `DB_URL`, igual que en `application.properties`. En RDS puedes además poner `time_zone = America/Lima` en el grupo de parámetros, para que las consultas manuales también muestren hora de Perú.
 
 `app.base-url` en `application.properties` debe apuntar a la URL pública (se usa para los enlaces de los correos). En producción conviene `spring.thymeleaf.cache=true` y, con HTTPS, `server.servlet.session.cookie.secure=true`.

@@ -5,6 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 
+import java.util.TimeZone;
+
 /**
  * Punto de entrada de SkillBridge AI.
  *
@@ -17,6 +19,17 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
  */
 @SpringBootApplication
 public class SkillbridgeAiApplication extends SpringBootServletInitializer {
+
+    /** Zona horaria de la plataforma (Perú, UTC-5 todo el año: no hay horario de verano). */
+    public static final String ZONA_HORARIA = "America/Lima";
+
+    // Toda la app trabaja en hora de Perú, aunque el servidor (EC2, Docker)
+    // esté en UTC: LocalDateTime.now(), las horas que se muestran y las
+    // fechas que se guardan en MySQL. Va en un bloque static para que se
+    // aplique tanto con "java -jar" (main) como desplegada en Tomcat (WAR).
+    static {
+        TimeZone.setDefault(TimeZone.getTimeZone(ZONA_HORARIA));
+    }
 
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
