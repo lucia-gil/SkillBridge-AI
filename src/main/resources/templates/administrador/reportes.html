@@ -12,22 +12,23 @@
 <link rel="stylesheet" href="/css/polish.css">
 <link rel="stylesheet" href="/css/kpi-hero.css">
 <link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/admin-visual.css">
 </head>
 <body class="admin-app">
 <div class="app-shell">
   <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
     <div th:replace="~{fragments/topbar :: topbar}"></div>
-    <main class="page-content" id="page-content">
+    <main class="page-content insight-page" id="page-content">
 
-      <section class="kpi-hero">
+      <section class="kpi-hero insight-hero">
         <div class="kpi-hero-head">
           <div>
-            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-bar-chart"></use></svg>Administración · Reportes</span>
-            <h2 class="kpi-hero-title">Reportes</h2>
-            <p class="kpi-hero-sub">Indicadores generales de la plataforma</p>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-bar-chart"></use></svg>INTELIGENCIA DE PLATAFORMA</span>
+            <h2 class="kpi-hero-title">Una visión clara de tu organización</h2>
+            <p class="kpi-hero-sub">Talento, proyectos y capacidad. Tus indicadores, en un solo lugar.</p>
           </div>
-          <div class="admin-report-actions"><a class="btn btn-secondary" href="/administrador/reportes/exportar?formato=xlsx">Exportar Excel</a><a class="btn btn-secondary" href="/administrador/reportes/exportar?formato=pdf">Exportar PDF</a></div>
+          <div class="admin-report-actions"><span class="insight-live">Datos actuales</span><a class="btn btn-secondary" data-export="Excel" href="/administrador/reportes/exportar?formato=xlsx">Exportar Excel</a><a class="btn btn-secondary" data-export="PDF" href="/administrador/reportes/exportar?formato=pdf">Exportar PDF</a></div>
         </div>
         <div class="kpi-hero-grid">
           <article class="hero-card">
@@ -65,36 +66,38 @@
         </div>
       </section>
 
-      <section class="admin-report-summary" aria-label="Estado de formación y usuarios"><div class="card card-pad"><strong th:text="${cursosPublicados}">0</strong><span>Cursos publicados</span><a href="/administrador/cursos.html">Gestionar cursos</a></div><div class="card card-pad"><strong th:text="${usuariosActivos}">0</strong><span>Usuarios activos</span><a href="/administrador/usuarios.html">Gestionar usuarios</a></div></section>
-
-      <div class="detail-grid" style="margin-top:var(--space-6);">
-        <section class="card card-pad">
+      <div class="insight-report-grid">
+        <section class="card card-pad insight-skills">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-5);">
             <div>
               <h2 style="font-size:var(--fs-md);">Habilidades más declaradas</h2>
               <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:2px;">Cuántos colaboradores declaran cada habilidad en su perfil</p>
             </div>
           </div>
-          <div th:if="${topHabilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
-          <div th:each="s : ${topHabilidades}" class="rank-row" style="padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
-            <span class="rank-name" style="font-size:var(--fs-sm); font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
-            <div data-escala="ranking" class="progress-bar" th:attr="data-etiqueta=${s.vacantes()} + ' persona(s)'"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
+          <div th:if="${topHabilidades.isEmpty()}" class="insight-empty-state"><span aria-hidden="true">◇</span><strong>Aquí comienza el mapa de talento</strong><p>Las habilidades aparecerán cuando los colaboradores las declaren en sus perfiles.</p><a href="/administrador/habilidades.html">Explorar catálogo →</a></div>
+          <div th:each="s, rank : ${topHabilidades}" class="insight-skill">
+            <span class="insight-rank" th:text="${rank.count}">1</span><div class="insight-skill-body"><div class="insight-skill-label"><strong th:text="${s.nombre()}">Habilidad</strong><span><b th:text="${s.vacantes()}">0</b> personas</span></div>
+            <div class="insight-track"><i th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%'"></i></div></div>
           </div>
+          <p class="insight-footnote">Ranking por declaraciones de perfil; no representa una certificación.</p>
         </section>
 
-        <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Proyectos por estado</h3>
-          <div th:if="${proyectosPorEstado.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no hay proyectos creados.</div>
-          <div th:each="e : ${proyectosPorEstado}" class="info-row">
+        <div class="insight-side-stack"><section class="card card-pad insight-status">
+          <span class="insight-eyebrow">PORTAFOLIO</span><h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Proyectos por estado</h3>
+          <div class="insight-donut-wrap" hidden><div class="insight-donut" role="img" aria-label="Distribución de proyectos"><div><strong data-project-total>0</strong><span>proyectos</span></div></div></div>
+          <div th:if="${proyectosPorEstado.isEmpty()}" class="insight-empty-state"><span aria-hidden="true">▱</span><strong>Tu portafolio está por comenzar</strong><p>Al registrar proyectos verás su distribución por estado.</p><a href="/administrador/proyectos.html">Ir a proyectos →</a></div>
+          <div th:each="e : ${proyectosPorEstado}" class="info-row" data-project-state th:attr="data-count=${e.conteo},data-label=${e.label}">
             <span class="info-row-label"><span class="badge" th:classappend="${e.badgeClass}" th:text="${e.label}">Estado</span></span>
             <span class="info-row-value mono" th:text="${e.conteo} + (${e.conteo == 1} ? ' proyecto' : ' proyectos')">0 proyectos</span>
           </div>
         </section>
+      <section class="admin-report-summary insight-secondary" aria-label="Estado de formación y usuarios"><div class="card card-pad"><strong th:text="${cursosPublicados}">0</strong><span>Cursos publicados</span><a href="/administrador/cursos.html">Gestionar cursos</a></div><div class="card card-pad"><strong th:text="${usuariosActivos}">0</strong><span>Usuarios activos</span><a href="/administrador/usuarios.html">Gestionar usuarios</a></div></section></div>
+
       </div>
 
-      <section class="card card-pad" style="margin-top:var(--space-6);">
-        <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Ocupación por colaborador</h3>
-        <div th:if="${ocupacion.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía no hay asignaciones activas.</div>
+      <section class="card card-pad insight-occupation">
+        <div class="insight-section-heading"><div><span class="insight-eyebrow">CAPACIDAD DEL EQUIPO</span><h3>Ocupación por colaborador</h3><p>Dedicación acumulada en asignaciones activas.</p></div><label class="insight-search"><span class="sr-only">Buscar colaborador o cargo en esta tabla</span><input type="search" id="insight-occupation-search" placeholder="Buscar persona o cargo…"></label></div><div class="insight-capacity-summary" aria-label="Resumen de las filas cargadas"></div><p id="insight-no-people" class="insight-empty" hidden>No hay colaboradores que coincidan con tu búsqueda.</p>
+        <div th:if="${ocupacion.isEmpty()}" class="insight-empty-state"><strong>Sin asignaciones activas por ahora</strong><p>Cuando se incorporen colaboradores a proyectos, podrás comparar su ocupación desde esta vista.</p><a href="/administrador/proyectos.html">Revisar proyectos →</a></div>
         <div class="table-scroll" th:unless="${ocupacion.isEmpty()}">
           <table class="data-table">
             <thead><tr><th>Colaborador</th><th>Cargo</th><th>Ocupación (suma de dedicaciones activas)</th><th>Estado</th></tr></thead>
@@ -102,7 +105,7 @@
             <tr th:each="o : ${ocupacion}" data-reportes-ocupacion-row>
               <td class="cell-person"><span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span><span class="cell-person-name" th:text="${o.nombre}">Nombre</span></td>
               <td th:text="${o.cargo}">Cargo</td>
-              <td class="mono" th:text="${o.promedio} + '%'">0%</td>
+              <td class="insight-load" th:attr="data-load=${o.promedio}"><span th:text="${o.promedio} + '%'">0%</span><div class="insight-track"><i th:style="'width:' + ${o.promedio > 100 ? 100 : (o.promedio < 0 ? 0 : o.promedio)} + '%'"></i></div></td>
               <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
             </tr>
             </tbody>
@@ -114,53 +117,19 @@
         </div>
       </section>
 
-    </main>
+    <dialog class="insight-dialog" aria-labelledby="insight-dialog-title"><div class="insight-dialog-head"><span class="insight-eyebrow">SKILLBRIDGE · ADMINISTRACIÓN</span><button type="button" data-dialog-close aria-label="Cerrar diálogo">✕</button></div><h2 id="insight-dialog-title"></h2><div data-dialog-body></div><div class="insight-dialog-actions"></div></dialog></main>
   </div>
 </div>
 
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/topbar-actions.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Paginación en el cliente: mismo patrón que resource-manager/reportes.html.
-    var rows = Array.from(document.querySelectorAll("[data-reportes-ocupacion-row]"));
-    if (!rows.length) return;
 
-    var pageSize = 8;
-    var page = 1;
-    var visibleCount = document.getElementById("reportes-ocupacion-visible-count");
-    var totalCount = document.getElementById("reportes-ocupacion-total-count");
-    var pageLabel = document.getElementById("reportes-ocupacion-page-label");
-    var previous = document.getElementById("reportes-ocupacion-prev");
-    var next = document.getElementById("reportes-ocupacion-next");
-
-    function render() {
-      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
-      page = Math.min(page, pages);
-      var visible = rows.slice((page - 1) * pageSize, page * pageSize);
-      rows.forEach(function (row) { row.hidden = true; });
-      visible.forEach(function (row) { row.hidden = false; });
-      visibleCount.textContent = visible.length;
-      totalCount.textContent = rows.length;
-      pageLabel.textContent = "Página " + page + " de " + pages;
-      previous.disabled = page === 1;
-      next.disabled = page === pages;
-    }
-
-    previous.addEventListener("click", function () { if (page > 1) { page--; render(); } });
-    next.addEventListener("click", function () {
-      var pages = Math.max(1, Math.ceil(rows.length / pageSize));
-      if (page < pages) { page++; render(); }
-    });
-    render();
-  });
-</script>
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>
-<script src="/js/battery-progress.js"></script>
-<script src="/js/paginacion.js"></script>
+
+
 <script src="/js/mobile-nav.js"></script>
-<script src="/js/admin-ui.js"></script>
+<script src="/js/admin-ui.js"></script><script src="/js/admin-visual.js"></script>
 </body>
 </html>
