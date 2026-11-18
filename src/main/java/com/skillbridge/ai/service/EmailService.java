@@ -1,31 +1,63 @@
 package com.skillbridge.ai.service;
 
+import jakarta.annotation.PreDestroy;
+import jakarta.mail.internet.MimeMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import jakarta.mail.internet.MimeMessage;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Envio real de notificaciones por correo (Gmail SMTP + contraseña de
- * aplicacion, ver application.properties). Nunca debe romper el flujo
- * principal de la app: cualquier fallo de envio (SMTP caido, correo
- * invalido, timeout, etc.) se registra en el log y se ignora - crear una
- * notificacion en la plataforma no debe fallar por un problema de correo.
+ * Correos de SkillBridge AI (Gmail SMTP + contraseña de aplicación, ver
+ * application.properties). El mapa completo de qué correo llega y cuándo
+ * está en Documentacion_Correos.md.
  *
- * El correo se envia como HTML con una plantilla simple (franja de color,
- * titulo, detalle) en vez de texto plano, para que se vea mas cuidado en
- * el cliente de correo del destinatario.
+ * Cómo se envían:
+ *  - En segundo plano: quien pide el correo (asignar, responder un foro...)
+ *    no espera a Gmail. Si la acción ocurre dentro de una transacción, el
+ *    correo sale recién cuando esa transacción se confirma: si se revierte,
+ *    no se manda un aviso de algo que no pasó.
+ *  - Nunca rompe el flujo principal: un fallo de SMTP solo queda en el log.
+ *
+ * Cómo se ven:
+ *  - Plantilla HTML con tablas y estilos en línea (lo que respetan Gmail,
+ *    Outlook y los clientes móviles), en español (lang y Content-Language).
+ *  - Logo incrustado en el propio correo (imagen inline "cid:logo"): se ve
+ *    aunque la app no tenga una URL pública con HTTPS.
+ *  - Versión en texto plano para clientes sin HTML (también ayuda a que el
+ *    correo no se marque como spam).
  */
 @Service
 public class EmailService {
 
-    private static final Logger log = Logger.getLogger(EmailService.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+    private static final String LOGO = "correo/logo-correo.png";
+
+    /**
+     * Un correo con la plantilla de SkillBridge AI.
+     *
+     * @param etiqueta        categoría que se muestra sobre el título (p. ej. "Proyectos y asignaciones")
+     * @param enlace          botón de acción (null = sin botón)
+     * @param conPreferencias true si el aviso se puede apagar en Mi cuenta (se explica en el pie)
+     */
+    public record Correo(String destinatario, String asunto, String etiqueta, String titulo, String detalle,
+                         String enlace, String textoBoton, boolean conPreferencias) {}
 
     private final JavaMailSender mailSender;
+    private final ExecutorService envios = Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "correo");
+        t.setDaemon(true);
+        return t;
+    });
 
     @Value("${spring.mail.username}")
     private String remitente;
@@ -34,100 +66,152 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    /** Compatibilidad con el envio simple (sin plantilla), por si se necesita en otro punto. */
+    /** Envío simple, por compatibilidad. */
     public void enviar(String destinatario, String asunto, String cuerpo) {
         enviarNotificacion(destinatario, asunto, asunto, cuerpo);
     }
 
-    /**
-     * Envia una notificacion con la plantilla HTML de SkillBridge AI.
-     *
-     * @param destinatario correo del usuario
-     * @param asunto       asunto del correo (linea "Asunto:")
-     * @param titulo       titulo destacado dentro de la tarjeta del correo
-     * @param detalle      texto de detalle debajo del titulo (puede ser null/vacio)
-     */
     public void enviarNotificacion(String destinatario, String asunto, String titulo, String detalle) {
         enviarNotificacion(destinatario, asunto, titulo, detalle, null, null);
     }
 
-    /**
-     * Igual que enviarNotificacion(destinatario, asunto, titulo, detalle),
-     * pero agrega un boton con un link de accion dentro del correo (ej. para
-     * que una invitacion traiga el link directo a la pagina de inicio, con
-     * instruccion de hacer clic en "Crear cuenta"). Si enlace es null o
-     * vacio, no se muestra ningun boton y el correo queda identico al de
-     * siempre.
-     */
     public void enviarNotificacion(String destinatario, String asunto, String titulo, String detalle,
-                                    String enlace, String textoBoton) {
-        if (destinatario == null || destinatario.isBlank()) return;
+                                   String enlace, String textoBoton) {
+        enviar(new Correo(destinatario, asunto, "Aviso de SkillBridge AI", titulo, detalle, enlace, textoBoton, false));
+    }
+
+    /** Programa el envío (después del commit si hay una transacción en curso). */
+    public void enviar(Correo correo) {
+        if (correo == null || correo.destinatario() == null || correo.destinatario().isBlank()) return;
+        Runnable tarea = () -> envios.submit(() -> enviarAhora(correo));
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { tarea.run(); }
+            });
+        } else {
+            tarea.run();
+        }
+    }
+
+    private void enviarAhora(Correo c) {
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mensaje, "UTF-8");
-            helper.setFrom("SkillBridge AI <" + remitente + ">");
-            helper.setTo(destinatario);
-            helper.setSubject(asunto);
-            helper.setText(construirHtml(titulo, detalle, enlace, textoBoton), true);
+            // multipart: texto plano + HTML + el logo como imagen inline
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
+            helper.setFrom(remitente, "SkillBridge AI");
+            helper.setTo(c.destinatario());
+            helper.setSubject(c.asunto());
+            helper.setText(textoPlano(c), html(c));
+            helper.addInline("logo", new ClassPathResource(LOGO), "image/png");
+            mensaje.setHeader("Content-Language", "es");
             mailSender.send(mensaje);
+            log.info("Correo enviado a {}: {}", c.destinatario(), c.asunto());
         } catch (Exception e) {
-            log.log(Level.WARNING, "No se pudo enviar el correo de notificacion a " + destinatario, e);
+            log.warn("No se pudo enviar el correo \"{}\" a {}: {}", c.asunto(), c.destinatario(), e.getMessage());
         }
     }
 
-    private String construirHtml(String titulo, String detalle, String enlace, String textoBoton) {
-        String tituloSeguro = escapar(titulo);
-        String detalleSeguro = (detalle != null && !detalle.isBlank())
-                ? escapar(detalle)
-                : "Tienes una nueva notificación en SkillBridge AI.";
-        return "<!DOCTYPE html>"
-                + "<html lang=\"es\">"
-                + "<body style=\"margin:0; padding:0; background-color:#f0f2f5; font-family:'Segoe UI', Roboto, Arial, sans-serif;\">"
-                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#f0f2f5; padding:40px 0;\">"
-                + "<tr><td align=\"center\">"
-                + "<table role=\"presentation\" width=\"520\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(15,26,46,0.12);\">"
-                // — Header con logo y nombre —
-                + "<tr><td style=\"background:#0f1a2e; padding:28px 32px; text-align:center;\">"
-                + "<img src=\"https://i.imgur.com/placeholder.png\" alt=\"\" width=\"36\" height=\"36\" style=\"display:inline-block; vertical-align:middle; margin-right:10px; border-radius:8px;\">"
-                + "<span style=\"color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.3px; vertical-align:middle;\">SkillBridge AI</span>"
-                + "</td></tr>"
-                // — Accent bar —
-                + "<tr><td style=\"background:linear-gradient(90deg,#2f3fe6,#6b7cfa); height:4px; font-size:0; line-height:0;\">&nbsp;</td></tr>"
-                // — Body —
-                + "<tr><td style=\"padding:32px 32px 12px 32px;\">"
-                + "<p style=\"margin:0 0 8px 0; font-size:11px; font-weight:700; color:#2f3fe6; text-transform:uppercase; letter-spacing:1px;\">Nueva notificación</p>"
-                + "<h1 style=\"margin:0 0 16px 0; font-size:22px; line-height:1.35; color:#0f1a2e; font-weight:700;\">" + tituloSeguro + "</h1>"
-                + "<p style=\"margin:0; font-size:15px; line-height:1.65; color:#374151;\">" + detalleSeguro + "</p>"
-                + "</td></tr>"
-                + "<tr><td style=\"padding:20px 32px 28px 32px;\">"
-                + "<div style=\"border-top:1px solid #e5e7eb; padding-top:20px;\">"
-                + botonHtml(enlace, textoBoton)
-                + "</div></td></tr>"
-                + "</table>"
-                // — Footer —
-                + "<p style=\"margin:20px 0 0 0; font-size:11px; color:#9ca3af; text-align:center;\">Este es un mensaje automático de SkillBridge AI · No respondas a este correo</p>"
-                + "</td></tr>"
-                + "</table>"
-                + "</body></html>";
+    @PreDestroy
+    void cerrar() throws InterruptedException {
+        envios.shutdown();
+        envios.awaitTermination(10, TimeUnit.SECONDS);   // deja salir los correos ya pedidos
     }
 
-    private String botonHtml(String enlace, String textoBoton) {
-        if (enlace == null || enlace.isBlank()) {
-            return "<p style=\"margin:0; font-size:13px; color:#6b7385;\">Ingresa a <strong style=\"color:#0f1a2e;\">SkillBridge AI</strong> para ver los detalles y tomar acción.</p>";
+    // ───────────────────────── plantilla ─────────────────────────
+
+    // Colores de la marca (los mismos de la app y del logo).
+    private static final String NAVY = "#0f1a2e";
+    private static final String AZUL = "#2563eb";
+    private static final String TURQUESA = "#2dd4bf";
+    private static final String TEXTO = "#334155";
+    private static final String SUAVE = "#64748b";
+
+    /** HTML del correo. Público para poder ver la plantilla en el navegador (vista previa). */
+    public String html(Correo c) {
+        String detalle = c.detalle() != null && !c.detalle().isBlank()
+                ? escapar(c.detalle()).replace("\n", "<br>")
+                : "Tienes una novedad en SkillBridge AI.";
+        String etiqueta = c.etiqueta() != null && !c.etiqueta().isBlank() ? escapar(c.etiqueta()) : "Aviso de SkillBridge AI";
+        return "<!DOCTYPE html><html lang=\"es\" xmlns=\"http://www.w3.org/1999/xhtml\"><head>"
+                + "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+                + "<meta name=\"color-scheme\" content=\"light\"><meta name=\"supported-color-schemes\" content=\"light\">"
+                + "<title>" + escapar(c.asunto()) + "</title></head>"
+                + "<body style=\"margin:0; padding:0; background:#eef1f6; -webkit-text-size-adjust:100%;\">"
+                // Texto de vista previa (la línea gris que muestra la bandeja de entrada)
+                + "<div style=\"display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;\">"
+                + escapar(recortar(c.detalle() == null ? c.titulo() : c.detalle(), 140)) + "</div>"
+                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background:#eef1f6;\">"
+                + "<tr><td align=\"center\" style=\"padding:32px 12px;\">"
+                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" "
+                + "style=\"max-width:560px; background:#ffffff; border-radius:16px; overflow:hidden; "
+                + "font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; border:1px solid #e2e8f0;\">"
+                // Cabecera con el logo
+                + "<tr><td align=\"left\" style=\"background:" + NAVY + "; padding:22px 32px;\">"
+                + "<img src=\"cid:logo\" alt=\"SkillBridge\" width=\"107\" height=\"32\" "
+                + "style=\"display:block; border:0; outline:none; height:32px; width:107px;\"></td></tr>"
+                // Franja con los colores del logo
+                + "<tr><td style=\"height:4px; line-height:4px; font-size:0; background:" + AZUL + "; "
+                + "background-image:linear-gradient(90deg," + AZUL + "," + TURQUESA + ");\">&nbsp;</td></tr>"
+                // Contenido
+                + "<tr><td style=\"padding:30px 32px 8px 32px;\">"
+                + "<p style=\"margin:0 0 10px 0; font-size:12px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:" + AZUL + ";\">"
+                + etiqueta + "</p>"
+                + "<h1 style=\"margin:0 0 14px 0; font-size:22px; line-height:1.3; font-weight:700; color:" + NAVY + ";\">"
+                + escapar(c.titulo()) + "</h1>"
+                + "<p style=\"margin:0; font-size:15px; line-height:1.65; color:" + TEXTO + ";\">" + detalle + "</p>"
+                + "</td></tr>"
+                + "<tr><td style=\"padding:24px 32px 30px 32px;\">" + boton(c) + "</td></tr>"
+                // Pie
+                + "<tr><td style=\"background:#f8fafc; border-top:1px solid #e2e8f0; padding:18px 32px;\">"
+                + "<p style=\"margin:0; font-size:12px; line-height:1.6; color:" + SUAVE + ";\">"
+                + "<strong style=\"color:" + NAVY + ";\">SkillBridge AI</strong> · Gestión de talento y proyectos de NexaCorp.<br>"
+                + (c.conPreferencias()
+                    ? "Puedes elegir qué avisos te llegan por correo en <strong>Mi cuenta → Notificaciones</strong>.<br>"
+                    : "")
+                + "Este es un mensaje automático: no respondas a este correo.</p>"
+                + "</td></tr>"
+                + "</table></td></tr></table></body></html>";
+    }
+
+    private String boton(Correo c) {
+        if (c.enlace() == null || c.enlace().isBlank()) {
+            return "<p style=\"margin:0; font-size:14px; line-height:1.6; color:" + SUAVE + ";\">"
+                    + "Ingresa a <strong style=\"color:" + NAVY + ";\">SkillBridge AI</strong> para ver los detalles.</p>";
         }
-        String texto = (textoBoton != null && !textoBoton.isBlank()) ? escapar(textoBoton) : "Ver en SkillBridge AI";
-        String enlaceSeguro = escapar(enlace);
-        return "<a href=\"" + enlaceSeguro + "\" target=\"_blank\" "
-                + "style=\"display:inline-block; background:#0f1a2e; color:#ffffff; "
-                + "text-decoration:none; font-size:14px; font-weight:600; padding:14px 28px; border-radius:10px; "
-                + "box-shadow:0 4px 12px rgba(15,26,46,0.25);\">"
-                + texto + "</a>"
-                + "<p style=\"margin:14px 0 0 0; font-size:12px; color:#9ca3af;\">Si el botón no funciona, copia y pega este link:<br>"
-                + "<a href=\"" + enlaceSeguro + "\" style=\"color:#2f3fe6; word-break:break-all;\">" + enlaceSeguro + "</a></p>";
+        String texto = c.textoBoton() != null && !c.textoBoton().isBlank() ? escapar(c.textoBoton()) : "Ver en SkillBridge AI";
+        String enlace = escapar(c.enlace());
+        // Botón "a prueba de clientes de correo": tabla + enlace con relleno.
+        return "<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr>"
+                + "<td align=\"center\" bgcolor=\"" + NAVY + "\" style=\"border-radius:10px;\">"
+                + "<a href=\"" + enlace + "\" target=\"_blank\" style=\"display:inline-block; padding:13px 26px; "
+                + "font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:10px;\">"
+                + texto + " &rarr;</a></td></tr></table>"
+                + "<p style=\"margin:18px 0 0 0; font-size:12px; line-height:1.6; color:" + SUAVE + ";\">"
+                + "¿El botón no funciona? Copia este enlace en tu navegador:<br>"
+                + "<a href=\"" + enlace + "\" style=\"color:" + AZUL + "; word-break:break-all;\">" + enlace + "</a></p>";
     }
 
-    private String escapar(String texto) {
+    private static String textoPlano(Correo c) {
+        StringBuilder t = new StringBuilder();
+        t.append(c.titulo()).append("\n\n");
+        if (c.detalle() != null && !c.detalle().isBlank()) t.append(c.detalle()).append("\n\n");
+        if (c.enlace() != null && !c.enlace().isBlank()) {
+            t.append(c.textoBoton() != null && !c.textoBoton().isBlank() ? c.textoBoton() : "Ver en SkillBridge AI")
+                    .append(": ").append(c.enlace()).append("\n\n");
+        }
+        t.append("--\nSkillBridge AI · Gestión de talento y proyectos de NexaCorp.\n");
+        if (c.conPreferencias()) t.append("Puedes elegir qué avisos te llegan por correo en Mi cuenta > Notificaciones.\n");
+        t.append("Este es un mensaje automático: no respondas a este correo.");
+        return t.toString();
+    }
+
+    private static String recortar(String s, int max) {
+        String t = s == null ? "" : s.replaceAll("\\s+", " ").trim();
+        return t.length() <= max ? t : t.substring(0, max - 1) + "…";
+    }
+
+    private static String escapar(String texto) {
         if (texto == null) return "";
-        return texto.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        return texto.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
     }
 }

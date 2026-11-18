@@ -391,7 +391,7 @@ public class AuthService {
         // "info" no tiene preferencia configurable en preferencias_notificacion, así que
         // NotificacionService.crear(...) siempre manda el correo para este tipo.
         notificacionService.crear(perfil.getId(), "info", "¡Bienvenido a SkillBridge AI!",
-                "Tu cuenta se creó correctamente con el correo " + correoFinal + ". Ya puedes iniciar sesión y explorar tus proyectos.", null);
+                "Tu cuenta se creó correctamente con el correo " + correoFinal + ". Ya puedes iniciar sesión y explorar tus proyectos.", "inicio.html");
 
         return ResultadoRegistro.exito();
     }
@@ -448,11 +448,13 @@ public class AuthService {
 
         String ruta = "/auth/restablecer-password.html?token=" + token;
         String link = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl + ruta : ruta;
-        emailService.enviarNotificacion(usuario.getCorreo(), "Recupera tu contraseña de SkillBridge AI",
+        emailService.enviar(new EmailService.Correo(usuario.getCorreo(), "Restablece tu contraseña de SkillBridge AI",
+                "Seguridad de tu cuenta",
                 "Restablece tu contraseña",
-                "Recibimos una solicitud para restablecer tu contraseña. Este enlace es valido por "
-                        + RECUPERACION_MINUTOS + " minutos. Si no fuiste tu, ignora este correo: tu contraseña actual sigue funcionando.",
-                link, "Restablecer contraseña");
+                "Recibimos una solicitud para restablecer la contraseña de " + usuario.getCorreo() + ". "
+                        + "El enlace es válido por " + RECUPERACION_MINUTOS + " minutos y se puede usar una sola vez.\n\n"
+                        + "Si no fuiste tú, ignora este correo: tu contraseña actual sigue funcionando.",
+                link, "Restablecer contraseña", false));
     }
 
     /** true si el token existe, no fue usado y todavia no vencio (para pintar el formulario o el error en restablecer-password.html). */

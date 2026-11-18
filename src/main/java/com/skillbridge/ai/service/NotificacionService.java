@@ -107,9 +107,10 @@ public class NotificacionService {
         perfilRepository.findById(perfilId).ifPresent(perfil ->
                 usuarioRepository.findById(perfil.getUsuarioId()).ifPresent(usuario -> {
                     String enlaceCompleto = construirEnlaceCorreo(perfilId, usuario.getRolOrganizacional(), enlaceAccion);
-                    String textoBoton = textoBotonPara(tipoCodigo);
-                    emailService.enviarNotificacion(usuario.getCorreo(), "SkillBridge AI: " + titulo, titulo, detalle,
-                            enlaceCompleto, textoBoton);
+                    // El remitente ya es "SkillBridge AI": el asunto es el título del aviso.
+                    emailService.enviar(new EmailService.Correo(usuario.getCorreo(), titulo,
+                            etiquetaPara(tipoCodigo, enlaceAccion), titulo, detalle, enlaceCompleto,
+                            textoBotonPara(tipoCodigo, enlaceAccion), tipoEvento != null));
                 }));
     }
 
@@ -148,13 +149,40 @@ public class NotificacionService {
         return Roles.COLABORADOR;
     }
 
-    private String textoBotonPara(String tipoCodigo) {
+    /** Texto del botón del correo según el tipo de aviso (y, para "info", según a dónde lleva). */
+    private String textoBotonPara(String tipoCodigo, String enlace) {
         return switch (tipoCodigo) {
             case "asignacion" -> "Ver proyecto";
-            case "foro_respuesta" -> "Ver respuesta";
+            case "foro_respuesta", "foro_cita" -> "Ver respuesta";
             case "entregable_nuevo", "entregable_revisado" -> "Ver entregable";
-            case "solicitud", "resultado_ia" -> "Ver en SkillBridge AI";
-            default -> "Ir a SkillBridge AI";
+            case "solicitud" -> "Revisar propuesta";
+            case "resultado_ia" -> "Ver resultado";
+            default -> {
+                String e = enlace == null ? "" : enlace;
+                if (e.startsWith("chat.html")) yield "Leer mensaje";
+                if (e.startsWith("calendario.html")) yield "Ver calendario";
+                if (e.startsWith("foro")) yield "Ver hilo";
+                yield "Ir a SkillBridge AI";
+            }
+        };
+    }
+
+    /** Categoría que muestra el correo sobre el título. */
+    private String etiquetaPara(String tipoCodigo, String enlace) {
+        return switch (tipoCodigo) {
+            case "asignacion" -> "Proyectos y asignaciones";
+            case "foro_respuesta", "foro_cita" -> "Foros";
+            case "entregable_nuevo", "entregable_revisado" -> "Entregables";
+            case "solicitud" -> "Solicitud de aprobación";
+            case "resultado_ia" -> "AI Talent Matching";
+            case "alerta" -> "Alerta";
+            default -> {
+                String e = enlace == null ? "" : enlace;
+                if (e.startsWith("chat.html")) yield "Mensajes";
+                if (e.contains("calendario.html")) yield "Calendario";
+                if (e.startsWith("foro")) yield "Foros";
+                yield "Aviso de SkillBridge AI";
+            }
         };
     }
 

@@ -263,12 +263,14 @@ public class UsuarioService {
         String comoRol = rolAsignado == null
                 ? "como Miembro (podrás liderar o colaborar en proyectos)"
                 : "como " + etiquetaRol(rolAsignado);
-        emailService.enviarNotificacion(correo, "Fuiste invitado a SkillBridge AI " + (rolAsignado == null ? "" : "como " + etiquetaRol(rolAsignado)),
+        emailService.enviar(new EmailService.Correo(correo,
+                "Fuiste invitado a SkillBridge AI" + (rolAsignado == null ? "" : " como " + etiquetaRol(rolAsignado)),
+                "Invitación",
                 "¡Ya puedes registrarte en SkillBridge AI!",
-                "Un administrador autorizó tu correo (" + correo + ") para crear tu cuenta " + comoRol + ". "
-                        + "Haz clic en el botón para completar tu registro y confirmar tus datos. Usa este mismo correo: es el único autorizado para tu cuenta. "
+                "Un administrador autorizó tu correo (" + correo + ") para crear tu cuenta " + comoRol + ".\n\n"
+                        + "Completa tu registro con el botón. Usa este mismo correo: es el único autorizado para tu cuenta. "
                         + "Cuando inicies sesión verás directamente tu panel.",
-                linkRegistro, "Crear mi cuenta");
+                linkRegistro, "Crear mi cuenta", false));
     }
 
     // ─────────────── CRUD de Correos autorizados (lista blanca de registro) ───────────────
@@ -406,12 +408,15 @@ public class UsuarioService {
                 "usuario", usuarioId, AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevo),
                 AuditoriaService.conMotivo(usuario.getCorreo(), motivo));
         String motivoLimpio = AuditoriaService.limpiarMotivo(motivo);
-        emailService.enviarNotificacion(usuario.getCorreo(),
+        String linkLogin = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl + "/auth/login.html" : null;
+        emailService.enviar(new EmailService.Correo(usuario.getCorreo(),
                 activar ? "Tu cuenta de SkillBridge AI fue reactivada" : "Tu cuenta de SkillBridge AI fue suspendida",
+                "Tu cuenta",
                 activar ? "Tu cuenta está activa de nuevo" : "Tu cuenta fue suspendida",
-                activar ? "Un administrador reactivó tu cuenta. Ya puedes iniciar sesión."
+                activar ? "Un administrador reactivó tu cuenta. Ya puedes iniciar sesión con tu correo y tu contraseña de siempre."
                         : "Un administrador suspendió tu cuenta" + (motivoLimpio != null ? " (motivo: " + motivoLimpio + ")" : "")
-                          + ". Si crees que es un error, comunícate con el equipo de administración.");
+                          + ". Mientras esté suspendida no podrás iniciar sesión. Si crees que es un error, comunícate con el equipo de administración.",
+                activar ? linkLogin : null, activar ? "Iniciar sesión" : null, false));
     }
 
     @Transactional
