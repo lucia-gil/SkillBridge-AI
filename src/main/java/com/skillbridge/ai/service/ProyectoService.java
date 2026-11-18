@@ -894,7 +894,19 @@ public class ProyectoService {
     @Transactional
     public void reasignarProjectManager(Long proyectoId, Long nuevoPmPerfilId, boolean mantenerSaliente,
                                         Integer cargaSaliente, Long actorUsuarioId) {
-        cambiarLiderazgo(proyectoId, nuevoPmPerfilId, mantenerSaliente, cargaSaliente, actorUsuarioId, false);
+        reasignarProjectManager(proyectoId, nuevoPmPerfilId, mantenerSaliente, cargaSaliente, null, actorUsuarioId);
+    }
+
+    /**
+     * Igual, pero si el equipo está completo se puede liberar un cupo en el
+     * mismo paso: se finaliza la asignación de colaborador liberarAsignacionId
+     * (de este proyecto, que no sea el nuevo PM) para que el PM saliente se
+     * quede como colaborador. Todo ocurre en una sola transacción.
+     */
+    @Transactional
+    public void reasignarProjectManager(Long proyectoId, Long nuevoPmPerfilId, boolean mantenerSaliente,
+                                        Integer cargaSaliente, Long liberarAsignacionId, Long actorUsuarioId) {
+        cambiarLiderazgo(proyectoId, nuevoPmPerfilId, mantenerSaliente, cargaSaliente, liberarAsignacionId, actorUsuarioId, false);
     }
 
     /**
@@ -914,7 +926,7 @@ public class ProyectoService {
                 .filter(a -> Roles.COLABORADOR.equals(a.getRolEnProyecto()))
                 .orElseThrow(() -> new OperacionInvalidaException(
                         "Solo puedes transferir el liderazgo a un colaborador activo de tu equipo."));
-        cambiarLiderazgo(proyectoId, nuevoPmPerfilId, mantenerSaliente, cargaSaliente, actorUsuarioId, true);
+        cambiarLiderazgo(proyectoId, nuevoPmPerfilId, mantenerSaliente, cargaSaliente, null, actorUsuarioId, true);
     }
 
     /**
@@ -924,7 +936,8 @@ public class ProyectoService {
      * historial de cada persona queda intacto.
      */
     private void cambiarLiderazgo(Long proyectoId, Long nuevoPmPerfilId, boolean mantenerSaliente,
-                                  Integer cargaSaliente, Long actorUsuarioId, boolean porTransferencia) {
+                                  Integer cargaSaliente, Long liberarAsignacionId, Long actorUsuarioId,
+                                  boolean porTransferencia) {
         Proyecto p = proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         // En un proyecto cerrado solo el Resource Manager puede cambiar el PM
@@ -962,6 +975,19 @@ public class ProyectoService {
         // 1) PM saliente: se queda como colaborador (si hay vacante) o sale.
         if (pmActual.isPresent()) {
             Asignacion saliente = pmActual.get();
+            if (mantenerSaliente && liberarAsignacionId != null) {
+                // Liberar un cupo: finalizar a un colaborador de ESTE proyecto (nunca al nuevo PM).
+                Asignacion liberada = asignacionRepository.findById(liberarAsignacionId)
+                        .filter(a -> a.getProyectoId().equals(proyectoId) && "activa".equals(a.getEstado())
+                                && Roles.COLABORADOR.equals(a.getRolEnProyecto()))
+                        .orElseThrow(() -> new OperacionInvalidaException(
+                                "La persona elegida para liberar el cupo ya no es colaboradora activa de este proyecto."));
+                if (liberada.getPerfilId().equals(nuevoPmPerfilId)) {
+                    throw new OperacionInvalidaException("No puedes liberar el cupo del nuevo Project Manager.");
+                }
+                finalizarAsignacion(liberada.getId(), "Libera un cupo para que " + nombreSaliente
+                        + " siga como colaborador al cambiar de Project Manager.", actorUsuarioId);
+            }
             if (mantenerSaliente) {
                 long colaboradores = asignacionRepository.countByProyectoIdAndEstadoAndRolEnProyecto(
                         proyectoId, "activa", Roles.COLABORADOR);
@@ -970,7 +996,7 @@ public class ProyectoService {
                 if (ocupadas >= requeridos(p)) {
                     throw new OperacionInvalidaException("No hay vacante para mantener a " + nombreSaliente
                             + " como colaborador (el proyecto requiere " + requeridos(p)
-                            + "). Desmarca \"Mantener como colaborador\" o amplía las vacantes del proyecto.");
+                            + "). Desmarca \"Mantener como colaborador\", elige a quién liberar el cupo o amplía las vacantes del proyecto.");
                 }
                 int anterior = valor(saliente.getCargaPorcentaje());
                 int nueva = cargaSaliente != null ? cargaSaliente : anterior;

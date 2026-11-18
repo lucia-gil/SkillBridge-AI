@@ -90,12 +90,14 @@
     // excluye Admin/RM y cuentas suspendidas). Quien ya está en el equipo
     // asciende conservando su dedicación; quien viene de fuera entra con 20%
     // y necesita capacidad. El PM saliente puede quedarse como colaborador
-    // solo si hay vacante. El backend vuelve a validar todo.
+    // solo si queda un cupo libre; si el equipo está completo, se puede
+    // liberar uno eligiendo a qué colaborador finalizar en el mismo paso.
+    // El backend vuelve a validar todo.
     const cambiarPm = modal.querySelector('[data-cambiar-pm]');
     if (cambiarPm) cambiarPm.addEventListener('click', function () {
       const proyectoId = cambiarPm.dataset.cambiarPm;
       const proyectoNombre = cambiarPm.dataset.proyectoNombre || '';
-      const vacantes = Number(cambiarPm.dataset.vacantes) || 0;
+      const requeridos = Number(cambiarPm.dataset.requeridos) || 0;
       const limite = Number(window.SBAI_LIMITE_CARGA) || 100;
       const CARGA_PM = 20;
 
@@ -103,6 +105,7 @@
       let pmActual = null;
       modal.querySelectorAll('[data-miembro-perfil]').forEach(function (tr) {
         const m = { perfilId: String(tr.dataset.miembroPerfil), rol: tr.dataset.miembroRol,
+          asignacionId: tr.dataset.miembroAsignacion,
           carga: Number(tr.dataset.miembroCarga) || 0, nombre: tr.dataset.miembroNombre || '' };
         equipo[m.perfilId] = m;
         if (m.rol === 'project_manager') pmActual = m;
@@ -116,6 +119,9 @@
           '<h3>' + esc(pmActual.nombre) + ' (PM actual)</h3>' +
           '<label class="handover-check" id="pm-mantener-wrap"><input type="checkbox" id="pm-mantener">' +
           '<span>Mantener como colaborador en este proyecto<span class="handover-hint" id="pm-mantener-hint" style="display:block"></span></span></label>' +
+          '<div class="field" id="pm-liberar-wrap" hidden><label class="field-label" for="pm-liberar">Liberar un cupo finalizando a</label>' +
+          '<select class="select" id="pm-liberar"></select>' +
+          '<p class="field-hint">Su asignación en este proyecto se finaliza (queda en Auditoría) y ' + esc(pmActual.nombre) + ' ocupa ese cupo.</p></div>' +
           '<div class="field" id="pm-carga-wrap" hidden><label class="field-label">Su dedicación como colaborador (%)</label>' +
           '<input class="input" type="number" min="1" max="' + limite + '" id="pm-carga" value="' + pmActual.carga + '"></div>' +
           '</div>'
@@ -140,18 +146,42 @@
       const hint = backdrop.querySelector('#pm-mantener-hint');
       const cerrado = cambiarPm.dataset.cerrado === 'true';
 
+      const liberarWrap = backdrop.querySelector('#pm-liberar-wrap');
+      const liberar = backdrop.querySelector('#pm-liberar');
+
+      /** Colaboradores que seguirían en el equipo después del cambio (sin contar al nuevo PM si asciende). */
+      function colaboradoresRestantes() {
+        return Object.keys(equipo).map(function (k) { return equipo[k]; }).filter(function (m) {
+          return m.rol === 'colaborador' && !(elegido && String(elegido.perfilId) === m.perfilId);
+        });
+      }
       function refrescarMantener() {
-        if (!mantener) return;
-        // Si el nuevo PM ya era colaborador del equipo, su cupo se libera al ascender.
-        const hayCupo = !cerrado && (vacantes > 0 || (elegido && elegido.enEquipo));
-        mantener.disabled = !hayCupo;
-        if (!hayCupo) mantener.checked = false;
-        backdrop.querySelector('#pm-mantener-wrap').classList.toggle('is-disabled', !hayCupo);
-        hint.textContent = cerrado
-          ? 'El proyecto está cerrado: su asignación se finalizará.'
-          : hayCupo ? 'Si no lo marcas, su asignación en este proyecto se finaliza.'
-                    : 'No hay vacante de colaborador: su asignación en este proyecto se finalizará.';
+        if (!mantener) { backdrop.querySelector('#pm-confirm').disabled = !elegido; return; }
+        // Cupo real: los colaboradores que quedan (el nuevo PM deja el suyo si ascendía)
+        // contra los requeridos. Un equipo con más gente de la requerida no tiene cupo.
+        const restantes = colaboradoresRestantes();
+        const hayCupo = !cerrado && restantes.length < requeridos;
+        const puedeLiberar = !cerrado && !hayCupo && !!elegido && restantes.length > 0;
+        mantener.disabled = cerrado || (!hayCupo && !puedeLiberar);
+        if (mantener.disabled) mantener.checked = false;
+        backdrop.querySelector('#pm-mantener-wrap').classList.toggle('is-disabled', mantener.disabled);
+        hint.textContent = cerrado ? 'El proyecto está cerrado: su asignación se finalizará.'
+          : !elegido ? 'Elige primero al nuevo Project Manager.'
+          : hayCupo ? 'Hay un cupo libre. Si no lo marcas, su asignación en este proyecto se finaliza.'
+          : puedeLiberar ? 'El equipo está completo (' + restantes.length + ' de ' + requeridos + '): para mantenerlo, elige a qué colaborador finalizar.'
+          : 'No hay cupo de colaborador: su asignación en este proyecto se finalizará.';
+        // Selector "liberar un cupo": solo cuando hace falta y está marcada la casilla.
+        const necesitaLiberar = puedeLiberar && mantener.checked;
+        liberarWrap.hidden = !necesitaLiberar;
+        if (necesitaLiberar) {
+          const previo = liberar.value;
+          liberar.innerHTML = '<option value="">Elige a un colaborador…</option>' + restantes.map(function (m) {
+            return '<option value="' + esc(m.asignacionId) + '">' + esc(m.nombre) + ' · ' + m.carga + '%</option>';
+          }).join('');
+          if (previo && liberar.querySelector('option[value="' + previo + '"]')) liberar.value = previo;
+        }
         cargaWrap.hidden = !mantener.checked;
+        backdrop.querySelector('#pm-confirm').disabled = !elegido || (necesitaLiberar && !liberar.value);
       }
       function abrirSelector() {
         window.SBAI.selectorPersonas.abrir({
@@ -164,19 +194,23 @@
               '<span class="pm-picker-info"><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.nota || (c.cargo + ' · carga ' + c.cargaActual + '% → ' + (c.cargaActual + CARGA_PM) + '%')) + '</small></span>' +
               '<button type="button" class="btn btn-secondary btn-sm" data-pm-elegir>Cambiar</button>';
             picker.querySelector('[data-pm-elegir]').addEventListener('click', abrirSelector);
-            backdrop.querySelector('#pm-confirm').disabled = false;
             refrescarMantener();
           }
         });
       }
       picker.querySelector('[data-pm-elegir]').addEventListener('click', abrirSelector);
       if (mantener) mantener.addEventListener('change', refrescarMantener);
+      if (liberar) liberar.addEventListener('change', refrescarMantener);
       refrescarMantener();
 
       backdrop.querySelector('#pm-confirm').addEventListener('click', function () {
         if (!elegido) return;
         const valores = { nuevoPmPerfilId: elegido.perfilId, mantener: mantener && mantener.checked ? 'true' : 'false' };
         if (mantener && mantener.checked) valores.cargaSaliente = backdrop.querySelector('#pm-carga').value;
+        if (mantener && mantener.checked && !liberarWrap.hidden) {
+          if (!liberar.value) return window.SBAI.toast.show('Elige a qué colaborador finalizar para liberar el cupo.', { type: 'error' });
+          valores.liberarAsignacionId = liberar.value;
+        }
         submitForm('/resource-manager/proyectos/' + proyectoId + '/cambiar-pm', valores);
       });
     });

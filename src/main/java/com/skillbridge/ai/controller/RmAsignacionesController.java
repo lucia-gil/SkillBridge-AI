@@ -268,11 +268,14 @@ public class RmAsignacionesController {
                             @RequestParam(defaultValue = "false") boolean mantener,
                             // Dedicación con la que se queda el PM saliente (vacío = la misma).
                             @RequestParam(required = false) Integer cargaSaliente,
+                            // Equipo completo: asignación de colaborador que se finaliza para dejar el cupo.
+                            @RequestParam(required = false) Long liberarAsignacionId,
                             HttpSession session,
                             RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            proyectoService.reasignarProjectManager(id, nuevoPmPerfilId, mantener, cargaSaliente, sesion.getUsuarioId());
+            proyectoService.reasignarProjectManager(id, nuevoPmPerfilId, mantener, cargaSaliente,
+                    mantener ? liberarAsignacionId : null, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Project Manager actualizado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

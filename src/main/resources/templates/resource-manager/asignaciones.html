@@ -108,7 +108,7 @@
               <p>
                 <span th:text="${p.colaboradoresAsignados} + ' de ' + ${p.colaboradoresRequeridos} + ' colaboradores asignados'">Equipo</span>
                 · PM: <span th:text="${p.pmNombre}">Sin asignar</span>
-                <button type="button" class="link-btn" th:attr="data-cambiar-pm=${p.id}, data-proyecto-nombre=${p.nombre}, data-vacantes=${p.cerrado ? 0 : p.vacantes}, data-cerrado=${p.cerrado}" style="margin-left:6px;">(cambiar)</button>
+                <button type="button" class="link-btn" th:attr="data-cambiar-pm=${p.id}, data-proyecto-nombre=${p.nombre}, data-vacantes=${p.cerrado ? 0 : p.vacantes}, data-requeridos=${p.colaboradoresRequeridos}, data-cerrado=${p.cerrado}" style="margin-left:6px;">(cambiar)</button>
               </p>
             </div>
             <button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button>
@@ -132,7 +132,7 @@
 
             <div class="state-panel" th:if="${p.equipo.isEmpty()}"><span class="state-panel-title">Sin colaboradores asignados</span><span class="state-panel-desc">Usa "Registrar asignación" para armar el equipo de este proyecto.</span></div>
             <div class="team-modal-table" th:unless="${p.equipo.isEmpty()}"><table class="data-table"><thead><tr><th>Integrante</th><th>Rol</th><th>Dedicación</th><th>Acción</th></tr></thead><tbody>
-            <tr th:each="m : ${p.equipo}" th:attr="data-miembro-perfil=${m.perfilId}, data-miembro-rol=${m.rolEnProyectoCrudo}, data-miembro-carga=${m.cargaPorcentaje}, data-miembro-nombre=${m.nombre}"><td class="cell-person"><span class="avatar avatar-sm" th:text="${m.iniciales}">AB</span><span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">Correo</span></span></td><td><span class="badge" th:classappend="${m.rolEnProyectoCrudo == 'project_manager'} ? 'badge-blue' : 'badge-neutral'" th:text="${m.rolLabel}">Rol</span></td><td class="mono" th:text="${m.cargaPorcentaje} + '%'">0%</td><td class="cell-actions"><button type="button" class="danger" th:if="${m.rolEnProyectoCrudo == 'colaborador'}" th:attr="data-finalizar-asignacion=${m.asignacionId}">Finalizar</button><span class="text-tertiary" th:if="${m.rolEnProyectoCrudo == 'project_manager'}">Responsable</span></td></tr>
+            <tr th:each="m : ${p.equipo}" th:attr="data-miembro-perfil=${m.perfilId}, data-miembro-asignacion=${m.asignacionId}, data-miembro-rol=${m.rolEnProyectoCrudo}, data-miembro-carga=${m.cargaPorcentaje}, data-miembro-nombre=${m.nombre}"><td class="cell-person"><span class="avatar avatar-sm" th:text="${m.iniciales}">AB</span><span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">Correo</span></span></td><td><span class="badge" th:classappend="${m.rolEnProyectoCrudo == 'project_manager'} ? 'badge-blue' : 'badge-neutral'" th:text="${m.rolLabel}">Rol</span></td><td class="mono" th:text="${m.cargaPorcentaje} + '%'">0%</td><td class="cell-actions"><button type="button" class="danger" th:if="${m.rolEnProyectoCrudo == 'colaborador'}" th:attr="data-finalizar-asignacion=${m.asignacionId}">Finalizar</button><span class="text-tertiary" th:if="${m.rolEnProyectoCrudo == 'project_manager'}">Responsable</span></td></tr>
             </tbody></table></div>
 
           </div>
