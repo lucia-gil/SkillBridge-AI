@@ -67,6 +67,7 @@ public class InicializadorTablasExtra implements CommandLineRunner {
         chatDeProyectos();
         memoriaDelAsistente();
         agendaPersonal();
+        recuperacionDePassword();
     }
 
     // ───────── Memoria del Asistente IA (chatbot) ─────────
@@ -132,6 +133,29 @@ public class InicializadorTablasExtra implements CommandLineRunner {
      * Una sola vez (si el chat está vacío): conversaciones de ejemplo en los
      * proyectos activos, escritas por sus integrantes reales, para la demo.
      */
+    /**
+     * "¿Olvidaste tu contraseña?": la entidad TokenRecuperacionPassword existía
+     * pero su tabla nunca se creaba, así que pedir el enlace fallaba (error 500)
+     * y no llegaba ningún correo.
+     */
+    private void recuperacionDePassword() {
+        try {
+            jdbc.execute("CREATE TABLE IF NOT EXISTS tokens_recuperacion_password ("
+                    + " id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+                    + " usuario_id BIGINT UNSIGNED NOT NULL,"
+                    + " token VARCHAR(64) NOT NULL,"
+                    + " fecha_creacion DATETIME NOT NULL,"
+                    + " fecha_expiracion DATETIME NOT NULL,"
+                    + " usado TINYINT(1) NOT NULL DEFAULT 0,"
+                    + " UNIQUE KEY uq_token_recuperacion (token),"
+                    + " INDEX idx_token_recuperacion_usuario (usuario_id),"
+                    + " CONSTRAINT fk_token_recuperacion_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE"
+                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (Exception e) {
+            log.warn("No se pudo verificar/crear la tabla tokens_recuperacion_password: {}", e.getMessage());
+        }
+    }
+
     /**
      * Mensajes directos: chat_salas admite salas sin proyecto (tipo
      * 'directo', con clave_directa única por pareja) y chat_participantes

@@ -170,6 +170,20 @@ CREATE INDEX idx_usuarios_rol ON usuarios(rol_organizacional);
 --    correo antes (a mano o por carga masiva CSV), y recién con ese
 --    correo en esta tabla la persona puede completar su registro.
 -- ---------------------------------------------------------------------
+-- Enlaces de "¿Olvidaste tu contraseña?" (AuthService.solicitarRecuperacion):
+-- un token por pedido, de un solo uso y con vencimiento.
+CREATE TABLE tokens_recuperacion_password (
+                                              id                BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                                              usuario_id        BIGINT UNSIGNED NOT NULL,
+                                              token             VARCHAR(64) NOT NULL,
+                                              fecha_creacion    DATETIME NOT NULL,
+                                              fecha_expiracion  DATETIME NOT NULL,
+                                              usado             TINYINT(1) NOT NULL DEFAULT 0,
+                                              UNIQUE KEY uq_token_recuperacion (token),
+                                              INDEX idx_token_recuperacion_usuario (usuario_id),
+                                              CONSTRAINT fk_token_recuperacion_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE correos_autorizados (
                                      id                  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                                      correo              VARCHAR(150) NOT NULL UNIQUE,
