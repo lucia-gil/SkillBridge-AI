@@ -140,6 +140,25 @@ public class AsistenteConversacionService {
         conversacionRepository.delete(exigirPropia(conversacionId, s));
     }
 
+    /**
+     * Conversación de cada usuario (y rol) cuya respuesta todavía se está
+     * generando. Si la persona sale de la página y vuelve, el navegador la
+     * pregunta (GET /api/asistente/en-curso) para reabrirla y mostrar
+     * "escribiendo…" hasta que llegue la respuesta. Vive en memoria: alcanza
+     * con una instancia (EC2); si se reinicia el servidor, la respuesta en
+     * curso se pierde de todos modos.
+     */
+    private final java.util.concurrent.ConcurrentHashMap<String, Long> enCurso = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static String claveEnCurso(UsuarioSesion s) {
+        return s.getUsuarioId() + ":" + rolDe(s);
+    }
+
+    /** Id de la conversación con una respuesta en curso, o null si no hay ninguna. */
+    public Long conversacionEnCurso(UsuarioSesion s) {
+        return enCurso.get(claveEnCurso(s));
+    }
+
     public Respuesta enviar(UsuarioSesion s, Long conversacionId, String texto) {
         return enviar(s, conversacionId, texto, List.of());
     }
@@ -204,8 +223,17 @@ public class AsistenteConversacionService {
         while (!turnos.get(0).deUsuario()) turnos.remove(0);
 
         AsistenteContextoService.Contexto ctx = new AsistenteContextoService.Contexto("", List.of(), List.of(), List.of());
-        AsistenteIaService.Resultado r = (agenteHabilitado ? asistenteIaService.conversarConHerramientas(s, turnos, herramientas, confirmaciones) : new AsistenteIaService.Resultado("El agente está deshabilitado en este entorno.", false));
-        if (r.ok()) mensajeRepository.save(new AsistenteMensaje(conv.getId(), AsistenteMensaje.ASISTENTE, r.texto()));
+        AsistenteIaService.Resultado r;
+        String clave = claveEnCurso(s);
+        enCurso.put(clave, conv.getId());
+        try {
+            r = agenteHabilitado
+                    ? asistenteIaService.conversarConHerramientas(s, turnos, herramientas, confirmaciones)
+                    : new AsistenteIaService.Resultado("El agente está deshabilitado en este entorno.", false);
+            if (r.ok()) mensajeRepository.save(new AsistenteMensaje(conv.getId(), AsistenteMensaje.ASISTENTE, r.texto()));
+        } finally {
+            enCurso.remove(clave, conv.getId());
+        }
         conv.tocar();
         conversacionRepository.save(conv);
         return new Respuesta(conv.getId(), conv.getTitulo(), nueva, r.texto(), r.ok(),

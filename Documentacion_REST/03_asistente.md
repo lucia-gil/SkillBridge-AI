@@ -122,3 +122,23 @@ con herramientas por rol); las escrituras solo se preparan y se confirman aparte
 |---|---|
 | 200 | Archivo |
 | 404 | El adjunto no existe o no es del usuario |
+
+## 7. Respuesta en curso
+
+Permite reabrir la conversación si la persona salió de la página mientras la IA respondía.
+El navegador la consulta al cargar el asistente y luego cada 3 s hasta que termine.
+
+| | |
+|---|---|
+| **Ruta** | `/api/asistente/en-curso` |
+| **Método** | `GET` |
+| **Parámetros** | Ninguno |
+
+**Ejemplo de respuesta (200), con una respuesta generándose:** `{ "conversacionId": 22 }`
+
+**Ejemplo de respuesta (200), sin nada pendiente:** `{ "conversacionId": null }`
+
+| Código | Significado |
+|---|---|
+| 200 | Estado actual |
+| 401 | Sin sesión |

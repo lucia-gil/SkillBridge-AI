@@ -75,6 +75,14 @@ public class AsistenteIaController {
         return conversacionService.conversaciones(sesion(session));
     }
 
+    /** Conversación cuya respuesta todavía se está generando ({"conversacionId": null} si no hay). */
+    @GetMapping("/api/asistente/en-curso")
+    @ResponseBody
+    public ResponseEntity<Map<String, Long>> enCurso(HttpSession session) {
+        return ResponseEntity.ok(java.util.Collections.singletonMap("conversacionId",
+                conversacionService.conversacionEnCurso(sesion(session))));
+    }
+
     @GetMapping("/api/asistente/conversaciones/{id}")
     @ResponseBody
     public List<AsistenteConversacionService.MensajeVista> mensajes(@PathVariable Long id, HttpSession session) {

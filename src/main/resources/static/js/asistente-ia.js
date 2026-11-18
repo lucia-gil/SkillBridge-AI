@@ -5,6 +5,7 @@
  *   GET    /api/asistente/conversaciones/{id}   → mensajes de una conversación
  *   DELETE /api/asistente/conversaciones/{id}   → eliminarla
  *   POST   /api/asistente/mensaje {conversacionId, mensaje} → respuesta de la IA
+ *   GET    /api/asistente/en-curso              → conversación que sigue esperando respuesta
  * El servidor guarda cada turno (memoria) y arma el contexto real del usuario.
  */
 (function ($) {
@@ -197,7 +198,35 @@
     try { history.replaceState(null, "", location.pathname + (id ? "?c=" + id : "")); } catch (e) { /* sin historial */ }
   }
 
-  function abrir(id) {
+  /*
+   * Respuesta en curso: si la persona sale de la página mientras la IA
+   * responde y vuelve, se reabre esa conversación (su mensaje ya está
+   * guardado) con "escribiendo…" y se consulta cada 3 s hasta que termine,
+   * igual que el sondeo del chat de proyectos.
+   */
+  var sondeo = null;
+  function esperarRespuesta(id) {
+    estado.enviando = true;
+    $input.trigger("input");
+    escribiendo(true);
+    alFinal();
+    sondeo = setTimeout(function revisar() {
+      api.get("/api/asistente/en-curso").done(function (r) {
+        if (r.conversacionId === id) { sondeo = setTimeout(revisar, 3000); return; }
+        sondeo = null;
+        estado.enviando = false;
+        escribiendo(false);
+        cargarLista().always(function () { if (estado.id === id) abrir(id); });
+        $(document).trigger("sbai:asistente-respondio");
+      }).fail(function () { sondeo = setTimeout(revisar, 6000); });
+    }, 3000);
+  }
+  function dejarDeEsperar() {
+    if (sondeo) { clearTimeout(sondeo); sondeo = null; estado.enviando = false; }
+  }
+
+  function abrir(id, alTerminar) {
+    if (estado.id !== id) dejarDeEsperar();
     estado.id = id;
     pintarLista();
     $msgs.children(":not(#as-empty)").remove();
@@ -211,6 +240,7 @@
       mostrarVacio(false);
       $msgs.scrollTop($msgs[0].scrollHeight);
       url(id);
+      if (alTerminar) alTerminar();
     }).fail(function (xhr) {
       $msgs.find(".as-cargando").remove();
       SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" });
@@ -221,6 +251,7 @@
   }
 
   function nueva() {
+    dejarDeEsperar();
     estado.id = null;
     $msgs.children(":not(#as-empty)").remove();
     $titulo.text("Nueva conversación");
@@ -368,7 +399,16 @@
 
   var inicial = Number($app.data("inicial")) || null;
   cargarLista().always(function () {
-    if (inicial) abrir(inicial); else mostrarVacio(true);
+    api.get("/api/asistente/en-curso").always(function (r) {
+      var pendiente = r && r.conversacionId;
+      if (pendiente && (!inicial || inicial === pendiente)) {
+        abrir(pendiente, function () { esperarRespuesta(pendiente); });
+      } else if (inicial) {
+        abrir(inicial);
+      } else {
+        mostrarVacio(true);
+      }
+    });
   });
 })(window.jQuery);
 
@@ -398,5 +438,6 @@
     });
   }
   $(document).ajaxComplete(function(_e,_xhr,settings){if(settings.url==='/api/asistente/mensaje')cargar();});
+  $(document).on('sbai:asistente-respondio', cargar);
   $(function(){cargar(); $('#as-file').prop('disabled',true);});
 })(jQuery);
