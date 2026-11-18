@@ -42,13 +42,16 @@ public class NotificacionesController {
 
     private final NotificacionService notificacionService;
     private final PreferenciaNotificacionService preferenciaNotificacionService;
+    private final com.skillbridge.ai.service.ResumenSemanalService resumenSemanalService;
     private final ShellModelBuilder shellModelBuilder;
 
     public NotificacionesController(NotificacionService notificacionService,
                                     PreferenciaNotificacionService preferenciaNotificacionService,
+                                    com.skillbridge.ai.service.ResumenSemanalService resumenSemanalService,
                                     ShellModelBuilder shellModelBuilder) {
         this.notificacionService = notificacionService;
         this.preferenciaNotificacionService = preferenciaNotificacionService;
+        this.resumenSemanalService = resumenSemanalService;
         this.shellModelBuilder = shellModelBuilder;
     }
 
@@ -112,6 +115,18 @@ public class NotificacionesController {
         }
         preferenciaNotificacionService.actualizar(sesion.getPerfilId(), seleccion);
         redirectAttributes.addFlashAttribute("exito", "Preferencias de aviso actualizadas.");
+        return "redirect:" + rutaSegura(volver);
+    }
+
+    /** "Enviarme el resumen ahora": manda el resumen semanal al correo de quien lo pide, para revisarlo. */
+    @PostMapping("/notificaciones/resumen-semanal/probar")
+    public String probarResumenSemanal(@RequestParam String volver, HttpSession session, RedirectAttributes redirectAttributes) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        if (resumenSemanalService.enviarA(sesion.getPerfilId())) {
+            redirectAttributes.addFlashAttribute("exito", "Te enviamos tu resumen semanal. Llegará a tu correo en unos segundos.");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "No se pudo armar tu resumen semanal.");
+        }
         return "redirect:" + rutaSegura(volver);
     }
 

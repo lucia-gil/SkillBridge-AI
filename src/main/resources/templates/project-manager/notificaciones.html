@@ -71,7 +71,7 @@
           <form method="post" th:action="@{/notificaciones/preferencias}">
             <input type="hidden" name="volver" th:value="${volver}">
             <div class="toggle-row" th:each="tipo : ${tiposEvento}">
-              <div class="toggle-row-text"><span class="toggle-row-title" th:text="${T(com.skillbridge.ai.service.PreferenciaNotificacionService).etiqueta(tipo)}">Tipo</span></div>
+              <div class="toggle-row-text"><span class="toggle-row-title" th:text="${T(com.skillbridge.ai.service.PreferenciaNotificacionService).etiqueta(tipo)}">Tipo</span><span class="toggle-row-desc" th:text="${T(com.skillbridge.ai.service.PreferenciaNotificacionService).descripcion(tipo)}">Descripción</span></div>
               <label class="toggle"><input type="checkbox" th:name="${tipo}" th:checked="${preferencias.get(tipo)}"><span class="toggle-track"></span></label>
             </div>
             <p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:var(--space-4); line-height:1.5;">
@@ -80,6 +80,14 @@
             <div class="btn-group" style="justify-content:flex-end; margin-top:var(--space-3);">
               <button type="submit" class="btn btn-primary btn-sm">Guardar preferencias</button>
             </div>
+          </form>
+          <!-- Resumen semanal: mandarlo ahora para ver cómo llega (ResumenSemanalService) -->
+          <form method="post" th:action="@{/notificaciones/resumen-semanal/probar}" class="resumen-probar">
+            <input type="hidden" name="volver" th:value="${volver}">
+            <p class="text-tertiary">¿Quieres ver cómo llega el resumen semanal?</p>
+            <button type="submit" class="btn btn-secondary btn-sm">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-mail"></use></svg>Enviarme el resumen ahora
+            </button>
           </form>
         </section>
       </div>

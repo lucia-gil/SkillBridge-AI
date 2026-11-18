@@ -165,7 +165,7 @@ La pantalla *Configuración* del Administrador edita `configuracion_global`. Cla
 
 ### Correos
 
-Los correos (Gmail SMTP) usan una plantilla HTML con el logo incrustado, se envían en segundo plano después de guardar cada cambio y algunos se pueden apagar en *Mi cuenta → Notificaciones*. El mapa completo de qué correo llega, a quién y cuándo (y qué casos no envían correo) está en [`Documentacion_Correos.md`](Documentacion_Correos.md).
+Los correos (Gmail SMTP) usan una plantilla HTML con el logo incrustado, se envían en segundo plano después de guardar cada cambio y algunos se pueden apagar en *Notificaciones → Preferencias de aviso*. Cada lunes a las 8:00 llega un **resumen semanal** según el rol (`ResumenSemanalService`, `@Scheduled`), que también se puede pedir al momento con "Enviarme el resumen ahora". El mapa completo de qué correo llega, a quién y cuándo (y qué casos no envían correo) está en [`Documentacion_Correos.md`](Documentacion_Correos.md).
 
 ### Servicios web REST
 

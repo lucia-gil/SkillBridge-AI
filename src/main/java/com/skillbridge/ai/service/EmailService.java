@@ -47,10 +47,31 @@ public class EmailService {
      *
      * @param etiqueta        categoría que se muestra sobre el título (p. ej. "Proyectos y asignaciones")
      * @param enlace          botón de acción (null = sin botón)
-     * @param conPreferencias true si el aviso se puede apagar en Mi cuenta (se explica en el pie)
+     * @param conPreferencias true si el aviso se puede apagar en Notificaciones → Preferencias de aviso (se explica en el pie)
      */
     public record Correo(String destinatario, String asunto, String etiqueta, String titulo, String detalle,
-                         String enlace, String textoBoton, boolean conPreferencias) {}
+                         String enlace, String textoBoton, boolean conPreferencias,
+                         java.util.List<Dato> datos, java.util.List<Seccion> secciones) {
+        /** Aviso simple: título, detalle y botón. */
+        public Correo(String destinatario, String asunto, String etiqueta, String titulo, String detalle,
+                      String enlace, String textoBoton, boolean conPreferencias) {
+            this(destinatario, asunto, etiqueta, titulo, detalle, enlace, textoBoton, conPreferencias,
+                    java.util.List.of(), java.util.List.of());
+        }
+        public Correo {
+            datos = datos == null ? java.util.List.of() : datos;
+            secciones = secciones == null ? java.util.List.of() : secciones;
+        }
+    }
+
+    /** Cifra destacada (p. ej. "60%" · "Carga actual"), en una fila de hasta 3. */
+    public record Dato(String valor, String etiqueta) {}
+
+    /** Bloque con título y una lista de líneas; si está vacío muestra "vacio". */
+    public record Seccion(String titulo, java.util.List<Linea> lineas, String vacio) {}
+
+    /** Una línea de una sección: texto principal y uno secundario (opcional). */
+    public record Linea(String principal, String secundario) {}
 
     private final JavaMailSender mailSender;
     private final ExecutorService envios = Executors.newFixedThreadPool(2, r -> {
@@ -160,17 +181,64 @@ public class EmailService {
                 + escapar(c.titulo()) + "</h1>"
                 + "<p style=\"margin:0; font-size:15px; line-height:1.65; color:" + TEXTO + ";\">" + detalle + "</p>"
                 + "</td></tr>"
+                + datosHtml(c) + seccionesHtml(c)
                 + "<tr><td style=\"padding:24px 32px 30px 32px;\">" + boton(c) + "</td></tr>"
                 // Pie
                 + "<tr><td style=\"background:#f8fafc; border-top:1px solid #e2e8f0; padding:18px 32px;\">"
                 + "<p style=\"margin:0; font-size:12px; line-height:1.6; color:" + SUAVE + ";\">"
                 + "<strong style=\"color:" + NAVY + ";\">SkillBridge AI</strong> · Gestión de talento y proyectos de NexaCorp.<br>"
                 + (c.conPreferencias()
-                    ? "Puedes elegir qué avisos te llegan por correo en <strong>Mi cuenta → Notificaciones</strong>.<br>"
+                    ? "Puedes elegir qué avisos te llegan por correo en <strong>Notificaciones → Preferencias de aviso</strong>.<br>"
                     : "")
                 + "Este es un mensaje automático: no respondas a este correo.</p>"
                 + "</td></tr>"
                 + "</table></td></tr></table></body></html>";
+    }
+
+    /** Fila de cifras destacadas (resumen semanal). */
+    private String datosHtml(Correo c) {
+        if (c.datos().isEmpty()) return "";
+        StringBuilder celdas = new StringBuilder();
+        int ancho = 100 / Math.min(3, c.datos().size());
+        for (Dato d : c.datos().subList(0, Math.min(3, c.datos().size()))) {
+            celdas.append("<td width=\"").append(ancho).append("%\" valign=\"top\" style=\"padding:4px;\">")
+                    .append("<div style=\"background:#f1f5fb; border:1px solid #e2e8f0; border-radius:12px; padding:14px 12px;\">")
+                    .append("<div style=\"font-size:22px; font-weight:700; line-height:1.2; color:").append(NAVY).append(";\">")
+                    .append(escapar(d.valor())).append("</div>")
+                    .append("<div style=\"margin-top:4px; font-size:12px; line-height:1.4; color:").append(SUAVE).append(";\">")
+                    .append(escapar(d.etiqueta())).append("</div></div></td>");
+        }
+        return "<tr><td style=\"padding:20px 28px 0 28px;\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" "
+                + "cellspacing=\"0\" border=\"0\"><tr>" + celdas + "</tr></table></td></tr>";
+    }
+
+    /** Secciones con listas (resumen semanal). */
+    private String seccionesHtml(Correo c) {
+        StringBuilder html = new StringBuilder();
+        for (Seccion sec : c.secciones()) {
+            html.append("<tr><td style=\"padding:24px 32px 0 32px;\">")
+                    .append("<h2 style=\"margin:0 0 8px 0; font-size:15px; font-weight:700; color:").append(NAVY).append(";\">")
+                    .append(escapar(sec.titulo())).append("</h2>");
+            if (sec.lineas().isEmpty()) {
+                html.append("<p style=\"margin:0; font-size:14px; line-height:1.6; color:").append(SUAVE).append(";\">")
+                        .append(escapar(sec.vacio())).append("</p>");
+            } else {
+                html.append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">");
+                for (Linea l : sec.lineas()) {
+                    html.append("<tr><td style=\"padding:9px 0; border-bottom:1px solid #eef1f6;\">")
+                            .append("<div style=\"font-size:14px; line-height:1.45; color:").append(TEXTO).append("; font-weight:600;\">")
+                            .append(escapar(l.principal())).append("</div>");
+                    if (l.secundario() != null && !l.secundario().isBlank()) {
+                        html.append("<div style=\"font-size:12px; line-height:1.45; color:").append(SUAVE).append(";\">")
+                                .append(escapar(l.secundario())).append("</div>");
+                    }
+                    html.append("</td></tr>");
+                }
+                html.append("</table>");
+            }
+            html.append("</td></tr>");
+        }
+        return html.toString();
     }
 
     private String boton(Correo c) {
@@ -195,12 +263,24 @@ public class EmailService {
         StringBuilder t = new StringBuilder();
         t.append(c.titulo()).append("\n\n");
         if (c.detalle() != null && !c.detalle().isBlank()) t.append(c.detalle()).append("\n\n");
+        for (Dato d : c.datos()) t.append("- ").append(d.etiqueta()).append(": ").append(d.valor()).append("\n");
+        if (!c.datos().isEmpty()) t.append("\n");
+        for (Seccion sec : c.secciones()) {
+            t.append(sec.titulo().toUpperCase(java.util.Locale.ROOT)).append("\n");
+            if (sec.lineas().isEmpty()) t.append(sec.vacio()).append("\n");
+            for (Linea l : sec.lineas()) {
+                t.append("- ").append(l.principal());
+                if (l.secundario() != null && !l.secundario().isBlank()) t.append(" (").append(l.secundario()).append(")");
+                t.append("\n");
+            }
+            t.append("\n");
+        }
         if (c.enlace() != null && !c.enlace().isBlank()) {
             t.append(c.textoBoton() != null && !c.textoBoton().isBlank() ? c.textoBoton() : "Ver en SkillBridge AI")
                     .append(": ").append(c.enlace()).append("\n\n");
         }
         t.append("--\nSkillBridge AI · Gestión de talento y proyectos de NexaCorp.\n");
-        if (c.conPreferencias()) t.append("Puedes elegir qué avisos te llegan por correo en Mi cuenta > Notificaciones.\n");
+        if (c.conPreferencias()) t.append("Puedes elegir qué avisos te llegan por correo en Notificaciones > Preferencias de aviso.\n");
         t.append("Este es un mensaje automático: no respondas a este correo.");
         return t.toString();
     }

@@ -12,4 +12,7 @@ public interface CorreoAutorizadoRepository extends JpaRepository<CorreoAutoriza
     boolean existsByCorreoIgnoreCase(String correo);
 
     java.util.List<CorreoAutorizado> findAllByOrderByFechaAutorizacionDesc();
+
+    /** Invitaciones que todavía no se usaron para crear una cuenta. */
+    long countByUtilizadoFalse();
 }

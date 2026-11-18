@@ -10,9 +10,10 @@ y `emailService.enviar(...)`). Si agregas un aviso nuevo, agrégalo también aqu
      y, según su tipo, también se manda por correo.
   2. **Solo correo** (`EmailService.enviar`): cuando la persona todavía no tiene cuenta o no puede entrar
      (invitación, recuperar contraseña, cuenta suspendida/reactivada).
-- **¿Se puede apagar?** Tres tipos tienen preferencia en **Mi cuenta → Notificaciones** ("también por correo"):
-  `asignacion` → *Alertas críticas*, `solicitud` → *Solicitudes de aprobación*, `resultado_ia` → *Resultados de IA*.
-  Vienen **activados por defecto**. Todos los demás tipos **siempre** mandan correo.
+- **¿Se puede apagar?** Cuatro avisos tienen preferencia en **Notificaciones → Preferencias de aviso**:
+  `asignacion` → *Alertas críticas*, `solicitud` → *Solicitudes de aprobación*, `resultado_ia` → *Resultados de IA*
+  y el *Resumen semanal*. Vienen **activados por defecto**. Los canales `app_mail`, `mail` y `solo_mail` cuentan
+  como "con correo"; `app` y `solo_app`, como "sin correo". Todos los demás tipos **siempre** mandan correo.
 - **Envío:** en segundo plano (la pantalla no espera a Gmail) y **después de que se guarda el cambio**: si la acción
   falla y se revierte, no sale el correo. Un error de SMTP no rompe nada; queda en el log.
 - **Diseño:** plantilla HTML con el logo incrustado en el propio correo (se ve aunque la app no tenga dominio con
@@ -67,6 +68,22 @@ y `emailService.enviar(...)`). Si agregas un aviso nuevo, agrégalo también aqu
 | Mensaje directo nuevo | La otra persona, **solo con el primer mensaje sin leer** (no uno por mensaje) | `info` |
 | Se elimina un proyecto cancelado | Todos los Resource Managers | `info` |
 
+### Resumen semanal (se puede apagar)
+
+Cada **lunes a las 8:00 (hora de Perú)**, a cada cuenta activa que no lo apagó (`ResumenSemanalService`):
+
+| Rol | Contenido |
+|---|---|
+| Colaborador | Carga actual, proyectos activos, entregables que cierran en 7 días (sin entregar) y agenda de sus proyectos |
+| Colaborador que lidera proyectos | Lo anterior, más entregas por revisar y vacantes de sus proyectos |
+| Resource Manager | Solicitudes por resolver, banca, sobreasignados, proyectos por iniciar con vacantes, quién se libera pronto y su agenda (eventos propios e hitos) |
+| Administrador | Cuentas y proyectos nuevos en 7 días, invitaciones sin usar, cuentas activas y suspendidas, proyectos en curso y en pausa, propuestas pendientes |
+
+Todos incluyen cuántos avisos y mensajes tiene sin leer, y el botón **Ir a mi Inicio**. Con
+**"Enviarme el resumen ahora"** (Notificaciones) se recibe al momento para revisarlo. Se configura con
+`RESUMEN_SEMANAL_CRON` (formato cron de Spring) y se apaga para todos con `RESUMEN_SEMANAL_HABILITADO=false`.
+Está pensado para una sola instancia de la app: con varias, cada una lo enviaría.
+
 ## Cuándo NO llega correo
 
 Estos casos hoy no generan aviso ni correo (algunos solo se ven en la app):
@@ -82,7 +99,6 @@ Estos casos hoy no generan aviso ni correo (algunos solo se ven en la app):
 | Reanudar un proyecto en pausa | Sin aviso | Opcional |
 | Editar los datos de un proyecto | Sin aviso | No |
 | Acciones del Asistente IA | Avisan las mismas acciones de negocio que ejecuta (p. ej. proponer un candidato avisa al RM) | — |
-| Preferencia "Resumen semanal" | Se guarda en Mi cuenta, pero **todavía no se envía** ningún resumen | Implementarlo o quitar la opción |
 
 ## Probar los correos sin Gmail
 

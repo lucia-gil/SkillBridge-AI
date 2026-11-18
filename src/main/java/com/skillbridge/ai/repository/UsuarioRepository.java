@@ -27,6 +27,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     long countByEstado(String estado);
 
+    /** Cuentas creadas desde una fecha (resumen semanal del Administrador). */
+    long countByFechaCreacionAfter(java.time.LocalDateTime desde);
+
     /**
      * Permite saber si un usuario tiene foto sin cargar el contenido del BLOB.
      */

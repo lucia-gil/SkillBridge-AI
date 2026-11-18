@@ -16,6 +16,9 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long> {
 
     long countByEstado(String estado);
 
+    /** Proyectos creados desde una fecha (resumen semanal del Administrador). */
+    long countByFechaCreacionAfter(java.time.LocalDateTime desde);
+
     // Usado para bloquear la creacion de proyectos con nombre duplicado
     // (RF03: nombre no es UNIQUE a nivel de esquema, se valida en servicio).
     boolean existsByNombreIgnoreCase(String nombre);
