@@ -1,8 +1,8 @@
 # SkillBridge AI
 
-Plataforma interna de gestión de talento y proyectos (empresa ficticia **NexaCorp**): usuarios y roles, catálogo de habilidades, proyectos, asignaciones con AI Talent Matching, entregables, foros, calendario, reportes y un Asistente IA conectado a Google Gemini.
+Plataforma interna de gestión de talento y proyectos (empresa ficticia **NexaCorp**): usuarios y roles, catálogo de habilidades, proyectos, asignaciones con AI Talent Matching, entregables, foros, calendario, reportes y un Asistente IA (agente) conectado a Claude (Anthropic Messages API).
 
-**Stack:** Java 17 · Spring Boot 3.2.5 · Spring MVC + Thymeleaf · Spring Data JPA (Hibernate) · MySQL 8 · Spring Security · Spring Session JDBC · Java Mail (Gmail SMTP) · Apache POI / OpenPDF (exportes) · API de Google Gemini.
+**Stack:** Java 17 · Spring Boot 3.2.5 · Spring MVC + Thymeleaf · Spring Data JPA (Hibernate) · MySQL 8 · Spring Security · Spring Session JDBC · Java Mail (Gmail SMTP) · Apache POI / OpenPDF (exportes) · API de Claude (Anthropic).
 
 ---
 
@@ -31,8 +31,10 @@ Copia `src/main/resources/secretos.properties.example` como `src/main/resources/
 | `DB_USERNAME` | Usuario de MySQL | `root` |
 | `DB_PASSWORD` | Clave de MySQL | vacía |
 | `MAIL_PASSWORD` | Contraseña de aplicación de Gmail (correos de invitación, recuperación y notificaciones) | la app arranca, pero no se envían correos |
-| `GEMINI_API_KEY` | Asistente IA y resúmenes de foros y chat ([clave gratis](https://aistudio.google.com/apikey)) | el asistente responde que no está configurado |
-| `IA_RESPALDO_API_KEY` | Opcional: segundo proveedor de IA si Gemini falla (cualquier API compatible con OpenAI; por defecto Groq, [clave gratis](https://console.groq.com/keys)) | solo se usa Gemini |
+| `ANTHROPIC_API_KEY` | Asistente IA (agente), resúmenes de foros y chat, matching y buscador con IA ([consola de Anthropic](https://console.anthropic.com/)) | el asistente responde que no está configurado |
+| `CLAUDE_MODELOS` | Opcional: modelos de Claude a probar en orden, separados por coma | `claude-sonnet-5` |
+| `AGENTE_ENABLED` / `AGENTE_SOLICITUDES_MINUTO` | Opcional: activar el agente y su límite por minuto | `true` / `8` |
+| `IA_RESPALDO_API_KEY` | Opcional: segundo proveedor de IA si Claude falla (cualquier API compatible con OpenAI; por defecto Groq, [clave gratis](https://console.groq.com/keys)) | solo se usa Claude |
 
 En el servidor se usan las mismas variables como variables de entorno (`export DB_PASSWORD='...'`), que tienen prioridad sobre `secretos.properties`.
 
@@ -83,16 +85,16 @@ Menú de cada rol (definido en `service/NavService`):
 Una sola pantalla para los 4 roles (`compartido/asistente-ia.html`, `AsistenteIaController`), con jQuery/AJAX contra el REST `/api/asistente/**`:
 
 - **Contexto real** (`AsistenteContextoService`): en cada mensaje se leen de la base los datos de quien pregunta según su vista. El Colaborador ve su perfil, habilidades, proyectos, carga y entregables; el PM, sus proyectos con equipo, vacantes, huecos y entregables; el RM, la capacidad del equipo, la banca, las solicitudes y las vacantes, y si pregunta "¿a quién pongo en Portal Andes?" se agrega el ranking de AI Talent Matching; el Administrador, cifras globales. El panel "Contexto cargado" muestra esos mismos datos.
-- **Memoria** (`AsistenteConversacionService`): cada turno se guarda en `asistente_conversaciones` / `asistente_mensajes`; la IA recibe los últimos 12 turnos, y el panel "Historial" permite retomar o eliminar conversaciones.
+- **Historial** (`AsistenteConversacionService`): cada turno se guarda en `asistente_conversaciones` / `asistente_mensajes` y el panel "Historial" permite retomar, renombrar, fijar o eliminar conversaciones. Por seguridad, el agente recibe solo el mensaje actual y consulta los datos vigentes con sus herramientas; el historial se oculta si cambian los permisos de la persona.
 - Las respuestas pueden traer enlaces de acción (por ejemplo "Ver Portal Andes" o "Buscar talento para…").
 
-Detalles de la conexión con Gemini, el proveedor de respaldo y el resumen de foros: ver [`ASISTENTE_IA.md`](ASISTENTE_IA.md).
+Detalles del agente (herramientas por rol, confirmación de escrituras, límites y auditoría): ver [`ASISTENTE_IA.md`](ASISTENTE_IA.md) y [`Documentacion_IA/`](Documentacion_IA/).
 
 ### Chat de proyectos (RF07)
 
 Cada proyecto tiene una sala de chat que solo ven sus integrantes activos (PM y colaboradores). Se guarda el historial con autor, fecha y hora (`chat_salas`, `chat_mensajes`) y hasta dónde leyó cada persona (`chat_lecturas`, contador de no leídos en el sidebar).
 
-Arquitectura: servicio web **REST** (`ChatApiController`, `/api/chat/**`, JSON) consumido con **jQuery/AJAX** (`js/chat.js` sobre `js/sbai-api.js`, que agrega el token CSRF). Los mensajes nuevos llegan por *polling*: cada 3 s el navegador pide `GET /api/chat/salas/{id}/mensajes?despues={ultimoId}` (15 s si la pestaña está oculta), sin necesidad de WebSockets. Incluye "Resumir con IA" (Gemini) de la conversación reciente. La primera vez se cargan conversaciones de ejemplo en los proyectos activos.
+Arquitectura: servicio web **REST** (`ChatApiController`, `/api/chat/**`, JSON) consumido con **jQuery/AJAX** (`js/chat.js` sobre `js/sbai-api.js`, que agrega el token CSRF). Los mensajes nuevos llegan por *polling*: cada 3 s el navegador pide `GET /api/chat/salas/{id}/mensajes?despues={ultimoId}` (15 s si la pestaña está oculta), sin necesidad de WebSockets. Incluye "Resumir con IA" (Claude) de la conversación reciente. La primera vez se cargan conversaciones de ejemplo en los proyectos activos.
 
 ### Vista de detalle de proyecto
 
@@ -141,6 +143,10 @@ La pantalla *Configuración* del Administrador edita `configuracion_global`. Cla
 - **% de avance de proyecto**: heurístico por tiempo transcurrido entre `fecha_inicio` y `fecha_fin_estimada` (`ProyectoService.avanceHeuristico`); la fuente de verdad del trabajo entregado es el módulo de Entregables.
 - **Demanda de una habilidad**: según cuántos proyectos la requieren.
 - **Tipo / severidad / origen en Auditoría**: derivados del texto de la acción (`AuditoriaFila`).
+
+### Servicios web REST
+
+Todos los servicios REST (`/api/**`, buscador y catálogo de habilidades) están documentados en [`Documentacion_REST/`](Documentacion_REST/README.md) con ruta, método, parámetros, ejemplo de respuesta y códigos HTTP.
 
 ---
 
@@ -201,7 +207,7 @@ Con `spring.jpa.hibernate.ddl-auto=none`, Hibernate no toca la BD. Para que una 
 ```bash
 export DB_PASSWORD='...'
 export MAIL_PASSWORD='...'
-export GEMINI_API_KEY='...'
+export ANTHROPIC_API_KEY='...'
 nohup java -jar skillbridge-ai.jar > app.log 2>&1 &
 ```
 

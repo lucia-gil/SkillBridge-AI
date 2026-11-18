@@ -9,7 +9,7 @@ Este ZIP es un parche sobre SkillBridge-AI-nube.zip entregado por el usuario. Co
 5. En desarrollo, el esquema auxiliar se crea automáticamente. En producción ejecuta `src/main/resources/db/agente.sql` con la cuenta de migración antes de arrancar y define `agente.init-schema=false`. No se modifican ni eliminan tablas existentes por este script.
 6. Configura las variables de MySQL y correo ya requeridas por el proyecto y ANTHROPIC_API_KEY / CLAUDE_MODELOS. Nunca copies claves dentro del ZIP. Verifica que el modelo elegido esté disponible para tu cuenta.
 7. Activa el perfil prod solamente con HTTPS y las variables APP_BASE_URL, DB_URL, DB_USERNAME y DB_PASSWORD correctas. DB_URL debe verificar TLS y certificados. El perfil activa cookies Secure. Revisa también los inicializadores originales que siguen ejecutándose.
-8. Reinicia la aplicación. Entra al asistente con cada rol y sigue docs/Guia_Pruebas_Agente_IA.pdf. Una escritura debe mostrar datos exactos y exigir pulsar Confirmar cambio. Un «sí» en el chat no confirma una operación.
+8. Reinicia la aplicación. Entra al asistente con cada rol y sigue Documentacion_IA/Guia_Pruebas_Agente_IA.pdf. Una escritura debe mostrar datos exactos y exigir pulsar Confirmar cambio. Un «sí» en el chat no confirma una operación.
 9. Verifica auditoría, aislamiento, caducidad y doble confirmación. Las pruebas locales son automatizadas con H2 y proveedor simulado, no una certificación del entorno MySQL/Anthropic real.
 
 ## Cambios visibles

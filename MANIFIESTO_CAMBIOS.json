@@ -16,25 +16,25 @@
       "sha256_actual": "80475d3c4f8093a958d611497bd7fa5b4aa84beaf647b002163c13fd3986130c"
     },
     {
-      "ruta": "docs/Arquitectura_Agente_IA.pdf",
+      "ruta": "Documentacion_IA/Arquitectura_Agente_IA.pdf",
       "tipo": "nuevo",
       "sha256_original": null,
       "sha256_actual": "b2ba479abe417cd61f193009a0ae69ceb11f527ea555a7bd7a72f537272f72e5"
     },
     {
-      "ruta": "docs/Guia_Pruebas_Agente_IA.pdf",
+      "ruta": "Documentacion_IA/Guia_Pruebas_Agente_IA.pdf",
       "tipo": "nuevo",
       "sha256_original": null,
       "sha256_actual": "64467500674433fd8a520d0d7bcd6e655239866d72dd407f374892115a893309"
     },
     {
-      "ruta": "docs/Resultados_Pruebas_Agente.md",
+      "ruta": "Documentacion_IA/Resultados_Pruebas_Agente.md",
       "tipo": "nuevo",
       "sha256_original": null,
       "sha256_actual": "ce33f1bd3dbbcb3c551a04189b4eb02de8944cb9558a6f013d30a45f8cb745ed"
     },
     {
-      "ruta": "docs/Transicion_Chat_Agente_IA.md",
+      "ruta": "Documentacion_IA/Transicion_Chat_Agente_IA.md",
       "tipo": "nuevo",
       "sha256_original": null,
       "sha256_actual": "3f2b0eb9abb0a08b9913a58c3f0e187e4796d8f70b3df5d4c0ca457ec8cdc1d9"
