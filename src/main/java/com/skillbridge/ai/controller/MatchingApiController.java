@@ -27,7 +27,7 @@ import java.util.Map;
  * (solo los proyectos que lidera), según la vista activa.
  */
 @RestController
-@RequestMapping("/api/matching")
+@RequestMapping(value = "/api/matching", produces = "application/json;charset=UTF-8")
 public class MatchingApiController {
 
     private final MatchingIaService matchingIaService;
@@ -69,6 +69,11 @@ public class MatchingApiController {
     @ExceptionHandler(AccesoDenegado.class)
     public ResponseEntity<Map<String, String>> denegado() {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "No tienes acceso a este proyecto."));
+    }
+
+    @ExceptionHandler(com.skillbridge.ai.util.RecursoNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> noEncontrado(com.skillbridge.ai.util.RecursoNoEncontradoException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(OperacionInvalidaException.class)

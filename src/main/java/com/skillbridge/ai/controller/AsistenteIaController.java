@@ -139,6 +139,12 @@ public class AsistenteIaController {
         finally { limite.liberar(usuario.getUsuarioId(),lease); }
     }
 
+    @ExceptionHandler(com.skillbridge.ai.util.RecursoNoEncontradoException.class)
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> noEncontrado(com.skillbridge.ai.util.RecursoNoEncontradoException ex) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(OperacionInvalidaException.class)
     @ResponseBody
     public ResponseEntity<Map<String, String>> invalida(OperacionInvalidaException ex) {

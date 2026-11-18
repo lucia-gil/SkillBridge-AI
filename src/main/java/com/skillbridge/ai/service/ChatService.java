@@ -223,7 +223,7 @@ public class ChatService {
     }
 
     private ChatSala exigirAcceso(Long salaId, Long perfilId) {
-        ChatSala sala = salaRepository.findById(salaId).orElseThrow(() -> new OperacionInvalidaException("Esa sala ya no existe."));
+        ChatSala sala = salaRepository.findById(salaId).orElseThrow(() -> new com.skillbridge.ai.util.RecursoNoEncontradoException("Esa sala ya no existe."));
         if (perfilId == null || !asignacionRepository.existsByProyectoIdAndPerfilIdAndEstado(sala.getProyectoId(), perfilId, "activa"))
             throw new AccesoDenegado();
         return sala;

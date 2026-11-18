@@ -183,7 +183,7 @@ public class MatchingIaService {
 
     private Analisis analizar(Long proyectoId, Long solicitantePerfilId, int dedicacion, Map<Long, Integer> requisitos,
                               int cantidad, int limite, String peticion, Interpretacion interpretacion) {
-        Proyecto p = proyectoRepository.findById(proyectoId).orElseThrow(() -> new OperacionInvalidaException("El proyecto no existe."));
+        Proyecto p = proyectoRepository.findById(proyectoId).orElseThrow(() -> new com.skillbridge.ai.util.RecursoNoEncontradoException("El proyecto no existe."));
         List<MatchingCandidato> ranking = talentMatchingService.rankingParaIa(proyectoId, dedicacion, requisitos, limite);
         long vacantes = talentMatchingService.vacantesDe(proyectoId);
         if (ranking.isEmpty()) {

@@ -31,7 +31,7 @@ import java.util.Map;
  * Los POST llevan el token CSRF (lo agrega sbai-api.js).
  */
 @RestController
-@RequestMapping("/api/chat")
+@RequestMapping(value = "/api/chat", produces = "application/json;charset=UTF-8")
 public class ChatApiController {
 
     private final ChatService chatService;
@@ -91,6 +91,11 @@ public class ChatApiController {
     @ExceptionHandler(ChatService.AccesoDenegado.class)
     public ResponseEntity<Map<String, String>> sinAcceso(ChatService.AccesoDenegado ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(com.skillbridge.ai.util.RecursoNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> noEncontrado(com.skillbridge.ai.util.RecursoNoEncontradoException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(OperacionInvalidaException.class)

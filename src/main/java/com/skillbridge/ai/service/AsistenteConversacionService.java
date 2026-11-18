@@ -126,10 +126,10 @@ public class AsistenteConversacionService {
     public AsistenteAdjunto adjunto(Long id, UsuarioSesion s) {
         Long dueno = adjuntoRepository.duenoDe(id);
         Long conversacion = adjuntoRepository.conversacionDe(id);
-        if (conversacion == null) throw new OperacionInvalidaException("Ese archivo ya no existe.");
+        if (conversacion == null) throw new com.skillbridge.ai.util.RecursoNoEncontradoException("Ese archivo ya no existe.");
         exigirPropia(conversacion, s);
-        if (dueno == null || !dueno.equals(s.getUsuarioId())) throw new OperacionInvalidaException("Ese archivo ya no existe.");
-        return adjuntoRepository.findById(id).orElseThrow(() -> new OperacionInvalidaException("Ese archivo ya no existe."));
+        if (dueno == null || !dueno.equals(s.getUsuarioId())) throw new com.skillbridge.ai.util.RecursoNoEncontradoException("Ese archivo ya no existe.");
+        return adjuntoRepository.findById(id).orElseThrow(() -> new com.skillbridge.ai.util.RecursoNoEncontradoException("Ese archivo ya no existe."));
     }
 
     @Transactional
@@ -247,8 +247,8 @@ public class AsistenteConversacionService {
 
     private AsistenteConversacion exigirPropia(Long id, UsuarioSesion s) {
         AsistenteConversacion c = conversacionRepository.findById(id)
-                .orElseThrow(() -> new OperacionInvalidaException("Esa conversación ya no existe."));
-        if (!c.getUsuarioId().equals(s.getUsuarioId()) || !c.getRol().equals(rolDe(s)) || !alcanceValido(id,s)) throw new OperacionInvalidaException("Esa conversación ya no existe.");
+                .orElseThrow(() -> new com.skillbridge.ai.util.RecursoNoEncontradoException("Esa conversación ya no existe."));
+        if (!c.getUsuarioId().equals(s.getUsuarioId()) || !c.getRol().equals(rolDe(s)) || !alcanceValido(id,s)) throw new com.skillbridge.ai.util.RecursoNoEncontradoException("Esa conversación ya no existe.");
         return c;
     }
 
