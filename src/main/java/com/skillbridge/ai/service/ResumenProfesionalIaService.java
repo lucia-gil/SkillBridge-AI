@@ -1,5 +1,8 @@
 package com.skillbridge.ai.service;
 
+import org.springframework.web.client.RestClient;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.HttpHeaders;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillbridge.ai.dto.AnalisisConstanciaIa;
@@ -19,9 +22,6 @@ import org.springframework.stereotype.Service;
 
 import java.net.InetAddress;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.Timestamp;
@@ -75,10 +75,42 @@ public class ResumenProfesionalIaService {
     private final PerfilRepository perfilRepository;
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
-    private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .followRedirects(HttpClient.Redirect.NEVER)
-            .build();
+    /** Lectura de páginas públicas (enlaces del perfil): espera hasta 6 s. */
+    private final RestClient clientePaginas = clienteSinRedirecciones(Duration.ofSeconds(6));
+    /** Descarga de PDF de Google Drive: espera hasta 15 s. */
+    private final RestClient clienteDrive = clienteSinRedirecciones(Duration.ofSeconds(15));
+
+    /**
+     * RestClient (como en AsistenteIaService) que NO sigue redirecciones solo:
+     * leerPagina y descargarPdfDeDrive las siguen a mano para revisar cada
+     * salto (que no apunte a la red interna ni salga de Google Drive).
+     */
+    private static RestClient clienteSinRedirecciones(Duration lectura) {
+        SimpleClientHttpRequestFactory fabrica = new SimpleClientHttpRequestFactory() {
+            @Override
+            protected void prepareConnection(java.net.HttpURLConnection conexion, String metodo) throws java.io.IOException {
+                super.prepareConnection(conexion, metodo);
+                conexion.setInstanceFollowRedirects(false);
+            }
+        };
+        fabrica.setConnectTimeout(Duration.ofSeconds(5));
+        fabrica.setReadTimeout(lectura);
+        return RestClient.builder().requestFactory(fabrica).build();
+    }
+
+    /** Lo necesario de una respuesta HTTP, sin lanzar excepción por 3xx/4xx/5xx. */
+    private record Respuesta(int estado, String ubicacion, String tipo, byte[] cuerpo) {}
+
+    private static Respuesta pedir(RestClient cliente, URI uri, String accept) {
+        return cliente.get().uri(uri)
+                .header(HttpHeaders.USER_AGENT, "Mozilla/5.0 (SkillBridge AI)")
+                .headers(h -> { if (accept != null) h.set(HttpHeaders.ACCEPT, accept); })
+                .exchange((pedido, resp) -> new Respuesta(resp.getStatusCode().value(),
+                        resp.getHeaders().getFirst(HttpHeaders.LOCATION),
+                        resp.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE),
+                        // El cuerpo solo se usa con 200; con 4xx/5xx HttpURLConnection no deja leerlo.
+                        resp.getStatusCode().is2xxSuccessful() ? resp.getBody().readAllBytes() : new byte[0]));
+    }
 
     public ResumenProfesionalIaService(AsistenteIaService asistenteIaService, HabilidadService habilidadService,
                                        CertificadoHabilidadRepository certificadoRepository,
@@ -482,26 +514,20 @@ public class ResumenProfesionalIaService {
             URI uri = URI.create(url);
             for (int salto = 0; salto < 3; salto++) {
                 if (!esPublica(uri)) return null;
-                HttpRequest req = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(6))
-                        .header("User-Agent", "Mozilla/5.0 (SkillBridge AI)")
-                        .header("Accept", "text/html,application/xhtml+xml").GET().build();
-                HttpResponse<byte[]> resp = http.send(req, HttpResponse.BodyHandlers.ofByteArray());
-                int st = resp.statusCode();
+                Respuesta resp = pedir(clientePaginas, uri, "text/html,application/xhtml+xml");
+                int st = resp.estado();
                 if (st >= 300 && st < 400) {
-                    String loc = resp.headers().firstValue("location").orElse(null);
-                    if (loc == null) return null;
-                    uri = uri.resolve(loc);
+                    if (resp.ubicacion() == null) return null;
+                    uri = uri.resolve(resp.ubicacion());
                     continue;
                 }
                 if (st != 200) return null;
-                String tipo = resp.headers().firstValue("content-type").orElse("");
+                String tipo = resp.tipo() == null ? "" : resp.tipo();
                 if (!tipo.contains("html") && !tipo.contains("text")) return null;
-                byte[] cuerpo = resp.body();
+                byte[] cuerpo = resp.cuerpo();
                 String html = new String(cuerpo, 0, Math.min(cuerpo.length, 600_000), StandardCharsets.UTF_8);
                 return textoDeHtml(html);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.debug("Resumen IA: no se pudo leer {}: {}", url, e.getMessage());
         }
@@ -526,25 +552,20 @@ public class ResumenProfesionalIaService {
             URI uri = URI.create("https://drive.google.com/uc?export=download&id=" + m.group(1));
             for (int salto = 0; salto < 4; salto++) {
                 if (uri.getHost() == null || !HOSTS_DRIVE.contains(uri.getHost().toLowerCase(Locale.ROOT))) return null;
-                HttpRequest req = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(15))
-                        .header("User-Agent", "Mozilla/5.0 (SkillBridge AI)").GET().build();
-                HttpResponse<byte[]> resp = http.send(req, HttpResponse.BodyHandlers.ofByteArray());
-                int st = resp.statusCode();
+                Respuesta resp = pedir(clienteDrive, uri, null);
+                int st = resp.estado();
                 if (st >= 300 && st < 400) {
-                    String loc = resp.headers().firstValue("location").orElse(null);
-                    if (loc == null) return null;
-                    uri = uri.resolve(loc);
+                    if (resp.ubicacion() == null) return null;
+                    uri = uri.resolve(resp.ubicacion());
                     continue;
                 }
-                byte[] cuerpo = resp.body();
+                byte[] cuerpo = resp.cuerpo();
                 if (st == 200 && cuerpo.length > 5 && cuerpo.length <= 10L * 1024 * 1024
                         && new String(cuerpo, 0, 5, StandardCharsets.US_ASCII).startsWith("%PDF-")) {
                     return cuerpo;
                 }
                 return null;
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.debug("Resumen IA: no se pudo descargar el PDF de Drive {}: {}", url, e.getMessage());
         }
