@@ -93,7 +93,7 @@ public class NotificacionService {
         String tipoEvento = CODIGO_A_TIPO_EVENTO.get(tipoCodigo);
         if (tipoEvento != null) {
             boolean tambienMail = preferenciaNotificacionRepository.findByPerfilIdAndTipoEvento(perfilId, tipoEvento)
-                    .map(p -> "app_mail".equals(p.getCanal()))
+                    .map(p -> PreferenciaNotificacionService.incluyeCorreo(p.getCanal()))
                     .orElse(true);
             if (!tambienMail) return;
         }

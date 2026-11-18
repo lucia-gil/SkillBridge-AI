@@ -29,12 +29,21 @@ public class PreferenciaNotificacionService {
         this.repository = repository;
     }
 
-    /** tipo_evento -> true si además de "app" también quiere "mail". */
+    /** tipo_evento -> true si quiere recibirlo por correo. */
     public Map<String, Boolean> obtener(Long perfilId) {
         Map<String, Boolean> mapa = new LinkedHashMap<>();
         for (String tipo : TIPOS_EVENTO) mapa.put(tipo, true); // por defecto: app + mail
-        repository.findByPerfilId(perfilId).forEach(p -> mapa.put(p.getTipoEvento(), "app_mail".equals(p.getCanal())));
+        repository.findByPerfilId(perfilId).forEach(p -> mapa.put(p.getTipoEvento(), incluyeCorreo(p.getCanal())));
         return mapa;
+    }
+
+    /**
+     * true si el canal incluye correo. El ENUM admite 'mail', 'app_mail' y
+     * 'solo_mail' (los datos de demo usan 'solo_mail'); antes solo se tomaba
+     * 'app_mail' y esas personas dejaban de recibir el correo que habían pedido.
+     */
+    public static boolean incluyeCorreo(String canal) {
+        return "app_mail".equals(canal) || "mail".equals(canal) || "solo_mail".equals(canal);
     }
 
     @Transactional
@@ -51,6 +60,17 @@ public class PreferenciaNotificacionService {
             pref.setCanal(tambienMail ? "app_mail" : "app");
             repository.save(pref);
         }
+    }
+
+    /** Qué avisos cubre cada preferencia (texto bajo cada interruptor). */
+    public static String descripcion(String tipoEvento) {
+        return switch (tipoEvento) {
+            case "alertas_criticas" -> "Asignaciones, cambios de dedicación, salidas de proyectos y cambios de Project Manager.";
+            case "solicitudes_aprobacion" -> "Propuestas de asignación que esperan la aprobación de un Resource Manager.";
+            case "resultados_ia" -> "Resultado de tus propuestas de AI Talent Matching.";
+            case "resumen_semanal" -> "Cada lunes a las 8:00, un correo con tu semana: pendientes, carga y agenda.";
+            default -> "";
+        };
     }
 
     public static String etiqueta(String tipoEvento) {
