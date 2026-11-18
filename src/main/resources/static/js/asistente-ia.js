@@ -64,8 +64,41 @@
     return '<div class="as-msg is-bot' + (m.error ? " is-error" : "") + '"><span class="as-bot-avatar sm" aria-hidden="true">' +
         (m.error ? icon("icon-alert-circle") : icon("icon-sparkles") + MASCOTA) + "</span><div class=\"as-msg-body\"><div class=\"as-bubble\">" + formato(m.texto) + "</div>" +
         (acciones ? '<div class="as-acciones">' + acciones + "</div>" : "") +
-        '<span class="as-meta">Asistente SkillBridge' + (m.hora ? " · " + esc(m.hora) : "") + "</span></div></div>";
+        '<div class="as-meta-fila"><span class="as-meta">Asistente SkillBridge' + (m.hora ? " · " + esc(m.hora) : "") + "</span>" +
+        (!m.error && m.texto ? '<button type="button" class="as-copiar" data-texto="' + esc(m.texto) + '" aria-label="Copiar respuesta" title="Copiar">' +
+          icon("icon-copy", "icon-sm") + "<span>Copiar</span></button>" : "") +
+        "</div></div></div>";
   }
+
+  /* ---------------- Copiar respuesta ---------------- */
+  // navigator.clipboard solo existe con HTTPS (o localhost); en el EC2 por http se usa el método clásico.
+  function copiarTexto(texto) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(texto);
+    return $.Deferred(function (d) {
+      var $t = $("<textarea readonly></textarea>").val(texto)
+        .css({ position: "fixed", top: 0, left: 0, opacity: 0 }).appendTo("body");
+      $t[0].select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      $t.remove();
+      if (ok) d.resolve(); else d.reject();
+    }).promise();
+  }
+  $msgs.on("click", ".as-copiar", function () {
+    var $b = $(this);
+    // Se copia como texto limpio: sin los ** ni ` del formato (las viñetas "- " se mantienen).
+    var limpio = $b.attr("data-texto").replace(/\*\*(.+?)\*\*/g, "$1").replace(/`([^`]+)`/g, "$1");
+    $.when(copiarTexto(limpio)).done(function () {
+      $b.addClass("is-ok").find("span").text("Copiado");
+      $b.find("use").attr("href", "/img/icons.svg#icon-check");
+      setTimeout(function () {
+        $b.removeClass("is-ok").find("span").text("Copiar");
+        $b.find("use").attr("href", "/img/icons.svg#icon-copy");
+      }, 1800);
+    }).fail(function () {
+      SBAI.toast.show("No se pudo copiar. Selecciona el texto y usa Ctrl+C.", { type: "error" });
+    });
+  });
 
   /** Adjuntos de un mensaje: miniaturas para imágenes, ficha para PDF y texto. */
   function adjuntosHtml(adjs, locales) {
