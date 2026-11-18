@@ -3,6 +3,7 @@ package com.skillbridge.ai.service;
 import com.skillbridge.ai.dto.EventoFila;
 import com.skillbridge.ai.dto.ProyectoOpcion;
 import com.skillbridge.ai.model.Asignacion;
+import com.skillbridge.ai.model.EventoPersonal;
 import com.skillbridge.ai.model.EventoProyecto;
 import com.skillbridge.ai.model.TipoAudiencia;
 import com.skillbridge.ai.model.TipoEvento;
@@ -45,10 +46,13 @@ public class EventoService {
     private final TipoAudienciaRepository tipoAudienciaRepository;
     private final AsignacionRepository asignacionRepository;
     private final NotificacionService notificacionService;
+    private final com.skillbridge.ai.repository.EventoPersonalRepository personalRepository;
 
     public EventoService(EventoProyectoRepository eventoRepository, TipoEventoRepository tipoEventoRepository,
                          TipoAudienciaRepository tipoAudienciaRepository, AsignacionRepository asignacionRepository,
-                         NotificacionService notificacionService) {
+                         NotificacionService notificacionService,
+                         com.skillbridge.ai.repository.EventoPersonalRepository personalRepository) {
+        this.personalRepository = personalRepository;
         this.eventoRepository = eventoRepository;
         this.tipoEventoRepository = tipoEventoRepository;
         this.tipoAudienciaRepository = tipoAudienciaRepository;
@@ -84,7 +88,7 @@ public class EventoService {
         if (ids.isEmpty()) return List.of();
         return eventoRepository.listarPorProyectos(ids).stream()
                 .filter(e -> audienciaVisible(e.getAudiencia() != null ? e.getAudiencia().getCodigo() : "todos", esPm))
-                .map(e -> aFila(e, perfilId, rolOrganizacional))
+                .map(e -> aFila(e, puedeGestionar(perfilId, rolOrganizacional, e)))
                 .collect(Collectors.toList());
     }
 
@@ -117,7 +121,7 @@ public class EventoService {
         return true;
     }
 
-    private EventoFila aFila(EventoProyecto e, Long perfilId, String rolOrganizacional) {
+    private EventoFila aFila(EventoProyecto e, boolean puedeGestionar) {
         LocalDateTime f = e.getFechaInicio();
         int dia = f.getDayOfMonth();
         String mes = MESES[f.getMonthValue() - 1];
@@ -131,11 +135,107 @@ public class EventoService {
         String tipoColor = e.getTipo() != null && e.getTipo().getColor() != null ? e.getTipo().getColor() : "#64748b";
         String audCodigo = e.getAudiencia() != null ? e.getAudiencia().getCodigo() : "todos";
         String audLabel = e.getAudiencia() != null ? e.getAudiencia().getNombre() : "Todos";
-        boolean puedeGestionar = puedeGestionar(perfilId, rolOrganizacional, e);
         return new EventoFila(e.getId(), dia, mes, fechaLabel, hora, tipoCodigo, tipoNombre, tipoColor,
                 e.getTitulo(), e.getProyecto().getNombre(), ubic, e.getEstado(), audCodigo, audLabel,
                 puedeGestionar, e.getProyectoId(), e.getDescripcion(), e.getUbicacion(), e.getEnlaceVirtual(),
                 f.format(FECHA_ISO));
+    }
+
+    // ───────── Agenda personal (calendario del Resource Manager) ─────────
+
+    /** Nombre con el que aparecen los eventos personales en el calendario (en lugar de un proyecto). */
+    public static final String AGENDA_PERSONAL = "Mi agenda";
+
+    /**
+     * Calendario del Resource Manager: su agenda personal (editable) más los
+     * hitos y entregables de los proyectos en curso (solo lectura), para ver
+     * fechas clave del portafolio al planificar al equipo.
+     */
+    @Transactional(readOnly = true)
+    public List<EventoFila> listarResourceManager(Long usuarioId) {
+        List<EventoFila> filas = new java.util.ArrayList<>();
+        for (EventoPersonal e : personalRepository.listarDe(usuarioId)) filas.add(aFilaPersonal(e));
+        for (EventoProyecto e : eventoRepository.hitosYEntregablesEnCurso()) filas.add(aFila(e, false));
+        filas.sort(java.util.Comparator.comparing(EventoFila::getFechaInicioIso));
+        return filas;
+    }
+
+    /** Proyectos con hitos o entregables visibles en el calendario del RM (para el filtro). */
+    @Transactional(readOnly = true)
+    public List<ProyectoOpcion> proyectosConHitos() {
+        Map<Long, String> nombres = new LinkedHashMap<>();
+        for (EventoProyecto e : eventoRepository.hitosYEntregablesEnCurso()) nombres.putIfAbsent(e.getProyectoId(), e.getProyecto().getNombre());
+        return nombres.entrySet().stream().map(x -> new ProyectoOpcion(x.getKey(), x.getValue(), 0)).collect(Collectors.toList());
+    }
+
+    private EventoFila aFilaPersonal(EventoPersonal e) {
+        LocalDateTime f = e.getFechaInicio();
+        String ubic = e.getEnlaceVirtual() != null && !e.getEnlaceVirtual().isBlank() ? "Virtual"
+                : (e.getUbicacion() != null && !e.getUbicacion().isBlank() ? e.getUbicacion() : "Sin ubicacion");
+        TipoEvento t = e.getTipo();
+        // Estado según la fecha: lo que ya pasó cuenta como cumplido.
+        String estado = f.isBefore(LocalDateTime.now()) ? "cumplido" : "pendiente";
+        return new EventoFila(e.getId(), f.getDayOfMonth(), MESES[f.getMonthValue() - 1],
+                DIAS[(f.getDayOfWeek().getValue() + 6) % 7] + " " + f.getDayOfMonth() + " " + MESES[f.getMonthValue() - 1],
+                f.format(HORA), t != null ? t.getCodigo() : "reunion", t != null ? t.getNombre() : "Evento",
+                t != null && t.getColor() != null ? t.getColor() : "#64748b", e.getTitulo(), AGENDA_PERSONAL, ubic, estado,
+                "personal", "Solo tú", true, null, e.getDescripcion(), e.getUbicacion(), e.getEnlaceVirtual(),
+                f.format(FECHA_ISO));
+    }
+
+    /** Crea un evento en la agenda personal del usuario. */
+    @Transactional
+    public EventoPersonal crearPersonal(Long usuarioId, String tipoCodigo, String titulo, String descripcion,
+                                        String fechaInicioIso, String ubicacion, String enlaceVirtual) {
+        EventoPersonal e = new EventoPersonal();
+        e.setUsuarioId(usuarioId);
+        aplicarDatosPersonales(e, tipoCodigo, titulo, descripcion, fechaInicioIso, ubicacion, enlaceVirtual);
+        return personalRepository.save(e);
+    }
+
+    /** Edita un evento de la agenda personal; solo su dueño puede hacerlo. */
+    @Transactional
+    public EventoPersonal editarPersonal(Long eventoId, Long usuarioId, String tipoCodigo, String titulo, String descripcion,
+                                         String fechaInicioIso, String ubicacion, String enlaceVirtual) {
+        EventoPersonal e = personalRepository.findByIdAndUsuarioId(eventoId, usuarioId)
+                .orElseThrow(() -> new OperacionInvalidaException("Ese evento ya no existe en tu agenda."));
+        aplicarDatosPersonales(e, tipoCodigo, titulo, descripcion, fechaInicioIso, ubicacion, enlaceVirtual);
+        return personalRepository.save(e);
+    }
+
+    /** Elimina un evento de la agenda personal; solo su dueño puede hacerlo. */
+    @Transactional
+    public void eliminarPersonal(Long eventoId, Long usuarioId) {
+        EventoPersonal e = personalRepository.findByIdAndUsuarioId(eventoId, usuarioId)
+                .orElseThrow(() -> new OperacionInvalidaException("Ese evento ya no existe en tu agenda."));
+        personalRepository.delete(e);
+    }
+
+    private void aplicarDatosPersonales(EventoPersonal e, String tipoCodigo, String titulo, String descripcion,
+                                        String fechaInicioIso, String ubicacion, String enlaceVirtual) {
+        if (titulo == null || titulo.isBlank()) throw new OperacionInvalidaException("Escribe un titulo para el evento.");
+        if (titulo.trim().length() > 150) throw new OperacionInvalidaException("El titulo puede tener hasta 150 caracteres.");
+        if (fechaInicioIso == null || fechaInicioIso.isBlank()) throw new OperacionInvalidaException("Selecciona la fecha y hora del evento.");
+        TipoEvento tipo = tipoEventoRepository.findByCodigo(tipoCodigo)
+                .orElseThrow(() -> new OperacionInvalidaException("Tipo de evento no valido."));
+        LocalDateTime fecha;
+        try {
+            fecha = LocalDateTime.parse(fechaInicioIso);
+        } catch (Exception ex) {
+            throw new OperacionInvalidaException("Fecha u hora no valida.");
+        }
+        String ubic = ubicacion != null && !ubicacion.isBlank() ? ubicacion.trim() : null;
+        String enlace = enlaceVirtual != null && !enlaceVirtual.isBlank() ? enlaceVirtual.trim() : null;
+        if (ubic != null && ubic.length() > 150) throw new OperacionInvalidaException("La ubicacion puede tener hasta 150 caracteres.");
+        if (enlace != null && (enlace.length() > 255 || !enlace.matches("(?i)https?://\\S+"))) {
+            throw new OperacionInvalidaException("El enlace virtual debe empezar con http:// o https://.");
+        }
+        e.setTipoId(tipo.getId());
+        e.setTitulo(titulo.trim());
+        e.setDescripcion(descripcion != null && !descripcion.isBlank() ? descripcion.trim() : null);
+        e.setFechaInicio(fecha);
+        e.setUbicacion(ubic);
+        e.setEnlaceVirtual(enlace);
     }
 
     @Transactional

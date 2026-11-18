@@ -36,6 +36,7 @@ public class NavService {
                 // Colaboradores incluye la antigua "Ocupación del equipo" (capacidad y Ajustar carga).
                 items.add(new NavItem("Colaboradores", "icon-users", "colaboradores.html"));
                 items.add(new NavItem("AI Talent Matching", "icon-search-check", "ai-talent-matching.html"));
+                items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
                 items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
                 items.add(new NavItem("Reportes", "icon-bar-chart", "reportes.html"));
             }

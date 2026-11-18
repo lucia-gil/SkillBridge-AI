@@ -21,7 +21,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 
 /**
- * Calendario conectado a datos reales (colaborador y project-manager): agenda de
+ * Calendario conectado a datos reales (colaborador, project-manager y
+ * resource-manager). Colaborador y PM: agenda de
  * eventos de "eventos_proyecto" (reunion/entregable/hito) de los proyectos del
  * usuario, respetando la audiencia. "Nuevo evento" guarda en la tabla real.
  *
@@ -55,6 +56,67 @@ public class CalendarioController {
     @GetMapping("/project-manager/calendario.html")
     public String projectManager(HttpSession session, Model model) {
         return vista(session, model, "project-manager/calendario", true, "/project-manager/calendario/nuevo");
+    }
+
+    /**
+     * Calendario del Resource Manager: su agenda personal (eventos propios,
+     * sin proyecto) y, solo para consulta, los hitos y entregables de los
+     * proyectos en curso.
+     */
+    @GetMapping("/resource-manager/calendario.html")
+    public String resourceManager(HttpSession session, Model model) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        List<EventoFila> eventos = eventoService.listarResourceManager(sesion.getUsuarioId());
+        long propios = eventos.stream().filter(EventoFila::isPuedeGestionar).count();
+        shellModelBuilder.aplicar(model, sesion, "calendario.html", "Calendario",
+                "Tu agenda y los hitos del portafolio - " + propios + " eventos propios");
+        model.addAttribute("eventos", eventos);
+        model.addAttribute("proyectos", eventoService.proyectosConHitos());
+        model.addAttribute("agendaPersonal", EventoService.AGENDA_PERSONAL);
+        model.addAttribute("tiposEvento", tipoEventoRepository.findAll());
+        return "resource-manager/calendario";
+    }
+
+    @PostMapping("/resource-manager/calendario/nuevo")
+    public String crearRm(@RequestParam String tipo, @RequestParam String titulo,
+                          @RequestParam(required = false) String descripcion, @RequestParam String fechaInicio,
+                          @RequestParam(required = false) String ubicacion, @RequestParam(required = false) String enlace,
+                          HttpSession session, RedirectAttributes ra) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            eventoService.crearPersonal(sesion.getUsuarioId(), tipo, titulo, descripcion, fechaInicio, ubicacion, enlace);
+            ra.addFlashAttribute("exito", "Evento \"" + titulo.trim() + "\" agregado a tu agenda.");
+        } catch (OperacionInvalidaException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/resource-manager/calendario.html";
+    }
+
+    @PostMapping("/resource-manager/calendario/{id}/editar")
+    public String editarRm(@PathVariable Long id, @RequestParam String tipo, @RequestParam String titulo,
+                           @RequestParam(required = false) String descripcion, @RequestParam String fechaInicio,
+                           @RequestParam(required = false) String ubicacion, @RequestParam(required = false) String enlace,
+                           HttpSession session, RedirectAttributes ra) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            eventoService.editarPersonal(id, sesion.getUsuarioId(), tipo, titulo, descripcion, fechaInicio, ubicacion, enlace);
+            ra.addFlashAttribute("exito", "Evento \"" + titulo.trim() + "\" actualizado.");
+        } catch (OperacionInvalidaException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/resource-manager/calendario.html";
+    }
+
+    @PostMapping("/resource-manager/calendario/{id}/eliminar")
+    public String eliminarRm(@PathVariable Long id, HttpSession session, RedirectAttributes ra) {
+        UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            eventoService.eliminarPersonal(id, sesion.getUsuarioId());
+            ra.addFlashAttribute("exito", "Evento eliminado de tu agenda.");
+        } catch (OperacionInvalidaException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/resource-manager/calendario.html";
     }
 
     private String vista(HttpSession session, Model model, String plantilla, boolean esPm, String nuevoUrl) {

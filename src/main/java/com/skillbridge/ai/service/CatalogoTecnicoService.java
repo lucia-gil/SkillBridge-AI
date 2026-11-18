@@ -35,6 +35,7 @@ public class CatalogoTecnicoService {
     private final TipoAudienciaRepository tipoAudienciaRepository;
     private final NotificacionRepository notificacionRepository;
     private final EventoProyectoRepository eventoProyectoRepository;
+    private final com.skillbridge.ai.repository.EventoPersonalRepository eventoPersonalRepository;
     private final AuditoriaService auditoriaService;
 
     public CatalogoTecnicoService(TipoNotificacionRepository tipoNotificacionRepository,
@@ -42,12 +43,14 @@ public class CatalogoTecnicoService {
                                   TipoAudienciaRepository tipoAudienciaRepository,
                                   NotificacionRepository notificacionRepository,
                                   EventoProyectoRepository eventoProyectoRepository,
+                                  com.skillbridge.ai.repository.EventoPersonalRepository eventoPersonalRepository,
                                   AuditoriaService auditoriaService) {
         this.tipoNotificacionRepository = tipoNotificacionRepository;
         this.tipoEventoRepository = tipoEventoRepository;
         this.tipoAudienciaRepository = tipoAudienciaRepository;
         this.notificacionRepository = notificacionRepository;
         this.eventoProyectoRepository = eventoProyectoRepository;
+        this.eventoPersonalRepository = eventoPersonalRepository;
         this.auditoriaService = auditoriaService;
     }
 
@@ -129,7 +132,7 @@ public class CatalogoTecnicoService {
     public void eliminarTipoEvento(Long id, Long actorId) {
         TipoEvento t = tipoEventoRepository.findById(id)
                 .orElseThrow(() -> new OperacionInvalidaException("Ese tipo de evento ya no existe."));
-        if (eventoProyectoRepository.countByTipoId(id) > 0) {
+        if (eventoProyectoRepository.countByTipoId(id) > 0 || eventoPersonalRepository.countByTipoId(id) > 0) {
             throw new OperacionInvalidaException(
                     "No se puede eliminar \"" + t.getNombre() + "\": ya hay eventos del calendario creados con este tipo.");
         }

@@ -66,6 +66,7 @@ public class InicializadorTablasExtra implements CommandLineRunner {
         catalogoDeFormacion();
         chatDeProyectos();
         memoriaDelAsistente();
+        agendaPersonal();
     }
 
     // ───────── Memoria del Asistente IA (chatbot) ─────────
@@ -79,6 +80,29 @@ public class InicializadorTablasExtra implements CommandLineRunner {
             log.warn("No se pudieron verificar/crear las tablas del Asistente IA: {}", e.getMessage());
         }
         agregarSiFalta("asistente_conversaciones", "fijada", "TINYINT(1) NOT NULL DEFAULT 0");
+    }
+
+    // ───────── Agenda personal (calendario del Resource Manager) ─────────
+
+    private void agendaPersonal() {
+        try {
+            jdbc.execute("CREATE TABLE IF NOT EXISTS eventos_personales ("
+                    + " id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+                    + " usuario_id BIGINT UNSIGNED NOT NULL,"
+                    + " tipo_id BIGINT UNSIGNED NOT NULL,"
+                    + " titulo VARCHAR(150) NOT NULL,"
+                    + " descripcion TEXT NULL,"
+                    + " fecha_inicio DATETIME NOT NULL,"
+                    + " enlace_virtual VARCHAR(255) NULL,"
+                    + " ubicacion VARCHAR(150) NULL,"
+                    + " fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                    + " INDEX idx_evento_personal_usuario (usuario_id, fecha_inicio),"
+                    + " CONSTRAINT fk_evento_personal_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,"
+                    + " CONSTRAINT fk_evento_personal_tipo FOREIGN KEY (tipo_id) REFERENCES tipos_evento(id)"
+                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (Exception e) {
+            log.warn("No se pudo verificar/crear la tabla eventos_personales: {}", e.getMessage());
+        }
     }
 
     // ───────── Chat de proyectos (RF07) ─────────

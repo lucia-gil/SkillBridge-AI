@@ -819,6 +819,23 @@ CREATE TABLE eventos_proyecto (
                                   CONSTRAINT fk_evento_audiencia FOREIGN KEY (audiencia_id) REFERENCES tipos_audiencia(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Agenda personal (calendario del Resource Manager): eventos propios que no
+-- pertenecen a un proyecto. Solo los ve y gestiona su dueño.
+CREATE TABLE eventos_personales (
+                                  id                  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                                  usuario_id          BIGINT UNSIGNED NOT NULL,
+                                  tipo_id             BIGINT UNSIGNED NOT NULL,
+                                  titulo              VARCHAR(150) NOT NULL,
+                                  descripcion         TEXT NULL,
+                                  fecha_inicio        DATETIME NOT NULL,
+                                  enlace_virtual      VARCHAR(255) NULL,
+                                  ubicacion           VARCHAR(150) NULL,
+                                  fecha_creacion      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                  INDEX idx_evento_personal_usuario (usuario_id, fecha_inicio),
+                                  CONSTRAINT fk_evento_personal_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+                                  CONSTRAINT fk_evento_personal_tipo FOREIGN KEY (tipo_id) REFERENCES tipos_evento(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Creacion de la tabla de certificados para que se puedan subir pdfs y mas para vlaidars
 -- CORREGIDA en v4.1: CertificadoHabilidad.java soporta DOS formas de
 -- respaldo, mutuamente excluyentes (Opción A: link externo -> url_archivo;
