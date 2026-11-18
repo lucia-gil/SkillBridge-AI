@@ -1,5 +1,8 @@
 package com.skillbridge.ai.repository;
 
+import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import com.skillbridge.ai.model.PropuestaAsignacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -36,4 +39,15 @@ public interface PropuestaAsignacionRepository extends JpaRepository<PropuestaAs
     @Query("select p from PropuestaAsignacion p join fetch p.proyecto join fetch p.candidato c join fetch c.usuario " +
             "join fetch p.solicitante s join fetch s.usuario where p.id = :id")
     Optional<PropuestaAsignacion> buscarDetalle(@Param("id") Long id);
+
+    // ── Agente IA (service/agente) ──
+
+    @Query("select new com.skillbridge.ai.dto.AgenteSolicitudFila(p.id, p.proyectoId, p.candidatoPerfilId, " +
+           "p.dedicacionPorcentaje, p.estado) from PropuestaAsignacion p where p.estado = 'pendiente' order by p.id desc")
+    List<com.skillbridge.ai.dto.AgenteSolicitudFila> pendientesParaAgente(Pageable pagina);
+
+    /** La propuesta bloqueada (FOR UPDATE) mientras el RM la resuelve desde el agente. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from PropuestaAsignacion p where p.id = :id")
+    Optional<PropuestaAsignacion> bloquear(@Param("id") Long id);
 }

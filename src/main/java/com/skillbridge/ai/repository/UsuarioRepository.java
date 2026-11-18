@@ -1,5 +1,8 @@
 package com.skillbridge.ai.repository;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import com.skillbridge.ai.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -28,4 +31,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * Permite saber si un usuario tiene foto sin cargar el contenido del BLOB.
      */
     boolean existsByIdAndFotoPerfilIsNotNull(Long id);
+
+    // ── Agente IA (service/agente) ──
+
+    @Query("select new com.skillbridge.ai.dto.AgenteCuentaFila(u.id, u.nombreCompleto, u.rolOrganizacional, u.estado) " +
+           "from Usuario u order by u.id")
+    List<com.skillbridge.ai.dto.AgenteCuentaFila> cuentasParaAgente(Pageable pagina);
 }

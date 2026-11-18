@@ -1,5 +1,6 @@
 package com.skillbridge.ai.repository;
 
+import org.springframework.data.domain.Pageable;
 import com.skillbridge.ai.model.Asignacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -117,4 +118,16 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
     @Query("select a.perfilId, count(a) from Asignacion a join a.proyecto p where a.estado = 'activa' " +
             "and p.estado in ('planificacion', 'activo', 'en_pausa') group by a.perfilId")
     List<Object[]> contarProyectosVigentesAgrupadoPorPerfil();
+
+    // ── Agente IA (service/agente) ──
+
+    boolean existsByPerfilIdAndRolEnProyectoAndEstado(Long perfilId, String rolEnProyecto, String estado);
+
+    /** Todas las asignaciones de un perfil en orden fijo (base de la huella de permisos). */
+    List<Asignacion> findByPerfilIdOrderByProyectoIdAscRolEnProyectoAscEstadoAsc(Long perfilId);
+
+    @Query("select distinct new com.skillbridge.ai.dto.AgenteProyectoFila(p.id, p.nombre, p.estado) " +
+           "from Asignacion a join a.proyecto p where a.perfilId = :perfilId " +
+           "and a.rolEnProyecto = 'project_manager' and a.estado = 'activa' order by p.id")
+    List<com.skillbridge.ai.dto.AgenteProyectoFila> proyectosLideradosParaAgente(@Param("perfilId") Long perfilId, Pageable pagina);
 }

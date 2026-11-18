@@ -1,5 +1,6 @@
 package com.skillbridge.ai.repository;
 
+import org.springframework.data.jpa.repository.Modifying;
 import com.skillbridge.ai.model.Perfil;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -39,4 +40,14 @@ public interface PerfilRepository extends JpaRepository<Perfil, Long> {
     Optional<Perfil> buscarConUsuario(@Param("id") Long id);
 
     long countByEstado(String estado);
+
+    // ── Agente IA (service/agente) ──
+
+    boolean existsByIdAndUsuarioId(Long id, Long usuarioId);
+
+    /** Biografía propia: solo cambia si el perfil es de ese usuario (devuelve 1 si se actualizó). */
+    @Modifying
+    @Query("update Perfil p set p.biografia = :biografia where p.id = :perfilId and p.usuarioId = :usuarioId")
+    int actualizarBiografia(@Param("perfilId") Long perfilId, @Param("usuarioId") Long usuarioId,
+                            @Param("biografia") String biografia);
 }

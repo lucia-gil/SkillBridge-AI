@@ -61,7 +61,7 @@ public class AsistenteConversacionService {
     private final AsistenteIaService asistenteIaService;
     private final AsistenteAdjuntoRepository adjuntoRepository;
     private final com.skillbridge.ai.service.agente.PoliticaAgente politica;
-    private final org.springframework.jdbc.core.JdbcTemplate db;
+    private final com.skillbridge.ai.repository.AgenteAlcanceRepository alcanceRepository;
     @org.springframework.beans.factory.annotation.Value("${agente.enabled:true}")
     private boolean agenteHabilitado;
     private final com.skillbridge.ai.service.agente.HerramientasAgente herramientas;
@@ -70,8 +70,11 @@ public class AsistenteConversacionService {
     public AsistenteConversacionService(AsistenteConversacionRepository conversacionRepository,
                                         AsistenteMensajeRepository mensajeRepository,
                                         AsistenteContextoService contextoService, AsistenteIaService asistenteIaService,
-                                        AsistenteAdjuntoRepository adjuntoRepository, com.skillbridge.ai.service.agente.HerramientasAgente herramientas, com.skillbridge.ai.service.agente.ConfirmacionAgenteService confirmaciones, com.skillbridge.ai.service.agente.PoliticaAgente politica, org.springframework.jdbc.core.JdbcTemplate db) {
-        this.politica=politica; this.db=db;
+                                        AsistenteAdjuntoRepository adjuntoRepository, com.skillbridge.ai.service.agente.HerramientasAgente herramientas, com.skillbridge.ai.service.agente.ConfirmacionAgenteService confirmaciones,
+                                        com.skillbridge.ai.service.agente.PoliticaAgente politica,
+                                        com.skillbridge.ai.repository.AgenteAlcanceRepository alcanceRepository) {
+        this.politica = politica;
+        this.alcanceRepository = alcanceRepository;
         this.confirmaciones = confirmaciones;
         this.herramientas = herramientas;
         this.adjuntoRepository = adjuntoRepository;
@@ -161,7 +164,7 @@ public class AsistenteConversacionService {
                         titulo(mensaje.isEmpty() ? nombreSeguro(validos.get(0).getOriginalFilename()) : mensaje)))
                 : exigirPropia(conversacionId, s);
 
-        if (nueva) db.update("INSERT INTO agente_alcances(conversacion_id,firma) VALUES (?,?)",conv.getId(),politica.firma(s));
+        if (nueva) alcanceRepository.save(new com.skillbridge.ai.model.AgenteAlcance(conv.getId(), politica.firma(s)));
 
         // Memoria: los últimos turnos de esta conversación (antes del mensaje nuevo)
         List<AsistenteMensaje> previos = new ArrayList<>(mensajeRepository.findTop12ByConversacionIdOrderByIdDesc(conv.getId()));
@@ -253,8 +256,9 @@ public class AsistenteConversacionService {
     }
 
     private boolean alcanceValido(Long id, UsuarioSesion s) {
-        var firmas=db.queryForList("SELECT firma FROM agente_alcances WHERE conversacion_id=?",String.class,id);
-        return firmas.size()==1 && firmas.get(0).equals(politica.firma(s));
+        return alcanceRepository.findById(id)
+                .map(a -> a.getFirma().equals(politica.firma(s)))
+                .orElse(false);
     }
 
     private static String titulo(String mensaje) {
