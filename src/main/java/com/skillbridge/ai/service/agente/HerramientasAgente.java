@@ -15,6 +15,7 @@ import com.skillbridge.ai.repository.PropuestaAsignacionRepository;
 import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.repository.UsuarioRepository;
 import com.skillbridge.ai.service.AsistenteContextoService;
+import com.skillbridge.ai.service.EventoService;
 import com.skillbridge.ai.service.ProyectoService;
 import com.skillbridge.ai.service.TalentMatchingService;
 import com.skillbridge.ai.service.UsuarioService;
@@ -53,6 +54,7 @@ public class HerramientasAgente {
             new Definicion("listar_mis_proyectos", "Lista IDs y nombres de proyectos liderados.", Roles.PROJECT_MANAGER, false, Vacio.class),
             new Definicion("buscar_candidatos", "Ranking explicado para un proyecto propio.", Roles.PROJECT_MANAGER, false, Candidatos.class),
             new Definicion("listar_solicitudes", "Lista propuestas pendientes de asignación.", Roles.RESOURCE_MANAGER, false, Vacio.class),
+            new Definicion("consultar_mi_agenda", "Consulta los próximos eventos de la agenda personal y los hitos y entregables de los proyectos en curso.", Roles.RESOURCE_MANAGER, false, Vacio.class),
             new Definicion("listar_cuentas", "Lista hasta 30 cuentas: ID, nombre, rol y estado; sin secretos.", Roles.ADMINISTRADOR, false, Vacio.class),
             new Definicion("consultar_auditoria_agente", "Últimas 30 operaciones del agente, sin prompts ni argumentos.", Roles.ADMINISTRADOR, false, Vacio.class),
             new Definicion("actualizar_mi_biografia", "PREPARA actualización de presentación profesional propia; no cambia resumen IA validado. Requiere botón de confirmación.", Roles.COLABORADOR, true, Biografia.class),
@@ -60,6 +62,9 @@ public class HerramientasAgente {
             new Definicion("editar_proyecto", "PREPARA edición de proyecto propio conservando GitHub y estado. Requiere confirmación.", Roles.PROJECT_MANAGER, true, ProyectoEdicion.class),
             new Definicion("proponer_candidato", "PREPARA propuesta de candidato al RM, no asignación. Requiere confirmación.", Roles.PROJECT_MANAGER, true, Propuesta.class),
             new Definicion("resolver_propuesta", "PREPARA aprobación o rechazo; aprobar asigna según disponibilidad. Requiere confirmación.", Roles.RESOURCE_MANAGER, true, Resolucion.class),
+            new Definicion("crear_evento_agenda", "PREPARA un evento en la agenda personal del Resource Manager (solo él lo ve). "
+                    + "tipo: reunion, entregable o hito. fechaInicio: yyyy-MM-ddTHH:mm en hora de Lima. "
+                    + "ubicacion, enlace (http/https) y descripcion pueden ir vacíos. Requiere confirmación.", Roles.RESOURCE_MANAGER, true, EventoAgenda.class),
             new Definicion("cambiar_estado_cuenta", "PREPARA activar/suspender cuenta. No fuerza salida de proyectos. Requiere confirmación.", Roles.ADMINISTRADOR, true, EstadoCuenta.class)
     );
 
@@ -78,6 +83,7 @@ public class HerramientasAgente {
     private final PerfilRepository perfilRepository;
     private final ProyectoRepository proyectoRepository;
     private final AgenteAuditoriaRepository auditoriaRepository;
+    private final EventoService eventos;
     private final Validator validator;
     private final ObjectMapper mapper;
 
@@ -86,7 +92,8 @@ public class HerramientasAgente {
                               AsignacionRepository asignacionRepository, PropuestaAsignacionRepository propuestaRepository,
                               UsuarioRepository usuarioRepository, PerfilRepository perfilRepository,
                               ProyectoRepository proyectoRepository, AgenteAuditoriaRepository auditoriaRepository,
-                              Validator validator, ObjectMapper mapper) {
+                              EventoService eventos, Validator validator, ObjectMapper mapper) {
+        this.eventos = eventos;
         this.politica = politica;
         this.contexto = contexto;
         this.matching = matching;
@@ -161,11 +168,24 @@ public class HerramientasAgente {
         return "integer";
     }
 
-    /** Si la herramienta apunta a un proyecto, el PM debe liderarlo. */
+    /**
+     * Si la herramienta apunta a un proyecto, el PM debe liderarlo. Además,
+     * un evento se revisa antes de proponerlo, para no pedir confirmación de
+     * algo que después fallaría.
+     */
     public void autorizarRecurso(UsuarioSesion s, Object a) {
         if (a instanceof Candidatos x) politica.proyecto(s, x.proyectoId());
         if (a instanceof Propuesta x) politica.proyecto(s, x.proyectoId());
         if (a instanceof ProyectoEdicion x) politica.proyecto(s, x.proyectoId());
+        if (a instanceof EventoAgenda x) {
+            if (!x.tipo().matches("reunion|entregable|hito")) throw new IllegalArgumentException("Tipo de evento no válido.");
+            try {
+                java.time.LocalDateTime.parse(x.fechaInicio());
+            } catch (java.time.format.DateTimeParseException e) {
+                throw new IllegalArgumentException("Fecha no válida.");
+            }
+            if (!x.enlace().isBlank() && !x.enlace().matches("(?i)https?://\\S+")) throw new IllegalArgumentException("Enlace no válido.");
+        }
     }
 
     /** Ejecuta una herramienta de lectura y devuelve el resultado en JSON (sin secretos). */
@@ -188,6 +208,7 @@ public class HerramientasAgente {
                 case "listar_solicitudes" -> propuestaRepository.pendientesParaAgente(MAXIMO_FILAS);
                 case "listar_cuentas" -> usuarioRepository.cuentasParaAgente(MAXIMO_FILAS);
                 case "consultar_auditoria_agente" -> auditoriaRepository.ultimas(MAXIMO_FILAS);
+                case "consultar_mi_agenda" -> agendaDesdeHoy(s);
                 default -> throw new AccessDeniedException("Herramienta no autorizada.");
             };
         }
@@ -196,6 +217,24 @@ public class HerramientasAgente {
         } catch (Exception e) {
             throw new IllegalStateException("No se pudo preparar el resultado.");
         }
+    }
+
+    /** Agenda del RM desde hoy (hasta 30 eventos): lo propio y los hitos de proyectos, sin datos de más. */
+    private List<Map<String, Object>> agendaDesdeHoy(UsuarioSesion s) {
+        String hoy = java.time.LocalDate.now(java.time.ZoneId.of("America/Lima")).toString();
+        return eventos.listarResourceManager(s.getUsuarioId()).stream()
+                .filter(e -> e.getFechaInicioIso().compareTo(hoy) >= 0)
+                .limit(30)
+                .map(e -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("titulo", e.getTitulo());
+                    m.put("tipo", e.getTipoCodigo());
+                    m.put("fecha", e.getFechaInicioIso());
+                    m.put("origen", e.getProyectoNombre());
+                    m.put("ubicacion", e.getUbicacionLabel());
+                    return m;
+                })
+                .toList();
     }
 
     /** Solo la invoca ConfirmacionAgenteService, dentro de su transacción y con la confirmación bloqueada. */
@@ -223,6 +262,8 @@ public class HerramientasAgente {
         } else if (a instanceof Resolucion x) {
             propuestaRepository.bloquear(x.propuestaId());
             matching.resolver(x.propuestaId(), x.aprobar(), x.motivo(), s.getPerfilId(), s.getUsuarioId());
+        } else if (a instanceof EventoAgenda x) {
+            eventos.crearPersonal(s.getUsuarioId(), x.tipo(), x.titulo(), x.descripcion(), x.fechaInicio(), x.ubicacion(), x.enlace());
         } else if (a instanceof EstadoCuenta x) {
             usuarios.cambiarEstado(x.cuentaId(), x.activar(), x.motivo(), false, s.getUsuarioId());
         } else {

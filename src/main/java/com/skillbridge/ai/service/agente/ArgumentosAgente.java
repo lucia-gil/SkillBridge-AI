@@ -16,6 +16,12 @@ public final class ArgumentosAgente {
  public record ProyectoNuevo(@NotBlank @Size(max=150) String nombre,@NotNull @Size(max=3000) String descripcion,
      @NotNull @Size(max=15) List<@NotBlank @Size(max=60) String> tecnologias,@NotNull LocalDate fechaInicio,
      @NotNull LocalDate fechaFin,@NotNull @Min(0) @Max(100) Integer colaboradores){}
+ /** Evento para la agenda personal del RM. fechaInicio en formato yyyy-MM-ddTHH:mm (hora de Lima). */
+ public record EventoAgenda(@NotBlank @Size(max=150) String titulo,
+     @NotBlank @Pattern(regexp="[a-z_]{2,40}") String tipo,
+     @NotBlank @Pattern(regexp="\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}") String fechaInicio,
+     @NotNull @Size(max=150) String ubicacion, @NotNull @Size(max=255) String enlace,
+     @NotNull @Size(max=1500) String descripcion){}
  public record ProyectoEdicion(@NotNull @Positive Long proyectoId,@NotBlank @Size(max=150) String nombre,
      @NotNull @Size(max=3000) String descripcion,@NotNull @Size(max=15) List<@NotBlank @Size(max=60) String> tecnologias,
      @NotNull LocalDate fechaInicio,@NotNull LocalDate fechaFin){}
