@@ -87,11 +87,14 @@ public class ColaboradorFila {
     public boolean isTieneFoto() { return tieneFoto; }
     public Long getUsuarioId() { return usuarioId; }
 
-    /** Las 3 de mayor nivel, solo para mostrar como badges en la fila de la tabla. */
+    /** Cuántas habilidades se muestran en la fila del directorio; el resto va en el "+N". */
+    public static final int HABILIDADES_VISIBLES = 2;
+
+    /** Las de mayor nivel, solo para mostrar como badges en la fila de la tabla (las demás van en "+N"). */
     public List<HabilidadPerfilFila> getHabilidadesTop() {
         return habilidades.stream()
                 .sorted(Comparator.comparingInt(HabilidadPerfilFila::getNivelNumero).reversed())
-                .limit(3)
+                .limit(HABILIDADES_VISIBLES)
                 .collect(Collectors.toList());
     }
 

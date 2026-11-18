@@ -90,7 +90,11 @@
 .cl-role { font-size: var(--fs-xs); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Habilidades */
-.cl-skills { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; max-width: 340px; }
+/* Siempre en una línea: 2 habilidades + "+N" (ColaboradorFila.HABILIDADES_VISIBLES), la fila no crece. */
+.cl-skills { display: flex; flex-wrap: nowrap; gap: 5px; margin: 0; padding: 0; list-style: none; max-width: 340px; min-width: 0; }
+.cl-skills li:not(.cl-more) { min-width: 0; }
+.cl-skills li:not(.cl-more) > span:not(.tech-logo-sm) { overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+.cl-skills li.cl-more { flex: none; }
 .cl-skills li {
   display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px 0 6px; border-radius: 6px;
   border: 1px solid var(--border-subtle); background: var(--surface); font-size: var(--fs-xs); color: var(--text-secondary); white-space: nowrap;
