@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
   <link rel="stylesheet" href="/css/colaboradores-rm.css">
 </head>
 <body>
@@ -18,6 +19,46 @@
   <div class="main-content">
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
+      <!-- Capacidad del equipo (antes "Ocupación del equipo"): cada tarjeta
+           cuenta a los miembros disponibles de la lista en ese rango de carga
+           y, al pulsarla, filtra la tabla de abajo. -->
+      <section class="kpi-hero" aria-labelledby="cl-capacidad">
+        <div class="kpi-hero-head">
+          <div>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-layers"></use></svg>Resource Manager · Capacidad</span>
+            <h2 class="kpi-hero-title" id="cl-capacidad">¿Cómo está la carga del equipo?</h2>
+            <p class="kpi-hero-sub" th:text="'Suma de dedicaciones activas de cada persona en todos sus proyectos, contra el límite de ' + ${limiteCarga} + '%. Pulsa una tarjeta para ver a esas personas.'">Suma de dedicaciones activas.</p>
+          </div>
+          <a class="kpi-hero-action" href="asignaciones.html"><svg class="icon"><use href="/img/icons.svg#icon-target"></use></svg><span>Ir a asignaciones</span></a>
+        </div>
+        <div class="kpi-hero-grid cl-kpis" role="group" aria-label="Filtrar por carga">
+          <button type="button" class="hero-card cl-kpi" data-cl-carga="banca" aria-pressed="false">
+            <span class="hero-card-top"><span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-user"></use></svg></span><span class="hero-card-label">En la banca</span></span>
+            <span class="hero-card-value" th:text="${enBanca}">0</span>
+            <span class="hero-card-meta">Disponibles <b class="tone-violet">sin proyecto</b></span>
+          </button>
+          <button type="button" class="hero-card cl-kpi" data-cl-carga="sub" aria-pressed="false">
+            <span class="hero-card-top"><span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-trending-down"></use></svg></span><span class="hero-card-label">Subutilizados</span></span>
+            <span class="hero-card-value" th:text="${subutilizados}">0</span>
+            <span class="hero-card-meta"><b class="tone-blue">&lt; 60%</b> de carga</span>
+          </button>
+          <button type="button" class="hero-card cl-kpi" data-cl-carga="opt" aria-pressed="false">
+            <span class="hero-card-top"><span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span><span class="hero-card-label">Óptimo</span></span>
+            <span class="hero-card-value" th:text="${optimo}">0</span>
+            <span class="hero-card-meta"><b class="tone-green" th:text="'60%–' + ${limiteCarga - 11} + '%'">60%–89%</b> de carga</span>
+          </button>
+          <button type="button" class="hero-card cl-kpi" data-cl-carga="lim" aria-pressed="false">
+            <span class="hero-card-top"><span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-clock"></use></svg></span><span class="hero-card-label">Al límite</span></span>
+            <span class="hero-card-value" th:text="${alLimite}">0</span>
+            <span class="hero-card-meta"><b class="tone-amber" th:text="${limiteCarga - 10} + '%–' + ${limiteCarga} + '%'">90%–100%</b> de carga</span>
+          </button>
+          <button type="button" class="hero-card cl-kpi" data-cl-carga="sobre" aria-pressed="false">
+            <span class="hero-card-top"><span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span><span class="hero-card-label">Sobre-asignados</span></span>
+            <span class="hero-card-value" th:text="${sobreAsignados}">0</span>
+            <span class="hero-card-meta"><b class="tone-red" th:text="'> ' + ${limiteCarga} + '%'">&gt; 100%</b> de carga</span>
+          </button>
+        </div>
+      </section>
 
       <section class="card cl" aria-labelledby="cl-titulo">
         <!-- Barra superior: título, buscador y filtro de habilidad -->
@@ -68,7 +109,8 @@
               <tr><th scope="col">Colaborador</th><th scope="col">Habilidades principales</th><th scope="col">Carga</th><th scope="col">Estado</th><th scope="col"><span class="sr-only">Acciones</span></th></tr>
             </thead>
             <tbody id="colaboradores-body">
-            <tr th:each="c : ${colaboradores}" data-colaborador-row th:attr="data-buscar=${c.textoBusqueda}">
+            <tr th:each="c : ${colaboradores}" data-colaborador-row
+                th:attr="data-buscar=${c.textoBusqueda}, data-carga=${c.estado == 'activo'} ? ${c.cargaClave} : ''">
               <td class="cl-person-cell">
                 <a class="cl-person" th:href="@{/resource-manager/colaboradores/{id}(id=${c.perfilId})}" th:title="${c.correo}">
                   <!-- Foto e iniciales comparten el mismo contenedor circular: la fila no se desalinea -->
@@ -99,7 +141,15 @@
                 <div class="cl-load" th:attr="data-estado=${c.cargaClave}" th:title="${c.cargaLabel} + ' · límite ' + ${c.limite} + '%'">
                   <span class="cl-load-track" aria-hidden="true"><span class="cl-load-fill" th:style="'width:' + ${c.cargaPct} + '%'"></span></span>
                   <span class="cl-load-value" th:text="${c.ocupacion} + '%'">0%</span>
-                  <span class="cl-load-label" th:text="${c.cargaLabel}">Sin asignación</span>
+                  <span class="cl-load-foot">
+                    <span class="cl-load-label" th:text="${c.cargaLabel}">Sin asignación</span>
+                    <!-- Ajustar carga (antes en Ocupación): bajar la dedicación o finalizar asignaciones -->
+                    <button type="button" class="cl-ajustar" th:if="${c.ocupacion > 0}"
+                            th:classappend="${c.cargaClave == 'sobre'} ? 'is-alert'"
+                            th:attr="data-rebalancear=${c.perfilId}, data-nombre=${c.nombre}, data-carga=${c.ocupacion}">
+                      <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-sliders"></use></svg><span th:text="${c.cargaClave == 'sobre'} ? 'Rebalancear' : 'Ajustar carga'">Ajustar carga</span>
+                    </button>
+                  </span>
                 </div>
               </td>
               <td data-label="Estado"><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span></td>
@@ -124,7 +174,17 @@
           </table>
           <div class="cl-noresults" id="cl-sin-resultados" hidden>
             <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
-            <p>Nadie coincide con «<span id="cl-termino"></span>» en esta lista.</p>
+            <p id="cl-sin-resultados-texto">Nadie coincide con estos filtros.</p>
+          </div>
+          <!-- Asignaciones activas de cada persona: el modal "Ajustar carga" clona estas filas -->
+          <div id="rebalancear-templates" hidden th:attr="data-limite=${limiteCarga}">
+            <template th:each="entrada : ${asignacionesPorPerfil}" th:attr="data-perfil=${entrada.key}">
+              <tr th:each="a : ${entrada.value}" th:attr="data-asignacion=${a.asignacionId()},data-carga=${a.carga()},data-pm=${a.esProjectManager()}">
+                <td class="cell-primary"><span th:text="${a.proyecto()}">Proyecto</span><span class="rb-rol" th:text="${a.rolLabel()}">Rol</span></td>
+                <td><input class="input rb-input" type="number" min="1" th:attr="max=${limiteCarga}" th:value="${a.carga()}" aria-label="Dedicación (%)"></td>
+                <td class="cell-actions"><button type="button" data-rb-guardar>Guardar</button><button type="button" class="danger" data-rb-finalizar th:unless="${a.esProjectManager()}">Finalizar</button></td>
+              </tr>
+            </template>
           </div>
         </div>
         <div class="table-footer" th:unless="${colaboradores.isEmpty()}">
@@ -140,6 +200,7 @@
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/modal.js"></script>
+<script src="/js/proyecto-acciones.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script src="/js/tech-icons.js"></script>
 <script th:inline="javascript">

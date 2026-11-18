@@ -124,7 +124,7 @@ public class RmColaboradoresController {
                     if (!cumpleFiltroHabilidad) return null;
                     // "cuenta_suspendida" = el Admin suspendió la cuenta (solo él la reactiva);
                     // "inactivo" = el RM marcó el perfil como no disponible para proyectos.
-                    String estadoVista = !p.getUsuario().isActivo() ? "cuenta_suspendida" : p.getEstado();
+                    String estadoVista = !p.getUsuario().isActivo() ? "cuenta_suspendida" : java.util.Objects.toString(p.getEstado(), "activo");
                     if (estado != null && !estado.isBlank() && !estado.equals(estadoVista)) return null;
 
                     Integer sumaCarga = asignacionRepository.sumarCargaActivaDePerfil(p.getId());
@@ -143,8 +143,29 @@ public class RmColaboradoresController {
 
         List<Habilidad> catalogoHabilidades = habilidadRepository.findAllConCategoriaOrderByNombre();
 
+        // Capacidad (antes en "Ocupación del equipo"): cuántos miembros
+        // disponibles hay en cada rango de carga, contados sobre la lista ya
+        // filtrada para que las tarjetas coincidan con lo que filtran al
+        // pulsarlas. Usa la misma clasificación que la barra de cada fila.
+        java.util.Map<String, Long> porCarga = filas.stream()
+                .filter(f -> "activo".equals(f.getEstado()))
+                .collect(Collectors.groupingBy(ColaboradorFila::getCargaClave, Collectors.counting()));
+        model.addAttribute("enBanca", porCarga.getOrDefault("banca", 0L));
+        model.addAttribute("subutilizados", porCarga.getOrDefault("sub", 0L));
+        model.addAttribute("optimo", porCarga.getOrDefault("opt", 0L));
+        model.addAttribute("alLimite", porCarga.getOrDefault("lim", 0L));
+        model.addAttribute("sobreAsignados", porCarga.getOrDefault("sobre", 0L));
+
+        // Asignaciones activas de cada persona con carga, para el modal
+        // "Ajustar carga" (bajar la dedicación o finalizar sin salir de aquí).
+        java.util.Map<Long, List<com.skillbridge.ai.dto.AsignacionCargaFila>> asignaciones = new java.util.LinkedHashMap<>();
+        for (ColaboradorFila f : filas) {
+            if (f.getOcupacion() > 0) asignaciones.put(f.getPerfilId(), proyectoService.asignacionesActivasDe(f.getPerfilId()));
+        }
+        model.addAttribute("asignacionesPorPerfil", asignaciones);
+
         shellModelBuilder.aplicar(model, sesion, "colaboradores.html", "Colaboradores",
-                perfiles.size() + " miembros en el directorio del equipo");
+                perfiles.size() + " miembros · capacidad, carga y perfiles del equipo");
 
         model.addAttribute("colaboradores", filas);
         model.addAttribute("catalogoHabilidades", catalogoHabilidades);

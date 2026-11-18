@@ -22,7 +22,7 @@ import java.util.List;
  * Reemplaza la version mock (heatmap semanal S34-S39 con numeros
  * inventados en mock-data.js) por datos reales, reutilizando EXACTAMENTE
  * los mismos servicios que ya usan administrador/inicio.html y
- * resource-manager/ocupacion.html - no se agrega ninguna consulta nueva.
+ * administrador/reportes.html (ocupación por colaborador) - no se agrega ninguna consulta nueva.
  *
  * El mapa de calor semanal se retira a proposito: no existe ninguna tabla
  * que guarde un historico de ocupacion semana a semana (mismo motivo ya

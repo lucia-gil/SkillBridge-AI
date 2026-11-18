@@ -242,8 +242,8 @@ public class AsistenteContextoService {
             acciones.add(new Accion("Pregúntale a AI Talent Matching", "/resource-manager/ai-talent-matching.html"));
         }
 
-        tarjetas.add(new Tarjeta("icon-users", "blue", "Capacidad del equipo", b.total() + " miembros · " + panel.enBanca() + " en la banca", "/resource-manager/ocupacion.html"));
-        tarjetas.add(new Tarjeta("icon-alert-triangle", b.sobre() > 0 ? "red" : "green", "Sobreasignados", b.sobre() == 0 ? "Nadie sobre el límite" : b.sobre() + " persona(s)", "/resource-manager/ocupacion.html"));
+        tarjetas.add(new Tarjeta("icon-users", "blue", "Capacidad del equipo", b.total() + " miembros · " + panel.enBanca() + " en la banca", "/resource-manager/colaboradores.html"));
+        tarjetas.add(new Tarjeta("icon-alert-triangle", b.sobre() > 0 ? "red" : "green", "Sobreasignados", b.sobre() == 0 ? "Nadie sobre el límite" : b.sobre() + " persona(s)", "/resource-manager/colaboradores.html"));
         tarjetas.add(new Tarjeta("icon-target", conVacantes.isEmpty() ? "green" : "amber", "Proyectos con vacantes", conVacantes.size() + " proyecto(s)", "/resource-manager/asignaciones.html"));
         tarjetas.add(new Tarjeta("icon-sparkles", panel.solicitudesTotal() > 0 ? "violet" : "green", "Solicitudes por revisar", panel.solicitudesTotal() + " pendiente(s)", "/resource-manager/ai-talent-matching.html"));
         return new Contexto(t.toString(), tarjetas, sugerencias(Roles.RESOURCE_MANAGER), acciones);

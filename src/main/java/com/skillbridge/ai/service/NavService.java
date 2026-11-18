@@ -32,8 +32,8 @@ public class NavService {
             }
             case "resource-manager" -> {
                 items.add(new NavItem("Inicio", "icon-home", "inicio.html"));
-                items.add(new NavItem("Ocupación del equipo", "icon-layers", "ocupacion.html"));
                 items.add(new NavItem("Asignaciones", "icon-target", "asignaciones.html"));
+                // Colaboradores incluye la antigua "Ocupación del equipo" (capacidad y Ajustar carga).
                 items.add(new NavItem("Colaboradores", "icon-users", "colaboradores.html"));
                 items.add(new NavItem("AI Talent Matching", "icon-search-check", "ai-talent-matching.html"));
                 items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));

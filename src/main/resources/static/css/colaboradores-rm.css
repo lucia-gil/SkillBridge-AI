@@ -182,3 +182,37 @@
 @media (prefers-reduced-motion: reduce) {
   .cl-states button, .cl-table tbody tr, .cl-name { transition: none; }
 }
+
+/* ── Capacidad del equipo (antes "Ocupación del equipo") ─────────────────
+   Las tarjetas del kpi-hero son botones: filtran la tabla por rango de carga. */
+.kpi-hero + .cl { margin-top: var(--space-6); }
+.cl-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1180px) { .cl-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px)  { .cl-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cl-kpi { width: 100%; border: 0; text-align: left; font: inherit; cursor: pointer; outline: none; }
+.cl-kpi .hero-card-top, .cl-kpi .hero-card-value, .cl-kpi .hero-card-meta { display: flex; }
+.cl-kpi .hero-card-meta { display: block; }
+.cl-kpi:focus-visible { box-shadow: 0 0 0 3px rgba(255, 255, 255, .9), 0 0 0 6px rgba(91, 141, 239, .55); }
+.cl-kpi[aria-pressed="true"] { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(91, 141, 239, .75), 0 16px 30px -16px rgba(15, 23, 80, .6); transform: translateY(-2px); }
+.cl-kpi[aria-pressed="true"]::after {
+  content: "Filtrando"; position: absolute; top: 12px; right: 14px; padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 600; letter-spacing: .02em; color: var(--blue-fg); background: rgba(91, 141, 239, .14);
+}
+
+/* Celda de carga: etiqueta + "Ajustar carga" en la misma línea, sin ensanchar la fila */
+.cl-load-foot { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-top: 3px; min-height: 22px; }
+.cl-load-foot .cl-load-label { grid-column: auto; margin-top: 0; }
+.cl-ajustar {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border: 1px solid transparent; border-radius: 6px;
+  background: none; color: var(--blue-fg); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.cl-ajustar .icon { width: 13px; height: 13px; }
+.cl-ajustar:hover { background: var(--surface-sunken); border-color: var(--border-subtle); }
+.cl-ajustar:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.cl-ajustar.is-alert { color: var(--red-fg); }
+.cl-ajustar.is-alert:hover { background: var(--red-bg); border-color: var(--red-border); }
+
+/* Modal "Ajustar carga" */
+.rb-rol { display: block; font-size: 11px; color: var(--text-tertiary); font-weight: 400; }
+.rb-input { width: 96px; text-align: center; }
+.rb-table { border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }

@@ -248,9 +248,10 @@ public class RmAsignacionesController {
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
-        // volver=ocupacion: se finalizo desde "Rebalancear" en Ocupacion.
-        return "ocupacion".equals(volver)
-                ? "redirect:/resource-manager/ocupacion.html"
+        // volver=colaboradores: se finalizó desde "Ajustar carga" en Colaboradores
+        // ("ocupacion" se acepta por compatibilidad con la pantalla anterior).
+        return "colaboradores".equals(volver) || "ocupacion".equals(volver)
+                ? "redirect:/resource-manager/colaboradores.html"
                 : "redirect:/resource-manager/asignaciones.html";
     }
 
