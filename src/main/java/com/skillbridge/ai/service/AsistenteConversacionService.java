@@ -150,6 +150,13 @@ public class AsistenteConversacionService {
      */
     private final java.util.concurrent.ConcurrentHashMap<String, Long> enCurso = new java.util.concurrent.ConcurrentHashMap<>();
 
+    /** Hilos para pedir el título con IA en paralelo a la respuesta (no la retrasan). */
+    private final java.util.concurrent.ExecutorService titulos = java.util.concurrent.Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "asistente-titulos");
+        t.setDaemon(true);
+        return t;
+    });
+
     private static String claveEnCurso(UsuarioSesion s) {
         return s.getUsuarioId() + ":" + rolDe(s);
     }
@@ -223,6 +230,12 @@ public class AsistenteConversacionService {
         while (!turnos.get(0).deUsuario()) turnos.remove(0);
 
         AsistenteContextoService.Contexto ctx = new AsistenteContextoService.Contexto("", List.of(), List.of(), List.of());
+        // Conversación nueva: la IA le pone un título que resume la petición, en paralelo.
+        // Mientras tanto queda el provisional (las primeras palabras del mensaje).
+        java.util.concurrent.CompletableFuture<String> tituloIa = nueva && !mensaje.isEmpty() && agenteHabilitado
+                ? java.util.concurrent.CompletableFuture.supplyAsync(() -> asistenteIaService.titularConversacion(mensaje), titulos)
+                : null;
+
         AsistenteIaService.Resultado r;
         String clave = claveEnCurso(s);
         enCurso.put(clave, conv.getId());
@@ -234,9 +247,19 @@ public class AsistenteConversacionService {
         } finally {
             enCurso.remove(clave, conv.getId());
         }
-        conv.tocar();
-        conversacionRepository.save(conv);
-        return new Respuesta(conv.getId(), conv.getTitulo(), nueva, r.texto(), r.ok(),
+        conversacionRepository.tocar(conv.getId(), LocalDateTime.now());
+        String titulo = conv.getTitulo();
+        if (tituloIa != null) {
+            Long id = conv.getId();
+            String provisional = conv.getTitulo();
+            if (tituloIa.isDone()) {
+                titulo = aplicarTituloIa(id, provisional, tituloIa.getNow(null));
+            } else {
+                // Si aún no llega, se guarda cuando llegue; el navegador recarga el historial.
+                tituloIa.thenAccept(t -> aplicarTituloIa(id, provisional, t));
+            }
+        }
+        return new Respuesta(conv.getId(), titulo, nueva, r.texto(), r.ok(),
                 LocalDateTime.now().format(HORA), r.ok() ? ctx.acciones() : List.of(), adjuntosVista);
     }
 
@@ -287,6 +310,30 @@ public class AsistenteConversacionService {
         return alcanceRepository.findById(id)
                 .map(a -> a.getFirma().equals(politica.firma(s)))
                 .orElse(false);
+    }
+
+    /** Guarda el título de la IA si la persona no renombró la conversación; devuelve el título vigente. */
+    private String aplicarTituloIa(Long id, String provisional, String sugerido) {
+        String limpio = limpiarTitulo(sugerido);
+        try {
+            if (limpio != null && conversacionRepository.titularSiNoCambio(id, provisional, limpio) == 1) return limpio;
+            return conversacionRepository.findById(id).map(AsistenteConversacion::getTitulo).orElse(provisional);
+        } catch (RuntimeException e) {
+            return provisional;   // la conversación pudo eliminarse mientras tanto
+        }
+    }
+
+    /** Una línea, sin comillas, Markdown ni punto final, de hasta 60 caracteres. */
+    static String limpiarTitulo(String t) {
+        if (t == null) return null;
+        String linea = t.strip().split("\\R", 2)[0]
+                .replaceAll("^(?i)t[ií]tulo\\s*:\\s*", "")
+                .replaceAll("[\"'“”‘’`*#_]", "")
+                .replaceAll("\\s+", " ")
+                .replaceAll("[.。:;,\\s]+$", "")
+                .strip();
+        if (linea.isEmpty()) return null;
+        return linea.length() > 60 ? linea.substring(0, 57).strip() + "…" : linea;
     }
 
     private static String titulo(String mensaje) {

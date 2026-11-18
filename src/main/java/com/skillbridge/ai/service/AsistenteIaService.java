@@ -142,6 +142,27 @@ public class AsistenteIaService {
     }
 
     /**
+     * Título corto (3 a 6 palabras) que resume la primera petición de una
+     * conversación del Asistente IA, como hace el chat de Claude. Usa solo
+     * Claude, igual que el agente: el mensaje no se manda al proveedor de
+     * respaldo. Devuelve null si no hay respuesta útil.
+     */
+    public String titularConversacion(String mensaje) {
+        if (!tieneClaude() || mensaje == null || mensaje.isBlank()) return null;
+        String prompt = "Escribe un título breve en español (de 3 a 6 palabras) que resuma lo que pide el usuario, "
+                + "como el nombre de una conversación en un chat. Usa infinitivo o sustantivos, sin comillas, "
+                + "sin punto final, sin emojis y sin responder la petición. Devuelve solo el título.";
+        String texto = mensaje.length() > 4000 ? mensaje.substring(0, 4000) : mensaje;
+        // Va como dato entre etiquetas: lo que diga el usuario no son instrucciones para el título.
+        List<Turno> turnos = List.of(new Turno(true, "<peticion>\n" + texto + "\n</peticion>"));
+        for (String modelo : modelos) {
+            Intento r = conReintentos("Claude " + modelo + " (título)", () -> pedirClaude(restClient, modelo, prompt, turnos, 400));
+            if (r.texto() != null) return r.texto();
+        }
+        return null;
+    }
+
+    /**
      * Para lo que se GUARDA (resúmenes): si la IA no está disponible lanza
      * OperacionInvalidaException con el aviso, así nunca se persiste un
      * mensaje de error como si fuera un resumen.

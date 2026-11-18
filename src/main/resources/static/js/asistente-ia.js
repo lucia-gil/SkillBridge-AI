@@ -225,6 +225,23 @@
     if (sondeo) { clearTimeout(sondeo); sondeo = null; estado.enviando = false; }
   }
 
+  /*
+   * La IA pone el título de una conversación nueva en paralelo a la respuesta.
+   * Si todavía no llegó, se revisa el historial un par de veces para mostrarlo.
+   */
+  function esperarTitulo(id, provisional) {
+    [4000, 10000].forEach(function (ms) {
+      setTimeout(function () {
+        var c = estado.conversaciones.filter(function (x) { return x.id === id; })[0];
+        if (c && c.titulo !== provisional) return;   // ya cambió
+        cargarLista().done(function () {
+          var nuevo = estado.conversaciones.filter(function (x) { return x.id === id; })[0];
+          if (nuevo && estado.id === id) $titulo.text(nuevo.titulo);
+        });
+      }, ms);
+    });
+  }
+
   function abrir(id, alTerminar) {
     if (estado.id !== id) dejarDeEsperar();
     estado.id = id;
@@ -303,6 +320,7 @@
           estado.id = r.conversacionId;
           $titulo.text(r.titulo);
           url(r.conversacionId);
+          esperarTitulo(r.conversacionId, r.titulo);
         }
         cargarLista();
         mostrarVacio(false);
