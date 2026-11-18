@@ -141,20 +141,21 @@
                 <div class="cl-load" th:attr="data-estado=${c.cargaClave}" th:title="${c.cargaLabel} + ' · límite ' + ${c.limite} + '%'">
                   <span class="cl-load-track" aria-hidden="true"><span class="cl-load-fill" th:style="'width:' + ${c.cargaPct} + '%'"></span></span>
                   <span class="cl-load-value" th:text="${c.ocupacion} + '%'">0%</span>
-                  <span class="cl-load-foot">
-                    <span class="cl-load-label" th:text="${c.cargaLabel}">Sin asignación</span>
-                    <!-- Ajustar carga (antes en Ocupación): bajar la dedicación o finalizar asignaciones -->
-                    <button type="button" class="cl-ajustar" th:if="${c.ocupacion > 0}"
-                            th:classappend="${c.cargaClave == 'sobre'} ? 'is-alert'"
-                            th:attr="data-rebalancear=${c.perfilId}, data-nombre=${c.nombre}, data-carga=${c.ocupacion}">
-                      <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-sliders"></use></svg><span th:text="${c.cargaClave == 'sobre'} ? 'Rebalancear' : 'Ajustar carga'">Ajustar carga</span>
-                    </button>
-                  </span>
+                  <span class="cl-load-label" th:text="${c.cargaLabel}">Sin asignación</span>
                 </div>
               </td>
               <td data-label="Estado"><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span></td>
               <td class="cl-actions">
-                <a class="btn btn-secondary btn-sm" th:href="@{/resource-manager/colaboradores/{id}(id=${c.perfilId})}">Ver perfil</a>
+                <!-- El perfil se abre con el nombre. Aquí va Ajustar carga (antes en Ocupación):
+                     bajar la dedicación o finalizar asignaciones; "Rebalancear" si pasa el límite. -->
+                <button type="button" class="btn btn-secondary btn-sm cl-ajustar" th:if="${c.ocupacion > 0}"
+                        th:classappend="${c.cargaClave == 'sobre'} ? 'is-alert'"
+                        th:attr="data-rebalancear=${c.perfilId}, data-nombre=${c.nombre}, data-carga=${c.ocupacion},
+                                 title=(${c.cargaClave == 'sobre'} ? 'Rebalancear la carga de ' : 'Ajustar la carga de ') + ${c.nombre},
+                                 aria-label=(${c.cargaClave == 'sobre'} ? 'Rebalancear la carga de ' : 'Ajustar la carga de ') + ${c.nombre}">
+                  <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-sliders"></use></svg><span th:text="${c.cargaClave == 'sobre'} ? 'Rebalancear' : 'Ajustar'">Ajustar</span>
+                </button>
+                <span class="cl-ajustar-vacio" th:unless="${c.ocupacion > 0}" aria-hidden="true"></span>
                 <!-- Modelo v7: el RM gestiona la DISPONIBILIDAD del perfil para proyectos;
                      la cuenta (acceso a la plataforma) la gestiona el Administrador. -->
                 <button type="button" th:if="${c.estado == 'activo' and c.perfilId != miPerfilId}" class="cl-quiet is-danger"
