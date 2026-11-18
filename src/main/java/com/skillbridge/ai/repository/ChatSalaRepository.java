@@ -7,4 +7,7 @@ import java.util.Optional;
 
 public interface ChatSalaRepository extends JpaRepository<ChatSala, Long> {
     Optional<ChatSala> findFirstByProyectoIdOrderByIdAsc(Long proyectoId);
+
+    /** La sala directa de una pareja (ver ChatSala.claveDirecta). */
+    Optional<ChatSala> findByClaveDirecta(String claveDirecta);
 }

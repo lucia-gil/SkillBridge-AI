@@ -26,6 +26,7 @@ public class NavService {
                 items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
                 items.add(new NavItem("Catálogos técnicos", "icon-list", "catalogos.html"));
                 items.add(new NavItem("Proyectos", "icon-folder", "proyectos.html"));
+                items.add(new NavItem("Mensajes", "icon-message-circle", "chat.html"));
                 items.add(new NavItem("Reportes globales", "icon-bar-chart", "reportes.html"));
                 items.add(new NavItem("Auditoría", "icon-shield", "auditoria.html"));
                 items.add(new NavItem("Configuración", "icon-sliders", "configuracion.html"));
@@ -35,6 +36,7 @@ public class NavService {
                 items.add(new NavItem("Asignaciones", "icon-target", "asignaciones.html"));
                 // Colaboradores incluye la antigua "Ocupación del equipo" (capacidad y Ajustar carga).
                 items.add(new NavItem("Colaboradores", "icon-users", "colaboradores.html"));
+                items.add(new NavItem("Mensajes", "icon-message-circle", "chat.html"));
                 items.add(new NavItem("AI Talent Matching", "icon-search-check", "ai-talent-matching.html"));
                 items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
                 items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));

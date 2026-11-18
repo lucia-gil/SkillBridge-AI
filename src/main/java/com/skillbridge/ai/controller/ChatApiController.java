@@ -25,6 +25,8 @@ import java.util.Map;
  *   POST /api/chat/salas/{id}/leido               {ultimoId}
  *   GET  /api/chat/no-leidos                      {total} (contador del sidebar)
  *   POST /api/chat/salas/{id}/resumen-ia          {resumen}
+ *   GET  /api/chat/contactos?q=                   personas a las que puede escribir
+ *   POST /api/chat/directos                       {perfilId} → sala del mensaje directo
  *
  * Seguridad: /api/** exige sesión (SecurityConfig) y ChatService verifica en
  * cada llamada que la persona sea integrante activa del proyecto (si no, 403).
@@ -74,6 +76,20 @@ public class ChatApiController {
     public Map<String, Object> leido(@PathVariable Long id, @RequestBody Map<String, Long> body, HttpSession session) {
         chatService.marcarLeido(id, perfilId(session), body == null ? null : body.get("ultimoId"));
         return Map.of("ok", true);
+    }
+
+    /** Personas a las que puede escribirles un mensaje directo (ver reglas en ChatService). */
+    @GetMapping("/contactos")
+    public List<ChatService.ContactoVista> contactos(@RequestParam(defaultValue = "") String q, HttpSession session) {
+        return chatService.contactos(perfilId(session), q);
+    }
+
+    /** Abre (o crea la primera vez) la conversación directa con otra persona. */
+    @PostMapping("/directos")
+    public ResponseEntity<ChatService.SalaVista> directo(@RequestBody Map<String, Long> body, HttpSession session) {
+        Long destino = body == null ? null : body.get("perfilId");
+        if (destino == null) throw new OperacionInvalidaException("Elige a quién escribirle.");
+        return ResponseEntity.ok(chatService.abrirDirecto(perfilId(session), destino));
     }
 
     @GetMapping("/no-leidos")

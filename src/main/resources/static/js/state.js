@@ -105,6 +105,7 @@
         { label: "Inicio", icon: "icon-home", href: "inicio.html" },
         { label: "Asignaciones", icon: "icon-target", href: "asignaciones.html", badge: function () { return MOCK.rmReport.solicitudesPendientes; } },
         { label: "Colaboradores", icon: "icon-users", href: "colaboradores.html" },
+        { label: "Mensajes", icon: "icon-message-circle", href: "chat.html" },
         { label: "AI Talent Matching", icon: "icon-search-check", href: "ai-talent-matching.html" }, // Sin badge: en las paginas reales (ya migradas) este contador sale de datos reales, no de MOCK; esta pagina del Asistente IA todavia usa el shell de ejemplo, asi que es mejor no mostrar nada a mostrar un numero inventado.
         { label: "Calendario", icon: "icon-calendar", href: "calendario.html" },
         { label: "Reportes", icon: "icon-bar-chart", href: "reportes.html" }
@@ -118,6 +119,7 @@
         { label: "Usuarios y roles", icon: "icon-users", href: "usuarios.html", badge: function () { return MOCK.usersKpi.sinRol; } },
         { label: "Catálogo de habilidades", icon: "icon-book", href: "habilidades.html" },
         { label: "Proyectos", icon: "icon-folder", href: "proyectos.html" },
+        { label: "Mensajes", icon: "icon-message-circle", href: "chat.html" },
         { label: "Reportes globales", icon: "icon-bar-chart", href: "reportes.html" },
         { label: "Auditoría", icon: "icon-shield", href: "auditoria.html", badge: function () { return MOCK.auditSeverityBreakdown.alta; } },
         { label: "Configuración", icon: "icon-sliders", href: "configuracion.html" }

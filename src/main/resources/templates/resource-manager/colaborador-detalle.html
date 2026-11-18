@@ -149,9 +149,14 @@
                                   th:text="${vista.habilidadesValidadas} + ' de ' + ${vista.habilidadesTotal} + ' habilidades validadas'">5 de 8 habilidades validadas</span>
                         </div>
                         <div class="cp-actions">
-                            <a class="btn btn-primary btn-sm" th:href="'mailto:' + ${vista.correo}" href="#">
+                            <!-- Mensaje directo dentro de SkillBridge (abre o crea la conversación) -->
+                            <a class="btn btn-primary btn-sm" th:href="@{/resource-manager/chat.html(con=${vista.perfilId})}" href="#">
+                                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-message-circle"></use></svg>
+                                Enviar mensaje
+                            </a>
+                            <a class="cp-social" th:href="'mailto:' + ${vista.correo}" href="#"
+                               th:title="'Escribir correo a ' + ${vista.correo}" th:attr="aria-label='Escribir correo a ' + ${vista.correo}">
                                 <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-mail"></use></svg>
-                                Escribir correo
                             </a>
                             <a th:each="e : ${vista.enlaces}" class="cp-social" th:classappend="'is-' + ${e.tipo}"
                                th:href="${e.url}" target="_blank" rel="noopener noreferrer"

@@ -193,3 +193,35 @@
 @media (prefers-reduced-motion: reduce) {
   .ch-msg, .ch-skeleton, .ch-dots i, .ch-send.is-sending svg { animation: none; }
 }
+
+/* ── Mensajes directos ───────────────────────────────────────────── */
+.ch-rooms-head { align-items: center; }
+.ch-rooms-head > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ch-new-dm { flex: none; gap: 6px; }
+.ch-new-dm .icon { width: 15px; height: 15px; }
+/* Persona: avatar redondo (foto o iniciales) en lugar de la marca cuadrada del proyecto */
+.ch-room-mark.is-person { border-radius: 50%; overflow: hidden; }
+.ch-room-mark.is-person img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ch-room-group {
+  padding: 12px 10px 4px; font-size: 11px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-tertiary); list-style: none;
+}
+.ch-room-group:first-child { padding-top: 4px; }
+[hidden].ch-icon-btn, #ch-resumir[hidden] { display: none; }
+
+/* Ventana "Nuevo mensaje" */
+.modal.ch-picker { width: min(480px, calc(100vw - 32px)); }
+.ch-picker-search { margin: 0 0 10px; }
+.ch-picker-list { list-style: none; margin: 0; padding: 0; max-height: min(52vh, 420px); overflow-y: auto; }
+.ch-picker-item {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px; border: 0; border-radius: 12px;
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color .15s ease;
+}
+.ch-picker-item:hover { background: var(--surface-sunken); }
+.ch-picker-item:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.ch-picker-item[disabled] { opacity: .6; cursor: progress; }
+.ch-picker-item .ch-avatar { width: 38px; height: 38px; font-size: 13px; }
+.ch-picker-item > span:not(.ch-avatar) { display: flex; flex-direction: column; min-width: 0; }
+.ch-picker-item b { font-weight: 600; color: var(--text-primary); }
+.ch-picker-item small { font-size: var(--fs-xs); color: var(--text-tertiary); }
+@media (max-width: 420px) { .ch-new-dm span { display: none; } .ch-new-dm { width: 34px; padding: 0; justify-content: center; } }

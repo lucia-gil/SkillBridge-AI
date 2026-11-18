@@ -76,8 +76,8 @@ Menú de cada rol (definido en `service/NavService`):
 
 | Rol | Pantallas del menú |
 |---|---|
-| **Administrador** (`/administrador/**`) | Inicio, Usuarios y roles, Catálogo de habilidades, Cursos, Catálogos técnicos, Proyectos, Reportes globales, Auditoría, Configuración |
-| **Resource Manager** (`/resource-manager/**`) | Inicio, Asignaciones, Colaboradores (capacidad del equipo, Ajustar carga y ficha de detalle), AI Talent Matching, Calendario (agenda personal), Cursos, Reportes |
+| **Administrador** (`/administrador/**`) | Inicio, Usuarios y roles, Catálogo de habilidades, Cursos, Catálogos técnicos, Proyectos, Mensajes, Reportes globales, Auditoría, Configuración |
+| **Resource Manager** (`/resource-manager/**`) | Inicio, Asignaciones, Colaboradores (capacidad del equipo, Ajustar carga y ficha de detalle), Mensajes, AI Talent Matching, Calendario (agenda personal), Cursos, Reportes |
 | **Project Manager** (`/project-manager/**`) | Inicio, Proyectos (con archivos de contexto), Asignaciones, Calendario, AI Talent Matching, Foros, Chat, Cursos, Asistente IA, Reportes |
 | **Colaborador** (`/colaborador/**`) | Inicio, Mi perfil (habilidades y certificados), Mis proyectos, Entregables, Calendario, Foros, Chat, Cursos, Asistente IA, Notificaciones |
 | Todos (menú del usuario, arriba a la derecha) | Mi cuenta (datos, foto, contraseña, doble factor TOTP), Notificaciones, buscador global (`Ctrl+K`) |
@@ -104,6 +104,10 @@ Detalles del agente (herramientas por rol, confirmación de escrituras, límites
 ### Calendario del Resource Manager
 
 `resource-manager/calendario.html` usa el mismo calendario que PM y Colaborador. Muestra la **agenda personal** del RM (tabla `eventos_personales`: solo él la ve, crea, edita y elimina) y, solo para consulta, los **hitos y entregables** de los proyectos en curso. El Asistente IA puede consultar esa agenda y **preparar eventos** (`crear_evento_agenda`), que se guardan solo cuando el RM pulsa *Confirmar cambio*.
+
+### Mensajes directos
+
+Además de las salas de proyecto, el chat tiene **mensajes directos** entre dos personas (tablas `chat_salas` con `tipo = 'directo'` y `chat_participantes`), que solo ven ellas dos. El Resource Manager y el Administrador pueden escribirle a cualquier cuenta activa (menú **Mensajes**, o **Enviar mensaje** en el perfil de un colaborador); un Colaborador o PM puede escribirle a un Resource Manager con **Nuevo mensaje** y siempre puede responder. Entre Miembros se usan los chats y foros de proyecto. El primer mensaje sin leer avisa con una notificación (y correo).
 
 ### Chat de proyectos (RF07)
 
@@ -208,7 +212,7 @@ Con `spring.jpa.hibernate.ddl-auto=none`, Hibernate no toca la BD. Para que una 
 | `InicializadorEsquemaV9` | enlaces y datos del perfil profesional, `proyectos.github_url` |
 | `InicializadorEsquemaV10` | columnas del resumen IA de foros |
 | `InicializadorRazonCancelacion` | `proyectos.razon_cancelacion` |
-| `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos`, `curso_pasos`, `chat_lecturas`, `asistente_conversaciones` y `asistente_mensajes`, `eventos_personales` (agenda del RM), columnas del catálogo de formación y, la primera vez, un catálogo de cursos y conversaciones de chat de ejemplo |
+| `InicializadorTablasExtra` | tablas `archivos_proyecto`, `cursos`, `curso_pasos`, `chat_lecturas`, `chat_participantes` (y las columnas de mensajes directos en `chat_salas`), `asistente_conversaciones` y `asistente_mensajes`, `eventos_personales` (agenda del RM), columnas del catálogo de formación y, la primera vez, un catálogo de cursos y conversaciones de chat de ejemplo |
 | `InicializadorTopicosForo` | asigna tópico a los hilos que no tengan |
 | `DataSeeder` | tipos de notificación `asignacion` y `foro_respuesta` |
 | `ReparadorTildes` | corrige textos con tildes guardadas dos veces ("IvÃ¡n" → "Iván"); si no está seguro, no toca el valor |

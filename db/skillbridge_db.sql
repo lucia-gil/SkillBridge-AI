@@ -524,12 +524,28 @@ CREATE TABLE resumenes_ia (
 --     Chat en tiempo (casi) real, separado del foro (foro = discusión
 --     asíncrona y buscable; chat = conversación corta del equipo).
 -- ---------------------------------------------------------------------
+-- Salas de chat: una por proyecto (tipo 'proyecto') o una por pareja de
+-- personas (tipo 'directo', mensajes directos; sin proyecto). clave_directa
+-- ("perfilMenor-perfilMayor") impide crear dos salas para la misma pareja.
 CREATE TABLE chat_salas (
                             id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                            proyecto_id     BIGINT UNSIGNED NOT NULL,
+                            tipo            VARCHAR(20) NOT NULL DEFAULT 'proyecto',
+                            proyecto_id     BIGINT UNSIGNED NULL,
+                            clave_directa   VARCHAR(41) NULL,
                             nombre          VARCHAR(100) NOT NULL,
                             fecha_creacion  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            UNIQUE KEY uq_chat_directo (clave_directa),
                             CONSTRAINT fk_sala_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Las dos personas de cada mensaje directo.
+CREATE TABLE chat_participantes (
+                                    sala_id    BIGINT UNSIGNED NOT NULL,
+                                    perfil_id  BIGINT UNSIGNED NOT NULL,
+                                    PRIMARY KEY (sala_id, perfil_id),
+                                    INDEX idx_chat_part_perfil (perfil_id),
+                                    CONSTRAINT fk_part_sala FOREIGN KEY (sala_id) REFERENCES chat_salas(id) ON DELETE CASCADE,
+                                    CONSTRAINT fk_part_perfil FOREIGN KEY (perfil_id) REFERENCES perfiles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE chat_mensajes (

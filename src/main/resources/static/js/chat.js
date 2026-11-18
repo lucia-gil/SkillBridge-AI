@@ -1,5 +1,6 @@
 /*
- * chat.js — Chat de proyectos (RF07) con jQuery + AJAX.
+ * chat.js — Chat de SkillBridge con jQuery + AJAX: salas de proyecto (RF07)
+ * y mensajes directos entre dos personas.
  *
  * Consume el servicio REST /api/chat (ChatApiController) con SBAI.api
  * (js/sbai-api.js = $.ajax + JSON + token CSRF):
@@ -9,7 +10,8 @@
  *                         con la pestaña oculta baja a 15 s)
  *   - al enviar:         POST /salas/{id}/mensajes   {contenido}
  *   - al leer:           POST /salas/{id}/leido      {ultimoId}
- *   - resumir:           POST /salas/{id}/resumen-ia
+ *   - resumir:           POST /salas/{id}/resumen-ia   (solo salas de proyecto)
+ *   - nuevo mensaje:     GET  /contactos?q=   y   POST /directos {perfilId}
  * Todo el texto se inserta escapado (sin riesgo de inyectar HTML).
  */
 (function ($) {
@@ -50,33 +52,53 @@
   function avisoError(xhr) { if (SBAI.toast) SBAI.toast.show(SBAI.api.mensajeError(xhr), { type: "error" }); }
 
   // ───────────────────────── salas ─────────────────────────
+  function esDirecta(s) { return s && s.tipo === "directo"; }
+  /** Marca de la sala: inicial del proyecto, o foto/iniciales de la persona en un mensaje directo. */
+  function marca(s) {
+    if (esDirecta(s)) {
+      return s.contactoTieneFoto
+        ? '<span class="ch-room-mark is-person" aria-hidden="true"><img src="/perfil/foto/' + esc(s.contactoUsuarioId) + '" alt="" loading="lazy"></span>'
+        : '<span class="ch-room-mark is-person" data-tono="' + tono(s.contactoUsuarioId) + '" aria-hidden="true">' + esc(s.contactoIniciales) + "</span>";
+    }
+    return '<span class="ch-room-mark" data-tono="' + tono(s.proyectoId) + '" aria-hidden="true">' + inicial(s.proyecto) + "</span>";
+  }
+
+  function itemSala(s) {
+    var activa = estado.sala && estado.sala.id === s.id;
+    var vista = s.ultimoTexto ? "<b>" + esc(s.ultimoAutor) + ":</b> " + esc(s.ultimoTexto)
+      : "<i>" + (esDirecta(s) ? esc(s.contactoDetalle || "Mensaje directo") : "Sin mensajes todavía") + "</i>";
+    return '<li role="option" aria-selected="' + activa + '">' +
+      '<button type="button" class="ch-room' + (activa ? " is-active" : "") + (s.noLeidos ? " has-unread" : "") + '" data-sala="' + s.id + '">' +
+        marca(s) +
+        '<span class="ch-room-main">' +
+          '<span class="ch-room-top"><span class="ch-room-name">' + esc(s.proyecto) + "</span>" +
+            '<span class="ch-room-time">' + esc(s.ultimoCuando || "") + "</span></span>" +
+          '<span class="ch-room-bottom"><span class="ch-room-preview">' + vista + "</span>" +
+            (s.noLeidos ? '<span class="ch-unread" aria-label="' + s.noLeidos + ' sin leer">' + (s.noLeidos > 99 ? "99+" : s.noLeidos) + "</span>" : "") +
+          "</span>" +
+        "</span>" +
+      "</button></li>";
+  }
+
   function pintarSalas() {
-    var q = ($("#ch-buscar").val() || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    var q = ($("#ch-buscar").val() || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     var lista = estado.salas.filter(function (s) {
-      return !q || s.proyecto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").indexOf(q) >= 0;
+      return !q || s.proyecto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").indexOf(q) >= 0;
     });
     var total = estado.salas.reduce(function (n, s) { return n + (s.noLeidos || 0); }, 0);
-    $("#ch-total").text(total ? total + " sin leer" : estado.salas.length + (estado.salas.length === 1 ? " sala" : " salas"));
+    $("#ch-total").text(total ? total + " sin leer" : estado.salas.length + (estado.salas.length === 1 ? " conversación" : " conversaciones"));
     if (!estado.salas.length) {
-      $salas.html('<li class="ch-rooms-empty">Cuando te asignen a un proyecto, aquí aparecerá su sala de chat.</li>');
+      $salas.html('<li class="ch-rooms-empty">' + (CFG.escribeATodos
+        ? "Todavía no tienes conversaciones. Usa «Nuevo mensaje» para escribirle a alguien del equipo."
+        : "Cuando te asignen a un proyecto, aquí aparecerá su sala. Con «Nuevo mensaje» puedes escribirle a un Resource Manager.") + "</li>");
       return;
     }
-    if (!lista.length) { $salas.html('<li class="ch-rooms-empty">Ningún proyecto coincide.</li>'); return; }
-    $salas.html(lista.map(function (s) {
-      var activa = estado.sala && estado.sala.id === s.id;
-      var vista = s.ultimoTexto ? '<b>' + esc(s.ultimoAutor) + ":</b> " + esc(s.ultimoTexto) : "<i>Sin mensajes todavía</i>";
-      return '<li role="option" aria-selected="' + activa + '">' +
-        '<button type="button" class="ch-room' + (activa ? " is-active" : "") + (s.noLeidos ? " has-unread" : "") + '" data-sala="' + s.id + '">' +
-          '<span class="ch-room-mark" data-tono="' + tono(s.proyectoId) + '" aria-hidden="true">' + inicial(s.proyecto) + "</span>" +
-          '<span class="ch-room-main">' +
-            '<span class="ch-room-top"><span class="ch-room-name">' + esc(s.proyecto) + "</span>" +
-              '<span class="ch-room-time">' + esc(s.ultimoCuando || "") + "</span></span>" +
-            '<span class="ch-room-bottom"><span class="ch-room-preview">' + vista + "</span>" +
-              (s.noLeidos ? '<span class="ch-unread" aria-label="' + s.noLeidos + ' sin leer">' + (s.noLeidos > 99 ? "99+" : s.noLeidos) + "</span>" : "") +
-            "</span>" +
-          "</span>" +
-        "</button></li>";
-    }).join(""));
+    if (!lista.length) { $salas.html('<li class="ch-rooms-empty">Ninguna conversación coincide.</li>'); return; }
+    var directas = lista.filter(esDirecta), proyectos = lista.filter(function (s) { return !esDirecta(s); });
+    var grupos = directas.length && proyectos.length;   // títulos solo si hay de los dos tipos
+    $salas.html(
+      (directas.length ? (grupos ? '<li class="ch-room-group" role="presentation">Mensajes directos</li>' : "") + directas.map(itemSala).join("") : "") +
+      (proyectos.length ? (grupos ? '<li class="ch-room-group" role="presentation">Proyectos</li>' : "") + proyectos.map(itemSala).join("") : ""));
   }
 
   function cargarSalas(despues) {
@@ -110,9 +132,16 @@
     $app.attr("data-estado", "conversacion");
     $("#ch-vacio").prop("hidden", true);
     $("#ch-conv").prop("hidden", false);
+    var directa = esDirecta(sala);
     $("#ch-titulo").text(sala.proyecto);
-    $("#ch-marca").attr("data-tono", tono(sala.proyectoId)).text(sala.proyecto.trim().charAt(0).toUpperCase());
-    $("#ch-miembros-txt").text(sala.miembros + (sala.miembros === 1 ? " integrante" : " integrantes") + " · " + sala.miRol);
+    $("#ch-marca").replaceWith($(marca(sala)).attr("id", "ch-marca"));
+    $("#ch-miembros-txt").text(directa ? "Mensaje directo · " + (sala.contactoDetalle || "")
+      : sala.miembros + (sala.miembros === 1 ? " integrante" : " integrantes") + " · " + sala.miRol);
+    // El resumen con IA y el foro son de los proyectos.
+    $("#ch-resumir").prop("hidden", directa);
+    $("#ch-foro").prop("hidden", directa);
+    $("#ch-solo-lectura").text(directa ? "La otra cuenta ya no está activa: esta conversación quedó en solo lectura."
+      : "Este proyecto está cerrado: su chat quedó en solo lectura.");
     $("#ch-caras").empty(); $("#ch-miembros").prop("hidden", true).empty(); $("#ch-miembros-btn").attr("aria-expanded", "false");
     $("#ch-resumen").prop("hidden", true).empty();
     $("#ch-nuevos").prop("hidden", true);
@@ -130,7 +159,8 @@
       if (!msgs.length) {
         $lista.html('<li class="ch-first">' +
           '<span class="ch-first-icon" aria-hidden="true">👋</span><strong>Empieza la conversación</strong>' +
-          "<span>Los mensajes de esta sala los ven todos los integrantes de " + esc(sala.proyecto) + ".</span></li>");
+          "<span>" + (esDirecta(sala) ? "Solo tú y " + esc(sala.proyecto) + " ven esta conversación."
+            : "Los mensajes de esta sala los ven todos los integrantes de " + esc(sala.proyecto) + ".") + "</span></li>");
       } else {
         agregar(msgs, false);
         $("#ch-anteriores").prop("hidden", msgs.length < 40);
@@ -302,6 +332,44 @@
     $app.attr("data-estado", "lista");
     history.replaceState(null, "", location.pathname);
     pintarSalas();
+  });
+
+  // ───────────────────────── nuevo mensaje directo ─────────────────────────
+  function abrirSalaPorId(id) {
+    cargarSalas(function () { abrir(id); });
+  }
+
+  $("#ch-nuevo-directo").on("click", function () {
+    var titulo = CFG.escribeATodos ? "Nuevo mensaje" : "Escribir a un Resource Manager";
+    var bd = SBAI.modal.open('<div class="modal ch-picker" role="dialog" aria-modal="true" aria-labelledby="ch-picker-titulo">' +
+      '<div class="modal-header"><div><h2 id="ch-picker-titulo">' + titulo + "</h2><p>" +
+      (CFG.escribeATodos ? "Elige a la persona. La conversación solo la ven ustedes dos."
+                         : "Para temas de tu carga o asignaciones. Con tu equipo, usa el chat del proyecto.") + "</p></div>" +
+      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+      '<div class="modal-body"><label class="ch-search ch-picker-search"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>' +
+      '<input type="search" id="ch-picker-q" placeholder="Buscar por nombre, correo o cargo" autocomplete="off" aria-label="Buscar persona"></label>' +
+      '<ul class="ch-picker-list" id="ch-picker-lista" role="listbox" aria-label="Personas"><li class="ch-loading">Cargando…</li></ul></div></div>');
+    var $q = $(bd).find("#ch-picker-q"), $l = $(bd).find("#ch-picker-lista"), timer = null, pedido = 0;
+    function buscar() {
+      var n = ++pedido;
+      SBAI.api.get("/api/chat/contactos", { q: $q.val() || "" }).done(function (gente) {
+        if (n !== pedido) return;
+        $l.html(gente.length ? gente.map(function (c) {
+          return '<li><button type="button" class="ch-picker-item" data-perfil="' + c.perfilId + '">' + avatar(c) +
+            '<span><b>' + esc(c.nombre) + "</b><small>" + esc(c.detalle) + "</small></span></button></li>";
+        }).join("") : '<li class="ch-rooms-empty">Nadie coincide con la búsqueda.</li>');
+      }).fail(function (xhr) { $l.html('<li class="ch-rooms-empty">' + esc(SBAI.api.mensajeError(xhr)) + "</li>"); });
+    }
+    $q.on("input", function () { clearTimeout(timer); timer = setTimeout(buscar, 250); });
+    $l.on("click", "[data-perfil]", function () {
+      var $b = $(this).prop("disabled", true);
+      SBAI.api.post("/api/chat/directos", { perfilId: Number($b.attr("data-perfil")) }).done(function (sala) {
+        SBAI.modal.close(bd);
+        abrirSalaPorId(sala.id);
+      }).fail(function (xhr) { $b.prop("disabled", false); avisoError(xhr); });
+    });
+    buscar();
+    setTimeout(function () { $q.trigger("focus"); }, 50);
   });
 
   // Inicio: cargar salas y abrir la pedida (?sala=), o la más reciente en escritorio.

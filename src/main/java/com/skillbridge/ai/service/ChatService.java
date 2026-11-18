@@ -18,6 +18,8 @@ import com.skillbridge.ai.util.Roles;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,14 +34,31 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Chat de proyectos (RF07): una sala por proyecto, solo para sus integrantes
- * activos (PM y colaboradores). Guarda el historial con autor, fecha y hora.
- * Lo consume ChatApiController (REST/JSON) desde js/chat.js con jQuery/AJAX.
+ * Chat de SkillBridge. Lo consume ChatApiController (REST/JSON) desde
+ * js/chat.js con jQuery/AJAX.
+ *
+ *  - Salas de proyecto (RF07): una por proyecto, solo para sus integrantes
+ *    activos (PM y colaboradores).
+ *  - Mensajes directos: una sala por pareja de personas, que solo ven ellas.
+ *    Reglas para iniciar una conversación (puedeIniciar): el Resource Manager
+ *    y el Administrador pueden escribirle a cualquier cuenta activa; un
+ *    Miembro (Colaborador o PM) solo a un Resource Manager. Entre Miembros
+ *    se usan los chats y foros de proyecto. Quien recibe siempre puede
+ *    responder.
+ *
+ * Guarda el historial con autor, fecha y hora, y hasta dónde leyó cada uno.
  */
 @Service
 public class ChatService {
 
     public static final int MAX_CARACTERES = 2000;
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ChatService.class);
+    /** Un hilo para crear las notificaciones de mensajes directos sin hacer esperar al chat. */
+    private final java.util.concurrent.ExecutorService avisos = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "chat-avisos");
+        t.setDaemon(true);
+        return t;
+    });
     private static final int PAGINA = 40;
     private static final Set<String> PROYECTO_CERRADO = Set.of("completado", "cancelado");
     private static final Locale ES = new Locale("es", "PE");
@@ -48,10 +67,19 @@ public class ChatService {
     private static final DateTimeFormatter DIA_ANIO = DateTimeFormatter.ofPattern("d MMM yyyy", ES);
     private static final DateTimeFormatter COMPLETA = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", ES);
 
-    /** Una sala en la lista de la izquierda. */
+    /**
+     * Una sala en la lista de la izquierda. En un mensaje directo, "proyecto"
+     * lleva el nombre de la otra persona y contacto* sus datos para el avatar.
+     */
     public record SalaVista(Long id, Long proyectoId, String proyecto, String estadoProyecto, boolean soloLectura,
                             String miRol, int miembros, Long ultimoId, String ultimoAutor, String ultimoTexto,
-                            String ultimoCuando, String ultimoIso, long noLeidos) {}
+                            String ultimoCuando, String ultimoIso, long noLeidos,
+                            String tipo, Long contactoPerfilId, Long contactoUsuarioId, boolean contactoTieneFoto,
+                            String contactoIniciales, String contactoDetalle) {}
+
+    /** Persona a la que se puede escribir un mensaje directo. */
+    public record ContactoVista(Long perfilId, String nombre, String iniciales, String detalle, Long usuarioId,
+                                boolean tieneFoto) {}
 
     /** Un mensaje de la conversación. */
     public record MensajeVista(Long id, Long autorId, String autor, String iniciales, String cargo, Long usuarioId,
@@ -69,11 +97,17 @@ public class ChatService {
     private final ProyectoRepository proyectoRepository;
     private final AsistenteIaService asistenteIaService;
     private final PerfilRepository perfilRepository;
+    private final com.skillbridge.ai.repository.ChatParticipanteRepository participanteRepository;
+    private final NotificacionService notificacionService;
 
     public ChatService(ChatSalaRepository salaRepository, ChatMensajeRepository mensajeRepository,
                        ChatLecturaRepository lecturaRepository, AsignacionRepository asignacionRepository,
                        ProyectoRepository proyectoRepository, AsistenteIaService asistenteIaService,
-                       PerfilRepository perfilRepository) {
+                       PerfilRepository perfilRepository,
+                       com.skillbridge.ai.repository.ChatParticipanteRepository participanteRepository,
+                       NotificacionService notificacionService) {
+        this.participanteRepository = participanteRepository;
+        this.notificacionService = notificacionService;
         this.salaRepository = salaRepository;
         this.mensajeRepository = mensajeRepository;
         this.lecturaRepository = lecturaRepository;
@@ -86,6 +120,7 @@ public class ChatService {
     /** Excepción para "no eres integrante de este proyecto" (el controlador la responde con 403). */
     public static class AccesoDenegado extends RuntimeException {
         public AccesoDenegado() { super("Solo los integrantes del proyecto pueden ver este chat."); }
+        public AccesoDenegado(String mensaje) { super(mensaje); }
     }
 
     // ─────────────────────────── salas ───────────────────────────
@@ -114,7 +149,11 @@ public class ChatService {
                     m == null ? null : recortar(m.getContenido(), 90),
                     m == null ? null : cuandoCorto(m.getFechaEnvio()),
                     m == null ? null : m.getFechaEnvio().toString(),
-                    noLeidos(sala.getId(), perfilId)));
+                    noLeidos(sala.getId(), perfilId),
+                    ChatSala.PROYECTO, null, null, false, null, null));
+        }
+        for (Long salaId : participanteRepository.salasDe(perfilId)) {
+            salaRepository.findById(salaId).ifPresent(sala -> salas.add(vistaDirecta(sala, perfilId)));
         }
         salas.sort(Comparator.comparing((SalaVista s) -> s.ultimoIso() == null ? "" : s.ultimoIso()).reversed()
                 .thenComparing(SalaVista::proyecto));
@@ -124,6 +163,13 @@ public class ChatService {
     @Transactional(readOnly = true)
     public List<MiembroVista> miembros(Long salaId, Long perfilId) {
         ChatSala sala = exigirAcceso(salaId, perfilId);
+        if (sala.esDirecta()) {
+            return participanteRepository.perfilesDe(salaId).stream()
+                    .map(id -> perfilRepository.buscarConUsuario(id).orElse(null)).filter(java.util.Objects::nonNull).map(p -> {
+                return new MiembroVista(p.getId(), p.getUsuario().getNombreCompleto(), InicialesUtil.de(p.getUsuario().getNombreCompleto()),
+                        p.getCargo(), etiquetaRol(p), p.getUsuarioId(), p.getUsuario().tieneFotoPerfil());
+            }).toList();
+        }
         return asignacionRepository.listarEquipoDeProyecto(sala.getProyectoId(), "activa").stream()
                 .map(a -> {
                     Perfil p = a.getPerfil();
@@ -157,9 +203,16 @@ public class ChatService {
     @Transactional
     public MensajeVista enviar(Long salaId, Long perfilId, String contenido) {
         ChatSala sala = exigirAcceso(salaId, perfilId);
-        Proyecto p = proyectoRepository.findById(sala.getProyectoId()).orElse(null);
-        if (p != null && PROYECTO_CERRADO.contains(p.getEstado()))
-            throw new OperacionInvalidaException("El proyecto está " + p.getEstado() + ": su chat quedó en solo lectura.");
+        Perfil otro = null;
+        if (sala.esDirecta()) {
+            otro = otraPersona(salaId, perfilId);
+            if (otro == null || !otro.getUsuario().isActivo())
+                throw new OperacionInvalidaException("Esta conversación quedó en solo lectura: la otra cuenta ya no está activa.");
+        } else {
+            Proyecto p = proyectoRepository.findById(sala.getProyectoId()).orElse(null);
+            if (p != null && PROYECTO_CERRADO.contains(p.getEstado()))
+                throw new OperacionInvalidaException("El proyecto está " + p.getEstado() + ": su chat quedó en solo lectura.");
+        }
         String texto = contenido == null ? "" : contenido.strip();
         if (texto.isEmpty()) throw new OperacionInvalidaException("Escribe un mensaje antes de enviar.");
         if (texto.length() > MAX_CARACTERES)
@@ -170,7 +223,122 @@ public class ChatService {
         // Hibernate lo reutiliza tal cual en consultas de esta transacción):
         // se arma la respuesta con el perfil leído aparte.
         Perfil autor = perfilRepository.findById(perfilId).orElseThrow();
+        // Mensaje directo: se avisa solo con el primer mensaje sin leer, para no
+        // llenar la campana con una notificación por cada mensaje. La
+        // notificación también manda correo (Gmail SMTP), así que se crea en
+        // segundo plano después de guardar: el chat no espera al correo.
+        if (otro != null && noLeidos(salaId, otro.getId()) == 1) {
+            Long destino = otro.getId();
+            String titulo = "Nuevo mensaje de " + autor.getUsuario().getNombreCompleto();
+            String detalle = recortar(texto, 120);
+            String enlace = "chat.html?sala=" + salaId;   // relativo: la campana y el correo le ponen la vista de cada rol
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() {
+                    avisos.submit(() -> {
+                        try {
+                            notificacionService.crear(destino, "info", titulo, detalle, enlace);
+                        } catch (RuntimeException e) {
+                            log.warn("No se pudo notificar el mensaje directo: {}", e.getMessage());
+                        }
+                    });
+                }
+            });
+        }
         return vista(m, autor, perfilId);
+    }
+
+    // ─────────────────────────── mensajes directos ───────────────────────────
+
+    /**
+     * Abre la conversación directa con otra persona (la crea la primera vez)
+     * y devuelve su sala. Valida quién puede iniciar (ver la cabecera).
+     */
+    @Transactional
+    public SalaVista abrirDirecto(Long perfilId, Long destinoPerfilId) {
+        if (perfilId == null) throw new AccesoDenegado("Tu cuenta no tiene un perfil para usar el chat.");
+        if (perfilId.equals(destinoPerfilId)) throw new OperacionInvalidaException("No puedes escribirte a ti mismo.");
+        Perfil yo = perfilRepository.buscarConUsuario(perfilId).orElseThrow(() -> new AccesoDenegado("Tu perfil ya no existe."));
+        Perfil destino = perfilRepository.buscarConUsuario(destinoPerfilId)
+                .orElseThrow(() -> new com.skillbridge.ai.util.RecursoNoEncontradoException("Esa persona ya no existe."));
+        ChatSala sala = salaRepository.findByClaveDirecta(ChatSala.claveDirecta(perfilId, destinoPerfilId)).orElse(null);
+        if (sala == null) {
+            if (!puedeIniciar(yo, destino)) {
+                throw new AccesoDenegado(esStaff(yo)
+                        ? destino.getUsuario().getNombreCompleto() + " no tiene una cuenta activa."
+                        : "Puedes iniciar mensajes directos solo con un Resource Manager. Con tu equipo, usa el chat del proyecto.");
+            }
+            sala = salaRepository.saveAndFlush(ChatSala.directa(perfilId, destinoPerfilId));
+            participanteRepository.save(new com.skillbridge.ai.model.ChatParticipante(sala.getId(), perfilId));
+            participanteRepository.save(new com.skillbridge.ai.model.ChatParticipante(sala.getId(), destinoPerfilId));
+        }
+        return vistaDirecta(sala, perfilId);
+    }
+
+    /** Personas a las que puede escribir (para "Nuevo mensaje"), filtradas por nombre, correo o cargo. */
+    @Transactional(readOnly = true)
+    public List<ContactoVista> contactos(Long perfilId, String q) {
+        if (perfilId == null) return List.of();
+        Perfil yo = perfilRepository.buscarConUsuario(perfilId).orElse(null);
+        if (yo == null) return List.of();
+        String patron = "%" + (q == null ? "" : q.strip().toLowerCase(Locale.ROOT)) + "%";
+        return perfilRepository.contactosParaMensaje(perfilId, !esStaff(yo), patron, PageRequest.of(0, 30)).stream()
+                .map(p -> new ContactoVista(p.getId(), p.getUsuario().getNombreCompleto(), InicialesUtil.de(p.getUsuario().getNombreCompleto()),
+                        detalle(p), p.getUsuarioId(), p.getUsuario().tieneFotoPerfil()))
+                .toList();
+    }
+
+    /** RM y Administrador escriben a cualquier cuenta activa; un Miembro, solo a un Resource Manager. */
+    private static boolean puedeIniciar(Perfil yo, Perfil destino) {
+        if (!yo.getUsuario().isActivo() || !destino.getUsuario().isActivo()) return false;
+        if (esStaff(yo)) return true;
+        return Roles.RESOURCE_MANAGER.equals(destino.getUsuario().getRolOrganizacional());
+    }
+
+    private static boolean esStaff(Perfil p) {
+        String rol = p.getUsuario().getRolOrganizacional();
+        return Roles.RESOURCE_MANAGER.equals(rol) || Roles.ADMINISTRADOR.equals(rol);
+    }
+
+    private SalaVista vistaDirecta(ChatSala sala, Long perfilId) {
+        Perfil otro = otraPersona(sala.getId(), perfilId);
+        String nombre = otro != null ? otro.getUsuario().getNombreCompleto() : "Cuenta eliminada";
+        List<ChatMensaje> ultimo = mensajeRepository.anteriores(sala.getId(), Long.MAX_VALUE, PageRequest.of(0, 1));
+        ChatMensaje m = ultimo.isEmpty() ? null : ultimo.get(0);
+        return new SalaVista(sala.getId(), null, nombre, null, otro == null || !otro.getUsuario().isActivo(),
+                "Mensaje directo", 2,
+                m == null ? null : m.getId(),
+                m == null ? null : (m.getAutorId().equals(perfilId) ? "Tú" : primerNombre(m.getAutor())),
+                m == null ? null : recortar(m.getContenido(), 90),
+                m == null ? null : cuandoCorto(m.getFechaEnvio()),
+                m == null ? null : m.getFechaEnvio().toString(),
+                noLeidos(sala.getId(), perfilId),
+                ChatSala.DIRECTO, otro == null ? null : otro.getId(), otro == null ? null : otro.getUsuarioId(),
+                otro != null && otro.getUsuario().tieneFotoPerfil(), InicialesUtil.de(nombre), otro == null ? "" : detalle(otro));
+    }
+
+    /**
+     * La otra persona de una sala directa (o null). Se busca por su id con
+     * PerfilRepository: un participante recién guardado en esta misma
+     * transacción todavía no tiene cargada su relación "perfil".
+     */
+    private Perfil otraPersona(Long salaId, Long perfilId) {
+        return participanteRepository.perfilesDe(salaId).stream().filter(id -> !id.equals(perfilId)).findFirst()
+                .flatMap(perfilRepository::buscarConUsuario).orElse(null);
+    }
+
+    /** "Resource Manager", "Administrador" o el cargo del Miembro. */
+    private static String detalle(Perfil p) {
+        String rol = p.getUsuario().getRolOrganizacional();
+        if (Roles.RESOURCE_MANAGER.equals(rol)) return "Resource Manager";
+        if (Roles.ADMINISTRADOR.equals(rol)) return "Administrador";
+        return p.getCargo() != null && !p.getCargo().isBlank() ? p.getCargo() : "Miembro del equipo";
+    }
+
+    private static String etiquetaRol(Perfil p) {
+        String rol = p.getUsuario().getRolOrganizacional();
+        if (Roles.RESOURCE_MANAGER.equals(rol)) return "RM";
+        if (Roles.ADMINISTRADOR.equals(rol)) return "Admin";
+        return "Miembro";
     }
 
     @Transactional
@@ -194,6 +362,7 @@ public class ChatService {
             var sala = salaRepository.findFirstByProyectoIdOrderByIdAsc(a.getProyectoId());
             if (sala.isPresent()) total += noLeidos(sala.get().getId(), perfilId);
         }
+        for (Long salaId : participanteRepository.salasDe(perfilId)) total += noLeidos(salaId, perfilId);
         return total;
     }
 
@@ -201,6 +370,7 @@ public class ChatService {
     @Transactional(readOnly = true)
     public String resumir(Long salaId, Long perfilId) {
         ChatSala sala = exigirAcceso(salaId, perfilId);
+        if (sala.esDirecta()) throw new OperacionInvalidaException("El resumen con IA está disponible en las salas de proyecto.");
         List<ChatMensaje> lista = new ArrayList<>(mensajeRepository.anteriores(salaId, Long.MAX_VALUE, PageRequest.of(0, 80)));
         if (lista.size() < 2) throw new OperacionInvalidaException("Todavía hay muy pocos mensajes para resumir.");
         Collections.reverse(lista);
@@ -224,7 +394,14 @@ public class ChatService {
 
     private ChatSala exigirAcceso(Long salaId, Long perfilId) {
         ChatSala sala = salaRepository.findById(salaId).orElseThrow(() -> new com.skillbridge.ai.util.RecursoNoEncontradoException("Esa sala ya no existe."));
-        if (perfilId == null || !asignacionRepository.existsByProyectoIdAndPerfilIdAndEstado(sala.getProyectoId(), perfilId, "activa"))
+        if (perfilId == null) throw new AccesoDenegado();
+        if (sala.esDirecta()) {
+            // Solo sus dos integrantes ven un mensaje directo.
+            if (!participanteRepository.existsById(new com.skillbridge.ai.model.ChatParticipante.Id(salaId, perfilId)))
+                throw new AccesoDenegado("Esta conversación es privada entre sus dos integrantes.");
+            return sala;
+        }
+        if (!asignacionRepository.existsByProyectoIdAndPerfilIdAndEstado(sala.getProyectoId(), perfilId, "activa"))
             throw new AccesoDenegado();
         return sala;
     }

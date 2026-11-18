@@ -6,7 +6,7 @@ códigos HTTP**.
 
 | Documento | Ruta base | Controlador | Lo consume |
 |---|---|---|---|
-| [Chat de proyectos](01_chat.md) | `/api/chat` | `ChatApiController` | `js/chat.js` |
+| [Chat: proyectos y mensajes directos](01_chat.md) | `/api/chat` | `ChatApiController` | `js/chat.js` |
 | [AI Talent Matching](02_matching.md) | `/api/matching` | `MatchingApiController` | `js/matching-ia.js` |
 | [Asistente IA](03_asistente.md) | `/api/asistente` | `AsistenteIaController` | `js/asistente-ia.js` |
 | [Confirmaciones del agente](04_confirmaciones_agente.md) | `/api/asistente/confirmaciones` | `ConfirmacionAgenteController` | `js/asistente-ia.js` |

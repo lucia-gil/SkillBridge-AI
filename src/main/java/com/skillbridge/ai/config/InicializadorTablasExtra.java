@@ -120,6 +120,7 @@ public class InicializadorTablasExtra implements CommandLineRunner {
         } catch (Exception e) {
             log.warn("No se pudo verificar/crear la tabla chat_lecturas: {}", e.getMessage());
         }
+        mensajesDirectos();
         try {
             sembrarChatDemo();
         } catch (Exception e) {
@@ -131,6 +132,37 @@ public class InicializadorTablasExtra implements CommandLineRunner {
      * Una sola vez (si el chat está vacío): conversaciones de ejemplo en los
      * proyectos activos, escritas por sus integrantes reales, para la demo.
      */
+    /**
+     * Mensajes directos: chat_salas admite salas sin proyecto (tipo
+     * 'directo', con clave_directa única por pareja) y chat_participantes
+     * guarda a sus dos personas. Solo agrega lo que falte.
+     */
+    private void mensajesDirectos() {
+        agregarSiFalta("chat_salas", "tipo", "VARCHAR(20) NOT NULL DEFAULT 'proyecto' AFTER id");
+        agregarSiFalta("chat_salas", "clave_directa", "VARCHAR(41) NULL AFTER proyecto_id");
+        try {
+            String nulo = jdbc.queryForObject("SELECT IS_NULLABLE FROM information_schema.COLUMNS "
+                    + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'chat_salas' AND COLUMN_NAME = 'proyecto_id'", String.class);
+            if ("NO".equals(nulo)) {
+                jdbc.execute("ALTER TABLE chat_salas MODIFY proyecto_id BIGINT UNSIGNED NULL");
+                log.info("Mensajes directos: chat_salas.proyecto_id ahora admite salas sin proyecto.");
+            }
+            Integer indice = jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.STATISTICS "
+                    + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'chat_salas' AND INDEX_NAME = 'uq_chat_directo'", Integer.class);
+            if (indice != null && indice == 0) jdbc.execute("ALTER TABLE chat_salas ADD UNIQUE KEY uq_chat_directo (clave_directa)");
+            jdbc.execute("CREATE TABLE IF NOT EXISTS chat_participantes ("
+                    + " sala_id BIGINT UNSIGNED NOT NULL,"
+                    + " perfil_id BIGINT UNSIGNED NOT NULL,"
+                    + " PRIMARY KEY (sala_id, perfil_id),"
+                    + " INDEX idx_chat_part_perfil (perfil_id),"
+                    + " CONSTRAINT fk_part_sala FOREIGN KEY (sala_id) REFERENCES chat_salas(id) ON DELETE CASCADE,"
+                    + " CONSTRAINT fk_part_perfil FOREIGN KEY (perfil_id) REFERENCES perfiles(id) ON DELETE CASCADE"
+                    + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (Exception e) {
+            log.warn("No se pudieron preparar los mensajes directos del chat: {}", e.getMessage());
+        }
+    }
+
     private void sembrarChatDemo() {
         Integer hay = jdbc.queryForObject("SELECT COUNT(*) FROM chat_mensajes", Integer.class);
         if (hay != null && hay > 0) return;

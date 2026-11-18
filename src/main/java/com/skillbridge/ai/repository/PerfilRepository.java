@@ -33,6 +33,18 @@ public interface PerfilRepository extends JpaRepository<Perfil, Long> {
     @Query("select p from Perfil p join fetch p.usuario u order by u.nombreCompleto asc")
     List<Perfil> listarTodosConUsuario();
 
+    /**
+     * Personas a las que se puede escribir un mensaje directo: cuentas activas,
+     * sin contar a quien busca; con soloResourceManagers, solo RMs. Busca por
+     * nombre, correo o cargo.
+     */
+    @Query("select p from Perfil p join fetch p.usuario u where u.estado = 'activo' and p.id <> :yo " +
+           "and (:soloResourceManagers = false or u.rolOrganizacional = 'resource_manager') " +
+           "and (lower(u.nombreCompleto) like :q or lower(u.correo) like :q or lower(coalesce(p.cargo, '')) like :q) " +
+           "order by u.nombreCompleto asc")
+    List<Perfil> contactosParaMensaje(@Param("yo") Long yo, @Param("soloResourceManagers") boolean soloResourceManagers,
+                                      @Param("q") String q, org.springframework.data.domain.Pageable pagina);
+
     // Un perfil con su Usuario ya cargado - usado por "Mi cuenta" (necesita
     // nombre_completo/correo de usuarios, y open-in-view=false impide tocar
     // el proxy lazy fuera de la transacción del service).

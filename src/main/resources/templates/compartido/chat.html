@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-  compartido/chat.html — Chat de proyectos (RF07) para Colaborador y Project
-  Manager (ChatController). Toda la conversación la maneja js/chat.js con
-  jQuery/AJAX contra el servicio REST /api/chat (ChatApiController).
+  compartido/chat.html — Chat (ChatController): salas de proyecto (RF07) y
+  mensajes directos, para todos los roles. Toda la conversación la maneja
+  js/chat.js con jQuery/AJAX contra el servicio REST /api/chat (ChatApiController).
 -->
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -27,16 +27,22 @@
 
       <div class="ch" id="chat-app" data-estado="lista">
         <!-- Salas -->
-        <aside class="ch-rooms" aria-label="Salas de chat">
+        <aside class="ch-rooms" aria-label="Conversaciones">
           <div class="ch-rooms-head">
-            <h2>Salas</h2>
-            <span class="ch-rooms-count" id="ch-total"></span>
+            <div>
+              <h2>Conversaciones</h2>
+              <span class="ch-rooms-count" id="ch-total"></span>
+            </div>
+            <!-- Mensaje directo: RM y Administrador a cualquier persona; un Miembro, a un Resource Manager -->
+            <button type="button" class="btn btn-primary btn-sm ch-new-dm" id="ch-nuevo-directo">
+              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-plus"></use></svg><span>Nuevo mensaje</span>
+            </button>
           </div>
           <label class="ch-search">
             <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>
-            <input type="search" id="ch-buscar" placeholder="Buscar proyecto" autocomplete="off" aria-label="Buscar sala">
+            <input type="search" id="ch-buscar" placeholder="Buscar proyecto o persona" autocomplete="off" aria-label="Buscar conversación">
           </label>
-          <ul class="ch-room-list" id="ch-salas" role="listbox" aria-label="Proyectos">
+          <ul class="ch-room-list" id="ch-salas" role="listbox" aria-label="Conversaciones">
             <li class="ch-skeleton" aria-hidden="true"></li><li class="ch-skeleton" aria-hidden="true"></li><li class="ch-skeleton" aria-hidden="true"></li>
           </ul>
         </aside>
@@ -45,8 +51,8 @@
         <section class="ch-conv" aria-live="off">
           <div class="ch-empty" id="ch-vacio">
             <span class="ch-empty-icon" aria-hidden="true"><svg class="icon"><use href="/img/icons.svg#icon-message-circle"></use></svg></span>
-            <strong>Elige una sala</strong>
-            <p>Cada proyecto tiene su propia sala. Solo la ven sus integrantes.</p>
+            <strong>Elige una conversación</strong>
+            <p>Cada proyecto tiene su propia sala, que solo ven sus integrantes. Los mensajes directos los ven solo sus dos personas.</p>
           </div>
 
           <div class="ch-conv-in" id="ch-conv" hidden>
@@ -102,10 +108,13 @@
 </div>
 
 <script th:inline="javascript">
-  window.SBAI_CHAT = { salaInicial: /*[[${salaInicial}]]*/ null, max: /*[[${maxCaracteres}]]*/ 2000 };
+  window.SBAI_CHAT = { salaInicial: /*[[${salaInicial}]]*/ null, max: /*[[${maxCaracteres}]]*/ 2000,
+                      escribeATodos: /*[[${puedeEscribirATodos}]]*/ false };
+  window.SBAI_FLASH = { exito: null, error: /*[[${error}]]*/ null };
 </script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
+<script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script src="/js/global-search.js"></script>
 <script src="/js/mobile-nav.js"></script>
