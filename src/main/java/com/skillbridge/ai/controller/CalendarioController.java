@@ -1,24 +1,31 @@
 package com.skillbridge.ai.controller;
 
+import com.skillbridge.ai.dto.EventoExtraidoIa;
 import com.skillbridge.ai.dto.EventoFila;
 import com.skillbridge.ai.dto.ProyectoOpcion;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.repository.TipoAudienciaRepository;
 import com.skillbridge.ai.repository.TipoEventoRepository;
 import com.skillbridge.ai.service.EventoService;
+import com.skillbridge.ai.service.ExtraccionEventoIaService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Calendario conectado a datos reales (colaborador, project-manager y
@@ -39,13 +46,16 @@ public class CalendarioController {
     private final TipoEventoRepository tipoEventoRepository;
     private final TipoAudienciaRepository tipoAudienciaRepository;
     private final ShellModelBuilder shellModelBuilder;
+    private final ExtraccionEventoIaService extraccionEventoIaService;
 
     public CalendarioController(EventoService eventoService, TipoEventoRepository tipoEventoRepository,
-                                TipoAudienciaRepository tipoAudienciaRepository, ShellModelBuilder shellModelBuilder) {
+                                TipoAudienciaRepository tipoAudienciaRepository, ShellModelBuilder shellModelBuilder,
+                                ExtraccionEventoIaService extraccionEventoIaService) {
         this.eventoService = eventoService;
         this.tipoEventoRepository = tipoEventoRepository;
         this.tipoAudienciaRepository = tipoAudienciaRepository;
         this.shellModelBuilder = shellModelBuilder;
+        this.extraccionEventoIaService = extraccionEventoIaService;
     }
 
     @GetMapping("/colaborador/calendario.html")
@@ -56,6 +66,22 @@ public class CalendarioController {
     @GetMapping("/project-manager/calendario.html")
     public String projectManager(HttpSession session, Model model) {
         return vista(session, model, "project-manager/calendario", true, "/project-manager/calendario/nuevo");
+    }
+
+    /**
+     * "Extraer con IA" (mismo patrón que /project-manager/proyectos/extraer-ia):
+     * sube un documento con los datos de un evento y devuelve un borrador
+     * JSON para pre-llenar el formulario "Nuevo evento". No crea nada.
+     */
+    @PostMapping(value = "/project-manager/calendario/extraer-ia", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    public ResponseEntity<?> extraerIa(@RequestParam("archivo") MultipartFile archivo) {
+        try {
+            EventoExtraidoIa borrador = extraccionEventoIaService.extraer(archivo);
+            return ResponseEntity.ok(borrador);
+        } catch (OperacionInvalidaException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
     }
 
     /**

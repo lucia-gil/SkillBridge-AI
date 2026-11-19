@@ -319,7 +319,21 @@
             <div class="pm-entregables-stat" th:classappend="${datos.entregablesVencidos > 0} ? ' is-warn'" th:text="${datos.entregablesVencidos}">0</div>
             <p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:2px">entregable(s) vencido(s), con fecha de cierre pasada, en los proyectos visibles con estos filtros.</p>
           </div>
-          <a class="btn btn-secondary" href="/project-manager/entregables.html"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-external-link"></use></svg>Ver entregables</a>
+        </section>
+        <section class="card card-pad" style="margin-top:12px" th:if="${not #lists.isEmpty(datos.filas)}">
+          <h3 style="margin:0 0 10px;font-size:var(--fs-sm)">Ver entregables por proyecto</h3>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <a th:each="f : ${datos.filas}"
+               class="btn btn-secondary"
+               style="justify-content:space-between"
+               th:href="@{'/project-manager/proyectos/' + ${f.proyectoId} + '/entregables.html'}">
+              <span th:text="${f.proyecto}">Proyecto</span>
+              <svg class="icon icon-sm"><use href="/img/icons.svg#icon-external-link"></use></svg>
+            </a>
+          </div>
+        </section>
+        <section class="card card-pad" style="margin-top:12px" th:if="${#lists.isEmpty(datos.filas)}">
+          <p class="text-tertiary" style="font-size:var(--fs-sm);margin:0">No hay proyectos visibles con estos filtros.</p>
         </section>
       </div>
     </main>

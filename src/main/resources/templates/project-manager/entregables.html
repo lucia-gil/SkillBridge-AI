@@ -93,12 +93,27 @@ document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.tableFilter.init(document);
   var submitForm = window.SBAI.submitForm;
 
-  function formularioHtml(titulo, valores) {
+  function formularioHtml(titulo, valores, conIa) {
     valores = valores || {};
     return '<div class="modal modal-wide" role="dialog" aria-modal="true">' +
       '<div class="modal-header"><div><h2>' + titulo + '</h2></div>' +
       '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
       '<div class="modal-body">' +
+      (conIa ? ('' +
+        '<div class="field" style="background:var(--surface-sunken,var(--surface-secondary)); padding:var(--space-4); border-radius:var(--radius-md); margin-bottom:var(--space-4);">' +
+          '<div class="pf-label-row"><label class="field-label" for="ent-ia-archivo">Extraer con IA (opcional)</label>' +
+          '<span class="field-hint">PDF, Word (.docx) o texto</span></div>' +
+          '<div style="display:flex; gap:8px; align-items:center;">' +
+          '<input class="input" type="file" id="ent-ia-archivo" accept=".pdf,.docx,.txt,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="flex:1;">' +
+          '<button type="button" class="btn btn-secondary" id="ent-ia-extraer">Extraer con IA</button>' +
+          '</div>' +
+          '<p class="field-hint" id="ent-ia-estado" style="margin-top:var(--space-2);"></p>' +
+          '<div class="callout warn" id="ent-ia-advertencias" hidden style="margin-top:var(--space-2);">' +
+            '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span>' +
+            '<span class="callout-body" id="ent-ia-advertencias-text"></span>' +
+          '</div>' +
+          '<p class="field-hint" style="margin-top:var(--space-2);">Sube un documento con los datos del entregable (rúbrica, correo, instrucciones) y la IA llena el formulario. Revisa y edita todo antes de crear el entregable: nada se guarda hasta que hagas clic en "Crear entregable".</p>' +
+        '</div>') : '') +
       '<div class="field"><label class="field-label">Título</label><input class="input" id="ent-titulo" value="' + (valores.titulo || "") + '" placeholder="Entregable 1 - Lista de requerimientos"></div>' +
       '<div class="field"><label class="field-label">Descripción / instrucciones</label><textarea class="input" id="ent-desc" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);">' + (valores.descripcion || "") + '</textarea></div>' +
       '<div class="field-row">' +
@@ -109,8 +124,56 @@ document.addEventListener("DOMContentLoaded", function () {
       '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ent-confirm">' + (valores.id ? "Guardar cambios" : "Crear entregable") + '</button></div></div>';
   }
 
+  // "Extraer con IA": sube un documento y pre-llena el formulario como borrador editable.
+  function prepararIaEntregable(backdrop) {
+    var iaBtn = backdrop.querySelector("#ent-ia-extraer");
+    if (!iaBtn) return;
+    var iaArchivo = backdrop.querySelector("#ent-ia-archivo");
+    var iaEstado = backdrop.querySelector("#ent-ia-estado");
+    var iaAdvBox = backdrop.querySelector("#ent-ia-advertencias");
+    var iaAdvText = backdrop.querySelector("#ent-ia-advertencias-text");
+    iaBtn.addEventListener("click", function () {
+      if (!iaArchivo.files || !iaArchivo.files[0]) {
+        iaEstado.textContent = "Selecciona un archivo primero.";
+        return;
+      }
+      iaBtn.disabled = true;
+      iaAdvBox.hidden = true;
+      iaEstado.textContent = "Leyendo el documento con IA… puede tardar unos segundos.";
+      var fd = new FormData();
+      fd.append("archivo", iaArchivo.files[0]);
+      fetch("/project-manager/proyectos/" + PROYECTO_ID + "/entregables/extraer-ia", { method: "POST", body: fd })
+        .then(function (resp) {
+          return resp.json().catch(function () { return {}; }).then(function (data) { return { ok: resp.ok, data: data }; });
+        })
+        .then(function (r) {
+          iaBtn.disabled = false;
+          if (!r.ok) {
+            iaEstado.textContent = (r.data && r.data.error) ? r.data.error : "No se pudo extraer la información del documento.";
+            return;
+          }
+          var dIa = r.data || {};
+          if (dIa.titulo) backdrop.querySelector("#ent-titulo").value = dIa.titulo;
+          if (dIa.descripcion) backdrop.querySelector("#ent-desc").value = dIa.descripcion;
+          if (dIa.fechaApertura) backdrop.querySelector("#ent-apertura").value = dIa.fechaApertura;
+          if (dIa.fechaCierre) backdrop.querySelector("#ent-cierre").value = dIa.fechaCierre;
+          if (dIa.puntajeMaximo) backdrop.querySelector("#ent-puntaje").value = dIa.puntajeMaximo;
+          iaEstado.textContent = "Listo. Revisa y edita los campos antes de hacer clic en \"Crear entregable\".";
+          if (dIa.advertencias && dIa.advertencias.length) {
+            iaAdvText.textContent = dIa.advertencias.join(" ");
+            iaAdvBox.hidden = false;
+          }
+        })
+        .catch(function () {
+          iaBtn.disabled = false;
+          iaEstado.textContent = "No se pudo conectar con el Asistente IA. Intenta de nuevo.";
+        });
+    });
+  }
+
   document.getElementById("new-entregable-btn").addEventListener("click", function () {
-    var backdrop = SBAI.modal.open(formularioHtml("Nuevo entregable"));
+    var backdrop = SBAI.modal.open(formularioHtml("Nuevo entregable", {}, true));
+    prepararIaEntregable(backdrop);
     backdrop.querySelector("#ent-confirm").addEventListener("click", function () {
       var titulo = backdrop.querySelector("#ent-titulo").value.trim();
       var apertura = backdrop.querySelector("#ent-apertura").value;

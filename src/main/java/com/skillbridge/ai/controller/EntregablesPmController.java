@@ -2,22 +2,28 @@ package com.skillbridge.ai.controller;
 
 import com.skillbridge.ai.dto.EntregaFila;
 import com.skillbridge.ai.dto.EntregableFila;
+import com.skillbridge.ai.dto.EntregableExtraidoIa;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.model.Entregable;
 import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.service.EntregableService;
+import com.skillbridge.ai.service.ExtraccionEntregableIaService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 /**
  * "Avance real" del proyecto para el Project Manager: entregables +
@@ -36,12 +42,31 @@ public class EntregablesPmController {
     private final EntregableService entregableService;
     private final ProyectoRepository proyectoRepository;
     private final ShellModelBuilder shellModelBuilder;
+    private final ExtraccionEntregableIaService extraccionEntregableIaService;
 
     public EntregablesPmController(EntregableService entregableService, ProyectoRepository proyectoRepository,
-                                   ShellModelBuilder shellModelBuilder) {
+                                   ShellModelBuilder shellModelBuilder,
+                                   ExtraccionEntregableIaService extraccionEntregableIaService) {
         this.entregableService = entregableService;
         this.proyectoRepository = proyectoRepository;
         this.shellModelBuilder = shellModelBuilder;
+        this.extraccionEntregableIaService = extraccionEntregableIaService;
+    }
+
+    /**
+     * "Extraer con IA" (mismo patrón que /project-manager/proyectos/extraer-ia):
+     * sube un documento con los datos de un entregable y devuelve un borrador
+     * JSON para pre-llenar el formulario "Nuevo entregable". No crea nada.
+     */
+    @PostMapping(value = "/proyectos/{proyectoId}/entregables/extraer-ia", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    public ResponseEntity<?> extraerIa(@PathVariable Long proyectoId, @RequestParam("archivo") MultipartFile archivo) {
+        try {
+            EntregableExtraidoIa borrador = extraccionEntregableIaService.extraer(archivo);
+            return ResponseEntity.ok(borrador);
+        } catch (OperacionInvalidaException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
     }
 
     @GetMapping("/proyectos/{proyectoId}/entregables.html")

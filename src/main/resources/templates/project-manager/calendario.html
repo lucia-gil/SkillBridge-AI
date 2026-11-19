@@ -591,6 +591,20 @@
               '<div class="modal-header"><div><h2>Nuevo evento</h2><p>Se agrega al calendario del equipo del proyecto.</p></div>' +
               '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
               '<div class="modal-body">' +
+              '<div class="field" style="background:var(--surface-sunken,var(--surface-secondary)); padding:var(--space-4); border-radius:var(--radius-md); margin-bottom:var(--space-4);">' +
+                '<div class="pf-label-row"><label class="field-label" for="ev-ia-archivo">Extraer con IA (opcional)</label>' +
+                '<span class="field-hint">PDF, Word (.docx) o texto</span></div>' +
+                '<div style="display:flex; gap:8px; align-items:center;">' +
+                '<input class="input" type="file" id="ev-ia-archivo" accept=".pdf,.docx,.txt,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="flex:1;">' +
+                '<button type="button" class="btn btn-secondary" id="ev-ia-extraer">Extraer con IA</button>' +
+                '</div>' +
+                '<p class="field-hint" id="ev-ia-estado" style="margin-top:var(--space-2);"></p>' +
+                '<div class="callout warn" id="ev-ia-advertencias" hidden style="margin-top:var(--space-2);">' +
+                  '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span>' +
+                  '<span class="callout-body" id="ev-ia-advertencias-text"></span>' +
+                '</div>' +
+                '<p class="field-hint" style="margin-top:var(--space-2);">Sube un documento con los datos del evento (convocatoria, correo, agenda) y la IA llena el formulario. Revisa y edita todo antes de crear el evento: nada se guarda hasta que hagas clic en "Crear evento".</p>' +
+              '</div>' +
               '<div class="field-row"><div class="field"><label class="field-label">Proyecto</label><select class="select" id="ev-proj">' + opts + '</select></div>' +
               '<div class="field"><label class="field-label">Tipo</label><select class="select" id="ev-tipo">' + tipoOptions() + '</select></div></div>' +
               '<div class="field"><label class="field-label">Titulo</label><input class="input" id="ev-titulo" placeholder="Daily de sprint, Entrega v1..."></div>' +
@@ -609,6 +623,68 @@
           window.SBAI.dropdown.close("ev-hora-dd");
         });
       });
+
+      // "Extraer con IA": sube un documento y pre-llena el formulario como borrador editable.
+      (function () {
+        var iaBtn = backdrop.querySelector("#ev-ia-extraer");
+        if (!iaBtn) return;
+        var iaArchivo = backdrop.querySelector("#ev-ia-archivo");
+        var iaEstado = backdrop.querySelector("#ev-ia-estado");
+        var iaAdvBox = backdrop.querySelector("#ev-ia-advertencias");
+        var iaAdvText = backdrop.querySelector("#ev-ia-advertencias-text");
+        iaBtn.addEventListener("click", function () {
+          if (!iaArchivo.files || !iaArchivo.files[0]) {
+            iaEstado.textContent = "Selecciona un archivo primero.";
+            return;
+          }
+          iaBtn.disabled = true;
+          iaAdvBox.hidden = true;
+          iaEstado.textContent = "Leyendo el documento con IA… puede tardar unos segundos.";
+          var fd = new FormData();
+          fd.append("archivo", iaArchivo.files[0]);
+          fetch("/project-manager/calendario/extraer-ia", { method: "POST", body: fd })
+            .then(function (resp) {
+              return resp.json().catch(function () { return {}; }).then(function (data) { return { ok: resp.ok, data: data }; });
+            })
+            .then(function (r) {
+              iaBtn.disabled = false;
+              if (!r.ok) {
+                iaEstado.textContent = (r.data && r.data.error) ? r.data.error : "No se pudo extraer la información del documento.";
+                return;
+              }
+              var dIa = r.data || {};
+              if (dIa.titulo) backdrop.querySelector("#ev-titulo").value = dIa.titulo;
+              if (dIa.tipo) backdrop.querySelector("#ev-tipo").value = dIa.tipo;
+              if (dIa.audiencia) backdrop.querySelector("#ev-aud").value = dIa.audiencia;
+              if (dIa.ubicacion) backdrop.querySelector("#ev-ubic").value = dIa.ubicacion;
+              if (dIa.enlace) backdrop.querySelector("#ev-enlace").value = dIa.enlace;
+              if (dIa.descripcion) backdrop.querySelector("#ev-desc").value = dIa.descripcion;
+              if (dIa.fechaInicio) {
+                var partes = dIa.fechaInicio.split("T");
+                if (partes[0]) backdrop.querySelector("#ev-fecha-dia").value = partes[0];
+                if (partes[1]) {
+                  var hm = partes[1].split(":");
+                  if (hm[0]) {
+                    backdrop.querySelector("#ev-fecha-hora").value = hm[0];
+                    var label = backdrop.querySelector('[data-dropdown-trigger="ev-hora-dd"] [data-hora-label]');
+                    if (label) label.textContent = hm[0];
+                  }
+                  if (hm[1]) backdrop.querySelector("#ev-fecha-min").value = hm[1];
+                }
+              }
+              iaEstado.textContent = "Listo. Revisa y edita los campos antes de hacer clic en \"Crear evento\".";
+              if (dIa.advertencias && dIa.advertencias.length) {
+                iaAdvText.textContent = dIa.advertencias.join(" ");
+                iaAdvBox.hidden = false;
+              }
+            })
+            .catch(function () {
+              iaBtn.disabled = false;
+              iaEstado.textContent = "No se pudo conectar con el Asistente IA. Intenta de nuevo.";
+            });
+        });
+      })();
+
       backdrop.querySelector("#ev-confirm").addEventListener("click", function () {
         var titulo = backdrop.querySelector("#ev-titulo").value.trim();
         var dia = backdrop.querySelector("#ev-fecha-dia").value;
