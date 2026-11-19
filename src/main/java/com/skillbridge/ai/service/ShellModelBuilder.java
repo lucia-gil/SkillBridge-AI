@@ -111,21 +111,8 @@ public class ShellModelBuilder {
         model.addAttribute("title", title);
         model.addAttribute("subtitle", subtitle);
 
-        long noLeidas = 0;
-        List<NotificacionFila> recientes = Collections.emptyList();
-
-        if (sesion.getPerfilId() != null) {
-            noLeidas = notificacionService.contarNoLeidas(
-                    sesion.getPerfilId()
-            );
-
-            List<NotificacionFila> todas =
-                    notificacionService.listar(sesion.getPerfilId());
-
-            recientes = todas.size() > 4
-                    ? todas.subList(0, 4)
-                    : todas;
-        }
+        long noLeidas = notificacionService.contarNoLeidas(sesion);
+        List<NotificacionFila> recientes = notificacionService.recientes(sesion);
 
         model.addAttribute("unreadCount", noLeidas);
         model.addAttribute("notifications", recientes);

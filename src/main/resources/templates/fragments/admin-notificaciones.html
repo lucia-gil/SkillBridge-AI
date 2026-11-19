@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="campana">
+  <link rel="stylesheet" th:href="@{/css/admin-notificaciones.css}">
+  <script th:src="@{/js/admin-notificaciones.js}" defer></script>
+  <details class="an-bell" data-an-bell>
+    <summary class="topbar-icon-btn" th:attr="aria-label=${unreadCount > 0 ? 'Notificaciones: ' + unreadCount + ' sin leer' : 'Notificaciones'}">
+      <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-bell"></use></svg>
+      <span class="an-badge" aria-hidden="true" th:if="${unreadCount > 0}"
+            th:text="${unreadCount > 99 ? '99+' : unreadCount}">1</span>
+    </summary>
+    <section class="an-popover" aria-label="Notificaciones recientes">
+      <header class="an-popover-head">
+        <div><strong>Notificaciones</strong><p th:text="${unreadCount > 0 ? unreadCount + ' sin leer' : 'Estás al día'}">Estás al día</p></div>
+        <form th:if="${unreadCount > 0}" method="post" th:action="@{/notificaciones/marcar-todas}">
+          <input type="hidden" name="volver" value="/administrador/notificaciones.html">
+          <button class="an-text-action" type="submit">Marcar todas</button>
+        </form>
+      </header>
+      <div class="an-preview-list">
+        <p class="an-preview-empty" th:if="${#lists.isEmpty(notifications)}">Los avisos de tu cuenta aparecerán aquí.</p>
+        <a class="an-preview" th:each="n : ${notifications}"
+           th:classappend="${n.leida ? '' : 'an-unread'}"
+           th:href="@{/administrador/notificaciones.html} + '#aviso-' + ${n.id}">
+          <span class="an-icon" th:attr="data-tone=${n.iconClass}">
+            <svg class="icon" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#' + ${n.iconId}"></use></svg>
+          </span>
+          <span class="an-preview-copy"><strong th:text="${n.titulo}">Aviso</strong><span th:text="${n.fechaLabel}"></span></span>
+          <span class="an-dot" th:unless="${n.leida}" aria-label="Sin leer"></span>
+        </a>
+      </div>
+      <a class="an-popover-link" th:href="@{/administrador/notificaciones.html}">
+        Abrir bandeja <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-arrow-right"></use></svg>
+      </a>
+    </section>
+  </details>
+</th:block>
+</body>
+</html>

@@ -367,6 +367,8 @@ public class UsuarioService {
         perfilRepository.findByUsuarioId(usuarioId).ifPresent(p -> notificacionService.crear(p.getId(), "info",
                 "Tu rol en SkillBridge cambió",
                 "Ahora eres " + etiquetaRol(normalizado) + ". Tu panel se actualizará en tu próximo clic.", null));
+        notificacionService.avisarAdministradores("alerta", "Rol de cuenta actualizado",
+                usuario.getNombreCompleto() + ": " + etiquetaRol(anterior) + " → " + etiquetaRol(normalizado) + ".");
     }
 
     @Transactional
@@ -407,6 +409,9 @@ public class UsuarioService {
         auditoriaService.registrar(actorId, activar ? "USUARIO_REACTIVADO" : "USUARIO_SUSPENDIDO",
                 "usuario", usuarioId, AuditoriaService.json("estado", anterior), AuditoriaService.json("estado", nuevo),
                 AuditoriaService.conMotivo(usuario.getCorreo(), motivo));
+        notificacionService.avisarAdministradores(activar ? "info" : "alerta",
+                activar ? "Cuenta reactivada" : "Cuenta suspendida",
+                "Se " + (activar ? "reactivó" : "suspendió") + " la cuenta de " + usuario.getNombreCompleto() + ".");
         String motivoLimpio = AuditoriaService.limpiarMotivo(motivo);
         String linkLogin = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl + "/auth/login.html" : null;
         emailService.enviar(new EmailService.Correo(usuario.getCorreo(),

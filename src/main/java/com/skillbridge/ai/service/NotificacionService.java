@@ -2,6 +2,7 @@ package com.skillbridge.ai.service;
 
 import com.skillbridge.ai.dto.NotificacionFila;
 import com.skillbridge.ai.model.Notificacion;
+import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.model.TipoNotificacion;
 import com.skillbridge.ai.repository.NotificacionRepository;
 import com.skillbridge.ai.repository.PerfilRepository;
@@ -11,6 +12,8 @@ import com.skillbridge.ai.repository.UsuarioRepository;
 import com.skillbridge.ai.util.Roles;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 /**
  * Centro de notificaciones real (tabla "notificaciones" + "tipos_notificacion").
@@ -186,32 +189,62 @@ public class NotificacionService {
         };
     }
 
-    public List<NotificacionFila> listar(Long perfilId) {
-        return notificacionRepository.listarPorPerfil(perfilId).stream()
+    /** Registra actividad de cuentas para administradores activos, solo dentro de la plataforma. */
+    @Transactional
+    public void avisarAdministradores(String tipoCodigo, String titulo, String detalle) {
+        var tipo = tipoNotificacionRepository.findByCodigo(tipoCodigo)
+                .or(() -> tipoNotificacionRepository.findByCodigo("info"));
+        if (tipo.isEmpty()) return;
+        List<Notificacion> avisos = perfilRepository.listarIdsConCuentaActivaPorRol(Roles.ADMINISTRADOR)
+                .stream()
+                .map(perfilId -> {
+                    Notificacion aviso = new Notificacion();
+                    aviso.setPerfilId(perfilId);
+                    aviso.setTipoId(tipo.get().getId());
+                    aviso.setTitulo(titulo);
+                    aviso.setDetalle(detalle);
+                    aviso.setEnlaceAccion("/administrador/usuarios.html");
+                    return aviso;
+                }).toList();
+        notificacionRepository.saveAll(avisos);
+    }
+
+    public List<NotificacionFila> listar(UsuarioSesion sesion) {
+        return listar(sesion, Pageable.unpaged());
+    }
+
+    public List<NotificacionFila> recientes(UsuarioSesion sesion) {
+        return listar(sesion, PageRequest.ofSize(4));
+    }
+
+    private List<NotificacionFila> listar(UsuarioSesion sesion, Pageable pagina) {
+        if (sesion.getPerfilId() == null) return List.of();
+        return notificacionRepository.listarPorPerfil(sesion.getPerfilId(), esAdmin(sesion), pagina).stream()
                 .map(n -> new NotificacionFila(n.getId(), n.getTitulo(), n.getDetalle(), Boolean.TRUE.equals(n.getLeida()),
                         n.getTipo().getCodigo(), n.getTipo().getNombre(),
                         n.getFechaCreacion() != null ? n.getFechaCreacion().format(FORMATO) : "",
                         n.getEnlaceAccion()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public long contarNoLeidas(Long perfilId) {
-        if (perfilId == null) return 0;
-        return notificacionRepository.countByPerfilIdAndLeidaFalse(perfilId);
-    }
-
-    @Transactional
-    public void marcarLeida(Long id, Long perfilId) {
-        notificacionRepository.findById(id).ifPresent(n -> {
-            if (n.getPerfilId().equals(perfilId)) {
-                n.setLeida(true);
-                notificacionRepository.save(n);
-            }
-        });
+    public long contarNoLeidas(UsuarioSesion sesion) {
+        if (sesion.getPerfilId() == null) return 0;
+        return notificacionRepository.contarNoLeidas(sesion.getPerfilId(), esAdmin(sesion));
     }
 
     @Transactional
-    public void marcarTodasLeidas(Long perfilId) {
-        notificacionRepository.marcarTodasLeidas(perfilId);
+    public boolean marcarLeida(Long id, UsuarioSesion sesion) {
+        return sesion.getPerfilId() != null
+                && notificacionRepository.marcarLeida(sesion.getPerfilId(), esAdmin(sesion), id) > 0;
+    }
+
+    @Transactional
+    public int marcarTodasLeidas(UsuarioSesion sesion) {
+        return sesion.getPerfilId() == null ? 0
+                : notificacionRepository.marcarTodasLeidas(sesion.getPerfilId(), esAdmin(sesion));
+    }
+
+    private boolean esAdmin(UsuarioSesion sesion) {
+        return Roles.ADMINISTRADOR.equals(sesion.getRolOrganizacional());
     }
 }

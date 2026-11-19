@@ -90,8 +90,11 @@
 
 
     <!-- NOTIFICACIONES -->
+    <th:block th:if="${rolSlug == 'administrador'}">
+      <th:block th:replace="~{fragments/admin-notificaciones :: campana}"></th:block>
+    </th:block>
 
-    <div class="dropdown">
+    <div class="dropdown" th:unless="${rolSlug == 'administrador'}">
 
       <button
               type="button"
