@@ -2,6 +2,8 @@ package com.skillbridge.ai.controller;
 
 import com.skillbridge.ai.dto.ReportePmDatos;
 import com.skillbridge.ai.dto.UsuarioSesion;
+import com.skillbridge.ai.service.AsistenteIaService;
+import com.skillbridge.ai.service.ReporteIaService;
 import com.skillbridge.ai.service.ReportePmExportService;
 import com.skillbridge.ai.service.ReportePmService;
 import com.skillbridge.ai.service.ShellModelBuilder;
@@ -12,14 +14,17 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/project-manager")
@@ -28,12 +33,14 @@ public class ReportesPmController {
     private final ReportePmService reporteService;
     private final ReportePmExportService exportService;
     private final ShellModelBuilder shellModelBuilder;
+    private final ReporteIaService reporteIaService;
 
     public ReportesPmController(ReportePmService reporteService, ReportePmExportService exportService,
-                                ShellModelBuilder shellModelBuilder) {
+                                ShellModelBuilder shellModelBuilder, ReporteIaService reporteIaService) {
         this.reporteService = reporteService;
         this.exportService = exportService;
         this.shellModelBuilder = shellModelBuilder;
+        this.reporteIaService = reporteIaService;
     }
 
     @GetMapping("/reportes.html")
@@ -81,6 +88,24 @@ public class ReportesPmController {
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=skillbridge-reporte-proyectos.pdf");
         exportService.escribirPdf(datos, response.getOutputStream());
+    }
+
+    /**
+     * Resumen ejecutivo con IA (RF nuevo): toma los mismos filtros que la
+     * vista/exportables y le pide a Claude un resumen de 3-5 lineas. No
+     * persiste nada - se regenera cada vez que el PM hace clic en el boton.
+     */
+    @PostMapping("/reportes/resumen-ia")
+    @ResponseBody
+    public Map<String, Object> resumenIa(HttpSession session,
+                    @RequestParam(name = "proyectoId", required = false) List<Long> proyectoId,
+                    @RequestParam(required = false) String estado,
+                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+                    @RequestParam(required = false, defaultValue = "false") boolean soloRiesgo) {
+        ReportePmDatos datos = reporteService.generar(usuario(session).getPerfilId(), proyectoId, estado, desde, hasta, soloRiesgo);
+        AsistenteIaService.Resultado r = reporteIaService.resumirReportePm(datos);
+        return Map.of("ok", r.ok(), "texto", r.texto());
     }
 
     private UsuarioSesion usuario(HttpSession session) {

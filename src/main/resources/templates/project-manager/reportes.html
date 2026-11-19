@@ -132,8 +132,19 @@
           <p>La vista y los archivos exportados utilizan exactamente los mismos filtros, indicadores, estados y registros.</p>
         </div>
         <div class="report-actions">
+          <button type="button" class="btn btn-secondary" id="resumen-ia-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg>Generar resumen con IA</button>
           <a class="btn btn-secondary" th:href="'reportes.xlsx' + ${queryExport}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar Excel</a>
           <a class="btn btn-secondary" th:href="'reportes.pdf' + ${queryExport}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar PDF</a>
+        </div>
+      </section>
+
+      <section class="card card-pad" id="resumen-ia-card" style="display:none; border-left:4px solid var(--color-primary, #1E2761);">
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+          <svg class="icon" style="flex-shrink:0; margin-top:2px;"><use href="/img/icons.svg#icon-sparkles"></use></svg>
+          <div style="flex:1;">
+            <h3 style="margin:0 0 6px 0; font-size:var(--fs-md);">Resumen ejecutivo con IA</h3>
+            <p id="resumen-ia-texto" style="margin:0; white-space:pre-line;"></p>
+          </div>
         </div>
       </section>
 
@@ -349,6 +360,34 @@
         tabs.forEach(function(b){ b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
         panels.forEach(function(p){ p.hidden = p.getAttribute('data-pm-panel') !== name; });
       });
+    });
+  })();
+</script>
+<script th:inline="javascript">
+  (function(){
+    var btn = document.getElementById('resumen-ia-btn');
+    if (!btn) return;
+    var queryExport = /*[[${queryExport}]]*/ '';
+    btn.addEventListener('click', function(){
+      btn.disabled = true;
+      var textoOriginal = btn.innerHTML;
+      btn.innerHTML = 'Generando…';
+      SBAI.api.post('reportes/resumen-ia' + queryExport)
+        .done(function (r) {
+          var card = document.getElementById('resumen-ia-card');
+          var texto = document.getElementById('resumen-ia-texto');
+          texto.textContent = r.texto;
+          card.style.display = '';
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          if (!r.ok) { SBAI.toast.show('No se pudo generar el resumen con IA.', { type: 'error' }); }
+        })
+        .fail(function () {
+          SBAI.toast.show('No se pudo generar el resumen con IA. Intenta de nuevo.', { type: 'error' });
+        })
+        .always(function () {
+          btn.disabled = false;
+          btn.innerHTML = textoOriginal;
+        });
     });
   })();
 </script>

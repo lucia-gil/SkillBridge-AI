@@ -79,13 +79,32 @@ public class UsuarioService {
      * Administrador configura en Administrador > Configuración. Vacío o
      * "*" = cualquier correo con formato válido (para invitar con Gmail,
      * @pucp.edu.pe, etc. y poder probar las notificaciones por correo real).
+     * Admite varios dominios a la vez separados por coma (p. ej.
+     * "gmail.com, pucp.edu.pe") para permitir invitar con cualquiera de ellos.
      */
     private Pattern patronCorreoDominio() {
         String dominio = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com").trim();
         if (dominio.isEmpty() || dominio.equals("*")) {
             return PATRON_CORREO_GENERICO;
         }
-        return Pattern.compile("^[A-Za-z0-9+_.-]+@" + Pattern.quote(dominio) + "$", Pattern.CASE_INSENSITIVE);
+        String alternativas = java.util.Arrays.stream(dominio.split(","))
+                .map(String::trim)
+                .filter(d -> !d.isEmpty())
+                .map(Pattern::quote)
+                .collect(java.util.stream.Collectors.joining("|"));
+        if (alternativas.isEmpty()) {
+            return PATRON_CORREO_GENERICO;
+        }
+        return Pattern.compile("^[A-Za-z0-9+_.-]+@(?:" + alternativas + ")$", Pattern.CASE_INSENSITIVE);
+    }
+
+    /** Lista de dominios permitidos formateada para mostrar en el mensaje de error ("@gmail.com, @pucp.edu.pe"). */
+    private String dominiosPermitidosTexto(String dominioCrudo) {
+        return java.util.Arrays.stream(dominioCrudo.split(","))
+                .map(String::trim)
+                .filter(d -> !d.isEmpty())
+                .map(d -> "@" + d)
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 
     @Transactional(readOnly = true)
@@ -231,7 +250,8 @@ public class UsuarioService {
         String dominioPermitido = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com").trim();
         boolean dominioLibre = dominioPermitido.isEmpty() || dominioPermitido.equals("*");
         if (!patronCorreoDominio().matcher(correo).matches()) {
-            throw new OperacionInvalidaException(dominioLibre ? "Ingresa un correo válido." : "Ingresa un correo corporativo válido (@" + dominioPermitido + ").");
+            throw new OperacionInvalidaException(dominioLibre ? "Ingresa un correo válido."
+                    : "Ingresa un correo con uno de estos dominios: " + dominiosPermitidosTexto(dominioPermitido) + ".");
         }
         if (usuarioRepository.existsByCorreoIgnoreCase(correo)) {
             throw new OperacionInvalidaException("Ese correo ya tiene una cuenta creada.");

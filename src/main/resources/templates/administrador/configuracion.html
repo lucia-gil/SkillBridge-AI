@@ -27,7 +27,7 @@
             <div class="field-row">
               <div class="field"><label class="field-label">Dominio corporativo permitido</label>
                 <input class="input" name="dominio_correo_permitido" th:value="${cfg.get('dominio_correo_permitido')?.valor}">
-                <span class="field-hint">Solo se pueden invitar correos de este dominio (usa * para cualquiera). Para registrarse vale únicamente el correo exacto que autorizaste.</span></div>
+                <span class="field-hint">Solo se pueden invitar correos de estos dominios (sepáralos con coma, p. ej. gmail.com, pucp.edu.pe; usa * para cualquiera). Para registrarse vale únicamente el correo exacto que autorizaste.</span></div>
               <div class="field"><label class="field-label">Minutos de inactividad antes de cerrar sesión</label>
                 <input class="input" type="number" min="1" name="expiracion_sesion_minutos" th:value="${cfg.get('expiracion_sesion_minutos')?.valor}">
                 <span class="field-hint">Se aplica al iniciar sesión</span></div>

@@ -338,6 +338,28 @@ public class EntregableService {
 
         auditoriaService.registrar(actorUsuarioId, reenvio ? "ENTREGA_ACTUALIZADA" : "ENTREGA_REALIZADA",
                 "entrega", en.getId(), null, null, e.getTitulo());
+
+        notificarEntregaAlPm(e, perfilId, reenvio);
+    }
+
+    /** Avisa (en la app y por correo) al/los PM del proyecto que un colaborador entregó o reenvió. */
+    private void notificarEntregaAlPm(Entregable e, Long colaboradorPerfilId, boolean reenvio) {
+        Proyecto proyecto = proyectoRepository.findById(e.getProyectoId()).orElse(null);
+        List<Asignacion> equipo = asignacionRepository.listarEquipoDeProyecto(e.getProyectoId(), "activa");
+        String nombreColaborador = equipo.stream()
+                .filter(a -> a.getPerfilId().equals(colaboradorPerfilId))
+                .findFirst()
+                .map(a -> a.getPerfil().getUsuario().getNombreCompleto())
+                .orElse("Un colaborador");
+        String nombreProyecto = proyecto != null ? proyecto.getNombre() : "";
+        equipo.stream()
+                .filter(a -> Roles.PROJECT_MANAGER.equals(a.getRolEnProyecto()))
+                .forEach(pm -> notificacionService.crear(pm.getPerfilId(),
+                        "entregable_entregado",
+                        (reenvio ? "Entrega actualizada: " : "Nueva entrega: ") + e.getTitulo(),
+                        nombreColaborador + " " + (reenvio ? "actualizó su entrega" : "entregó") + " en \""
+                                + nombreProyecto + "\".",
+                        "entregables.html?proyectoId=" + e.getProyectoId()));
     }
 
     @Transactional

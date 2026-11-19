@@ -154,7 +154,7 @@ public class NotificacionService {
         return switch (tipoCodigo) {
             case "asignacion" -> "Ver proyecto";
             case "foro_respuesta", "foro_cita" -> "Ver respuesta";
-            case "entregable_nuevo", "entregable_revisado" -> "Ver entregable";
+            case "entregable_nuevo", "entregable_revisado", "entregable_entregado" -> "Ver entregable";
             case "solicitud" -> "Revisar propuesta";
             case "resultado_ia" -> "Ver resultado";
             default -> {
@@ -172,7 +172,7 @@ public class NotificacionService {
         return switch (tipoCodigo) {
             case "asignacion" -> "Proyectos y asignaciones";
             case "foro_respuesta", "foro_cita" -> "Foros";
-            case "entregable_nuevo", "entregable_revisado" -> "Entregables";
+            case "entregable_nuevo", "entregable_revisado", "entregable_entregado" -> "Entregables";
             case "solicitud" -> "Solicitud de aprobación";
             case "resultado_ia" -> "AI Talent Matching";
             case "alerta" -> "Alerta";
