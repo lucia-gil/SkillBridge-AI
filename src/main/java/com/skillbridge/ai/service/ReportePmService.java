@@ -6,10 +6,12 @@ import com.skillbridge.ai.dto.ReportePmFila;
 import com.skillbridge.ai.model.Asignacion;
 import com.skillbridge.ai.model.Proyecto;
 import com.skillbridge.ai.repository.AsignacionRepository;
+import com.skillbridge.ai.repository.EntregableRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.Set;
@@ -24,9 +26,11 @@ public class ReportePmService {
     private static final List<String> ESTADOS = List.of("planificacion", "activo", "en_pausa", "completado", "cancelado");
 
     private final AsignacionRepository asignacionRepository;
+    private final EntregableRepository entregableRepository;
 
-    public ReportePmService(AsignacionRepository asignacionRepository) {
+    public ReportePmService(AsignacionRepository asignacionRepository, EntregableRepository entregableRepository) {
         this.asignacionRepository = asignacionRepository;
+        this.entregableRepository = entregableRepository;
     }
 
     @Transactional(readOnly = true)
@@ -37,6 +41,12 @@ public class ReportePmService {
     @Transactional(readOnly = true)
     public ReportePmDatos generar(Long perfilId, List<Long> proyectoIds, String estado,
                                   LocalDate desde, LocalDate hasta) {
+        return generar(perfilId, proyectoIds, estado, desde, hasta, false);
+    }
+
+    @Transactional(readOnly = true)
+    public ReportePmDatos generar(Long perfilId, List<Long> proyectoIds, String estado,
+                                  LocalDate desde, LocalDate hasta, boolean soloRiesgo) {
         // Filtro de proyectos de selección múltiple (RG-217): lista vacía o
         // null = todos los proyectos que gestiona el PM.
         Set<Long> seleccion = new HashSet<>();
@@ -67,12 +77,25 @@ public class ReportePmService {
                             p.getFechaInicio(), p.getFechaFinEstimada(), p.getEstado()), equipo.size(), carga));
         }
 
+        // Entregables vencidos (RF nuevo del hero): se cuenta sobre el mismo
+        // conjunto de proyectos ya visible tras los filtros, antes de aplicar
+        // el toggle "Solo en riesgo" (es un dato del portafolio filtrado, no
+        // de la sub-vista de riesgo).
+        List<Long> idsVisibles = filas.stream().map(ReportePmFila::getProyectoId).collect(Collectors.toList());
+        long entregablesVencidos = idsVisibles.isEmpty() ? 0
+                : entregableRepository.countVencidos(idsVisibles, LocalDateTime.now());
+
+        if (soloRiesgo) {
+            filas = filas.stream().filter(ReportePmFila::isEnRiesgo).collect(Collectors.toCollection(ArrayList::new));
+        }
+
         Map<String, Long> porEstado = new LinkedHashMap<>();
         for (String valor : ESTADOS) {
             long cantidad = filas.stream().filter(f -> valor.equals(f.getEstadoCrudo())).count();
             if (cantidad > 0) porEstado.put(EstadoProyectoUtil.label(valor), cantidad);
         }
         return new ReportePmDatos(filas, porEstado, proyectoFiltro,
-                estadoValido == null ? "Todos" : EstadoProyectoUtil.label(estadoValido), desde, hasta);
+                estadoValido == null ? "Todos" : EstadoProyectoUtil.label(estadoValido), desde, hasta,
+                entregablesVencidos, soloRiesgo);
     }
 }

@@ -19,9 +19,14 @@ public class ReportePmDatos {
     private final Map<String, Long> porEstado;
     private final List<Segmento> segmentos;
     private final String conicGradient;
+    private final List<Segmento> segmentosRiesgo;
+    private final String conicGradientRiesgo;
     private final int avancePromedio;
     private final int asignacionesActivas;
     private final long atrasados;
+    private final long riesgoAlto;
+    private final long entregablesVencidos;
+    private final boolean soloRiesgo;
     private final String proyectoFiltro;
     private final String estadoFiltro;
     private final LocalDate desde;
@@ -30,13 +35,17 @@ public class ReportePmDatos {
 
     public ReportePmDatos(List<ReportePmFila> filas, Map<String, Long> porEstado,
                           String proyectoFiltro, String estadoFiltro,
-                          LocalDate desde, LocalDate hasta) {
+                          LocalDate desde, LocalDate hasta,
+                          long entregablesVencidos, boolean soloRiesgo) {
         this.filas = List.copyOf(filas);
         this.porEstado = Collections.unmodifiableMap(new LinkedHashMap<>(porEstado));
         this.avancePromedio = filas.isEmpty() ? 0
                 : (int) Math.round(filas.stream().mapToInt(ReportePmFila::getAvance).average().orElse(0));
         this.asignacionesActivas = filas.stream().mapToInt(ReportePmFila::getEquipoActivo).sum();
         this.atrasados = filas.stream().filter(ReportePmFila::isAtrasado).count();
+        this.riesgoAlto = filas.stream().filter(f -> "Alto".equals(f.getRiesgo())).count();
+        this.entregablesVencidos = entregablesVencidos;
+        this.soloRiesgo = soloRiesgo;
         this.proyectoFiltro = proyectoFiltro;
         this.estadoFiltro = estadoFiltro;
         this.desde = desde;
@@ -65,16 +74,48 @@ public class ReportePmDatos {
         }
         this.segmentos = List.copyOf(segmentosCalc);
         this.conicGradient = total == 0 ? "var(--surface-sunken) 0% 100%" : gradiente.toString();
+
+        // Segunda dona de "Resumen": distribución por riesgo (Alto/Medio/Bajo),
+        // derivada de la misma situación ya calculada por fila. Finalizado y
+        // Cancelado quedan fuera (no aplican a un análisis de riesgo).
+        List<Segmento> segmentosRiesgoCalc = new ArrayList<>();
+        StringBuilder gradienteRiesgo = new StringBuilder();
+        long totalConRiesgo = this.filas.stream().filter(f -> !f.getRiesgo().isEmpty()).count();
+        double acumuladoRiesgo = 0;
+        for (String nivel : List.of("Alto", "Medio", "Bajo")) {
+            long cantidad = this.filas.stream().filter(f -> nivel.equals(f.getRiesgo())).count();
+            if (cantidad == 0) continue;
+            double porcentaje = totalConRiesgo == 0 ? 0 : (cantidad * 100.0 / totalConRiesgo);
+            String color = switch (nivel) {
+                case "Alto" -> "var(--red-fg)";
+                case "Medio" -> "var(--amber-fg)";
+                default -> "var(--green-fg)";
+            };
+            segmentosRiesgoCalc.add(new Segmento(nivel, cantidad, porcentaje, color));
+            double inicio = acumuladoRiesgo;
+            acumuladoRiesgo += porcentaje;
+            if (gradienteRiesgo.length() > 0) gradienteRiesgo.append(", ");
+            gradienteRiesgo.append(color).append(' ')
+                    .append(String.format(Locale.US, "%.2f", inicio)).append("% ")
+                    .append(String.format(Locale.US, "%.2f", acumuladoRiesgo)).append("%");
+        }
+        this.segmentosRiesgo = List.copyOf(segmentosRiesgoCalc);
+        this.conicGradientRiesgo = totalConRiesgo == 0 ? "var(--surface-sunken) 0% 100%" : gradienteRiesgo.toString();
     }
 
     public List<ReportePmFila> getFilas() { return filas; }
     public Map<String, Long> getPorEstado() { return porEstado; }
     public List<Segmento> getSegmentos() { return segmentos; }
     public String getConicGradient() { return conicGradient; }
+    public List<Segmento> getSegmentosRiesgo() { return segmentosRiesgo; }
+    public String getConicGradientRiesgo() { return conicGradientRiesgo; }
     public int getTotalProyectos() { return filas.size(); }
     public int getAvancePromedio() { return avancePromedio; }
     public int getAsignacionesActivas() { return asignacionesActivas; }
     public long getAtrasados() { return atrasados; }
+    public long getRiesgoAlto() { return riesgoAlto; }
+    public long getEntregablesVencidos() { return entregablesVencidos; }
+    public boolean isSoloRiesgo() { return soloRiesgo; }
     public String getProyectoFiltro() { return proyectoFiltro; }
     public String getEstadoFiltro() { return estadoFiltro; }
     public LocalDate getDesde() { return desde; }

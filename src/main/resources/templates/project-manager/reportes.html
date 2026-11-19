@@ -15,20 +15,58 @@
   .report-hero{background:linear-gradient(135deg,var(--navy-900),var(--navy-700));border-radius:var(--radius-lg);padding:var(--space-6);color:white;display:flex;justify-content:space-between;gap:var(--space-5);align-items:center;box-shadow:var(--shadow-2)}
   .report-hero h1{font-size:var(--fs-xl);margin-bottom:6px}.report-hero p{font-size:var(--fs-sm);color:rgba(255,255,255,.72);max-width:620px}
   .report-actions{display:flex;gap:var(--space-3);flex-wrap:wrap}.report-actions .btn{background:white;border-color:rgba(255,255,255,.25)}
-  .report-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:var(--space-3);align-items:start}.report-filters>.btn{margin-top:22px}.report-filters .field{margin:0}.report-filters .field-label{font-size:var(--fs-xs)}
   .report-table .progress-inline{min-width:145px}.report-note{display:flex;gap:var(--space-2);align-items:flex-start;color:var(--text-tertiary);font-size:var(--fs-xs);line-height:1.5}
-  @media(max-width:1050px){.report-filters{grid-template-columns:1fr 1fr}.report-filters .btn{width:100%}}
-  @media(max-width:700px){.report-hero{align-items:flex-start;flex-direction:column}.report-filters{grid-template-columns:1fr}.report-actions{width:100%}.report-actions .btn{flex:1}}
+  @media(max-width:700px){.report-hero{align-items:flex-start;flex-direction:column}.report-actions{width:100%}.report-actions .btn{flex:1}}
 
-  /* ── Gráficas de "Resumen por estado" + "Avance por proyecto": CSS puro (conic-gradient / anchos),
-     calculadas en el servidor a partir de los mismos datos del reporte, sin librerías externas. ── */
-  .report-charts-grid{display:flex;gap:var(--space-6);align-items:center}
+  /* ── Caja de filtros con icono + descripción + toggle, al estilo del
+     reporte del Resource Manager (rr-filters). ── */
+  .pm-filters-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-4)}
+  .pm-filters-title{display:flex;gap:var(--space-3);align-items:flex-start}
+  .pm-filters-icon{width:36px;height:36px;border-radius:var(--radius-md);background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;flex:none;color:var(--navy-700)}
+  .pm-filters-title h2{font-size:var(--fs-md);margin:0 0 2px}
+  .pm-filters-title p{font-size:var(--fs-xs);color:var(--text-tertiary);margin:0}
+  .pm-filters-actions{display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap}
+  .pm-switch{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);color:var(--text-secondary);cursor:pointer;user-select:none}
+  .pm-switch input{position:absolute;opacity:0;width:0;height:0}
+  .pm-switch-track{width:34px;height:19px;border-radius:999px;background:var(--border-subtle);position:relative;transition:background .15s}
+  .pm-switch-track::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:white;box-shadow:var(--shadow-1);transition:left .15s}
+  .pm-switch input:checked + .pm-switch-track{background:var(--navy-700)}
+  .pm-switch input:checked + .pm-switch-track::after{left:17px}
+  .report-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:var(--space-3);align-items:start}.report-filters>.btn{margin-top:22px}.report-filters .field{margin:0}.report-filters .field-label{font-size:var(--fs-xs)}
+  @media(max-width:1050px){.report-filters{grid-template-columns:1fr 1fr}.report-filters .btn{width:100%}}
+  @media(max-width:700px){.report-filters{grid-template-columns:1fr}}
+
+  /* ── Las 6 tarjetas del banner, siempre en una sola línea (igual que el
+     reporte del Resource Manager); por debajo de 1600px bajan a 3 por fila
+     y en móvil a 2, en vez de apretarse hasta recortar el texto. ── */
+  .kpi-hero-grid.pm-kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+  @media(max-width:1600px){.kpi-hero-grid.pm-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(max-width:720px){.kpi-hero-grid.pm-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .pm-kpis .hero-card{padding:var(--space-3) var(--space-4) var(--space-4)}
+  .pm-kpis .hero-card-top{align-items:flex-start}
+  .pm-kpis .hero-card-label{white-space:normal;overflow:visible;line-height:1.3}
+
+  /* ── Pestañas (Resumen / Proyectos / Equipo / Entregables) ── */
+  .pm-tabs{display:flex;gap:var(--space-2);border-bottom:1px solid var(--border-subtle);margin-bottom:var(--space-5);flex-wrap:wrap}
+  .pm-tabs button{display:flex;align-items:center;gap:7px;padding:10px 4px;margin-bottom:-1px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-tertiary);font-size:var(--fs-sm);font-weight:600;cursor:pointer}
+  .pm-tabs button[aria-selected="true"]{color:var(--navy-700);border-bottom-color:var(--navy-700)}
+  .pm-tab-n{background:var(--surface-sunken);color:var(--text-secondary);border-radius:999px;padding:1px 7px;font-size:10.5px;font-weight:700}
+  .pm-tab-n.is-warn{background:var(--red-bg);color:var(--red-fg)}
+  .pm-panel[hidden]{display:none}
+
+  /* ── Gráficas de "Resumen por estado" / "Resumen por riesgo" + "Avance por proyecto":
+     CSS puro (conic-gradient / anchos), calculadas en el servidor a partir de los
+     mismos datos del reporte, sin librerías externas. ── */
+  .report-charts-grid{display:flex;gap:var(--space-6);align-items:center;flex-wrap:wrap}
+  .report-donuts-row{display:flex;gap:var(--space-6);flex-wrap:wrap}
   .donut-wrap{display:flex;align-items:center;gap:var(--space-5);flex:0 0 auto}
   .avance-mini-chart-wrap{flex:1;min-width:0}
   .donut-chart{width:126px;height:126px;border-radius:50%;position:relative;flex:none;box-shadow:inset 0 0 0 1px var(--border-subtle)}
+  .donut-chart.is-sm{width:106px;height:106px}
   .donut-center{position:absolute;inset:16px;background:var(--surface);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
   .donut-value{font-size:var(--fs-xl);font-weight:700;color:var(--navy-700);line-height:1}
-  .donut-label{font-size:9.5px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .donut-label{font-size:9.5px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-top:2px;text-align:center;max-width:72px;line-height:1.3}
+  .donut-chart.is-sm .donut-label{font-size:8.5px;max-width:58px}
   .donut-legend{display:flex;flex-direction:column;gap:7px;min-width:0}
   .donut-legend-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs)}
   .donut-legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
@@ -49,6 +87,11 @@
   .avance-mini-more{font-size:var(--fs-xs);color:var(--text-tertiary);margin:2px 0 0}
   .report-charts-divider{width:1px;align-self:stretch;background:var(--border-subtle)}
   @media(max-width:900px){.report-charts-grid{flex-direction:column;align-items:stretch;gap:var(--space-5)}.donut-wrap{justify-content:center}.report-charts-divider{display:none}}
+
+  /* ── Pestaña Entregables: tarjeta resumen ── */
+  .pm-entregables-card{display:flex;align-items:center;gap:var(--space-5);flex-wrap:wrap}
+  .pm-entregables-stat{font-size:40px;font-weight:700;color:var(--navy-700);line-height:1}
+  .pm-entregables-stat.is-warn{color:var(--red-fg)}
 </style>
 </head>
 <body>
@@ -59,12 +102,27 @@
     <main class="page-content page-content-wide">
 
       <section class="card card-pad">
-        <form class="report-filters" method="get" action="reportes.html">
-          <div class="field"><span class="field-label">Proyectos</span><select class="select" name="proyectoId" multiple data-multiselect data-placeholder="Todos los proyectos" data-noun="proyectos"><option th:each="p : ${proyectosDisponibles}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${proyectoId != null and proyectoId.contains(p.id)}">Proyecto</option></select></div>
-          <label class="field"><span class="field-label">Estado</span><select class="select" name="estado"><option value="">Todos</option><option value="planificacion" th:selected="${estado == 'planificacion'}">Planificación</option><option value="activo" th:selected="${estado == 'activo'}">Activo</option><option value="en_pausa" th:selected="${estado == 'en_pausa'}">En pausa</option><option value="completado" th:selected="${estado == 'completado'}">Completado</option><option value="cancelado" th:selected="${estado == 'cancelado'}">Cancelado</option></select></label>
-          <label class="field"><span class="field-label">Inicio desde</span><input class="input" type="date" name="desde" th:value="${desde}"></label>
-          <label class="field"><span class="field-label">Inicio hasta</span><input class="input" type="date" name="hasta" th:value="${hasta}"></label>
-          <button class="btn btn-primary" type="submit"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg>Aplicar</button>
+        <form id="pm-filtros" method="get" action="reportes.html">
+          <div class="pm-filters-head">
+            <div class="pm-filters-title">
+              <span class="pm-filters-icon"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg></span>
+              <div><h2>Filtros</h2><p th:text="${datos.filtrosLabel}">Sin filtros</p></div>
+            </div>
+            <div class="pm-filters-actions">
+              <label class="pm-switch">
+                <input type="checkbox" name="soloRiesgo" value="true" th:checked="${datos.soloRiesgo}" onchange="document.getElementById('pm-filtros').submit()">
+                <span class="pm-switch-track" aria-hidden="true"></span>
+                <span>Solo en riesgo</span>
+              </label>
+            </div>
+          </div>
+          <div class="report-filters">
+            <div class="field"><span class="field-label">Proyectos</span><select class="select" name="proyectoId" multiple data-multiselect data-placeholder="Todos los proyectos" data-noun="proyectos"><option th:each="p : ${proyectosDisponibles}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${proyectoId != null and proyectoId.contains(p.id)}">Proyecto</option></select></div>
+            <label class="field"><span class="field-label">Estado</span><select class="select" name="estado"><option value="">Todos</option><option value="planificacion" th:selected="${estado == 'planificacion'}">Planificación</option><option value="activo" th:selected="${estado == 'activo'}">Activo</option><option value="en_pausa" th:selected="${estado == 'en_pausa'}">En pausa</option><option value="completado" th:selected="${estado == 'completado'}">Completado</option><option value="cancelado" th:selected="${estado == 'cancelado'}">Cancelado</option></select></label>
+            <label class="field"><span class="field-label">Inicio desde</span><input class="input" type="date" name="desde" th:value="${desde}"></label>
+            <label class="field"><span class="field-label">Inicio hasta</span><input class="input" type="date" name="hasta" th:value="${hasta}"></label>
+            <button class="btn btn-primary" type="submit"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg>Aplicar</button>
+          </div>
         </form>
       </section>
 
@@ -87,7 +145,7 @@
             <p class="kpi-hero-sub">Según los filtros aplicados arriba</p>
           </div>
         </div>
-        <div class="kpi-hero-grid">
+        <div class="kpi-hero-grid pm-kpis">
           <article class="hero-card">
             <div class="hero-card-top">
               <span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span>
@@ -120,67 +178,166 @@
             <div class="hero-card-value" th:text="${datos.atrasados}">0</div>
             <p class="hero-card-meta" th:classappend="${datos.atrasados > 0} ? ' warn' : ''">fecha estimada vencida</p>
           </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon" th:classappend="${datos.riesgoAlto > 0} ? 'tone-red' : 'tone-green'"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
+              <span class="hero-card-label">Riesgo alto</span>
+            </div>
+            <div class="hero-card-value" th:text="${datos.riesgoAlto}">0</div>
+            <p class="hero-card-meta">proyecto(s) atrasados</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top">
+              <span class="hero-card-icon" th:classappend="${datos.entregablesVencidos > 0} ? 'tone-amber' : 'tone-green'"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg></span>
+              <span class="hero-card-label">Entregables vencidos</span>
+            </div>
+            <div class="hero-card-value" th:text="${datos.entregablesVencidos}">0</div>
+            <p class="hero-card-meta">fecha de cierre pasada</p>
+          </article>
         </div>
       </section>
 
-      <section class="card card-pad">
-        <div class="page-section-header" style="margin-bottom:var(--space-5)"><div><h2 class="page-section-title">Resumen por estado y avance</h2><p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:3px">La misma distribución se incluye en PDF y Excel.</p></div><span class="label-mono" th:text="'Generado ' + ${datos.generado}">Generado</span></div>
+      <!-- ═════════ Pestañas ═════════ -->
+      <nav class="pm-tabs" role="tablist" aria-label="Secciones del reporte">
+        <button type="button" role="tab" id="pm-t-resumen" aria-controls="pm-p-resumen" aria-selected="true" data-pm-tab="resumen">
+          <svg class="icon icon-sm"><use href="/img/icons.svg#icon-grid"></use></svg>Resumen</button>
+        <button type="button" role="tab" id="pm-t-proyectos" aria-controls="pm-p-proyectos" aria-selected="false" data-pm-tab="proyectos">
+          <svg class="icon icon-sm"><use href="/img/icons.svg#icon-folder"></use></svg>Proyectos<span class="pm-tab-n" th:text="${datos.totalProyectos}">0</span></button>
+        <button type="button" role="tab" id="pm-t-equipo" aria-controls="pm-p-equipo" aria-selected="false" data-pm-tab="equipo">
+          <svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg>Equipo</button>
+        <button type="button" role="tab" id="pm-t-entregables" aria-controls="pm-p-entregables" aria-selected="false" data-pm-tab="entregables">
+          <svg class="icon icon-sm"><use href="/img/icons.svg#icon-file-text"></use></svg>Entregables<span class="pm-tab-n is-warn" th:if="${datos.entregablesVencidos > 0}" th:text="${datos.entregablesVencidos}">0</span></button>
+      </nav>
 
-        <div class="report-charts-grid">
-          <div class="donut-wrap">
-            <div class="donut-chart" th:style="'background: conic-gradient(' + ${datos.conicGradient} + ')'">
-              <div class="donut-center">
-                <span class="donut-value" th:text="${datos.totalProyectos}">0</span>
-                <span class="donut-label">proyecto(s)</span>
+      <!-- ── Resumen ── -->
+      <div class="pm-panel" role="tabpanel" id="pm-p-resumen" aria-labelledby="pm-t-resumen" data-pm-panel="resumen">
+        <section class="card card-pad">
+          <div class="page-section-header" style="margin-bottom:var(--space-5)"><div><h2 class="page-section-title">Resumen por estado y avance</h2><p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:3px">La misma distribución se incluye en PDF y Excel.</p></div><span class="label-mono" th:text="'Generado ' + ${datos.generado}">Generado</span></div>
+
+          <div class="report-donuts-row">
+            <div class="donut-wrap">
+              <div class="donut-chart" th:style="'background: conic-gradient(' + ${datos.conicGradient} + ')'">
+                <div class="donut-center">
+                  <span class="donut-value" th:text="${datos.totalProyectos}">0</span>
+                  <span class="donut-label">proyecto(s)</span>
+                </div>
+              </div>
+              <div class="donut-legend">
+                <div class="donut-legend-item" th:each="s : ${datos.segmentos}">
+                  <span class="donut-legend-dot" th:style="'background:' + ${s.color}"></span>
+                  <span class="donut-legend-label" th:text="${s.label}">Estado</span>
+                  <span class="donut-legend-value" th:text="${s.cantidad} + ' · ' + ${s.porcentajeRedondeado} + '%'">0 · 0%</span>
+                </div>
+                <div class="donut-legend-item" th:if="${datos.segmentos.isEmpty()}"><span class="donut-legend-label text-tertiary">Sin resultados</span></div>
               </div>
             </div>
-            <div class="donut-legend">
-              <div class="donut-legend-item" th:each="s : ${datos.segmentos}">
-                <span class="donut-legend-dot" th:style="'background:' + ${s.color}"></span>
-                <span class="donut-legend-label" th:text="${s.label}">Estado</span>
-                <span class="donut-legend-value" th:text="${s.cantidad} + ' · ' + ${s.porcentajeRedondeado} + '%'">0 · 0%</span>
+
+            <div class="report-charts-divider"></div>
+
+            <div class="donut-wrap">
+              <div class="donut-chart is-sm" th:style="'background: conic-gradient(' + ${datos.conicGradientRiesgo} + ')'">
+                <div class="donut-center">
+                  <span class="donut-value" th:text="${datos.riesgoAlto}">0</span>
+                  <span class="donut-label">riesgo alto</span>
+                </div>
               </div>
-              <div class="donut-legend-item" th:if="${datos.segmentos.isEmpty()}"><span class="donut-legend-label text-tertiary">Sin resultados</span></div>
+              <div class="donut-legend">
+                <div class="donut-legend-item" th:each="s : ${datos.segmentosRiesgo}">
+                  <span class="donut-legend-dot" th:style="'background:' + ${s.color}"></span>
+                  <span class="donut-legend-label" th:text="${s.label}">Riesgo</span>
+                  <span class="donut-legend-value" th:text="${s.cantidad} + ' · ' + ${s.porcentajeRedondeado} + '%'">0 · 0%</span>
+                </div>
+                <div class="donut-legend-item" th:if="${datos.segmentosRiesgo.isEmpty()}"><span class="donut-legend-label text-tertiary">Sin resultados</span></div>
+              </div>
             </div>
           </div>
 
-          <div class="report-charts-divider"></div>
-
-          <div class="avance-mini-chart-wrap">
-          <div class="avance-mini-chart">
-            <div class="avance-mini-row" th:each="f, it : ${datos.filas}" th:if="${it.index < 6}">
-              <span class="avance-mini-label" th:text="${f.proyecto}">Proyecto</span>
-              <div class="avance-mini-track"><div class="avance-mini-fill" th:classappend="${f.situacionBadgeClass}" th:style="'width:' + ${f.avance} + '%'"></div></div>
-              <span class="avance-mini-value" th:text="${f.avance} + '%'">0%</span>
+          <div class="report-charts-grid" style="margin-top:var(--space-5)">
+            <div class="avance-mini-chart-wrap">
+            <div class="avance-mini-chart">
+              <div class="avance-mini-row" th:each="f, it : ${datos.filas}" th:if="${it.index < 6}">
+                <span class="avance-mini-label" th:text="${f.proyecto}">Proyecto</span>
+                <div class="avance-mini-track"><div class="avance-mini-fill" th:classappend="${f.situacionBadgeClass}" th:style="'width:' + ${f.avance} + '%'"></div></div>
+                <span class="avance-mini-value" th:text="${f.avance} + '%'">0%</span>
+              </div>
+              <p class="avance-mini-more" th:if="${datos.filas.size() > 6}" th:text="${'+' + (datos.filas.size() - 6) + ' proyecto(s) más en la pestaña Proyectos'}">+ más</p>
+              <p class="avance-mini-more" th:if="${datos.filas.isEmpty()}">Sin proyectos para graficar.</p>
             </div>
-            <p class="avance-mini-more" th:if="${datos.filas.size() > 6}" th:text="${'+' + (datos.filas.size() - 6) + ' proyecto(s) más en la tabla de abajo'}">+ más</p>
-            <p class="avance-mini-more" th:if="${datos.filas.isEmpty()}">Sin proyectos para graficar.</p>
+            </div>
           </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <section class="card report-table">
-        <div class="card-header"><div class="card-header-icon-row"><div class="card-header-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-bar-chart"></use></svg></div><div class="card-header-text"><h2>Detalle exportable</h2><p th:text="${datos.filtrosLabel}">Filtros</p></div></div><span class="badge badge-blue" th:text="${datos.totalProyectos} + ' registros'">0 registros</span></div>
-        <div class="table-scroll">
-          <table class="data-table" data-paginar="8">
-            <thead><tr><th>Proyecto</th><th>Estado</th><th>Inicio</th><th>Entrega estimada</th><th>Avance estimado</th><th>Equipo activo</th><th>Carga asignada</th><th>Situación</th></tr></thead>
-            <tbody>
-              <tr th:each="f : ${datos.filas}">
-                <td class="cell-primary" th:text="${f.proyecto}">Proyecto</td><td><span class="badge" th:classappend="${f.estadoBadgeClass}" th:text="${f.estado}">Estado</span></td>
-                <td class="mono" th:text="${f.fechaInicioLabel}">—</td><td class="mono" th:text="${f.fechaFinLabel}">—</td>
-                <td><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${f.avance} + '%' "></div></div><span class="progress-value" th:text="${f.avance} + '%'">0%</span></div></td>
-                <td class="mono" th:text="${f.equipoActivo}">0</td><td class="mono" th:text="${f.cargaAsignada} + '%'">0%</td><td><span class="badge" th:classappend="${f.situacionBadgeClass}" th:text="${f.situacion}">Situación</span></td>
-              </tr>
-              <tr th:if="${datos.filas.isEmpty()}"><td colspan="8" style="text-align:center;padding:var(--space-10);color:var(--text-tertiary)">No hay proyectos que coincidan con los filtros seleccionados.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="card-footer"><div class="report-note"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-info"></use></svg><span>El avance es una estimación basada en las fechas de inicio y entrega, porque el modelo actual no registra tareas completadas.</span></div><a href="reportes.html" class="btn btn-tertiary btn-sm">Limpiar filtros</a></div>
-      </section>
+      <!-- ── Proyectos ── -->
+      <div class="pm-panel" role="tabpanel" id="pm-p-proyectos" aria-labelledby="pm-t-proyectos" data-pm-panel="proyectos" hidden>
+        <section class="card report-table">
+          <div class="card-header"><div class="card-header-icon-row"><div class="card-header-icon blue"><svg class="icon"><use href="/img/icons.svg#icon-bar-chart"></use></svg></div><div class="card-header-text"><h2>Detalle exportable</h2><p th:text="${datos.filtrosLabel}">Filtros</p></div></div><span class="badge badge-blue" th:text="${datos.totalProyectos} + ' registros'">0 registros</span></div>
+          <div class="table-scroll">
+            <table class="data-table" data-paginar="8">
+              <thead><tr><th>Proyecto</th><th>Estado</th><th>Inicio</th><th>Entrega estimada</th><th>Avance estimado</th><th>Equipo activo</th><th>Carga asignada</th><th>Situación</th></tr></thead>
+              <tbody>
+                <tr th:each="f : ${datos.filas}">
+                  <td class="cell-primary" th:text="${f.proyecto}">Proyecto</td><td><span class="badge" th:classappend="${f.estadoBadgeClass}" th:text="${f.estado}">Estado</span></td>
+                  <td class="mono" th:text="${f.fechaInicioLabel}">—</td><td class="mono" th:text="${f.fechaFinLabel}">—</td>
+                  <td><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${f.avance} + '%' "></div></div><span class="progress-value" th:text="${f.avance} + '%'">0%</span></div></td>
+                  <td class="mono" th:text="${f.equipoActivo}">0</td><td class="mono" th:text="${f.cargaAsignada} + '%'">0%</td><td><span class="badge" th:classappend="${f.situacionBadgeClass}" th:text="${f.situacion}">Situación</span></td>
+                </tr>
+                <tr th:if="${datos.filas.isEmpty()}"><td colspan="8" style="text-align:center;padding:var(--space-10);color:var(--text-tertiary)">No hay proyectos que coincidan con los filtros seleccionados.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer"><div class="report-note"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-info"></use></svg><span>El avance es una estimación basada en las fechas de inicio y entrega, porque el modelo actual no registra tareas completadas.</span></div><a href="reportes.html" class="btn btn-tertiary btn-sm">Limpiar filtros</a></div>
+        </section>
+      </div>
+
+      <!-- ── Equipo ── -->
+      <div class="pm-panel" role="tabpanel" id="pm-p-equipo" aria-labelledby="pm-t-equipo" data-pm-panel="equipo" hidden>
+        <section class="card report-table">
+          <div class="card-header"><div class="card-header-icon-row"><div class="card-header-icon violet"><svg class="icon"><use href="/img/icons.svg#icon-users"></use></svg></div><div class="card-header-text"><h2>Equipo por proyecto</h2><p>Tamaño del equipo activo y carga asignada, por proyecto visible</p></div></div></div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Proyecto</th><th>Estado</th><th>Equipo activo</th><th>Carga asignada</th><th>Situación</th></tr></thead>
+              <tbody>
+                <tr th:each="f : ${datos.filas}">
+                  <td class="cell-primary" th:text="${f.proyecto}">Proyecto</td>
+                  <td><span class="badge" th:classappend="${f.estadoBadgeClass}" th:text="${f.estado}">Estado</span></td>
+                  <td class="mono" th:text="${f.equipoActivo}">0</td>
+                  <td><div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${f.cargaAsignada} + '%' "></div></div><span class="progress-value" th:text="${f.cargaAsignada} + '%'">0%</span></div></td>
+                  <td><span class="badge" th:classappend="${f.situacionBadgeClass}" th:text="${f.situacion}">Situación</span></td>
+                </tr>
+                <tr th:if="${datos.filas.isEmpty()}"><td colspan="5" style="text-align:center;padding:var(--space-10);color:var(--text-tertiary)">No hay proyectos que coincidan con los filtros seleccionados.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- ── Entregables ── -->
+      <div class="pm-panel" role="tabpanel" id="pm-p-entregables" aria-labelledby="pm-t-entregables" data-pm-panel="entregables" hidden>
+        <section class="card card-pad pm-entregables-card">
+          <div>
+            <div class="pm-entregables-stat" th:classappend="${datos.entregablesVencidos > 0} ? ' is-warn'" th:text="${datos.entregablesVencidos}">0</div>
+            <p class="text-tertiary" style="font-size:var(--fs-xs);margin-top:2px">entregable(s) vencido(s), con fecha de cierre pasada, en los proyectos visibles con estos filtros.</p>
+          </div>
+          <a class="btn btn-secondary" href="/project-manager/entregables.html"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-external-link"></use></svg>Ver entregables</a>
+        </section>
+      </div>
     </main>
   </div>
 </div>
+<script>
+  (function(){
+    var tabs = document.querySelectorAll('.pm-tabs [data-pm-tab]');
+    var panels = document.querySelectorAll('.pm-panel[data-pm-panel]');
+    tabs.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var name = btn.getAttribute('data-pm-tab');
+        tabs.forEach(function(b){ b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
+        panels.forEach(function(p){ p.hidden = p.getAttribute('data-pm-panel') !== name; });
+      });
+    });
+  })();
+</script>
 <script src="/js/toast.js"></script><script src="/js/dropdown.js"></script><script src="/js/multiselect.js"></script><script src="/js/topbar-actions.js"></script>
 <script src="/js/global-search.js"></script>
 <script src="/js/predictive.js"></script>

@@ -20,6 +20,8 @@ public class ReportePmFila {
     private final int cargaAsignada;
     private final String situacion;
     private final String situacionBadgeClass;
+    private final String riesgo;
+    private final String riesgoBadgeClass;
 
     public ReportePmFila(Long proyectoId, String proyecto, String estadoCrudo,
                          LocalDate fechaInicio, LocalDate fechaFin, int avance,
@@ -53,6 +55,23 @@ public class ReportePmFila {
             this.situacion = "En plazo";
             this.situacionBadgeClass = "badge-green";
         }
+
+        // Riesgo (RF nuevo: segunda dona de "Resumen"): deriva del mismo
+        // cálculo de situación, sin pedir datos nuevos. Finalizado/Cancelado
+        // quedan fuera del análisis de riesgo (ya no aplica).
+        if ("Atrasado".equals(this.situacion)) {
+            this.riesgo = "Alto";
+            this.riesgoBadgeClass = "badge-red";
+        } else if ("Requiere atención".equals(this.situacion)) {
+            this.riesgo = "Medio";
+            this.riesgoBadgeClass = "badge-amber";
+        } else if ("En plazo".equals(this.situacion)) {
+            this.riesgo = "Bajo";
+            this.riesgoBadgeClass = "badge-green";
+        } else {
+            this.riesgo = "";
+            this.riesgoBadgeClass = "badge-neutral";
+        }
     }
 
     public Long getProyectoId() { return proyectoId; }
@@ -70,4 +89,7 @@ public class ReportePmFila {
     public String getSituacion() { return situacion; }
     public String getSituacionBadgeClass() { return situacionBadgeClass; }
     public boolean isAtrasado() { return "Atrasado".equals(situacion); }
+    public String getRiesgo() { return riesgo; }
+    public String getRiesgoBadgeClass() { return riesgoBadgeClass; }
+    public boolean isEnRiesgo() { return "Alto".equals(riesgo) || "Medio".equals(riesgo); }
 }

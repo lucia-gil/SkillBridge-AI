@@ -41,9 +41,10 @@ public class ReportesPmController {
                            @RequestParam(name = "proyectoId", required = false) List<Long> proyectoId,
                            @RequestParam(required = false) String estado,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+                           @RequestParam(required = false, defaultValue = "false") boolean soloRiesgo) {
         UsuarioSesion usuario = usuario(session);
-        ReportePmDatos datos = reporteService.generar(usuario.getPerfilId(), proyectoId, estado, desde, hasta);
+        ReportePmDatos datos = reporteService.generar(usuario.getPerfilId(), proyectoId, estado, desde, hasta, soloRiesgo);
         shellModelBuilder.aplicar(model, usuario, "reportes.html", "Reportes de proyectos",
                 datos.getTotalProyectos() + " proyecto(s) en el resultado · actualizado " + datos.getGenerado());
         model.addAttribute("datos", datos);
@@ -52,7 +53,7 @@ public class ReportesPmController {
         model.addAttribute("estado", estado);
         model.addAttribute("desde", desde);
         model.addAttribute("hasta", hasta);
-        model.addAttribute("queryExport", query(proyectoId, estado, desde, hasta));
+        model.addAttribute("queryExport", query(proyectoId, estado, desde, hasta, soloRiesgo));
         return "project-manager/reportes";
     }
 
@@ -61,8 +62,9 @@ public class ReportesPmController {
                       @RequestParam(name = "proyectoId", required = false) List<Long> proyectoId,
                       @RequestParam(required = false) String estado,
                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-                      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) throws IOException {
-        ReportePmDatos datos = reporteService.generar(usuario(session).getPerfilId(), proyectoId, estado, desde, hasta);
+                      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+                      @RequestParam(required = false, defaultValue = "false") boolean soloRiesgo) throws IOException {
+        ReportePmDatos datos = reporteService.generar(usuario(session).getPerfilId(), proyectoId, estado, desde, hasta, soloRiesgo);
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=skillbridge-reporte-proyectos.xlsx");
         exportService.escribirExcel(datos, response.getOutputStream());
@@ -73,8 +75,9 @@ public class ReportesPmController {
                     @RequestParam(name = "proyectoId", required = false) List<Long> proyectoId,
                     @RequestParam(required = false) String estado,
                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) throws IOException {
-        ReportePmDatos datos = reporteService.generar(usuario(session).getPerfilId(), proyectoId, estado, desde, hasta);
+                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+                    @RequestParam(required = false, defaultValue = "false") boolean soloRiesgo) throws IOException {
+        ReportePmDatos datos = reporteService.generar(usuario(session).getPerfilId(), proyectoId, estado, desde, hasta, soloRiesgo);
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=skillbridge-reporte-proyectos.pdf");
         exportService.escribirPdf(datos, response.getOutputStream());
@@ -84,13 +87,14 @@ public class ReportesPmController {
         return (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
     }
 
-    private String query(List<Long> proyectoId, String estado, LocalDate desde, LocalDate hasta) {
+    private String query(List<Long> proyectoId, String estado, LocalDate desde, LocalDate hasta, boolean soloRiesgo) {
         StringBuilder q = new StringBuilder("?");
         // Selección múltiple (RG-217): se repite el parámetro por cada proyecto.
         if (proyectoId != null) for (Long id : proyectoId) if (id != null) q.append("proyectoId=").append(id).append('&');
         if (estado != null && !estado.isBlank()) q.append("estado=").append(URLEncoder.encode(estado, StandardCharsets.UTF_8)).append('&');
         if (desde != null) q.append("desde=").append(desde).append('&');
         if (hasta != null) q.append("hasta=").append(hasta).append('&');
+        if (soloRiesgo) q.append("soloRiesgo=true").append('&');
         if (q.charAt(q.length() - 1) == '&') q.setLength(q.length() - 1);
         return q.toString();
     }

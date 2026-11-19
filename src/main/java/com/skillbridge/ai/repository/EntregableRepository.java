@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface EntregableRepository extends JpaRepository<Entregable, Long> {
@@ -25,4 +26,11 @@ public interface EntregableRepository extends JpaRepository<Entregable, Long> {
     long countByProyectoIdAndEstado(Long proyectoId, String estado);
 
     long countByProyectoId(Long proyectoId);
+
+    // Para el KPI "Entregables vencidos" del reporte del PM: entregables
+    // todavía activos (el PM no los retiró) cuya fecha de cierre ya pasó,
+    // dentro del conjunto de proyectos visible según los filtros aplicados.
+    @Query("select count(e) from Entregable e where e.proyectoId in :proyectoIds " +
+            "and e.estado = 'activo' and e.fechaCierre < :ahora")
+    long countVencidos(@Param("proyectoIds") List<Long> proyectoIds, @Param("ahora") LocalDateTime ahora);
 }
