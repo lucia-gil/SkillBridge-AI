@@ -114,7 +114,13 @@ public class EmailService {
         }
     }
 
-    private void enviarAhora(Correo c) {
+    /** Se usa solo en la prueba explícita para informar si el servidor SMTP aceptó el correo. */
+    public boolean probarEnvio(Correo correo) {
+        return enviarAhora(correo);
+    }
+
+    private boolean enviarAhora(Correo c) {
+        if (c == null || c.destinatario() == null || c.destinatario().isBlank()) return false;
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             // multipart: texto plano + HTML + el logo como imagen inline
@@ -126,9 +132,12 @@ public class EmailService {
             helper.addInline("logo", new ClassPathResource(LOGO), "image/png");
             mensaje.setHeader("Content-Language", "es");
             mailSender.send(mensaje);
-            log.info("Correo enviado a {}: {}", c.destinatario(), c.asunto());
+            log.info("El servidor SMTP aceptó un correo de SkillBridge AI.");
+            return true;
         } catch (Exception e) {
-            log.warn("No se pudo enviar el correo \"{}\" a {}: {}", c.asunto(), c.destinatario(), e.getMessage());
+            log.warn("No se pudo entregar un correo a SMTP. Revisa la configuración y conexión del remitente. Tipo: {}.",
+                    e.getClass().getSimpleName());
+            return false;
         }
     }
 

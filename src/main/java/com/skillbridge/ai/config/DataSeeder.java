@@ -7,18 +7,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-/**
- * Siembra idempotente de catálogo al arrancar la aplicación.
- *
- * skillbridge_db.sql (INSERT INTO tipos_notificacion, sección de siembra) trae 4
- * códigos: alerta, solicitud, info, resultado_ia. Esta iteración agrega dos
- * eventos reales que el esquema no anticipaba pero que ahora sí ocurren de
- * verdad (asignar un colaborador a un proyecto, responder un hilo de
- * foro) - en vez de pedirle al usuario que edite a mano su script SQL ya
- * cargado, se insertan aquí solo si faltan (existsByCodigo), así que
- * correr la aplicación varias veces nunca duplica filas ni falla si ya
- * existen (por ejemplo, si el usuario las agregó manualmente).
- */
+/** Asegura que cada evento real tenga un tipo de notificación en la base existente. */
 @Component
 @Order(1)
 public class DataSeeder implements ApplicationRunner {
@@ -31,6 +20,14 @@ public class DataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        crearSiFalta("info", "Información", "Novedades de SkillBridge AI");
+        crearSiFalta("alerta", "Alerta", "Actividad que requiere atención");
+        crearSiFalta("solicitud", "Solicitud", "Nueva solicitud por revisar");
+        crearSiFalta("resultado_ia", "Resultado de IA", "Resultado de una propuesta o proceso de IA");
+        crearSiFalta("entregable_nuevo", "Nuevo entregable", "Se publicó un entregable en tu proyecto");
+        crearSiFalta("entregable_revisado", "Entrega revisada", "El responsable revisó tu entrega");
+        crearSiFalta("entregable_entregado", "Entrega recibida", "Un colaborador envió o actualizó su entrega");
+        crearSiFalta("foro_cita", "Mención en foro", "Alguien respondió a tu mensaje en el foro");
         crearSiFalta("asignacion", "Asignación de proyecto",
                 "Se te asignó o se te retiró de un proyecto");
         crearSiFalta("foro_respuesta", "Respuesta en foro",

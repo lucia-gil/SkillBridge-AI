@@ -23,7 +23,8 @@ public class SubidaArchivosAdvice {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public void archivoDemasiadoGrande(HttpServletRequest request, HttpServletResponse response) throws IOException {
         // Llamadas AJAX (Asistente IA, /api/**): se responde JSON, no una redirección
-        if (request.getRequestURI().startsWith(request.getContextPath() + "/api/")) {
+        String ruta = request.getRequestURI().substring(request.getContextPath().length());
+        if (ruta.startsWith("/api/") || ruta.equals("/administrador/proyectos/extraer-ia")) {
             response.setStatus(413);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\":\"El archivo es demasiado grande: el envío puede pesar hasta 5 MB.\"}");

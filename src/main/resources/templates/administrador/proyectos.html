@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
 <link rel="stylesheet" href="/css/proyecto-form.css">
+<link rel="stylesheet" th:href="@{/css/admin-proyecto-documento.css}">
 <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body class="admin-app">
@@ -118,6 +119,24 @@
         </template>
       </div>
 
+      <template id="np-documento-template" th:attr="data-endpoint=@{/administrador/proyectos/extraer-ia}">
+        <section class="np-documento" aria-labelledby="np-documento-titulo">
+          <div class="np-documento-heading">
+            <span class="np-documento-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-sparkles"></use></svg></span>
+            <div>
+              <h3 id="np-documento-titulo">Completar con un documento</h3>
+              <p>Sube un PDF con texto, Word o TXT de hasta 5 MB. La IA sugerirá datos para el borrador.</p>
+            </div>
+          </div>
+          <div class="np-documento-controls">
+            <label class="np-documento-visually-hidden" for="np-documento-archivo">Documento del proyecto</label>
+            <input class="input" type="file" id="np-documento-archivo" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
+            <button type="button" class="btn btn-secondary" id="np-documento-extraer">Extraer con IA</button>
+          </div>
+          <p class="np-documento-status" id="np-documento-status" role="status" hidden></p>
+          <ul class="np-documento-advertencias" id="np-documento-advertencias" aria-label="Observaciones del borrador" hidden></ul>
+        </section>
+      </template>
     </main>
   </div>
 </div>
@@ -175,6 +194,7 @@ document.addEventListener("DOMContentLoaded", function () {
       '<div class="modal-header"><div><h2 id="np-titulo">Nuevo proyecto</h2><p>Asigna un Project Manager responsable.</p></div>' +
       '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
       '<div class="modal-body">' +
+      '<div id="np-documento-mount"></div>' +
       '<div class="callout danger" id="np-error" hidden style="margin-bottom:var(--space-4);">' +
         '<span class="callout-icon"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>' +
         '<span class="callout-body" id="np-error-text"></span></div>' +
@@ -226,6 +246,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var errorBox = backdrop.querySelector("#np-error");
     nombreInput.addEventListener("input", function () { fechas.limpiar(nombreInput); });
     colabInput.addEventListener("input", function () { fechas.limpiar(colabInput); });
+    enlazarExtraccion(backdrop, tech, fechas, nombreInput, colabInput);
     setTimeout(function () { nombreInput.focus(); }, 50);
 
     backdrop.querySelector("#np-confirm").addEventListener("click", function () {
@@ -251,6 +272,104 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
   });
+
+  function enlazarExtraccion(backdrop, tech, fechas, nombreInput, colabInput) {
+    var template = document.getElementById("np-documento-template");
+    backdrop.querySelector("#np-documento-mount").append(template.content.cloneNode(true));
+    var archivoInput = backdrop.querySelector("#np-documento-archivo");
+    var extraer = backdrop.querySelector("#np-documento-extraer");
+    var estado = backdrop.querySelector("#np-documento-status");
+    var advertencias = backdrop.querySelector("#np-documento-advertencias");
+    var descripcion = backdrop.querySelector("#np-desc");
+    var inicio = backdrop.querySelector("#np-inicio");
+    var fin = backdrop.querySelector("#np-fin");
+
+    function informar(texto, tono) {
+      estado.textContent = texto;
+      estado.dataset.tone = tono;
+      estado.hidden = false;
+    }
+
+    archivoInput.addEventListener("change", function () {
+      estado.hidden = true;
+      advertencias.hidden = true;
+    });
+
+    extraer.addEventListener("click", async function () {
+      var archivo = archivoInput.files[0];
+      advertencias.hidden = true;
+      advertencias.replaceChildren();
+      if (!archivo) {
+        informar("Selecciona un documento para extraer sus datos.", "error");
+        archivoInput.focus();
+        return;
+      }
+      if (archivo.size > 5 * 1024 * 1024) {
+        informar("El archivo supera los 5 MB. Selecciona un documento más pequeño.", "error");
+        return;
+      }
+      extraer.disabled = true;
+      archivoInput.disabled = true;
+      informar("Leyendo el documento con IA…", "cargando");
+      try {
+        var cuerpo = new FormData();
+        cuerpo.append("archivo", archivo);
+        var respuesta = await fetch(template.dataset.endpoint, {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          body: cuerpo
+        });
+        var datos = await respuesta.json().catch(function () { return null; });
+        if (!respuesta.ok || respuesta.redirected || !datos) {
+          var mensaje = datos && datos.error;
+          if (!mensaje && (respuesta.redirected || respuesta.status === 401 || respuesta.status === 403)) {
+            mensaje = "La sesión o el formulario ya no están vigentes. Recarga la página e inténtalo de nuevo.";
+          }
+          informar(mensaje || "No se pudo extraer el contenido del documento. Puedes completar el formulario manualmente.", "error");
+          return;
+        }
+
+        var completados = 0;
+        // Completa campos vacíos y conserva lo que el administrador escribió.
+        var campos = [
+          [nombreInput, datos.nombre],
+          [descripcion, datos.descripcion],
+          [inicio, datos.fechaInicio],
+          [fin, datos.fechaFinEstimada],
+          [colabInput, datos.colaboradoresRequeridos]
+        ];
+        campos.forEach(function (par) {
+          var campo = par[0], valor = par[1];
+          if (valor == null || valor === "" || (campo.value && !(campo === colabInput && campo.value === campo.defaultValue))) return;
+          campo.value = valor;
+          if (!campo.value) return;
+          completados++;
+          fechas.limpiar(campo);
+          if (campo === inicio || campo === fin) campo.dispatchEvent(new Event("change"));
+        });
+        if (!tech.getValues().length && Array.isArray(datos.tecnologias) && datos.tecnologias.length) {
+          tech.setValues(datos.tecnologias);
+          completados++;
+        }
+        if (Array.isArray(datos.advertencias)) {
+          datos.advertencias.forEach(function (mensaje) {
+            var item = document.createElement("li");
+            item.textContent = mensaje;
+            advertencias.append(item);
+          });
+          advertencias.hidden = advertencias.childElementCount === 0;
+        }
+        informar(completados
+          ? "Borrador listo. Revisa los datos y elige al Project Manager antes de crear el proyecto."
+          : "El documento no aportó datos para completar los campos disponibles. Revisa el borrador.", completados ? "ok" : "cargando");
+      } catch (error) {
+        informar("No se pudo conectar con el extractor. Revisa la conexión e inténtalo de nuevo.", "error");
+      } finally {
+        extraer.disabled = false;
+        archivoInput.disabled = false;
+      }
+    });
+  }
 
   // Paginación de la tabla, encima del filtrado de table-filter.js: no se
   // toca el filtro de Estado, solo se agrega que de los resultados que

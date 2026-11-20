@@ -140,6 +140,12 @@ public class ResumenSemanalService {
         return true;
     }
 
+    /** Prueba solicitada por el administrador. SMTP se llama fuera de la transacción de lectura. */
+    public boolean probarEnvio(Long perfilId) {
+        Correo correo = lectura.execute(t -> construir(perfilId));
+        return correo != null && emailService.probarEnvio(correo);
+    }
+
     // ───────────────────────── contenido ─────────────────────────
 
     private Correo construir(Long perfilId) {

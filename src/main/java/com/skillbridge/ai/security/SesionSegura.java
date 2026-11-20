@@ -2,11 +2,14 @@ package com.skillbridge.ai.security;
 
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.ConfiguracionService;
+import com.skillbridge.ai.service.NotificacionService;
 import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -41,13 +44,18 @@ import java.util.List;
 @Component
 public class SesionSegura {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SesionSegura.class);
+
     private final ConfiguracionService configuracionService;
     private final SecurityContextRepository securityContextRepository;
+    private final NotificacionService notificacionService;
 
     public SesionSegura(ConfiguracionService configuracionService,
-                        SecurityContextRepository securityContextRepository) {
+                        SecurityContextRepository securityContextRepository,
+                        NotificacionService notificacionService) {
         this.configuracionService = configuracionService;
         this.securityContextRepository = securityContextRepository;
+        this.notificacionService = notificacionService;
     }
 
     /** Autoridades según el modelo v7 (ver javadoc de la clase). */
@@ -85,6 +93,13 @@ public class SesionSegura {
         HttpSession sesion = request.getSession(true);
         sesion.setMaxInactiveInterval(minutosDeSesion() * 60);
         sesion.setAttribute(SesionKeys.USUARIO, usuario);
+        if (Roles.ADMINISTRADOR.equals(usuario.getRolOrganizacional())) {
+            try {
+                notificacionService.avisarInicioAdministrador(usuario.getPerfilId());
+            } catch (RuntimeException ex) {
+                LOG.warn("No se pudo guardar el aviso de inicio de sesión del perfil {}.", usuario.getPerfilId(), ex);
+            }
+        }
     }
 
     /**

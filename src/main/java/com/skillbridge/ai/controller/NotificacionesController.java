@@ -132,6 +132,15 @@ public class NotificacionesController {
     @PostMapping("/notificaciones/resumen-semanal/probar")
     public String probarResumenSemanal(@RequestParam String volver, HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        if (Roles.ADMINISTRADOR.equals(sesion.getRolOrganizacional())) {
+            if (sesion.getPerfilId() != null && resumenSemanalService.probarEnvio(sesion.getPerfilId())) {
+                redirectAttributes.addFlashAttribute("exito", "El servidor de correo aceptó el resumen para tu cuenta.");
+            } else {
+                redirectAttributes.addFlashAttribute("error",
+                        "No se pudo enviar el correo de prueba. Revisa la configuración SMTP y los registros del servidor.");
+            }
+            return "redirect:" + rutaSegura(volver);
+        }
         if (sesion.getPerfilId() != null && resumenSemanalService.enviarA(sesion.getPerfilId())) {
             redirectAttributes.addFlashAttribute("exito", "Solicitamos el envío del resumen a tu correo.");
         } else {

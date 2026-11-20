@@ -1,25 +1,29 @@
 package com.skillbridge.ai.controller;
 
-import com.skillbridge.ai.service.SelectorPersonasService;
-import org.springframework.http.ResponseEntity;
-
 import com.skillbridge.ai.dto.ProyectoDetalle;
 import com.skillbridge.ai.dto.ProyectoFila;
 import com.skillbridge.ai.dto.UsuarioSesion;
+import com.skillbridge.ai.service.ExtraccionProyectoIaService;
 import com.skillbridge.ai.service.ProyectoService;
+import com.skillbridge.ai.service.SelectorPersonasService;
 import com.skillbridge.ai.service.TecnologiaCatalogoService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -40,16 +44,19 @@ public class AdminProyectosController {
     private final TecnologiaCatalogoService tecnologiaCatalogoService;
     private final CambioEstadoProyecto cambioEstadoProyecto;
     private final SelectorPersonasService selectorPersonasService;
+    private final ExtraccionProyectoIaService extraccionProyectoIaService;
 
     public AdminProyectosController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder,
                                     TecnologiaCatalogoService tecnologiaCatalogoService,
                                     CambioEstadoProyecto cambioEstadoProyecto,
-                                    SelectorPersonasService selectorPersonasService) {
+                                    SelectorPersonasService selectorPersonasService,
+                                    ExtraccionProyectoIaService extraccionProyectoIaService) {
         this.proyectoService = proyectoService;
         this.shellModelBuilder = shellModelBuilder;
         this.tecnologiaCatalogoService = tecnologiaCatalogoService;
         this.cambioEstadoProyecto = cambioEstadoProyecto;
         this.selectorPersonasService = selectorPersonasService;
+        this.extraccionProyectoIaService = extraccionProyectoIaService;
     }
 
     @GetMapping("/proyectos.html")
@@ -95,6 +102,17 @@ public class AdminProyectosController {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/administrador/proyectos.html";
+    }
+
+    @PostMapping(value = "/proyectos/extraer-ia", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('administrador')")
+    @ResponseBody
+    public ResponseEntity<?> extraerIa(@RequestParam("archivo") MultipartFile archivo) {
+        try {
+            return ResponseEntity.ok(extraccionProyectoIaService.extraer(archivo));
+        } catch (OperacionInvalidaException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
     }
 
     /**

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-
 /**
  * Centro de notificaciones real (tabla "notificaciones" + "tipos_notificacion").
  * No hay ningun generador de notificaciones de fabrica: se crean como efecto
@@ -75,25 +74,25 @@ public class NotificacionService {
         if (perfilId == null) return;
         Optional<TipoNotificacion> tipo = tipoNotificacionRepository.findByCodigo(tipoCodigo);
         if (tipo.isEmpty()) return; // catálogo sin ese código: no se rompe el flujo principal por esto
+        registrarAviso(perfilId, tipo.get(), tipoCodigo, titulo, detalle,
+                enlaceAccion, CODIGO_A_TIPO_EVENTO.get(tipoCodigo));
+    }
+
+    private void registrarAviso(Long perfilId, TipoNotificacion tipo, String tipoCodigo, String titulo,
+                                 String detalle, String enlaceAccion, String preferencia) {
         Notificacion n = new Notificacion();
         n.setPerfilId(perfilId);
-        n.setTipoId(tipo.get().getId());
-        n.setTitulo(titulo);
+        n.setTipoId(tipo.getId());
+        n.setTitulo(titulo.codePointCount(0, titulo.length()) > 150
+                ? titulo.substring(0, titulo.offsetByCodePoints(0, 149)) + "…" : titulo);
         n.setDetalle(detalle);
         n.setEnlaceAccion(enlaceAccion);
         notificacionRepository.save(n);
-        enviarCorreoSiCorresponde(perfilId, tipoCodigo, titulo, detalle, enlaceAccion);
+        enviarCorreoSiCorresponde(perfilId, tipoCodigo, titulo, detalle, enlaceAccion, preferencia);
     }
 
-    /**
-     * Ademas de guardar la notificacion en la campana de la app, manda un
-     * correo real si el tipo de evento no tiene preferencia configurable
-     * (siempre se manda) o si el usuario tiene activado "tambien por correo"
-     * para ese tipo (canal='app_mail' en preferencias_notificacion; sin fila
-     * guardada se manda por defecto, igual que PreferenciaNotificacionService.obtener()).
-     */
-    private void enviarCorreoSiCorresponde(Long perfilId, String tipoCodigo, String titulo, String detalle, String enlaceAccion) {
-        String tipoEvento = CODIGO_A_TIPO_EVENTO.get(tipoCodigo);
+    private void enviarCorreoSiCorresponde(Long perfilId, String tipoCodigo, String titulo, String detalle,
+                                          String enlaceAccion, String tipoEvento) {
         if (tipoEvento != null) {
             boolean tambienMail = preferenciaNotificacionRepository.findByPerfilIdAndTipoEvento(perfilId, tipoEvento)
                     .map(p -> PreferenciaNotificacionService.incluyeCorreo(p.getCanal()))
@@ -117,22 +116,28 @@ public class NotificacionService {
                 }));
     }
 
-    /**
-     * Arma el link absoluto de la notificacion para el correo, a partir del
-     * enlace relativo que ya se guarda con la notificacion (ej. "proyectos.html",
-     * "foro-hilo.html?id=5") - ese mismo enlace ya funciona dentro de la app
-     * porque es relativo a la carpeta del rol del usuario (se resuelve solo en
-     * el navegador). Para el correo hace falta anteponer el dominio y la
-     * carpeta del rol. No se puede reusar AuthService.calcularRolEfectivo(...)
-     * aqui porque AuthService ya depende de NotificacionService (dependencia
-     * circular) - se replica la misma regla (administrador/resource_manager
-     * son puestos fijos; si no, se revisa si tiene una asignacion activa como
-     * project_manager; si no, colaborador), igual que en AuthService.
-     */
+    /** Respeta rutas internas que ya tienen una vista. Añade el rol solo a enlaces relativos. */
     private String construirEnlaceCorreo(Long perfilId, String rolOrganizacional, String enlaceAccion) {
         if (baseUrl == null || baseUrl.isBlank() || enlaceAccion == null || enlaceAccion.isBlank()) return null;
-        String rolEfectivo = calcularRolEfectivoParaCorreo(perfilId, rolOrganizacional);
-        return baseUrl + "/" + Roles.slug(rolEfectivo) + "/" + enlaceAccion;
+        try {
+            var base = java.net.URI.create(baseUrl.trim());
+            var enlace = java.net.URI.create(enlaceAccion);
+            String ruta = enlace.getPath();
+            if (!("https".equalsIgnoreCase(base.getScheme()) || "http".equalsIgnoreCase(base.getScheme()))
+                    || base.getHost() == null || base.getUserInfo() != null
+                    || base.getRawQuery() != null || base.getRawFragment() != null
+                    || enlace.isAbsolute() || enlace.getRawAuthority() != null || ruta == null || ruta.isBlank()
+                    || ruta.startsWith("//") || ruta.contains("\\")
+                    || java.util.Arrays.stream(ruta.split("/")).anyMatch(s -> s.equals("..") || s.equals("."))) {
+                return null;
+            }
+            String basePublica = base.toString().replaceAll("/+$", "");
+            if (ruta.startsWith("/")) return basePublica + enlaceAccion;
+            String rol = calcularRolEfectivoParaCorreo(perfilId, rolOrganizacional);
+            return basePublica + "/" + Roles.slug(rol) + "/" + enlaceAccion;
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     private String calcularRolEfectivoParaCorreo(Long perfilId, String rolOrganizacional) {
@@ -154,6 +159,9 @@ public class NotificacionService {
 
     /** Texto del botón del correo según el tipo de aviso (y, para "info", según a dónde lleva). */
     private String textoBotonPara(String tipoCodigo, String enlace) {
+        if (enlace != null && enlace.startsWith("/administrador/")) {
+            return enlace.endsWith("/auditoria.html") ? "Revisar auditoría" : "Ver usuarios y roles";
+        }
         return switch (tipoCodigo) {
             case "asignacion" -> "Ver proyecto";
             case "foro_respuesta", "foro_cita" -> "Ver respuesta";
@@ -163,7 +171,7 @@ public class NotificacionService {
             default -> {
                 String e = enlace == null ? "" : enlace;
                 if (e.startsWith("chat.html")) yield "Leer mensaje";
-                if (e.startsWith("calendario.html")) yield "Ver calendario";
+                if (e.contains("calendario.html")) yield "Ver calendario";
                 if (e.startsWith("foro")) yield "Ver hilo";
                 yield "Ir a SkillBridge AI";
             }
@@ -172,6 +180,7 @@ public class NotificacionService {
 
     /** Categoría que muestra el correo sobre el título. */
     private String etiquetaPara(String tipoCodigo, String enlace) {
+        if (enlace != null && enlace.startsWith("/administrador/")) return "Administración";
         return switch (tipoCodigo) {
             case "asignacion" -> "Proyectos y asignaciones";
             case "foro_respuesta", "foro_cita" -> "Foros";
@@ -189,24 +198,28 @@ public class NotificacionService {
         };
     }
 
-    /** Registra actividad de cuentas para administradores activos, solo dentro de la plataforma. */
+    /** Actividad de cuentas para administradores activos. Respeta su preferencia de alertas por correo. */
     @Transactional
     public void avisarAdministradores(String tipoCodigo, String titulo, String detalle) {
         var tipo = tipoNotificacionRepository.findByCodigo(tipoCodigo)
                 .or(() -> tipoNotificacionRepository.findByCodigo("info"));
         if (tipo.isEmpty()) return;
-        List<Notificacion> avisos = perfilRepository.listarIdsConCuentaActivaPorRol(Roles.ADMINISTRADOR)
-                .stream()
-                .map(perfilId -> {
-                    Notificacion aviso = new Notificacion();
-                    aviso.setPerfilId(perfilId);
-                    aviso.setTipoId(tipo.get().getId());
-                    aviso.setTitulo(titulo);
-                    aviso.setDetalle(detalle);
-                    aviso.setEnlaceAccion("/administrador/usuarios.html");
-                    return aviso;
-                }).toList();
-        notificacionRepository.saveAll(avisos);
+        for (Long perfilId : perfilRepository.listarIdsConCuentaActivaPorRol(Roles.ADMINISTRADOR)) {
+            registrarAviso(perfilId, tipo.get(), tipoCodigo, titulo, detalle,
+                    "/administrador/usuarios.html", "alertas_criticas");
+        }
+    }
+
+    /** Solo después de completar la sesión, incluido el segundo factor cuando corresponde. */
+    @Transactional
+    public void avisarInicioAdministrador(Long perfilId) {
+        if (perfilId == null) return;
+        var tipo = tipoNotificacionRepository.findByCodigo("info")
+                .or(() -> tipoNotificacionRepository.findByCodigo("alerta"));
+        tipo.ifPresent(t -> registrarAviso(perfilId, t, t.getCodigo(),
+                "Inicio de sesión en Administración",
+                "Se inició sesión en tu cuenta de administrador. Puedes revisar los accesos en Auditoría.",
+                "/administrador/auditoria.html", "alertas_criticas"));
     }
 
     public List<NotificacionFila> listar(UsuarioSesion sesion) {

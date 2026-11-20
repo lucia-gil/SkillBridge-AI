@@ -147,19 +147,19 @@
             <span class="an-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-mail"></use></svg></span>
             <div><h2 id="an-settings-title">Avisos por correo</h2><p th:text="${user.correo}">correo</p></div>
           </div>
-          <p class="an-settings-intro">Elige qué avisos de los tipos configurables también quieres recibir por correo. La actividad administrativa se muestra en la bandeja.</p>
+          <p class="an-settings-intro">La bandeja conserva tus avisos. Activa Alertas críticas para recibir también por correo los avisos de acceso y de actividad administrativa.</p>
           <form th:if="${perfilDisponible}" method="post" th:action="@{/notificaciones/preferencias}">
             <input type="hidden" name="volver" th:value="${volver}">
             <label class="an-switch-row" th:each="tipo : ${tiposEvento}">
               <span><strong th:text="${T(com.skillbridge.ai.service.PreferenciaNotificacionService).etiqueta(tipo)}">Tipo</strong>
-                <small th:text="${tipo == 'resumen_semanal' ? 'Panorama de la plataforma cada lunes a las 8:00 (hora de Lima).' : T(com.skillbridge.ai.service.PreferenciaNotificacionService).descripcion(tipo)}"></small></span>
+                <small th:text="${tipo == 'resumen_semanal' ? 'Panorama de la plataforma cada lunes a las 8:00 (hora de Lima).' : (tipo == 'alertas_criticas' ? 'Inicio de sesión, invitaciones, registros y cambios de acceso.' : T(com.skillbridge.ai.service.PreferenciaNotificacionService).descripcion(tipo))}"></small></span>
               <span class="an-switch"><input type="checkbox" role="switch" th:name="${tipo}" th:checked="${preferencias.get(tipo)}"><span aria-hidden="true"></span></span>
             </label>
             <button type="submit" class="btn btn-primary an-save">Guardar preferencias</button>
           </form>
           <form th:if="${perfilDisponible}" class="an-weekly" method="post" th:action="@{/notificaciones/resumen-semanal/probar}">
             <input type="hidden" name="volver" th:value="${volver}">
-            <button type="submit" class="an-text-action">Enviarme un resumen ahora <span aria-hidden="true">→</span></button>
+            <button type="submit" class="an-text-action">Probar correo con mi resumen <span aria-hidden="true">→</span></button>
           </form>
         </aside>
         </div>

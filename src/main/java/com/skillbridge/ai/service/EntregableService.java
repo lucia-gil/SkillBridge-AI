@@ -141,7 +141,7 @@ public class EntregableService {
             if (Roles.COLABORADOR.equals(a.getRolEnProyecto())) {
                 notificacionService.crear(a.getPerfilId(), "entregable_nuevo", "Nuevo entregable: " + e.getTitulo(),
                         "En \"" + proyecto.getNombre() + "\" · cierra el " + fechaCierre.toLocalDate() + ".",
-                        "entregables.html?proyectoId=" + proyectoId);
+                        "/colaborador/entregables/" + e.getId() + ".html");
             }
         }
         auditoriaService.registrar(actorUsuarioId, "ENTREGABLE_CREADO", "entregable", e.getId(), null, null,
@@ -260,7 +260,7 @@ public class EntregableService {
 
         notificacionService.crear(en.getPerfilId(), "entregable_revisado", "Tu entrega fue revisada: " + e.getTitulo(),
                 calificacion != null ? "Calificación: " + calificacion + "/" + e.getPuntajeMaximo() : "El PM dejó un comentario.",
-                "entregables.html?proyectoId=" + e.getProyectoId());
+                "/colaborador/entregables/" + e.getId() + ".html");
         auditoriaService.registrar(actorUsuarioId, "ENTREGA_CALIFICADA", "entrega", en.getId(), null, null,
                 e.getTitulo() + " · " + (calificacion != null ? calificacion + "/" + e.getPuntajeMaximo() : "sin nota"));
     }
@@ -359,7 +359,7 @@ public class EntregableService {
                         (reenvio ? "Entrega actualizada: " : "Nueva entrega: ") + e.getTitulo(),
                         nombreColaborador + " " + (reenvio ? "actualizó su entrega" : "entregó") + " en \""
                                 + nombreProyecto + "\".",
-                        "entregables.html?proyectoId=" + e.getProyectoId()));
+                        "/project-manager/entregables/" + e.getId() + ".html"));
     }
 
     @Transactional
