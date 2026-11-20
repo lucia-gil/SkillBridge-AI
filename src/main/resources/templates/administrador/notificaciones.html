@@ -41,7 +41,7 @@
       <div class="an-grid">
         <section class="an-card an-inbox" aria-labelledby="an-inbox-title">
           <div class="an-card-head">
-            <div><h2 id="an-inbox-title">Bandeja</h2><p>Ordenada por fecha, de más reciente a más antigua.</p></div>
+            <div><h2 id="an-inbox-title">Bandeja personal</h2><p>Avisos de tu cuenta y cambios de acceso.</p></div>
             <form th:if="${noLeidas > 0}" method="post" th:action="@{/notificaciones/marcar-todas}">
               <input type="hidden" name="volver" th:value="${volver}">
               <button type="submit" class="btn btn-secondary btn-sm">
@@ -71,11 +71,14 @@
             </div>
           </div>
 
+          <p class="an-feedback an-inbox-update" data-an-inbox-update role="status" hidden>
+            Cambió tu bandeja. <a th:href="@{/administrador/notificaciones.html}">Actualizar la lista</a>
+          </p>
           <div class="an-empty" th:if="${notificaciones.isEmpty()}">
             <span class="an-empty-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-bell"></use></svg></span>
             <h3>Aún no tienes avisos</h3>
-            <p>Te avisaremos cuando se registre una cuenta, cambie un rol o se suspenda o reactive una cuenta.</p>
-            <a class="btn btn-secondary btn-sm" th:href="@{/administrador/auditoria.html}">Consultar auditoría</a>
+            <p>Aquí verás invitaciones, registros y cambios de acceso. Mientras tanto, puedes consultar la actividad reciente.</p>
+            <a class="btn btn-secondary btn-sm" href="#actividad-plataforma">Ver actividad reciente</a>
           </div>
           <ul class="an-list" th:unless="${notificaciones.isEmpty()}">
             <li class="an-row" th:each="n : ${notificaciones}" th:id="'aviso-' + ${n.id}"
@@ -121,6 +124,24 @@
           </div>
         </section>
 
+        <div class="an-aside">
+        <aside class="an-card an-activity" id="actividad-plataforma" aria-labelledby="an-activity-title">
+          <div class="an-card-head">
+            <span class="an-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-clock"></use></svg></span>
+            <div><h2 id="an-activity-title">Actividad reciente</h2><p>Últimos eventos de Auditoría</p></div>
+          </div>
+          <ul th:unless="${#lists.isEmpty(actividadReciente)}">
+            <li th:each="evento : ${actividadReciente}">
+              <div><strong th:text="${#strings.capitalize(#strings.toLowerCase(#strings.replace(evento.accion, '_', ' ')))}">Evento</strong>
+                <span th:text="${evento.usuarioLabel}">Usuario</span></div>
+              <time th:text="${evento.fechaLabel}">Fecha</time>
+            </li>
+          </ul>
+          <p class="an-activity-empty" th:if="${#lists.isEmpty(actividadReciente)}">Aún no hay eventos en Auditoría.</p>
+          <a class="an-popover-link" th:href="@{/administrador/auditoria.html}">Abrir auditoría
+            <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-arrow-right"></use></svg>
+          </a>
+        </aside>
         <aside class="an-card an-settings" aria-labelledby="an-settings-title">
           <div class="an-card-head">
             <span class="an-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-mail"></use></svg></span>
@@ -141,6 +162,7 @@
             <button type="submit" class="an-text-action">Enviarme un resumen ahora <span aria-hidden="true">→</span></button>
           </form>
         </aside>
+        </div>
       </div>
     </main>
   </div>

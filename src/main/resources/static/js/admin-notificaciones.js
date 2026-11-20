@@ -3,6 +3,118 @@
 
   const bell = document.querySelector("[data-an-bell]");
   if (bell) {
+    const button = bell.querySelector("summary");
+    const badge = bell.querySelector(".an-badge");
+    const total = bell.querySelector("[data-an-total]");
+    const markAll = bell.querySelector("[data-an-mark-all]");
+    const previews = bell.querySelector("[data-an-previews]");
+    const status = bell.querySelector("[data-an-status]");
+    const inboxUpdate = document.querySelector("[data-an-inbox-update]");
+    const inboxNav = Array.from(document.querySelectorAll(".sidebar-nav-item"))
+      .find((link) => link.getAttribute("href") === bell.dataset.anInbox);
+    const initialTotal = Number(bell.dataset.anUnread) || 0;
+    const signature = () => Array.from(previews.querySelectorAll(".an-preview")).map((link) =>
+      [link.hash.slice(1), link.classList.contains("an-unread")].join(":")).join(",");
+    const initialSignature = signature();
+    let loading = false;
+
+    function updateSidebar(count) {
+      if (!inboxNav) return;
+      let counter = inboxNav.querySelector(".counter-badge");
+      if (count === 0) {
+        if (counter) counter.remove();
+        return;
+      }
+      if (!counter) {
+        counter = document.createElement("span");
+        counter.className = "counter-badge";
+        inboxNav.append(counter);
+      }
+      counter.textContent = count > 99 ? "99+" : count;
+    }
+
+    function preview(aviso) {
+      const link = document.createElement("a");
+      link.className = aviso.leida ? "an-preview" : "an-preview an-unread";
+      link.href = bell.dataset.anInbox + "#aviso-" + aviso.id;
+      const icon = document.createElement("span");
+      icon.className = "an-icon";
+      icon.dataset.tone = aviso.tono;
+      const namespace = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(namespace, "svg");
+      svg.classList.add("icon");
+      svg.setAttribute("aria-hidden", "true");
+      const use = document.createElementNS(namespace, "use");
+      use.setAttribute("href", bell.dataset.anIcons + "#" + aviso.icono);
+      svg.append(use);
+      icon.append(svg);
+
+      const copy = document.createElement("span");
+      copy.className = "an-preview-copy";
+      const title = document.createElement("strong");
+      title.textContent = aviso.titulo;
+      const date = document.createElement("span");
+      date.textContent = aviso.fecha;
+      copy.append(title, date);
+      link.append(icon, copy);
+      if (!aviso.leida) {
+        const dot = document.createElement("span");
+        dot.className = "an-dot";
+        dot.setAttribute("aria-label", "Sin leer");
+        link.append(dot);
+      }
+      return link;
+    }
+
+    async function refresh() {
+      if (loading || document.hidden || !bell.dataset.anSource) return;
+      loading = true;
+      try {
+        const response = await fetch(bell.dataset.anSource, {
+          headers: { Accept: "application/json" },
+          cache: "no-store"
+        });
+        if (!response.ok || response.redirected) throw new Error("Bandeja no disponible");
+        const { sinLeer, avisos } = await response.json();
+        const summary = sinLeer > 0 ? sinLeer + " sin leer" : "Estás al día";
+        badge.hidden = sinLeer === 0;
+        badge.textContent = sinLeer > 99 ? "99+" : sinLeer;
+        button.setAttribute("aria-label", sinLeer > 0 ? "Notificaciones: " + summary : "Notificaciones");
+        total.textContent = summary;
+        markAll.hidden = sinLeer === 0;
+        updateSidebar(sinLeer);
+        status.hidden = true;
+
+        const latestSignature = avisos.map((aviso) => "aviso-" + aviso.id + ":" + !aviso.leida).join(",");
+        if (signature() !== latestSignature) {
+          const focused = previews.contains(document.activeElement) ? document.activeElement.hash : null;
+          if (avisos.length) {
+            previews.replaceChildren(...avisos.map(preview));
+          } else {
+            const empty = document.createElement("p");
+            empty.className = "an-preview-empty";
+            empty.textContent = "Aún no tienes avisos. Puedes consultar la actividad de la plataforma desde la bandeja.";
+            previews.replaceChildren(empty);
+          }
+          if (focused) {
+            const restored = Array.from(previews.querySelectorAll("a")).find((link) => link.hash === focused);
+            (restored || button).focus();
+          }
+        }
+        if (inboxUpdate) {
+          inboxUpdate.hidden = sinLeer === initialTotal && initialSignature === latestSignature;
+        }
+      } catch {
+        status.textContent = "No se pudo actualizar. Cierra y vuelve a abrir la campana para reintentar.";
+        status.hidden = false;
+      } finally {
+        loading = false;
+      }
+    }
+
+    bell.addEventListener("toggle", () => { if (bell.open) refresh(); });
+    window.setInterval(refresh, 45000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
     document.addEventListener("click", (event) => {
       if (bell.open && !bell.contains(event.target)) bell.open = false;
     });
@@ -93,6 +205,13 @@
     reset();
     render();
     search.focus();
+  });
+  if (bell) bell.addEventListener("click", (event) => {
+    const link = event.target.closest(".an-preview");
+    if (link && link.hash === window.location.hash && link.pathname === window.location.pathname) {
+      event.preventDefault();
+      openLinkedNotice();
+    }
   });
   window.addEventListener("hashchange", openLinkedNotice);
   render();

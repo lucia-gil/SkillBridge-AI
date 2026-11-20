@@ -270,6 +270,8 @@ public class UsuarioService {
         auditoriaService.registrar(actorId, "USUARIO_INVITADO", "correo_autorizado", acceso.getId(),
                 null, "{\"correo\":\"" + correo + "\",\"rol_organizacional\":" + (rolAsignado == null ? "null" : "\"" + rolAsignado + "\"") + "}",
                 "Se autorizó el correo " + correo + " para autoregistro como " + etiquetaRol(rolAsignado) + ".");
+        notificacionService.avisarAdministradores("info", "Invitación registrada",
+                "Se autorizó una cuenta con el rol de " + etiquetaRol(rolAsignado) + ". Revisa la invitación en Usuarios y roles.");
 
         // Correo real al invitado: todavía no existe su perfil (recién se
         // crea al completar /auth/registro.html), así que se manda directo

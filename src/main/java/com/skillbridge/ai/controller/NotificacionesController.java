@@ -3,6 +3,9 @@ package com.skillbridge.ai.controller;
 import com.skillbridge.ai.dto.NotificacionFila;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.NotificacionService;
+import com.skillbridge.ai.service.AuditoriaService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import com.skillbridge.ai.service.PreferenciaNotificacionService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.Roles;
@@ -30,15 +33,17 @@ public class NotificacionesController {
     private final PreferenciaNotificacionService preferenciaNotificacionService;
     private final com.skillbridge.ai.service.ResumenSemanalService resumenSemanalService;
     private final ShellModelBuilder shellModelBuilder;
+    private final AuditoriaService auditoriaService;
 
     public NotificacionesController(NotificacionService notificacionService,
                                     PreferenciaNotificacionService preferenciaNotificacionService,
                                     com.skillbridge.ai.service.ResumenSemanalService resumenSemanalService,
-                                    ShellModelBuilder shellModelBuilder) {
+                                    ShellModelBuilder shellModelBuilder, AuditoriaService auditoriaService) {
         this.notificacionService = notificacionService;
         this.preferenciaNotificacionService = preferenciaNotificacionService;
         this.resumenSemanalService = resumenSemanalService;
         this.shellModelBuilder = shellModelBuilder;
+        this.auditoriaService = auditoriaService;
     }
 
     @GetMapping({
@@ -74,6 +79,11 @@ public class NotificacionesController {
         model.addAttribute("preferencias", preferencias);
         model.addAttribute("tiposEvento", PreferenciaNotificacionService.TIPOS_EVENTO);
         model.addAttribute("volver", volver);
+        if (Roles.ADMINISTRADOR.equals(sesion.getRolOrganizacional())
+                && Roles.ADMINISTRADOR.equals(sesion.getRolEfectivo())) {
+            model.addAttribute("actividadReciente", auditoriaService.buscar(null, null, "", "",
+                    PageRequest.of(0, 4, Sort.by(Sort.Direction.DESC, "fecha", "id"))).getContent());
+        }
         return Roles.slug(sesion.getRolEfectivo()) + "/notificaciones";
     }
 
