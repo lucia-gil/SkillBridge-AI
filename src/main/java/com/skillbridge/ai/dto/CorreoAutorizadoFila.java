@@ -4,7 +4,7 @@ package com.skillbridge.ai.dto;
  * Fila de la sección "Correos autorizados" (administrador/usuarios.html).
  * Modelo v7 (fase 3): incluye el rol con el que se invitó.
  */
-public record CorreoAutorizadoFila(Long id, String correo, String fechaAutorizacion, boolean utilizado, String rolAsignado) {
+public record CorreoAutorizadoFila(Long id, String correo, String fechaAutorizacion, boolean utilizado, String rolAsignado, String envio) {
 
     public String estadoLabel() {
         return utilizado ? "Registrado" : "Pendiente";

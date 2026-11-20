@@ -25,6 +25,14 @@ public interface AuditoriaLogRepository extends JpaRepository<AuditoriaLog, Long
     Page<AuditoriaLog> buscar(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta,
                              @Param("usuario") String usuario, @Param("accion") String accion, Pageable pageable);
 
+    @Query("select a.accion, count(a) from AuditoriaLog a where " +
+            "(:desde is null or a.fecha >= :desde) and (:hasta is null or a.fecha < :hasta) " +
+            "and (:accion = '' or lower(a.accion) like lower(concat('%', :accion, '%'))) " +
+            "and (:usuario = '' or exists (select u.id from Usuario u where u.id = a.usuarioId " +
+            "and lower(u.nombreCompleto) like lower(concat('%', :usuario, '%')))) group by a.accion")
+    List<Object[]> contarPorAccion(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta,
+                                  @Param("usuario") String usuario, @Param("accion") String accion);
+
     long countByFechaAfter(java.time.LocalDateTime desde);
 
     @Query("select a.usuarioId, count(a) from AuditoriaLog a where a.usuarioId is not null group by a.usuarioId order by count(a) desc")

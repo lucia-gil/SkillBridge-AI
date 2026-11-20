@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PerfilRepository extends JpaRepository<Perfil, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Perfil p where p.id=:id")
+    Optional<Perfil> bloquear(@Param("id") Long id);
+
 
     Optional<Perfil> findByUsuarioId(Long usuarioId);
 

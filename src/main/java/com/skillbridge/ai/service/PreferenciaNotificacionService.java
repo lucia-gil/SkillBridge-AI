@@ -46,9 +46,19 @@ public class PreferenciaNotificacionService {
         return "app_mail".equals(canal) || "mail".equals(canal) || "solo_mail".equals(canal);
     }
 
+    public static List<String> tiposPara(String rol) {
+        if ("administrador".equals(rol)) return List.of("alertas_criticas", "resumen_semanal");
+        return TIPOS_EVENTO;
+    }
+
     @Transactional
     public void actualizar(Long perfilId, Map<String, Boolean> seleccion) {
-        for (String tipoEvento : TIPOS_EVENTO) {
+        actualizar(perfilId, seleccion, TIPOS_EVENTO);
+    }
+
+    @Transactional
+    public void actualizar(Long perfilId, Map<String, Boolean> seleccion, List<String> tiposVisibles) {
+        for (String tipoEvento : tiposVisibles) {
             boolean tambienMail = Boolean.TRUE.equals(seleccion.get(tipoEvento));
             PreferenciaNotificacion pref = repository.findByPerfilIdAndTipoEvento(perfilId, tipoEvento)
                     .orElseGet(() -> {

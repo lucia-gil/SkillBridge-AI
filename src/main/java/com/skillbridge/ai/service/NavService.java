@@ -28,6 +28,8 @@ public class NavService {
                 items.add(new NavItem("Proyectos", "icon-folder", "proyectos.html"));
                 items.add(new NavItem("Mensajes", "icon-message-circle", "chat.html"));
                 items.add(new NavItem("Reportes globales", "icon-bar-chart", "reportes.html"));
+                items.add(new NavItem("Asistente IA", "icon-sparkles", "asistente-ia.html"));
+                items.add(new NavItem("Seguridad e incidentes", "icon-shield", "seguridad.html"));
                 items.add(new NavItem("Auditoría", "icon-shield", "auditoria.html"));
                 items.add(new NavItem("Notificaciones", "icon-bell", "notificaciones.html"));
                 items.add(new NavItem("Configuración", "icon-sliders", "configuracion.html"));

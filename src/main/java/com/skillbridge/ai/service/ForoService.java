@@ -566,7 +566,14 @@ public class ForoService {
      * (ya validado por exigirMiembro) puede pedir el resumen.
      */
     @Transactional
+    public boolean resumenesActivos() {
+        return configuracionGlobalRepository.findById("resumenes_ia_foros_activos")
+                .map(c -> Boolean.parseBoolean(c.getValor())).orElse(false);
+    }
+
+    @org.springframework.transaction.annotation.Transactional
     public String generarResumenIa(Long hiloId, Long viewerPerfilId, boolean viewerEsAdmin) {
+        if (!resumenesActivos()) throw new OperacionInvalidaException("Generación de resúmenes desactivada.");
         ForoPublicacion hilo = foroPublicacionRepository.buscarHiloConDetalle(hiloId)
                 .filter(h -> h.getPublicacionPadreId() == null)
                 .orElseThrow(() -> new OperacionInvalidaException("El hilo ya no existe."));

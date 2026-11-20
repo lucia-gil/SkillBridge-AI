@@ -32,6 +32,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SkillBridgeAuthenticationProvider implements AuthenticationProvider {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.skillbridge.ai.service.EmergenciaService emergencia;
+
 
     private final AuthService authService;
 
@@ -54,6 +57,9 @@ public class SkillBridgeAuthenticationProvider implements AuthenticationProvider
             // intentos) lo muestra LoginFallidoHandler en la pantalla de login.
             throw new BadCredentialsException(resultado.getMensajeError());
         }
+        var portal = emergencia.estado();
+        if (portal.activo() && !portal.responsable().equals(resultado.getUsuarioSesion().getUsuarioId()))
+            throw new BadCredentialsException("Portal en mantenimiento.");
         return SesionSegura.autenticacion(resultado.getUsuarioSesion());
     }
 

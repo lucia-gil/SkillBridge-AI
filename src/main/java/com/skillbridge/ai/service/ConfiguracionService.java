@@ -64,6 +64,64 @@ public class ConfiguracionService {
         return Math.max(1, Math.min(LIMITE_CARGA_MAXIMO, configurado));
     }
 
+    public boolean activo(String clave) {
+        return repository.findById(clave).map(c -> Boolean.parseBoolean(c.getValor())).orElse(false);
+    }
+
+    private static final Map<String, int[]> RANGOS = Map.of(
+            "expiracion_sesion_minutos", new int[]{1, Integer.MAX_VALUE / 60},
+            "limite_carga_colaborador", new int[]{1, 100},
+            "maximo_proyectos_simultaneos", new int[]{1, Integer.MAX_VALUE},
+            "auto_aprobar_asignaciones_menores_a", new int[]{0, 100},
+            "peso_matching_habilidades", new int[]{0, 100},
+            "peso_matching_experiencia", new int[]{0, 100},
+            "peso_matching_disponibilidad", new int[]{0, 100},
+            "foro_max_ediciones", new int[]{0, 20});
+
+    @Transactional
+    public void guardarFormulario(Map<String, String> params, Long usuario, Long perfil) {
+        Map<String, String> cambios = new java.util.TreeMap<>();
+        int pesos = 0;
+        for (var entry : RANGOS.entrySet()) {
+            String clave = entry.getKey();
+            int numero;
+            try {
+                numero = Integer.parseInt(params.get(clave));
+            } catch (NumberFormatException ex) {
+                throw new OperacionInvalidaException("Se requiere un entero para " + clave);
+            }
+            int[] rango = entry.getValue();
+            if (numero < rango[0] || numero > rango[1])
+                throw new OperacionInvalidaException("Valor fuera de rango para " + clave);
+            if (clave.startsWith("peso_matching_")) pesos += numero;
+            cambios.put(clave, Integer.toString(numero));
+        }
+        if (pesos == 0) throw new OperacionInvalidaException("La suma de los pesos debe ser mayor que cero.");
+        String dominio = params.getOrDefault("dominio_correo_permitido", "").trim();
+        if (!params.containsKey("dominio_correo_permitido")) throw new OperacionInvalidaException("Falta el dominio.");
+        if (!dominio.isEmpty() && !"*".equals(dominio)) {
+            String etiqueta = "[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?";
+            for (String parte : dominio.split(",", -1)) {
+                if (dominio.length() > 255 || !parte.trim().matches(etiqueta + "(?:[.]" + etiqueta + ")+"))
+                    throw new OperacionInvalidaException("Dominio de correo inválido.");
+            }
+        }
+        cambios.put("dominio_correo_permitido", dominio);
+        for (String clave : java.util.List.of("asistente_ia_habilitado", "resumenes_ia_foros_activos",
+                "doble_factor_obligatorio_admin")) {
+            String valor = params.getOrDefault(clave, "false");
+            if (!java.util.Set.of("on", "true", "false").contains(valor))
+                throw new OperacionInvalidaException("Interruptor inválido para " + clave);
+            cambios.put(clave, String.valueOf(!valor.equals("false")));
+        }
+        Map<String, ConfiguracionGlobal> actual = new HashMap<>();
+        repository.bloquearFormulario().forEach(c -> actual.put(c.getClave(), c));
+        for (var cambio : cambios.entrySet()) {
+            if (!cambio.getValue().equals(valor(actual, cambio.getKey(), null)))
+                actualizar(cambio.getKey(), cambio.getValue(), usuario, perfil);
+        }
+    }
+
     @Transactional
     public void actualizar(String clave, String nuevoValor, Long actorUsuarioId, Long actorPerfilId) {
         ConfiguracionGlobal c = repository.findById(clave)

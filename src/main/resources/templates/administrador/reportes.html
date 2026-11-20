@@ -105,7 +105,7 @@
             <tr th:each="o : ${ocupacion}" data-reportes-ocupacion-row>
               <td class="cell-person"><span class="avatar avatar-sm" th:text="${o.iniciales}">MR</span><span class="cell-person-name" th:text="${o.nombre}">Nombre</span></td>
               <td th:text="${o.cargo}">Cargo</td>
-              <td class="insight-load" th:attr="data-load=${o.promedio}"><span th:text="${o.promedio} + '%'">0%</span><div class="insight-track"><i th:style="'width:' + ${o.promedio > 100 ? 100 : (o.promedio < 0 ? 0 : o.promedio)} + '%'"></i></div></td>
+              <td class="insight-load" th:attr="data-load=${o.promedio},data-limite=${o.limite}"><span th:text="${o.promedio} + '%'">0%</span><div class="insight-track"><i th:style="'width:' + ${o.promedio > 100 ? 100 : (o.promedio < 0 ? 0 : o.promedio)} + '%'"></i></div></td>
               <td><span class="badge" th:classappend="${o.estadoBadgeClass}" th:text="${o.estadoLabel}">Estado</span></td>
             </tr>
             </tbody>

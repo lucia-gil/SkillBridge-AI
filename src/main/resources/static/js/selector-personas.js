@@ -48,7 +48,7 @@
     var verbo = modoPm ? "Elegir" : proponer ? "Proponer" : "Asignar";
     var estado = {
       q: "", habilidades: [], cargo: "", disponibleMin: "", experienciaMin: "",
-      soloConCapacidad: false, dedicacion: modoPm ? 20 : 50, orden: modoPm ? "disponibilidad" : "match", pagina: 1
+      soloConCapacidad: false, dedicacion: modoPm ? (opts.dedicacion || 20) : 50, orden: modoPm ? "disponibilidad" : "match", pagina: 1
     };
     var seleccion = {};          // perfilId -> candidato
     var ultima = null;           // última respuesta del servidor

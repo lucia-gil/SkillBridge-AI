@@ -36,6 +36,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class AsistenteConversacionService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private ConfiguracionService configuracion;
+
 
     public static final int MAX_CARACTERES = 2000;
     private static final int TURNOS_DE_MEMORIA = 12;
@@ -82,6 +85,13 @@ public class AsistenteConversacionService {
         this.mensajeRepository = mensajeRepository;
         this.contextoService = contextoService;
         this.asistenteIaService = asistenteIaService;
+    }
+
+    public String motivoIndisponible() {
+        if (!agenteHabilitado) return "El servidor ha desactivado el agente.";
+        if (!configuracion.activo("asistente_ia_habilitado")) return "Administración ha desactivado el asistente.";
+        if (!asistenteIaService.tieneClaude()) return "Falta configurar el proveedor de IA.";
+        return "";
     }
 
     public static String rolDe(UsuarioSesion s) {
@@ -171,6 +181,8 @@ public class AsistenteConversacionService {
     }
 
     public Respuesta enviar(UsuarioSesion s, Long conversacionId, String texto, List<MultipartFile> archivos) {
+        String motivo = motivoIndisponible();
+        if (!motivo.isEmpty()) throw new OperacionInvalidaException(motivo);
         String mensaje = texto == null ? "" : texto.trim();
         List<MultipartFile> validos = archivos == null ? List.of() : archivos.stream().filter(f -> f != null && !f.isEmpty()).toList();
         if (!validos.isEmpty()) throw new OperacionInvalidaException("Los adjuntos del asistente están deshabilitados. Escribe la información necesaria sin secretos.");

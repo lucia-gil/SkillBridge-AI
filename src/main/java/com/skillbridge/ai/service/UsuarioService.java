@@ -35,6 +35,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class UsuarioService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcInvitaciones;
+
 
     private final UsuarioRepository usuarioRepository;
     private final PerfilRepository perfilRepository;
@@ -261,6 +264,7 @@ public class UsuarioService {
         }
         CorreoAutorizado acceso = new CorreoAutorizado();
         acceso.setCorreo(correo);
+        acceso.setEstadoEnvio("En cola");
         acceso.setAutorizadoPorId(actorId);
         acceso.setOrigenCarga("individual");
         acceso.setUtilizado(false);
@@ -292,7 +296,8 @@ public class UsuarioService {
                 "Un administrador autorizó tu correo (" + correo + ") para crear tu cuenta " + comoRol + ".\n\n"
                         + "Completa tu registro con el botón. Usa este mismo correo: es el único autorizado para tu cuenta. "
                         + "Cuando inicies sesión verás directamente tu panel.",
-                linkRegistro, "Crear mi cuenta", false));
+                linkRegistro, "Crear mi cuenta", false), ok -> jdbcInvitaciones.update(
+                        "UPDATE correos_autorizados SET estado_envio=? WHERE id=?", ok ? "Aceptado por SMTP" : "Fallo SMTP", acceso.getId()));
     }
 
     // ─────────────── CRUD de Correos autorizados (lista blanca de registro) ───────────────
@@ -305,7 +310,8 @@ public class UsuarioService {
                 .map(c -> new com.skillbridge.ai.dto.CorreoAutorizadoFila(
                         c.getId(), c.getCorreo(),
                         c.getFechaAutorizacion() != null ? c.getFechaAutorizacion().format(FORMATO_FECHA_AUTORIZACION) : "—",
-                        Boolean.TRUE.equals(c.getUtilizado()), c.getRolAsignado()))
+                        Boolean.TRUE.equals(c.getUtilizado()), c.getRolAsignado(),
+                        c.getEstadoEnvio() == null ? "Autorizado · envío desconocido" : c.getEstadoEnvio()))
                 .collect(Collectors.toList());
     }
 

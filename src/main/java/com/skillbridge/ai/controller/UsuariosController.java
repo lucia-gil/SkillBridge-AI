@@ -58,7 +58,7 @@ public class UsuariosController {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             usuarioService.invitar(correo, rol, sesion.getUsuarioId());
-            redirectAttributes.addFlashAttribute("exito", "Invitación enviada a " + correo + ".");
+            redirectAttributes.addFlashAttribute("exito", "Correo autorizado. Invitación en cola para " + correo + ".");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }

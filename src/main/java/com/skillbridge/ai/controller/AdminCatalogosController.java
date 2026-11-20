@@ -37,6 +37,7 @@ public class AdminCatalogosController {
         shellModelBuilder.aplicar(model, sesion, "catalogos.html", "Catálogos técnicos",
                 "Tipos de notificación, evento y audiencia");
 
+        model.addAttribute("tiposSistema", CatalogoTecnicoService.TIPOS_SISTEMA);
         model.addAttribute("tiposNotificacion", catalogoTecnicoService.listarTiposNotificacion());
         model.addAttribute("tiposEvento", catalogoTecnicoService.listarTiposEvento());
         model.addAttribute("tiposAudiencia", catalogoTecnicoService.listarTiposAudiencia());
@@ -126,6 +127,13 @@ public class AdminCatalogosController {
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
+        return "redirect:/administrador/catalogos.html";
+    }
+
+    @PostMapping("/catalogos/audiencia/{id}/politica")
+    public String politica(@PathVariable Long id, @RequestParam String politica, HttpSession session) {
+        var actor = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        catalogoTecnicoService.politicaAudiencia(id, politica, actor.getUsuarioId());
         return "redirect:/administrador/catalogos.html";
     }
 

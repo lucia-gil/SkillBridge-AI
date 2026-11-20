@@ -56,7 +56,7 @@
               <p class="field-hint" id="expiracion_sesion_minutos-hint">Se aplica al iniciar sesión.</p>
             </div>
             <label class="cfg-toggle-row" for="doble_factor_obligatorio_admin">
-              <span><strong>Doble factor obligatorio para administradores</strong><small>La preferencia se guarda. La verificación actual se activa por cuenta.</small></span>
+              <span><strong>Doble factor obligatorio para administradores</strong><small>Se exige desde la siguiente solicitud, incluso en sesiones abiertas.</small></span>
               <span class="cfg-switch">
                 <input type="checkbox" role="switch" id="doble_factor_obligatorio_admin" name="doble_factor_obligatorio_admin" th:checked="${cfg.get('doble_factor_obligatorio_admin')?.valor == 'true'}">
                 <span aria-hidden="true"></span>
@@ -81,7 +81,7 @@
             <div class="field cfg-field">
               <label class="field-label" for="auto_aprobar_asignaciones_menores_a">Umbral de autoaprobación (%)</label>
               <input class="input" id="auto_aprobar_asignaciones_menores_a" name="auto_aprobar_asignaciones_menores_a" type="number" min="0" max="100" aria-describedby="auto_aprobar_asignaciones_menores_a-hint" th:value="${cfg.get('auto_aprobar_asignaciones_menores_a')?.valor}">
-              <p class="field-hint" id="auto_aprobar_asignaciones_menores_a-hint">Este valor se guarda como referencia. El flujo actual sigue requiriendo aprobación.</p>
+              <p class="field-hint" id="auto_aprobar_asignaciones_menores_a-hint">Cero desactiva la regla. Solo se intenta asignar por debajo de este porcentaje.</p>
             </div>
               </div>
             </section>
@@ -106,14 +106,14 @@
             </div>
             </div>
             <label class="cfg-toggle-row" for="asistente_ia_habilitado">
-              <span><strong>Habilitar el asistente IA</strong><small>Preferencia guardada. La disponibilidad del agente depende de la configuración del servidor.</small></span>
+              <span><strong>Habilitar el asistente IA</strong><small th:text="${proveedorConfigurado ? 'Proveedor configurado · conexión sin comprobar' : 'Proveedor sin configurar'}"></small><small th:text="${motivo.isEmpty() ? 'Asistente habilitado' : motivo}"></small><small>Afecta al siguiente turno y a las confirmaciones pendientes.</small></span>
               <span class="cfg-switch">
                 <input type="checkbox" role="switch" id="asistente_ia_habilitado" name="asistente_ia_habilitado" th:checked="${cfg.get('asistente_ia_habilitado')?.valor == 'true'}">
                 <span aria-hidden="true"></span>
               </span>
             </label>
             <label class="cfg-toggle-row" for="resumenes_ia_foros_activos">
-              <span><strong>Resúmenes con IA en foros</strong><small>Preferencia guardada para resúmenes.</small></span>
+              <span><strong>Resúmenes con IA en foros</strong><small>Afecta a las nuevas generaciones. Se conservan los resúmenes anteriores.</small></span>
               <span class="cfg-switch">
                 <input type="checkbox" role="switch" id="resumenes_ia_foros_activos" name="resumenes_ia_foros_activos" th:checked="${cfg.get('resumenes_ia_foros_activos')?.valor == 'true'}">
                 <span aria-hidden="true"></span>
@@ -136,12 +136,12 @@
               <div class="cfg-card-body">
             <div class="field cfg-field">
               <label class="field-label" for="idioma_por_defecto">Idioma predeterminado</label>
-              <input class="input" id="idioma_por_defecto" name="idioma_por_defecto" maxlength="255" aria-describedby="idioma_por_defecto-hint" th:value="${cfg.get('idioma_por_defecto')?.valor}">
+              <input class="input" id="idioma_por_defecto" value="Español" readonly>
               <p class="field-hint" id="idioma_por_defecto-hint">La interfaz actual está en español.</p>
             </div>
             <div class="field cfg-field">
               <label class="field-label" for="zona_horaria_defecto">Zona horaria predeterminada</label>
-              <input class="input" id="zona_horaria_defecto" name="zona_horaria_defecto" maxlength="255" aria-describedby="zona_horaria_defecto-hint" th:value="${cfg.get('zona_horaria_defecto')?.valor}">
+              <input class="input" id="zona_horaria_defecto" th:value="${zonaServidor}" readonly>
               <p class="field-hint" id="zona_horaria_defecto-hint">Las fechas mostradas usan la zona horaria del servidor.</p>
             </div>
               </div>

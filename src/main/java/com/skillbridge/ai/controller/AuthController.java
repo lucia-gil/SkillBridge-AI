@@ -104,6 +104,7 @@ public class AuthController {
             // Código correcto: recién aquí queda autenticado en Spring Security
             // (sesión nueva + SecurityContext guardado). Ver SesionSegura.
             sesionSegura.iniciarSesion(request, response, pendiente);
+            request.getSession().setAttribute(com.skillbridge.ai.security.PortalFilter.SEGUNDO_FACTOR, true);
             return "redirect:" + homeDe(pendiente);
         }
         Object n = session.getAttribute(INTENTOS_2FA);

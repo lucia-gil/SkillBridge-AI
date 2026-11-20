@@ -52,6 +52,7 @@ public class AuditoriaService {
         try {
             auditoriaLogRepository.save(log);
         } catch (Exception ex) {
+            if ("CONFIGURACION_ACTUALIZADA".equals(accion)) throw ex;
             System.err.println("[AuditoriaService] No se pudo registrar auditoria (" + accion + "): " + ex.getMessage());
         }
     }
@@ -105,6 +106,15 @@ public class AuditoriaService {
                 .map(log -> new AuditoriaFila(
                         log.getFecha() == null ? "" : log.getFecha().format(FORMATO),
                         etiquetaUsuario(log.getUsuarioId(), nombres), log.getAccion(), log.getDetalle()));
+    }
+
+    public Map<String, Long> severidades(LocalDateTime desde, LocalDateTime hasta, String usuario, String accion) {
+        Map<String, Long> totales = new HashMap<>();
+        for (Object[] fila : auditoriaLogRepository.contarPorAccion(desde, hasta, usuario.trim(), accion.trim())) {
+            String nivel = new AuditoriaFila("", null, (String) fila[0], null).getSeveridadCrudo();
+            totales.merge(nivel, ((Number) fila[1]).longValue(), Long::sum);
+        }
+        return totales;
     }
 
     private String etiquetaUsuario(Long usuarioId, Map<Long, String> cache) {

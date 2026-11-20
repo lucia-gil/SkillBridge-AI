@@ -26,7 +26,7 @@ public interface EventoProyectoRepository extends JpaRepository<EventoProyecto, 
      * para consulta, junto a su agenda personal.
      */
     @Query("select e from EventoProyecto e join fetch e.tipo t join fetch e.proyecto p join fetch e.audiencia a " +
-            "where a.codigo = 'todos' and t.codigo in ('hito', 'entregable') " +
+            "where (a.codigo = 'todos' or (a.codigo not in ('solo_pm','solo_colaboradores') and a.politica='todos')) and t.codigo in ('hito', 'entregable') " +
             "and p.estado in ('planificacion', 'activo', 'en_pausa') order by e.fechaInicio asc")
     List<EventoProyecto> hitosYEntregablesEnCurso();
 }

@@ -156,6 +156,7 @@
               <span class="an-switch"><input type="checkbox" role="switch" th:name="${tipo}" th:checked="${preferencias.get(tipo)}"><span aria-hidden="true"></span></span>
             </label>
             <button type="submit" class="btn btn-primary an-save">Guardar preferencias</button>
+            <p>Las reglas de Seguridad e incidentes generan avisos obligatorios para los administradores activos.</p>
           </form>
           <form th:if="${perfilDisponible}" class="an-weekly" method="post" th:action="@{/notificaciones/resumen-semanal/probar}">
             <input type="hidden" name="volver" th:value="${volver}">

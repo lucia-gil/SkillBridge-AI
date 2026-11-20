@@ -31,6 +31,11 @@ public class CorreoAutorizado {
     @Column(name = "fecha_autorizacion", insertable = false, updatable = false)
     private LocalDateTime fechaAutorizacion;
 
+    @jakarta.persistence.Column(name="estado_envio")
+    private String estadoEnvio;
+    public String getEstadoEnvio() { return estadoEnvio; }
+    public void setEstadoEnvio(String estadoEnvio) { this.estadoEnvio = estadoEnvio; }
+
     @Column(name = "fecha_uso")
     private LocalDateTime fechaUso;
 

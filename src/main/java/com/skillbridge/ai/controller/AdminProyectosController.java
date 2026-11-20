@@ -76,6 +76,7 @@ public class AdminProyectosController {
         shellModelBuilder.aplicar(model, sesion, "proyectos.html", "Proyectos",
                 "Vista global de los " + proyectos.size() + " proyectos de la organización");
 
+        model.addAttribute("cargaPm", ProyectoService.CARGA_PM_POR_DEFECTO);
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("detalles", detalles);
         model.addAttribute("catalogoTecnologias", tecnologiaCatalogoService.catalogo());
@@ -90,13 +91,14 @@ public class AdminProyectosController {
                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
                          @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFinEstimada,
                          @RequestParam(defaultValue = "0") int colaboradoresRequeridos,
-                         @RequestParam Long pmPerfilId,
+                         @RequestParam Long pmPerfilId, @RequestParam(required=false) Integer dedicacion,
                          HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
             List<String> lista = tecnologiaCatalogoService.normalizar(ProyectosPmController.separarTecnologias(tecnologias), List.of());
             proyectoService.crear(nombre, descripcion, lista, fechaInicio, fechaFinEstimada,
-                    colaboradoresRequeridos, pmPerfilId, sesion.getUsuarioId(), null);
+                    colaboradoresRequeridos, pmPerfilId, sesion.getUsuarioId(), null,
+                    dedicacion == null ? ProyectoService.CARGA_PM_POR_DEFECTO : dedicacion);
             redirectAttributes.addFlashAttribute("exito", "Proyecto \"" + nombre.trim() + "\" creado.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
@@ -143,11 +145,12 @@ public class AdminProyectosController {
     @ResponseBody
     public ResponseEntity<?> candidatosPm(
                                               @RequestParam(required = false) String q,
+                                              @RequestParam(required=false) Integer dedicacion,
                                               @RequestParam(defaultValue = "match") String orden,
                                               @RequestParam(defaultValue = "false") boolean soloConCapacidad,
                                               @RequestParam(defaultValue = "1") int pagina) {
         return ResponseEntity.ok(selectorPersonasService.buscarParaPm(null, new SelectorPersonasService.Filtros(q, null, null, null, null,
-                    soloConCapacidad, ProyectoService.CARGA_PM_POR_DEFECTO, orden, pagina)));
+                    soloConCapacidad, dedicacion == null ? ProyectoService.CARGA_PM_POR_DEFECTO : dedicacion, orden, pagina)));
     }
 
     // Modelo v7: el Administrador NO asigna ni finaliza asignaciones (lo

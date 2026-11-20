@@ -67,6 +67,7 @@ public abstract class ForoHiloBaseController {
 
         shellModelBuilder.aplicar(model, sesion, "foros.html", detalle.getTitulo(),
                 "Foros › " + detalle.getProyectoNombre());
+        model.addAttribute("resumenesActivos", foroService.resumenesActivos());
         model.addAttribute("hilo", detalle);
         model.addAttribute("topicos", foroService.topicos());
         model.addAttribute("baseUrl", "/" + base());

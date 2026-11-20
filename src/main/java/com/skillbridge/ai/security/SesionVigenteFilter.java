@@ -46,7 +46,14 @@ public class SesionVigenteFilter extends OncePerRequestFilter {
     private final AuthService authService;
     private final SesionSegura sesionSegura;
 
-    public SesionVigenteFilter(UsuarioRepository usuarioRepository, AuthService authService, SesionSegura sesionSegura) {
+    private final com.skillbridge.ai.service.ConfiguracionService configuracion;
+    private final com.skillbridge.ai.service.DobleFactorService dobleFactor;
+
+    public SesionVigenteFilter(UsuarioRepository usuarioRepository, AuthService authService, SesionSegura sesionSegura,
+                               com.skillbridge.ai.service.ConfiguracionService configuracion,
+                               com.skillbridge.ai.service.DobleFactorService dobleFactor) {
+        this.configuracion = configuracion;
+        this.dobleFactor = dobleFactor;
         this.usuarioRepository = usuarioRepository;
         this.authService = authService;
         this.sesionSegura = sesionSegura;
@@ -77,6 +84,26 @@ public class SesionVigenteFilter extends OncePerRequestFilter {
                 SesionSegura.cerrar(request);
             } else {
                 refrescar(request, response, sesion, usuario, enBd.get(), actual);
+                if (Roles.ADMINISTRADOR.equals(enBd.get().getRolOrganizacional())
+                        && configuracion.activo("doble_factor_obligatorio_admin")) {
+                    String ruta = request.getServletPath();
+                    boolean activo = dobleFactor.estaActivo(usuario.getUsuarioId());
+                    if ("/cuenta/2fa/desactivar".equals(ruta)) {
+                        response.setStatus(403);
+                        return;
+                    }
+                    if (!activo && !ruta.equals("/administrador/enrolamiento.html")
+                            && !ruta.equals("/administrador/enrolamiento/iniciar")
+                            && !ruta.equals("/administrador/enrolamiento/activar")) {
+                        response.sendRedirect(request.getContextPath() + "/administrador/enrolamiento.html");
+                        return;
+                    }
+                    if (activo && !Boolean.TRUE.equals(sesion.getAttribute(PortalFilter.SEGUNDO_FACTOR))) {
+                        SesionSegura.cerrar(request);
+                        response.sendRedirect(request.getContextPath() + "/auth/login.html");
+                        return;
+                    }
+                }
             }
         }
         chain.doFilter(request, response);

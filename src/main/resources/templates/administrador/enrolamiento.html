@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><title>Activar doble factor</title>
+<link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/components.css"></head>
+<body><main class="card card-pad"><h1>Configura el doble factor para entrar al panel</h1>
+<p>Genera una clave y agrégala a tu autenticador como una cuenta basada en tiempo.</p>
+<form method="post" th:action="@{/administrador/enrolamiento/iniciar}"><button>Generar clave</button></form>
+<p th:if="${secreto}" th:text="${secreto}"></p><p role="alert" th:text="${error}"></p>
+<form method="post" th:action="@{/administrador/enrolamiento/activar}"><label>Código de seis dígitos
+<input name="codigo" required pattern="[0-9]{6}" autocomplete="one-time-code" inputmode="numeric"></label>
+<button>Verificar y entrar</button></form>
+<form method="post" th:action="@{/auth/logout}"><button>Cerrar sesión</button></form></main></body></html>

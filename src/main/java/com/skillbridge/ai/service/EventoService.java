@@ -84,10 +84,15 @@ public class EventoService {
      * eventos se listan.
      */
     public List<EventoFila> listar(Long perfilId, boolean esPm, String rolOrganizacional) {
-        List<Long> ids = proyectoIdsDe(perfilId);
-        if (ids.isEmpty()) return List.of();
-        return eventoRepository.listarPorProyectos(ids).stream()
-                .filter(e -> audienciaVisible(e.getAudiencia() != null ? e.getAudiencia().getCodigo() : "todos", esPm))
+        Map<Long,Boolean> liderPorProyecto = new java.util.HashMap<>();
+        for (Asignacion asignacion : asignacionRepository.listarPorPerfilYEstado(perfilId, "activa")) {
+            liderPorProyecto.merge(asignacion.getProyectoId(), Roles.PROJECT_MANAGER.equals(asignacion.getRolEnProyecto()),
+                    Boolean::logicalOr);
+        }
+        if (liderPorProyecto.isEmpty()) return List.of();
+        return eventoRepository.listarPorProyectos(List.copyOf(liderPorProyecto.keySet())).stream()
+                .filter(e -> audienciaVisible(e.getAudiencia() != null ? e.getAudiencia().getPolitica() : null,
+                        liderPorProyecto.get(e.getProyectoId())))
                 .map(e -> aFila(e, puedeGestionar(perfilId, rolOrganizacional, e)))
                 .collect(Collectors.toList());
     }
@@ -114,11 +119,11 @@ public class EventoService {
                 evento.getProyectoId(), perfilId, "project_manager", "activa");
     }
 
-    private boolean audienciaVisible(String codigo, boolean esPm) {
+    static boolean audienciaVisible(String codigo, boolean esPm) {
         if ("todos".equals(codigo)) return true;
         if ("solo_pm".equals(codigo)) return esPm;
         if ("solo_colaboradores".equals(codigo)) return !esPm;
-        return true;
+        return false;
     }
 
     private EventoFila aFila(EventoProyecto e, boolean puedeGestionar) {
@@ -133,7 +138,7 @@ public class EventoService {
         String tipoCodigo = e.getTipo() != null ? e.getTipo().getCodigo() : "reunion";
         String tipoNombre = e.getTipo() != null ? e.getTipo().getNombre() : "Evento";
         String tipoColor = e.getTipo() != null && e.getTipo().getColor() != null ? e.getTipo().getColor() : "#64748b";
-        String audCodigo = e.getAudiencia() != null ? e.getAudiencia().getCodigo() : "todos";
+        String audCodigo = e.getAudiencia() != null ? e.getAudiencia().getCodigo() : null;
         String audLabel = e.getAudiencia() != null ? e.getAudiencia().getNombre() : "Todos";
         return new EventoFila(e.getId(), dia, mes, fechaLabel, hora, tipoCodigo, tipoNombre, tipoColor,
                 e.getTitulo(), e.getProyecto().getNombre(), ubic, e.getEstado(), audCodigo, audLabel,
@@ -254,7 +259,7 @@ public class EventoService {
                 .orElseThrow(() -> new OperacionInvalidaException("Tipo de evento no valido."));
         TipoAudiencia audiencia = tipoAudienciaRepository.findByCodigo(
                         audienciaCodigo == null || audienciaCodigo.isBlank() ? "todos" : audienciaCodigo)
-                .orElseGet(() -> tipoAudienciaRepository.findByCodigo("todos").orElse(null));
+                .orElseThrow(() -> new OperacionInvalidaException("Audiencia desconocida."));
 
         LocalDateTime fecha;
         try {
@@ -304,7 +309,7 @@ public class EventoService {
                 .orElseThrow(() -> new OperacionInvalidaException("Tipo de evento no valido."));
         TipoAudiencia audiencia = tipoAudienciaRepository.findByCodigo(
                         audienciaCodigo == null || audienciaCodigo.isBlank() ? "todos" : audienciaCodigo)
-                .orElseGet(() -> tipoAudienciaRepository.findByCodigo("todos").orElse(null));
+                .orElseThrow(() -> new OperacionInvalidaException("Audiencia desconocida."));
 
         LocalDateTime fecha;
         try {
@@ -349,7 +354,7 @@ public class EventoService {
      * quien VE el evento). Quien lo crea no se notifica a si mismo.
      */
     private void notificarAlEquipo(EventoProyecto evento, Long creadorPerfilId, TipoAudiencia audiencia) {
-        String audienciaCodigo = audiencia != null ? audiencia.getCodigo() : "todos";
+        String audienciaCodigo = audiencia != null ? audiencia.getPolitica() : null;
         List<Asignacion> equipo = asignacionRepository.listarEquipoDeProyecto(evento.getProyectoId(), "activa");
         if (equipo.isEmpty()) return;
         // "evento" recien se creo con new EventoProyecto() - su relacion

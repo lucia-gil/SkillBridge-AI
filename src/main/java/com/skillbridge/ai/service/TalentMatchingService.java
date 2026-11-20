@@ -295,6 +295,18 @@ public class TalentMatchingService {
         p.setScoreDisponibilidad(candidato.getScoreDisponibilidad());
         p.setOrigen(origen);
         propuestaRepository.save(p);
+        if (esAutoaprobable(dedicacion)) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override public void afterCommit() {
+                            try {
+                                self().resolverAutomaticamente(p.getId());
+                            } catch (OperacionInvalidaException ex) {
+                                // La propuesta ya está confirmada en BD. El RM conserva la decisión.
+                            }
+                        }
+                    });
+        }
         String via = PropuestaAsignacion.ORIGEN_MANUAL.equals(origen) ? "manual"
                 : PropuestaAsignacion.ORIGEN_REINCORPORACION.equals(origen) ? "de reincorporación" : "de Talent Matching";
         for (Perfil rm : perfilRepository.listarActivosPorRolOrganizacional(Roles.RESOURCE_MANAGER)) {
@@ -307,15 +319,31 @@ public class TalentMatchingService {
                 candidato.getNombre() + " propuesto (" + via + ") para \"" + proyecto.getNombre() + "\" (score " + candidato.getScoreTotal() + "%).");
     }
 
+    private boolean esAutoaprobable(int dedicacion) {
+        String valor = configuracionService.valor(configuracionService.obtenerMapa(),
+                "auto_aprobar_asignaciones_menores_a", "0");
+        try {
+            int umbral = Integer.parseInt(valor.trim());
+            return dedicacion > 0 && dedicacion < umbral && umbral <= 100;
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<PropuestaAsignacionFila> pendientes() { return propuestaRepository.listarPendientes().stream().map(this::fila).toList(); }
 
     @Transactional(readOnly = true)
     public List<PropuestaAsignacionFila> resueltas() { return propuestaRepository.listarResueltas().stream().limit(20).map(this::fila).toList(); }
 
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void resolverAutomaticamente(Long id) {
+        resolver(id, true, "Autoaprobación por umbral de dedicación", null, null);
+    }
+
     @Transactional
     public void resolver(Long propuestaId, boolean aprobar, String motivo, Long rmPerfilId, Long actorUsuarioId) {
-        PropuestaAsignacion p = propuestaRepository.buscarDetalle(propuestaId)
+        PropuestaAsignacion p = propuestaRepository.bloquear(propuestaId)
                 .orElseThrow(() -> new OperacionInvalidaException("La propuesta ya no existe."));
         if (!"pendiente".equals(p.getEstado())) throw new OperacionInvalidaException("La propuesta ya fue revisada.");
         if (aprobar) {
@@ -331,7 +359,7 @@ public class TalentMatchingService {
                 "Propuesta de Talent Matching " + (aprobar ? "aprobada" : "rechazada"),
                 p.getCandidato().getUsuario().getNombreCompleto() + " · " + p.getProyecto().getNombre() +
                         (p.getMotivoResolucion() != null ? ". " + p.getMotivoResolucion() : "."), "ai-talent-matching.html");
-        auditoriaService.registrar(actorUsuarioId, aprobar ? "MATCHING_APROBADO" : "MATCHING_RECHAZADO",
+        auditoriaService.registrar(actorUsuarioId, aprobar && rmPerfilId == null ? "MATCHING_AUTOAPROBADO" : aprobar ? "MATCHING_APROBADO" : "MATCHING_RECHAZADO",
                 "propuesta_asignacion", p.getId(), "{\"estado\":\"pendiente\"}",
                 "{\"estado\":\"" + p.getEstado() + "\"}", p.getProyecto().getNombre());
     }

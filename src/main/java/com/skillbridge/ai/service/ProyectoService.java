@@ -335,6 +335,16 @@ public class ProyectoService {
     public Proyecto crear(String nombre, String descripcion, List<String> tecnologias, LocalDate fechaInicio,
                            LocalDate fechaFinEstimada, int colaboradoresRequeridos, Long pmPerfilId,
                            Long actorUsuarioId, String githubUrl) {
+        return crear(nombre, descripcion, tecnologias, fechaInicio, fechaFinEstimada, colaboradoresRequeridos,
+                pmPerfilId, actorUsuarioId, githubUrl, CARGA_PM_POR_DEFECTO);
+    }
+
+    @Transactional
+    public Proyecto crear(String nombre, String descripcion, List<String> tecnologias, LocalDate fechaInicio,
+                           LocalDate fechaFinEstimada, int colaboradoresRequeridos, Long pmPerfilId,
+                           Long actorUsuarioId, String githubUrl, int dedicacionPm) {
+        if (dedicacionPm < 1 || dedicacionPm > 100)
+            throw new OperacionInvalidaException("Dedicación de PM fuera de rango.");
         if (nombre == null || nombre.isBlank()) {
             throw new OperacionInvalidaException("Ingresa un nombre para el proyecto.");
         }
@@ -373,7 +383,7 @@ public class ProyectoService {
             throw new OperacionInvalidaException(pm.getUsuario().getNombreCompleto()
                     + " no puede liderar proyectos: solo un Miembro activo (sin rol de Administrador o Resource Manager) puede ser Project Manager.");
         }
-        exigirCapacidad(pm, CARGA_PM_POR_DEFECTO);
+        exigirCapacidad(pm, dedicacionPm);
         int disponibles = contarColaboradoresDisponibles(pmPerfilId);
         if (colaboradoresRequeridos < 0) {
             throw new OperacionInvalidaException("La cantidad de colaboradores requeridos no puede ser negativa.");
@@ -402,7 +412,7 @@ public class ProyectoService {
         pmAsig.setProyectoId(p.getId());
         pmAsig.setPerfilId(pm.getId());
         pmAsig.setRolEnProyecto(Roles.PROJECT_MANAGER);
-        pmAsig.setCargaPorcentaje(CARGA_PM_POR_DEFECTO);
+        pmAsig.setCargaPorcentaje(dedicacionPm);
         pmAsig.setEstado("activa");
         pmAsig.setFechaInicio(fechaInicio);
         asignacionRepository.save(pmAsig);
@@ -801,13 +811,13 @@ public class ProyectoService {
     @Transactional
     public void asignarColaborador(Long proyectoId, Long perfilId, int cargaPorcentaje,
                                     LocalDate fechaInicio, Long actorUsuarioId) {
-        Proyecto p = proyectoRepository.findById(proyectoId)
+        Proyecto p = proyectoRepository.bloquear(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         if (!admiteNuevosIntegrantes(p)) {
             throw new OperacionInvalidaException("\"" + p.getNombre() + "\" está " + etiquetaEstado(p.getEstado())
                     + ": solo se puede sumar personas a proyectos en Planificación o Activo.");
         }
-        Perfil perfil = perfilRepository.findById(perfilId)
+        Perfil perfil = perfilRepository.bloquear(perfilId)
                 .orElseThrow(() -> new OperacionInvalidaException("Selecciona un colaborador válido."));
         // Defensa en el backend (no solo en el selector, que ya los oculta).
         if (!esMiembroAsignable(perfil)) {

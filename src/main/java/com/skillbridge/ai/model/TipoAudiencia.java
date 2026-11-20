@@ -24,6 +24,21 @@ public class TipoAudiencia {
     @Column(name = "descripcion", length = 255)
     private String descripcion;
 
+    @Column(length = 40)
+    private String politica;
+
+    public String getPolitica() {
+        return esBase(codigo) ? codigo : politica;
+    }
+
+    public boolean isBase() { return esBase(codigo); }
+
+    public static boolean esBase(String valor) {
+        return "todos".equals(valor) || "solo_pm".equals(valor) || "solo_colaboradores".equals(valor);
+    }
+
+    public void setPolitica(String valor) { politica = valor; }
+
     public Long getId() { return id; }
     public String getCodigo() { return codigo; }
     public void setCodigo(String codigo) { this.codigo = codigo; }

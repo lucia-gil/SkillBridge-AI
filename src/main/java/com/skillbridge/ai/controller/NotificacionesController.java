@@ -77,7 +77,7 @@ public class NotificacionesController {
         model.addAttribute("perfilDisponible", sesion.getPerfilId() != null);
         model.addAttribute("tiposPresentes", etiquetaPorTipo);
         model.addAttribute("preferencias", preferencias);
-        model.addAttribute("tiposEvento", PreferenciaNotificacionService.TIPOS_EVENTO);
+        model.addAttribute("tiposEvento", PreferenciaNotificacionService.tiposPara(sesion.getRolEfectivo()));
         model.addAttribute("volver", volver);
         if (Roles.ADMINISTRADOR.equals(sesion.getRolOrganizacional())
                 && Roles.ADMINISTRADOR.equals(sesion.getRolEfectivo())) {
@@ -120,10 +120,10 @@ public class NotificacionesController {
             return "redirect:" + rutaSegura(volver);
         }
         Map<String, Boolean> seleccion = new LinkedHashMap<>();
-        for (String tipo : PreferenciaNotificacionService.TIPOS_EVENTO) {
+        for (String tipo : PreferenciaNotificacionService.tiposPara(sesion.getRolEfectivo())) {
             seleccion.put(tipo, params.containsKey(tipo));
         }
-        preferenciaNotificacionService.actualizar(sesion.getPerfilId(), seleccion);
+        preferenciaNotificacionService.actualizar(sesion.getPerfilId(), seleccion, PreferenciaNotificacionService.tiposPara(sesion.getRolEfectivo()));
         redirectAttributes.addFlashAttribute("exito", "Preferencias de aviso actualizadas.");
         return "redirect:" + rutaSegura(volver);
     }

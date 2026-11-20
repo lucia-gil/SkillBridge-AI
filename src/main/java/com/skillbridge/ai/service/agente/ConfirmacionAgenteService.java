@@ -25,6 +25,11 @@ import java.util.UUID;
  */
 @Service
 public class ConfirmacionAgenteService {
+    @org.springframework.beans.factory.annotation.Value("${agente.enabled:true}")
+    private boolean servidorActivo;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.skillbridge.ai.service.ConfiguracionService configuracion;
+
 
     private static final long VIGENCIA_SEGUNDOS = 300;
 
@@ -76,6 +81,8 @@ public class ConfirmacionAgenteService {
     /** Ejecuta (confirmar=true) o descarta la propuesta. Solo funciona una vez y antes de que venza. */
     @Transactional
     public void resolver(UsuarioSesion s, String id, boolean confirmar) {
+        if (confirmar && (!servidorActivo || !configuracion.activo("asistente_ia_habilitado")))
+            throw new org.springframework.security.access.AccessDeniedException("Asistente desactivado.");
         if (id == null || !id.matches("[a-f0-9-]{36}")) throw new IllegalArgumentException("Confirmación inválida.");
         // Mismo orden de bloqueos siempre: primero el mutex global, luego la confirmación.
         bloquearMutex();

@@ -76,7 +76,7 @@
                         <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
                         <tbody>
                         <tr th:each="t : ${tiposNotificacion}">
-                            <td class="mono" th:text="${t.codigo}">codigo</td>
+                            <td class="mono"><span th:text="${t.codigo}"></span> <small th:text="${tiposSistema.contains(t.codigo) ? 'Evento del sistema' : 'Catálogo · sin disparador'}"></small></td>
                             <td th:text="${t.nombre}">Nombre</td>
                             <td class="text-tertiary" th:text="${t.descripcion}">—</td>
                             <td class="cell-actions">
@@ -144,7 +144,9 @@
                         <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
                         <tbody>
                         <tr th:each="t : ${tiposAudiencia}">
-                            <td class="mono" th:text="${t.codigo}">codigo</td>
+                            <td class="mono"><span th:text="${t.codigo}"></span> <form method="post" th:unless="${t.base}" th:action="@{/administrador/catalogos/audiencia/{id}/politica(id=${t.id})}">
+                                  <select name="politica" aria-label="Destinatarios"><option th:each="op : ${ {'nadie','todos','solo_pm','solo_colaboradores'} }" th:text="${op}" th:value="${op}" th:selected="${op == t.politica}"></option></select>
+                                  <button type="submit">Guardar audiencia</button></form></td>
                             <td th:text="${t.nombre}">Nombre</td>
                             <td class="text-tertiary" th:text="${t.descripcion}">—</td>
                             <td class="cell-actions">
@@ -164,8 +166,6 @@
     </div>
 </div>
 
-<script src="/js/mock-data.js"></script>
-<script src="/js/state.js"></script>
 <script src="/js/toast.js"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/modal.js"></script>

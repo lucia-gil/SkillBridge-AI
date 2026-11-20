@@ -79,6 +79,9 @@ public class SecurityConfig {
                                            AccesoDenegadoHandler accesoDenegadoHandler,
                                            SesionSegura sesionSegura,
                                            UsuarioRepository usuarioRepository,
+                                           com.skillbridge.ai.service.EmergenciaService emergencia,
+                                           com.skillbridge.ai.service.ConfiguracionService configuracion,
+                                           com.skillbridge.ai.service.DobleFactorService dobleFactor,
                                            AuthService authService,
                                            AuditoriaService auditoriaService) throws Exception {
 
@@ -148,7 +151,9 @@ public class SecurityConfig {
                     .referrerPolicy(referrer -> referrer.policy(
                             ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN)))
 
-            .addFilterBefore(new SesionVigenteFilter(usuarioRepository, authService, sesionSegura),
+            .addFilterBefore(new com.skillbridge.ai.security.PortalFilter(emergencia),
+                    org.springframework.security.web.csrf.CsrfFilter.class)
+            .addFilterBefore(new SesionVigenteFilter(usuarioRepository, authService, sesionSegura, configuracion, dobleFactor),
                     AnonymousAuthenticationFilter.class);
 
         return http.build();

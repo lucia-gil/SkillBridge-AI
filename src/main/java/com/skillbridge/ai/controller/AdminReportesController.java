@@ -88,8 +88,8 @@ public class AdminReportesController {
         reporteService.proyectosPorEstadoDetallado().forEach(e -> estados.fila(e.getLabel(), e.getConteo()));
         ReporteExportable.Tabla habilidades = reporte.tabla("Habilidades declaradas", new String[]{"Habilidad", "Personas"}, new float[]{3, 1});
         reporteService.topHabilidadesDeclaradas(50).forEach(h -> habilidades.fila(h.nombre(), h.vacantes()));
-        ReporteExportable.Tabla ocupacion = reporte.tabla("Ocupacion", new String[]{"Colaborador", "Cargo", "Carga"}, new float[]{3, 2, 1});
-        reporteService.ocupacionPorColaborador().forEach(o -> ocupacion.fila(o.getNombre(), o.getCargo(), ReporteExportable.porcentaje(o.getPromedio())));
+        ReporteExportable.Tabla ocupacion = reporte.tabla("Ocupacion", new String[]{"Colaborador", "Cargo", "Carga", "Límite", "Estado"}, new float[]{3, 2, 1, 1, 2});
+        reporteService.ocupacionPorColaborador().forEach(o -> ocupacion.fila(o.getNombre(), o.getCargo(), ReporteExportable.porcentaje(o.getPromedio()), o.getLimite() + "%", o.getEstadoLabel()));
         ByteArrayOutputStream salida = new ByteArrayOutputStream();
         if (formato.equals("pdf")) exportador.escribirPdf(reporte, salida); else exportador.escribirExcel(reporte, salida);
         String nombre = exportador.nombreArchivo("skillbridge-reporte-global") + "." + formato;

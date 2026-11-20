@@ -14,7 +14,7 @@
 <link rel="stylesheet" th:href="@{/css/admin-proyecto-documento.css}">
 <link rel="stylesheet" href="/css/admin.css">
 </head>
-<body class="admin-app">
+<body th:attr="data-carga-pm=${cargaPm}" class="admin-app">
 <div class="app-shell">
   <div th:replace="~{fragments/sidebar :: sidebar}"></div>
   <div class="main-content">
@@ -213,7 +213,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Modelo v7, fase 5: búsqueda en el servidor (solo Miembros con capacidad).
         '<div class="pm-picker" id="np-pm-picker"><span class="pm-picker-vacio">Nadie elegido todavía</span>' +
         '<button type="button" class="btn btn-secondary btn-sm" id="np-pm-btn">Elegir…</button></div>' +
-        '<input type="hidden" id="np-pm"></div></div>' +
+        '<input type="hidden" id="np-pm"><label>Dedicación del PM (%) <input id="np-dedicacion" class="input" type="number" min="1" max="100" value="' + document.body.dataset.cargaPm + '"></label></div></div>' +
       '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="np-confirm">Crear proyecto</button></div></div>';
     var backdrop = SBAI.modal.open(html);
     var tech = SBAI.techInput.create(backdrop.querySelector("#np-tech"), {
@@ -228,19 +228,25 @@ document.addEventListener("DOMContentLoaded", function () {
     function abrirSelectorPm() {
       SBAI.selectorPersonas.abrir({
         modo: "pm",
+        dedicacion: Number(backdrop.querySelector("#np-dedicacion").value),
         proyecto: (backdrop.querySelector("#np-nombre").value.trim() || "Nuevo proyecto"),
         endpoint: "/administrador/candidatos-pm",
         onElegir: function (c) {
           backdrop.querySelector("#np-pm").value = c.perfilId;
           pmPicker.classList.add("has-value");
           pmPicker.innerHTML = '<span class="avatar avatar-sm">' + esc(c.iniciales) + '</span>' +
-            '<span class="pm-picker-info"><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.cargo) + ' · carga ' + c.cargaActual + '% → ' + (c.cargaActual + 20) + '%</small></span>' +
+            '<span class="pm-picker-info"><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.cargo) + ' · carga ' + c.cargaActual + '% → ' + (c.cargaActual + Number(backdrop.querySelector("#np-dedicacion").value)) + '%</small></span>' +
             '<button type="button" class="btn btn-secondary btn-sm" data-pm-cambiar>Cambiar</button>';
           pmPicker.querySelector("[data-pm-cambiar]").addEventListener("click", abrirSelectorPm);
         }
       });
     }
     backdrop.querySelector("#np-pm-btn").addEventListener("click", abrirSelectorPm);
+    backdrop.querySelector("#np-dedicacion").addEventListener("input", function () {
+      backdrop.querySelector("#np-pm").value = "";
+      pmPicker.innerHTML = '<button type="button" class="btn btn-secondary">Elegir PM…</button>';
+      pmPicker.querySelector("button").addEventListener("click", abrirSelectorPm);
+    });
     var nombreInput = backdrop.querySelector("#np-nombre");
     var colabInput = backdrop.querySelector("#np-colab");
     var errorBox = backdrop.querySelector("#np-error");
@@ -268,6 +274,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fechaInicio: backdrop.querySelector("#np-inicio").value,
         fechaFinEstimada: backdrop.querySelector("#np-fin").value,
         colaboradoresRequeridos: String(colab),
+        dedicacion: backdrop.querySelector("#np-dedicacion").value,
         pmPerfilId: pm
       });
     });

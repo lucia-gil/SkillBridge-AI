@@ -63,6 +63,7 @@ public class AsistenteIaController {
         model.addAttribute("conversacionInicial", conversacion);
         model.addAttribute("maxCaracteres", AsistenteConversacionService.MAX_CARACTERES);
         model.addAttribute("maxAdjuntos", AsistenteConversacionService.MAX_ADJUNTOS);
+        model.addAttribute("motivo", conversacionService.motivoIndisponible());
         model.addAttribute("alcance", alcance(rol));
         return "compartido/asistente-ia";
     }

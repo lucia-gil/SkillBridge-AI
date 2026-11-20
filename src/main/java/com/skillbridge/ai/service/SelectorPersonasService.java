@@ -105,7 +105,7 @@ public class SelectorPersonasService {
         Proyecto proyecto = proyectoId == null ? null : proyectoRepository.findById(proyectoId)
                 .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
         Filtros conPm = new Filtros(f.q(), f.habilidades(), f.cargo(), f.disponibleMin(), f.experienciaMin(),
-                f.soloConCapacidad(), ProyectoService.CARGA_PM_POR_DEFECTO, f.orden(), f.pagina());
+                f.soloConCapacidad(), proyectoId == null ? f.dedicacion() : ProyectoService.CARGA_PM_POR_DEFECTO, f.orden(), f.pagina());
         return construir(proyecto, conPm, true);
     }
 

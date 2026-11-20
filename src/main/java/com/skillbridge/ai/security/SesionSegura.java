@@ -91,6 +91,7 @@ public class SesionSegura {
      */
     public void completarLogin(HttpServletRequest request, UsuarioSesion usuario) {
         HttpSession sesion = request.getSession(true);
+        sesion.setAttribute(PortalFilter.VERSION, request.getAttribute(PortalFilter.VERSION));
         sesion.setMaxInactiveInterval(minutosDeSesion() * 60);
         sesion.setAttribute(SesionKeys.USUARIO, usuario);
         if (Roles.ADMINISTRADOR.equals(usuario.getRolOrganizacional())) {

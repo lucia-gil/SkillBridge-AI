@@ -78,6 +78,17 @@ public class NotificacionService {
                 enlaceAccion, CODIGO_A_TIPO_EVENTO.get(tipoCodigo));
     }
 
+    public void crearInternoSeguridad(Long perfil, String enlace, String regla) {
+        var tipo = tipoNotificacionRepository.findByCodigo("alerta").orElseThrow();
+        Notificacion aviso = new Notificacion();
+        aviso.setPerfilId(perfil);
+        aviso.setTipoId(tipo.getId());
+        aviso.setTitulo("Incidente de seguridad en revisión");
+        aviso.setDetalle("Umbral alcanzado para " + regla);
+        aviso.setEnlaceAccion(enlace);
+        notificacionRepository.save(aviso);
+    }
+
     private void registrarAviso(Long perfilId, TipoNotificacion tipo, String tipoCodigo, String titulo,
                                  String detalle, String enlaceAccion, String preferencia) {
         Notificacion n = new Notificacion();

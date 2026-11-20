@@ -18,32 +18,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Configuración global (administrador/configuracion.html), real sobre la
- * tabla clave-valor "configuracion_global" (13 parámetros ya sembrados por
- * skillbridge_db.sql). Ver ConfiguracionService y el README: algunos de
- * estos parámetros SÍ tienen efecto real (dominio de registro, duración de
- * sesión, límite de carga y de proyectos simultáneos por colaborador);
- * otros quedan persistidos y editables pero sin un sistema que los consuma
- * todavía en esta entrega (2FA, umbral de auto-aprobación, pesos de AI
- * Talent Matching, resúmenes de IA en foros, asistente IA, idioma/zona
- * horaria) - se declara explícitamente en la plantilla para no aparentar
- * una función que no existe.
- */
 @Controller
 @RequestMapping("/administrador")
 public class AdminConfiguracionController {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.skillbridge.ai.service.AsistenteIaService proveedor;
 
-    /** Checkboxes: si el navegador no los envía (desmarcados) se guarda "false". */
-    private static final List<String> CLAVES_BOOLEANAS = List.of(
-            "doble_factor_obligatorio_admin", "asistente_ia_habilitado", "resumenes_ia_foros_activos");
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.skillbridge.ai.service.AsistenteConversacionService asistente;
 
-    private static final List<String> CLAVES_TEXTO = List.of(
-            "dominio_correo_permitido", "expiracion_sesion_minutos", "limite_carga_colaborador",
-            "maximo_proyectos_simultaneos", "auto_aprobar_asignaciones_menores_a", "peso_matching_habilidades",
-            "peso_matching_experiencia", "peso_matching_disponibilidad", "idioma_por_defecto", "zona_horaria_defecto",
-            // Foros v6 (skillbridge_db.sql): ediciones permitidas por mensaje (0 = sin límite).
-            "foro_max_ediciones");
 
     private final ConfiguracionService configuracionService;
     private final ShellModelBuilder shellModelBuilder;
@@ -60,6 +43,9 @@ public class AdminConfiguracionController {
 
         shellModelBuilder.aplicar(model, sesion, "configuracion.html", "Configuración",
                 "Ajustes generales de la plataforma (persistidos en configuracion_global)");
+        model.addAttribute("zonaServidor", java.time.ZoneId.systemDefault().getId());
+        model.addAttribute("proveedorConfigurado", proveedor.tieneClaude());
+        model.addAttribute("motivo", asistente.motivoIndisponible());
         model.addAttribute("cfg", mapa);
         return "administrador/configuracion";
     }
@@ -67,26 +53,8 @@ public class AdminConfiguracionController {
     @PostMapping("/configuracion")
     public String guardar(@RequestParam Map<String, String> params, HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-        Map<String, ConfiguracionGlobal> actual = configuracionService.obtenerMapa();
         try {
-            for (String clave : CLAVES_TEXTO) {
-                String nuevo = params.get(clave);
-                // Si la clave todavía no existe en la BD (p. ej. no se corrió una migración), se omite
-                // en vez de hacer fallar el guardado de todo el formulario.
-                if (nuevo == null || !actual.containsKey(clave)) continue;
-                nuevo = nuevo.trim();
-                String anterior = configuracionService.valor(actual, clave, "");
-                if (!nuevo.equals(anterior)) {
-                    configuracionService.actualizar(clave, nuevo, sesion.getUsuarioId(), sesion.getPerfilId());
-                }
-            }
-            for (String clave : CLAVES_BOOLEANAS) {
-                String nuevo = String.valueOf(params.containsKey(clave));
-                String anterior = configuracionService.valor(actual, clave, "false");
-                if (!nuevo.equals(anterior)) {
-                    configuracionService.actualizar(clave, nuevo, sesion.getUsuarioId(), sesion.getPerfilId());
-                }
-            }
+            configuracionService.guardarFormulario(params, sesion.getUsuarioId(), sesion.getPerfilId());
             redirectAttributes.addFlashAttribute("exito", "Configuración guardada.");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

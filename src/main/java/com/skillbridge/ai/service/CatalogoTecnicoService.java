@@ -56,6 +56,10 @@ public class CatalogoTecnicoService {
 
     // ===================== TIPOS_NOTIFICACION =====================
 
+    public static final java.util.Set<String> TIPOS_SISTEMA = java.util.Set.of("asignacion", "solicitud",
+            "resultado_ia", "foro_respuesta", "foro_cita", "info", "alerta", "entregable_nuevo",
+            "entregable_revisado", "entregable_entregado");
+
     public List<TipoNotificacion> listarTiposNotificacion() {
         return tipoNotificacionRepository.findAll();
     }
@@ -88,6 +92,7 @@ public class CatalogoTecnicoService {
     public void eliminarTipoNotificacion(Long id, Long actorId) {
         TipoNotificacion t = tipoNotificacionRepository.findById(id)
                 .orElseThrow(() -> new OperacionInvalidaException("Ese tipo de notificación ya no existe."));
+        if (TIPOS_SISTEMA.contains(t.getCodigo())) throw new OperacionInvalidaException("Código requerido por el sistema.");
         if (notificacionRepository.countByTipoId(id) > 0) {
             throw new OperacionInvalidaException(
                     "No se puede eliminar \"" + t.getNombre() + "\": ya hay notificaciones creadas con este tipo.");
@@ -158,6 +163,15 @@ public class CatalogoTecnicoService {
         t.setDescripcion(descripcion);
         tipoAudienciaRepository.save(t);
         auditoriaService.registrar(actorId, "TIPO_AUDIENCIA_CREADO", "tipos_audiencia", t.getId(), null, null, nombre);
+    }
+
+    @Transactional
+    public void politicaAudiencia(Long id, String politica, Long actor) {
+        TipoAudiencia tipo = tipoAudienciaRepository.findById(id).orElseThrow();
+        if (TipoAudiencia.esBase(tipo.getCodigo()) || !(TipoAudiencia.esBase(politica) || "nadie".equals(politica)))
+            throw new OperacionInvalidaException("Política de audiencia inválida.");
+        tipo.setPolitica(politica);
+        auditoriaService.registrar(actor, "AUDIENCIA_ACTUALIZADA", tipo.getCodigo() + " / " + politica);
     }
 
     @Transactional

@@ -48,8 +48,8 @@ public class AdminAuditoriaController {
                 usuario, accion, PageRequest.of(Math.max(0, page), 12, Sort.by(Sort.Direction.DESC, "fecha")));
         List<AuditoriaFila> eventos = pagina.getContent();
         List<TopUsuarioAuditoria> topUsuarios = auditoriaService.topUsuarios(5);
-        Map<String, Long> porSeveridad = eventos.stream()
-                .collect(Collectors.groupingBy(AuditoriaFila::getSeveridadCrudo, Collectors.counting()));
+        Map<String, Long> porSeveridad = auditoriaService.severidades(
+                desde == null ? null : desde.atStartOfDay(), hasta == null ? null : hasta.plusDays(1).atStartOfDay(), usuario, accion);
 
         shellModelBuilder.aplicar(model, sesion, "auditoria.html", "Auditoría",
                 "Trazabilidad completa de acciones en la plataforma");

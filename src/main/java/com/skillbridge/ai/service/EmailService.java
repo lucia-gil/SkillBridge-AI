@@ -115,8 +115,12 @@ public class EmailService {
 
     /** Programa el envío (después del commit si hay una transacción en curso). */
     public void enviar(Correo correo) {
+        enviar(correo, ok -> {});
+    }
+
+    public void enviar(Correo correo, java.util.function.Consumer<Boolean> resultado) {
         if (correo == null || correo.destinatario() == null || correo.destinatario().isBlank()) return;
-        Runnable tarea = () -> envios.submit(() -> enviarAhora(correo));
+        Runnable tarea = () -> envios.submit(() -> resultado.accept(enviarAhora(correo)));
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override public void afterCommit() { tarea.run(); }

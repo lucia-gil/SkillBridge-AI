@@ -90,7 +90,7 @@ public class AsistenteIaService {
         return tieneClaude() || tieneRespaldo();
     }
 
-    private boolean tieneClaude() {
+    public boolean tieneClaude() {
         return apiKey != null && !apiKey.isBlank();
     }
 
@@ -261,16 +261,16 @@ public class AsistenteIaService {
                 return new Intento(null, false);
             } catch (RestClientResponseException ex) {
                 int status = ex.getStatusCode().value();
-                log.warn("Asistente IA: {} respondio {} - {}", proveedor, status, recortar(ex.getResponseBodyAsString()));
+                log.warn("Asistente IA: {} respondió HTTP {}", proveedor, status);
                 if (status == 429) return new Intento(null, true);
                 // 529 = "overloaded_error" propio de Claude (sobrecarga pasajera del modelo).
                 boolean pasajero = status == 500 || status == 502 || status == 503 || status == 504 || status == 529;
                 if (!pasajero || i >= ESPERAS_MS.length) return new Intento(null, false);
             } catch (ResourceAccessException ex) {
-                log.warn("Asistente IA: {} sin conexion o sin respuesta a tiempo: {}", proveedor, ex.getMessage());
+                log.warn("Asistente IA: {} sin conexion o sin respuesta a tiempo: {}", proveedor, ex.getClass().getSimpleName());
                 if (i >= ESPERAS_MS.length) return new Intento(null, false);
             } catch (Exception ex) {
-                log.error("Asistente IA: error inesperado con " + proveedor, ex);
+                log.error("Asistente IA: error con {} ({})", proveedor, ex.getClass().getSimpleName());
                 return new Intento(null, false);
             }
             try {
@@ -419,11 +419,6 @@ public class AsistenteIaService {
         return ahora.format(java.time.format.DateTimeFormatter.ofPattern("EEEE dd/MM/yyyy, HH:mm", java.util.Locale.forLanguageTag("es-PE")));
     }
 
-    private static String recortar(String s) {
-        if (s == null) return "";
-        s = s.replaceAll("\\s+", " ");
-        return s.length() > 300 ? s.substring(0, 300) + "..." : s;
-    }
 
     /** Contexto minimo: quien es, su rol y el alcance de lo que puede/no puede saber. */
     private String promptSistema(UsuarioSesion sesion) {
