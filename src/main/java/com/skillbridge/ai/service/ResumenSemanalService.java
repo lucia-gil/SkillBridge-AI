@@ -164,7 +164,7 @@ public class ResumenSemanalService {
             // Quien lidera algún proyecto va a su Inicio de Project Manager.
             slug = miembro(perfil, datos, secciones, desde, hasta) ? "project-manager" : "colaborador";
         }
-        long avisos = notificacionRepository.countByPerfilIdAndLeidaFalse(perfilId);
+        long avisos = notificacionRepository.contarNoLeidas(perfilId, Roles.ADMINISTRADOR.equals(rol));
         long mensajes = chatService.totalNoLeidos(perfilId);
         String pendientes = avisos + mensajes == 0 ? "No tienes avisos ni mensajes sin leer."
                 : "Tienes " + plural(avisos, "aviso", "avisos") + " y " + plural(mensajes, "mensaje", "mensajes")

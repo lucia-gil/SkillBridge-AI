@@ -81,6 +81,18 @@ public class NotificacionFila {
         return fechaLabel;
     }
 
+    /** Destinos administrativos conocidos. La bandeja no navega a URLs externas. */
+    public String getRutaAdmin() {
+        if (enlaceAccion == null) return null;
+        String ruta = enlaceAccion.startsWith("/administrador/")
+                ? enlaceAccion.substring("/administrador/".length()) : enlaceAccion;
+        return switch (ruta) {
+            case "inicio.html", "usuarios.html", "proyectos.html", "auditoria.html", "configuracion.html",
+                    "reportes.html", "cursos.html", "catalogos.html", "habilidades.html" -> "/administrador/" + ruta;
+            default -> null;
+        };
+    }
+
     public String getEnlaceAccion() {
         return enlaceAccion;
     }

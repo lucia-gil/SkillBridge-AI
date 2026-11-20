@@ -22,21 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Centro de notificaciones (administrador/, colaborador/, resource-manager/
- * y project-manager/notificaciones.html): un único controlador para los 4
- * roles, real sobre "notificaciones"/"preferencias_notificacion". Antes
- * Resource Manager y Project Manager seguían sirviendo la version mock
- * (SitioController + mock-data.js); se retiraron de ahi (mapearlas tambien
- * alli produciria "Ambiguous mapping") y ahora usan la misma plantilla real
- * que ya tenian Administrador y Colaborador - no hay nada especifico de rol
- * en ella, todo sale de ${volver}/${user}/${notificaciones} etc.
- * Las pestañas de tipo se generan a partir de los tipos que realmente
- * aparecen en las notificaciones del perfil (esta entrega solo genera
- * "asignacion" y "foro_respuesta" como efecto de acciones reales, ver
- * DataSeeder), en vez de una lista fija de categorías que el mockup
- * inventaba por rol.
- */
+/** Bandeja personal y preferencias de notificaciones para los cuatro roles. */
 @Controller
 public class NotificacionesController {
 
@@ -65,7 +51,7 @@ public class NotificacionesController {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         String volver = "/" + Roles.slug(sesion.getRolEfectivo()) + "/notificaciones.html";
 
-        List<NotificacionFila> lista = notificacionService.listar(sesion.getPerfilId());
+        List<NotificacionFila> lista = notificacionService.listar(sesion);
         long noLeidas = lista.stream().filter(n -> !n.isLeida()).count();
 
         Set<String> tiposPresentes = new LinkedHashSet<>();
@@ -83,6 +69,7 @@ public class NotificacionesController {
 
         model.addAttribute("notificaciones", lista);
         model.addAttribute("noLeidas", noLeidas);
+        model.addAttribute("perfilDisponible", sesion.getPerfilId() != null);
         model.addAttribute("tiposPresentes", etiquetaPorTipo);
         model.addAttribute("preferencias", preferencias);
         model.addAttribute("tiposEvento", PreferenciaNotificacionService.TIPOS_EVENTO);
@@ -91,17 +78,26 @@ public class NotificacionesController {
     }
 
     @PostMapping("/notificaciones/{id}/marcar-leida")
-    public String marcarLeida(@PathVariable Long id, @RequestParam String volver, HttpSession session) {
+    public String marcarLeida(@PathVariable Long id, @RequestParam String volver, HttpSession session,
+                              RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-        notificacionService.marcarLeida(id, sesion.getPerfilId());
-        return "redirect:" + rutaSegura(volver);
+        boolean actualizada = notificacionService.marcarLeida(id, sesion);
+        String destino = rutaSegura(volver);
+        if (actualizada && Roles.ADMINISTRADOR.equals(sesion.getRolOrganizacional())
+                && "/administrador/notificaciones.html".equals(destino)) {
+            redirectAttributes.addFlashAttribute("exito", "Aviso marcado como leído.");
+            return "redirect:" + destino + "#aviso-" + id;
+        }
+        return "redirect:" + destino;
     }
 
     @PostMapping("/notificaciones/marcar-todas")
     public String marcarTodas(@RequestParam String volver, HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-        notificacionService.marcarTodasLeidas(sesion.getPerfilId());
-        redirectAttributes.addFlashAttribute("exito", "Todas las notificaciones se marcaron como leídas.");
+        int total = notificacionService.marcarTodasLeidas(sesion);
+        redirectAttributes.addFlashAttribute("exito", total == 0 ? "Ya estás al día."
+                : total == 1 ? "Se marcó 1 notificación como leída."
+                : "Se marcaron " + total + " notificaciones como leídas.");
         return "redirect:" + rutaSegura(volver);
     }
 
@@ -109,6 +105,10 @@ public class NotificacionesController {
     public String actualizarPreferencias(@RequestParam Map<String, String> params, @RequestParam String volver, HttpSession session,
                                          RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        if (sesion.getPerfilId() == null) {
+            redirectAttributes.addFlashAttribute("error", "Vuelve a iniciar sesión para actualizar tu perfil.");
+            return "redirect:" + rutaSegura(volver);
+        }
         Map<String, Boolean> seleccion = new LinkedHashMap<>();
         for (String tipo : PreferenciaNotificacionService.TIPOS_EVENTO) {
             seleccion.put(tipo, params.containsKey(tipo));
@@ -122,8 +122,8 @@ public class NotificacionesController {
     @PostMapping("/notificaciones/resumen-semanal/probar")
     public String probarResumenSemanal(@RequestParam String volver, HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-        if (resumenSemanalService.enviarA(sesion.getPerfilId())) {
-            redirectAttributes.addFlashAttribute("exito", "Te enviamos tu resumen semanal. Llegará a tu correo en unos segundos.");
+        if (sesion.getPerfilId() != null && resumenSemanalService.enviarA(sesion.getPerfilId())) {
+            redirectAttributes.addFlashAttribute("exito", "Solicitamos el envío del resumen a tu correo.");
         } else {
             redirectAttributes.addFlashAttribute("error", "No se pudo armar tu resumen semanal.");
         }

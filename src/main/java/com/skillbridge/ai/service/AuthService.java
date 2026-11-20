@@ -209,6 +209,11 @@ public class AuthService {
 
         Optional<Perfil> operfil = perfilRepository.findByUsuarioId(usuario.getId());
         Long perfilId = operfil.map(Perfil::getId).orElse(null);
+        if (perfilId == null && Roles.ADMINISTRADOR.equals(usuario.getRolOrganizacional())) {
+            // Compatibilidad con administradores cargados a mano o desde un seed antiguo.
+            perfilRepository.asegurarPerfilAdministrador(usuario.getId());
+            perfilId = perfilRepository.findByUsuarioId(usuario.getId()).map(Perfil::getId).orElseThrow();
+        }
         String rolEfectivo = calcularRolEfectivo(perfilId, usuario.getRolOrganizacional());
 
         UsuarioSesion sesion = new UsuarioSesion();
@@ -392,6 +397,9 @@ public class AuthService {
         // NotificacionService.crear(...) siempre manda el correo para este tipo.
         notificacionService.crear(perfil.getId(), "info", "¡Bienvenido a SkillBridge AI!",
                 "Tu cuenta se creó correctamente con el correo " + correoFinal + ". Ya puedes iniciar sesión y explorar tus proyectos.", "inicio.html");
+
+        notificacionService.avisarAdministradores("info", "Nueva cuenta registrada",
+                usuario.getNombreCompleto() + " completó el registro con una invitación autorizada.");
 
         return ResultadoRegistro.exito();
     }

@@ -13,6 +13,12 @@ public interface PerfilRepository extends JpaRepository<Perfil, Long> {
 
     Optional<Perfil> findByUsuarioId(Long usuarioId);
 
+    @Modifying
+    @Query(value = "INSERT INTO perfiles (usuario_id, disponibilidad_porcentaje, experiencia_anios, estado) " +
+            "VALUES (:usuarioId, 100, 0, 'activo') ON DUPLICATE KEY UPDATE usuario_id = :usuarioId",
+            nativeQuery = true)
+    void asegurarPerfilAdministrador(@Param("usuarioId") Long usuarioId);
+
     // Perfiles activos con su Usuario ya cargado - usado para el selector
     // "Asignar colaborador" de Proyectos y para el reporte de ocupación.
     @Query("select p from Perfil p join fetch p.usuario u where p.estado = 'activo' order by u.nombreCompleto asc")
@@ -24,6 +30,9 @@ public interface PerfilRepository extends JpaRepository<Perfil, Long> {
 
     @Query("select p from Perfil p join fetch p.usuario u where p.estado = 'activo' and u.rolOrganizacional = :rol order by u.nombreCompleto")
     List<Perfil> listarActivosPorRolOrganizacional(@Param("rol") String rol);
+
+    @Query("select p.id from Perfil p join p.usuario u where p.estado = 'activo' and u.estado = 'activo' and u.rolOrganizacional = :rol")
+    List<Long> listarIdsConCuentaActivaPorRol(@Param("rol") String rol);
 
     // Igual que arriba, pero SIN filtrar por estado - usado en
     // resource-manager/colaboradores.html, que necesita ver también a los
