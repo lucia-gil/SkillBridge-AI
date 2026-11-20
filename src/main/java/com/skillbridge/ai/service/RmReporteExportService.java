@@ -128,7 +128,7 @@ public class RmReporteExportService {
         for (int c = 1; c < 12; c++) celda(r0, c, "", s.titulo);
         h.addMergedRegion(new CellRangeAddress(0, 0, 0, 11));
         Row r1 = h.createRow(1); r1.setHeightInPoints(20);
-        celda(r1, 0, "Resource Manager · NexaCorp · Generado el " + d.generado() + " · límite de carga " + d.limiteCarga() + "%", s.subtitulo);
+        celda(r1, 0, "Resource Manager · SkillBridge AI · Generado el " + d.generado() + " · límite de carga " + d.limiteCarga() + "%", s.subtitulo);
         for (int c = 1; c < 12; c++) celda(r1, c, "", s.subtitulo);
         h.addMergedRegion(new CellRangeAddress(1, 1, 0, 11));
         Row r2 = h.createRow(2); r2.setHeightInPoints(18);
@@ -664,7 +664,7 @@ public class RmReporteExportService {
             Paragraph tit = new Paragraph("Capacidad y talento del equipo", F_TITULO);
             tit.setSpacingBefore(4);
             bc.addElement(tit);
-            Paragraph sub = new Paragraph("SkillBridge AI · NexaCorp · Generado el " + d.generado() + " · Límite de carga " + d.limiteCarga() + "%", F_SUB);
+            Paragraph sub = new Paragraph("SkillBridge AI · Generado el " + d.generado() + " · Límite de carga " + d.limiteCarga() + "%", F_SUB);
             sub.setSpacingBefore(4);
             bc.addElement(sub);
             bc.addElement(new Paragraph(d.filtrosLabel(), FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 8, new Color(170, 186, 214))));

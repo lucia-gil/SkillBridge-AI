@@ -228,7 +228,7 @@ public class MatchingIaService {
     }
 
     private static final String PROMPT_EXPLICAR =
-            "Eres el motor de explicaciones de AI Talent Matching de SkillBridge AI (empresa NexaCorp). "
+            "Eres el motor de explicaciones de AI Talent Matching de SkillBridge AI. "
             + "Recibes un proyecto y candidatos YA ORDENADOS por un puntaje que calculó el sistema con datos reales "
             + "(habilidades, experiencia y disponibilidad). No cambies el orden ni los puntajes y no inventes datos. "
             + "Responde SOLO con JSON válido, sin texto adicional ni bloques de código, con esta forma: "

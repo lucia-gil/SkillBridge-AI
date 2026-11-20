@@ -21,7 +21,7 @@
          SpringBootServletInitializer para soportar ambos casos). -->
     <packaging>jar</packaging>
     <name>skillbridge-ai</name>
-    <description>SkillBridge AI - plataforma interna de gestion de talento (NexaCorp)</description>
+    <description>SkillBridge AI - plataforma de gestion de talento y proyectos con IA</description>
 
     <properties>
         <java.version>17</java.version>

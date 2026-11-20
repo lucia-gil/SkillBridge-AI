@@ -76,7 +76,7 @@ public class AdminInicioController {
         long maxDeclarada = topHabilidades.stream().mapToLong(VacanteHabilidad::vacantes).max().orElse(1);
 
         shellModelBuilder.aplicar(model, sesion, "inicio.html", "Panel de administración",
-                "NexaCorp · SkillBridge AI");
+                "SkillBridge AI · Gestión de talento con IA");
 
         model.addAttribute("kpiColaboradoresActivos", kpisReporte.get("colaboradoresActivos"));
         model.addAttribute("kpiProyectosEnCurso", kpisReporte.get("proyectosEnCurso"));

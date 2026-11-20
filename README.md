@@ -1,6 +1,6 @@
 # SkillBridge AI
 
-Plataforma interna de gestión de talento y proyectos (empresa ficticia **NexaCorp**): usuarios y roles, catálogo de habilidades, proyectos, asignaciones con AI Talent Matching, entregables, foros, calendario, reportes y un Asistente IA (agente) conectado a Claude (Anthropic Messages API).
+Plataforma de gestión de talento y proyectos con IA: usuarios y roles, catálogo de habilidades, proyectos, asignaciones con AI Talent Matching, entregables, foros, calendario, reportes y un Asistente IA (agente) conectado a Claude (Anthropic Messages API).
 
 **Stack:** Java 17 · Spring Boot 3.2.5 · Spring MVC + Thymeleaf · Spring Data JPA (Hibernate) · MySQL 8 · Spring Security · Spring Session JDBC · Java Mail (Gmail SMTP) · Apache POI / OpenPDF (exportes) · API de Claude (Anthropic).
 

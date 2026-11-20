@@ -54,7 +54,7 @@ public class ColaboradorInicioController {
         long habilidadesValidadas = perfilHabilidadRepository.countById_PerfilIdAndValidadoPorIdIsNotNull(perfilId);
 
         shellModelBuilder.aplicar(model, sesion, "inicio.html", "Hola, " + primerNombre(sesion.getNombreCompleto()),
-                "NexaCorp · SkillBridge AI");
+                "SkillBridge AI · Gestión de talento con IA");
 
         model.addAttribute("proyectosActivos", proyectosActivos);
         model.addAttribute("cargaActiva", proyectoService.cargaActivaDe(perfilId));

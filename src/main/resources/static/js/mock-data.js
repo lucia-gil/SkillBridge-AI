@@ -18,7 +18,7 @@
    * Metadatos de plataforma
    * --------------------------------------------------------- */
   MOCK.meta = {
-    org: "NexaCorp",
+    org: "SkillBridge",
     domain: "nexacorp.com",
     productName: "SkillBridge AI",
     version: "v2.4.0",
@@ -166,9 +166,9 @@
       inicio: "05 ene 2025", fin: "22 ago 2025", equipo: 8, avance: 100, estado: "Cerrado",
       descripcion: "Migración de la plataforma logística de Titán a infraestructura cloud con Kubernetes y Terraform, liderada por Lucía Fernández.",
       stack: ["Kubernetes", "Terraform", "Docker", "Java / Spring Boot"] },
-    { codigo: "PRJ-IN-2026", nombre: "Intranet NexaCorp v2", iniciales: "IN", cliente: "Interno", pm: "Paula Vega",
+    { codigo: "PRJ-IN-2026", nombre: "Intranet SkillBridge v2", iniciales: "IN", cliente: "Interno", pm: "Paula Vega",
       inicio: "20 jul 2026", fin: "20 ene 2027", equipo: 4, avance: 41, estado: "Activo",
-      descripcion: "Segunda versión de la intranet corporativa de NexaCorp — la misma plataforma SkillBridge AI que estás usando.",
+      descripcion: "Segunda versión de la intranet corporativa de SkillBridge — la misma plataforma SkillBridge AI que estás usando.",
       stack: ["Java 21", "Spring Boot", "Thymeleaf", "PostgreSQL"] },
     { codigo: "PRJ-SV-2026", nombre: "Data Lake Seguros Vital", iniciales: "SV", cliente: "Seguros Vital", pm: "Paula Vega",
       inicio: "01 ago 2026", fin: "30 abr 2027", equipo: 6, avance: 22, estado: "Bloqueado",
@@ -258,7 +258,7 @@
     { proyecto: "App Móvil Aurora", cliente: "Aurora Telecom", rol: "Frontend", periodo: "jun 2026 — actual", estado: "En riesgo" },
     { proyecto: "Motor Cobranzas", cliente: "Seguros Vital", rol: "Frontend", periodo: "sep 2025 — feb 2026", estado: "Cerrado" },
     { proyecto: "Migración Cloud Titán", cliente: "Titán Logística", rol: "UI Support", periodo: "ene 2025 — ago 2025", estado: "Cerrado" },
-    { proyecto: "Intranet NexaCorp v1", cliente: "Interno", rol: "Frontend", periodo: "abr 2024 — dic 2024", estado: "Cerrado" }
+    { proyecto: "Intranet SkillBridge v1", cliente: "Interno", rol: "Frontend", periodo: "abr 2024 — dic 2024", estado: "Cerrado" }
   ];
 
   /* ---------------------------------------------------------
@@ -465,7 +465,7 @@
       trasAsignar: 130,
       criterios: [
         { nombre: "Habilidades coincidentes", detalle: "6 de 6", pct: 100, extra: "Kubernetes Avanzado, Terraform, Kafka, Java/Spring, PostgreSQL, React (nivel básico exigido)." },
-        { nombre: "Experiencia relevante", detalle: "5 proyectos", pct: 92, extra: "Migración Cloud Titán (lead), Motor Cobranzas v2, Intranet NexaCorp v2 y 2 proyectos previos con la misma arquitectura." },
+        { nombre: "Experiencia relevante", detalle: "5 proyectos", pct: 92, extra: "Migración Cloud Titán (lead), Motor Cobranzas v2, Intranet SkillBridge v2 y 2 proyectos previos con la misma arquitectura." },
         { nombre: "Disponibilidad", detalle: "30% libre desde 1 sep", pct: 80, extra: "Cierra Cloud Titán en la semana 36; su carga cae de 110% a 70% justo al inicio de la fase de plataforma." }
       ],
       habilidadesCoincidentes: [

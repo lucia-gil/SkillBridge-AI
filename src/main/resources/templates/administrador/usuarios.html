@@ -144,7 +144,7 @@
             <thead><tr><th>Correo</th><th>Rol al registrarse</th><th>Autorizado el</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               <tr th:each="c : ${correosAutorizados}" data-correo-row th:attr="data-correo=${#strings.toLowerCase(c.correo())},data-estado=${c.utilizado()} ? 'registrado' : 'pendiente'">
-                <td class="cell-primary" th:text="${c.correo()}">correo@nexacorp.com</td>
+                <td class="cell-primary" th:text="${c.correo()}">correo@ejemplo.com</td>
                 <td><span class="badge" th:classappend="${c.rolAsignado() == null} ? 'badge-neutral' : 'badge-blue'" th:text="${c.rolLabel()}">Miembro</span></td>
                 <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${c.fechaAutorizacion()}">—</td>
                 <td><span class="badge" th:classappend="${c.estadoBadgeClass()}" th:text="${c.estadoLabel()}">Pendiente</span></td>
