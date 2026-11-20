@@ -41,6 +41,7 @@ public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
     private static final String LOGO = "correo/logo-correo.png";
+    private static final String ICONOS = "correo/iconos/";
 
     /**
      * Un correo con la plantilla de SkillBridge AI.
@@ -141,6 +142,7 @@ public class EmailService {
             helper.setSubject(c.asunto());
             helper.setText(textoPlano(c), html(c));
             helper.addInline("logo", new ClassPathResource(LOGO), "image/png");
+            helper.addInline("icono", new ClassPathResource(ICONOS + tonoDe(c.etiqueta()).icono() + ".png"), "image/png");
             mensaje.setHeader("Content-Language", "es");
             mailSender.send(mensaje);
             log.info("El servidor SMTP aceptó un correo de SkillBridge AI.");
@@ -170,25 +172,27 @@ public class EmailService {
     private static final String FUENTE = "'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif";
 
     /** Color e ícono de cada categoría: el correo se reconoce de un vistazo. */
+    /** icono = nombre del PNG en correo/iconos/ (íconos de la app, pintados con el color de la categoría). */
     private record Tono(String color, String fondo, String icono) {}
 
     private static Tono tonoDe(String etiqueta) {
         String e = etiqueta == null ? "" : etiqueta.toLowerCase(java.util.Locale.ROOT);
-        if (e.startsWith("resumen")) return new Tono("#2563eb", "#eaf1ff", "📊");          // 📊
-        if (e.contains("proyecto")) return new Tono("#2563eb", "#eaf1ff", "📁");           // 📁
-        if (e.contains("foro")) return new Tono("#7c3aed", "#f3edff", "💬");               // 💬
-        if (e.contains("mensaje")) return new Tono("#0d9488", "#e6f7f5", "✉️");            // ✉️
-        if (e.contains("entregable")) return new Tono("#d97706", "#fff4e0", "📝");         // 📝
-        if (e.contains("calendario")) return new Tono("#16a34a", "#e8f7ee", "📅");         // 📅
-        if (e.contains("solicitud")) return new Tono("#4f46e5", "#eef0ff", "📥");          // 📥
-        if (e.contains("matching")) return new Tono("#9333ea", "#f5ecff", "✨");                 // ✨
-        if (e.contains("seguridad")) return new Tono("#dc2626", "#fdecec", "🔐");          // 🔐
-        if (e.contains("alerta")) return new Tono("#dc2626", "#fdecec", "⚠️");             // ⚠️
-        if (e.contains("invitaci")) return new Tono("#0d9488", "#e6f7f5", "🎉");           // 🎉
-        if (e.contains("cuenta")) return new Tono("#2563eb", "#eaf1ff", "👤");             // 👤
-        if (e.contains("administraci")) return new Tono("#475569", "#eef1f5", "🛡️"); // 🛡️
-        return new Tono("#2563eb", "#eaf1ff", "🔔");                                       // 🔔
+        if (e.startsWith("resumen")) return new Tono("#2563eb", "#eaf1ff", "resumen");
+        if (e.contains("proyecto")) return new Tono("#2563eb", "#eaf1ff", "proyecto");
+        if (e.contains("foro")) return new Tono("#7c3aed", "#f3edff", "foro");
+        if (e.contains("mensaje")) return new Tono("#0d9488", "#e6f7f5", "mensaje");
+        if (e.contains("entregable")) return new Tono("#d97706", "#fff4e0", "entregable");
+        if (e.contains("calendario")) return new Tono("#16a34a", "#e8f7ee", "calendario");
+        if (e.contains("solicitud")) return new Tono("#4f46e5", "#eef0ff", "solicitud");
+        if (e.contains("matching")) return new Tono("#9333ea", "#f5ecff", "matching");
+        if (e.contains("seguridad")) return new Tono("#dc2626", "#fdecec", "seguridad");
+        if (e.contains("alerta")) return new Tono("#dc2626", "#fdecec", "alerta");
+        if (e.contains("invitaci")) return new Tono("#0d9488", "#e6f7f5", "invitacion");
+        if (e.contains("cuenta")) return new Tono("#2563eb", "#eaf1ff", "cuenta");
+        if (e.contains("administraci")) return new Tono("#475569", "#eef1f5", "administracion");
+        return new Tono("#2563eb", "#eaf1ff", "aviso");
     }
+
 
     /** HTML del correo. Público para poder ver la plantilla en el navegador (vista previa). */
     public String html(Correo c) {
@@ -222,7 +226,8 @@ public class EmailService {
                 + "<tr><td style=\"padding:34px 36px 0 36px;\">"
                 + "<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr>"
                 + "<td width=\"44\" height=\"44\" align=\"center\" valign=\"middle\" bgcolor=\"" + t.fondo() + "\" "
-                + "style=\"width:44px; height:44px; border-radius:14px; background:" + t.fondo() + "; font-size:22px; line-height:44px;\">" + t.icono() + "</td>"
+                + "style=\"width:44px; height:44px; border-radius:14px; background:" + t.fondo() + "; font-size:0; line-height:0;\">"
+                + "<img src=\"cid:icono\" alt=\"\" width=\"24\" height=\"24\" style=\"display:inline-block; border:0; outline:none; width:24px; height:24px; vertical-align:middle;\"></td>"
                 + "<td style=\"padding-left:12px;\"><span style=\"display:inline-block; padding:5px 11px; border-radius:999px; background:" + t.fondo() + "; "
                 + "color:" + t.color() + "; font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;\">" + etiqueta + "</span></td>"
                 + "</tr></table></td></tr>"

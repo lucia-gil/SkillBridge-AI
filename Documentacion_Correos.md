@@ -20,19 +20,26 @@ y `emailService.enviar(...)`). Si agregas un aviso nuevo, agrégalo también aqu
   tenga dominio con HTTPS), cabecera azul de SkillBridge, saludo con el nombre ("Hola, Ana:"), título, detalle,
   botón con enlace directo a la pantalla de cada rol, versión en texto plano y pie que explica cómo apagar los avisos
   cuando se puede. Se adapta a celular (ancho máximo 580 px).
-- **Color e ícono por categoría** (la franja, el ícono, la etiqueta, el borde del detalle y el botón usan el mismo color):
+- **Color e ícono por categoría:** la franja, el ícono, la etiqueta, el borde del detalle y el botón usan el mismo
+  color. Los íconos son los mismos de la app (`static/img/icons.svg`), guardados como PNG en `correo/iconos/`
+  (Gmail no muestra SVG) y adjuntos dentro del correo como el logo. Sin emojis.
 
-  | Categoría | Color | Ícono |
-  |---|---|---|
-  | Proyectos y asignaciones, Resumen semanal, Cuenta | Azul `#2563eb` | 📁 📊 👤 |
-  | Foros | Violeta `#7c3aed` | 💬 |
-  | Mensajes, Invitación | Turquesa `#0d9488` | ✉️ 🎉 |
-  | Entregables | Ámbar `#d97706` | 📝 |
-  | Calendario | Verde `#16a34a` | 📅 |
-  | Solicitudes de aprobación | Índigo `#4f46e5` | 📥 |
-  | AI Talent Matching | Morado `#9333ea` | ✨ |
-  | Seguridad de tu cuenta, Alertas | Rojo `#dc2626` | 🔐 ⚠️ |
-  | Administración | Gris pizarra `#475569` | 🛡️ |
+  | Categoría | Color | Ícono (`icons.svg`) | Archivo |
+  |---|---|---|---|
+  | Proyectos y asignaciones | Azul `#2563eb` | folder | `proyecto.png` |
+  | Resumen semanal | Azul `#2563eb` | bar-chart | `resumen.png` |
+  | Cuenta | Azul `#2563eb` | user | `cuenta.png` |
+  | Foros | Violeta `#7c3aed` | message | `foro.png` |
+  | Mensajes | Turquesa `#0d9488` | mail | `mensaje.png` |
+  | Invitación | Turquesa `#0d9488` | users | `invitacion.png` |
+  | Entregables | Ámbar `#d97706` | file-text | `entregable.png` |
+  | Calendario | Verde `#16a34a` | calendar | `calendario.png` |
+  | Solicitudes de aprobación | Índigo `#4f46e5` | user-check | `solicitud.png` |
+  | AI Talent Matching | Morado `#9333ea` | sparkles | `matching.png` |
+  | Seguridad de tu cuenta | Rojo `#dc2626` | lock | `seguridad.png` |
+  | Alerta | Rojo `#dc2626` | alert-triangle | `alerta.png` |
+  | Administración | Gris pizarra `#475569` | shield | `administracion.png` |
+  | Cualquier otro aviso | Azul `#2563eb` | bell | `aviso.png` |
 - **Remitente y asunto:** "SkillBridge AI" `<spring.mail.username>`; el asunto es el título del aviso.
 - **Enlaces:** se arman con `app.base-url` + la vista del rol de quien recibe (por ejemplo `/colaborador/proyectos.html`).
 
