@@ -184,6 +184,26 @@ Todos los servicios REST (`/api/**`, buscador y catálogo de habilidades) están
 
 ---
 
+## Pruebas unitarias
+
+JUnit 5 + Mockito + MockMvc (vienen con `spring-boot-starter-test`). No necesitan MySQL ni Gmail: los repositorios
+y el envío de correo están simulados, así que corren en segundos.
+
+```bash
+mvn test
+```
+
+| Clase de prueba | Qué cubre |
+|---|---|
+| `util/TotpTest` | 2FA: vectores oficiales del RFC 6238, Base32, tolerancia de ±30 s, códigos inválidos y URI `otpauth://` |
+| `util/PasswordPolicyTest` | Reglas de contraseña (12 caracteres, mayúscula, número, símbolo, sin espacios) |
+| `service/PreferenciaNotificacionServiceTest` | Qué canales cuentan como "con correo", valores por defecto y guardado de preferencias |
+| `service/EmailServiceTest` | Plantilla HTML (saludo, botón, escape de HTML, sin emojis), ícono correcto por categoría, mensaje MIME (logo e ícono inline, texto plano) y fallo de SMTP |
+| `service/ProyectoServiceDedicacionTest` | "Ajustar carga": rangos, límite configurado, carga total, auditoría y aviso al colaborador |
+| `controller/RmOcupacionControllerTest` | Servicio REST de Ajustar carga: respuestas 200/400/404 en JSON y el formulario clásico |
+
+Las pruebas van en `src/test/java` con el mismo paquete que la clase que prueban.
+
 ## Estructura
 
 ```
