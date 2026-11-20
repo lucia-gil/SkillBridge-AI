@@ -443,7 +443,7 @@ public class UsuarioService {
                 activar ? "Un administrador reactivó tu cuenta. Ya puedes iniciar sesión con tu correo y tu contraseña de siempre."
                         : "Un administrador suspendió tu cuenta" + (motivoLimpio != null ? " (motivo: " + motivoLimpio + ")" : "")
                           + ". Mientras esté suspendida no podrás iniciar sesión. Si crees que es un error, comunícate con el equipo de administración.",
-                activar ? linkLogin : null, activar ? "Iniciar sesión" : null, false));
+                activar ? linkLogin : null, activar ? "Iniciar sesión" : null, false).conNombre(usuario.getNombreCompleto()));
     }
 
     @Transactional

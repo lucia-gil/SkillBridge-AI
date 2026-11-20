@@ -16,9 +16,23 @@ y `emailService.enviar(...)`). Si agregas un aviso nuevo, agrégalo también aqu
   como "con correo"; `app` y `solo_app`, como "sin correo". Todos los demás tipos **siempre** mandan correo.
 - **Envío:** en segundo plano (la pantalla no espera a Gmail) y **después de que se guarda el cambio**: si la acción
   falla y se revierte, no sale el correo. Un error de SMTP no rompe nada; queda en el log.
-- **Diseño:** plantilla HTML con el logo incrustado en el propio correo (se ve aunque la app no tenga dominio con
-  HTTPS), categoría, título, detalle, botón con enlace directo a la pantalla de cada rol, versión en texto plano y
-  pie que explica cómo apagar los avisos cuando se puede.
+- **Diseño:** plantilla HTML (`EmailService.html`) con el logo incrustado en el propio correo (se ve aunque la app no
+  tenga dominio con HTTPS), cabecera azul de SkillBridge, saludo con el nombre ("Hola, Ana:"), título, detalle,
+  botón con enlace directo a la pantalla de cada rol, versión en texto plano y pie que explica cómo apagar los avisos
+  cuando se puede. Se adapta a celular (ancho máximo 580 px).
+- **Color e ícono por categoría** (la franja, el ícono, la etiqueta, el borde del detalle y el botón usan el mismo color):
+
+  | Categoría | Color | Ícono |
+  |---|---|---|
+  | Proyectos y asignaciones, Resumen semanal, Cuenta | Azul `#2563eb` | 📁 📊 👤 |
+  | Foros | Violeta `#7c3aed` | 💬 |
+  | Mensajes, Invitación | Turquesa `#0d9488` | ✉️ 🎉 |
+  | Entregables | Ámbar `#d97706` | 📝 |
+  | Calendario | Verde `#16a34a` | 📅 |
+  | Solicitudes de aprobación | Índigo `#4f46e5` | 📥 |
+  | AI Talent Matching | Morado `#9333ea` | ✨ |
+  | Seguridad de tu cuenta, Alertas | Rojo `#dc2626` | 🔐 ⚠️ |
+  | Administración | Gris pizarra `#475569` | 🛡️ |
 - **Remitente y asunto:** "SkillBridge AI" `<spring.mail.username>`; el asunto es el título del aviso.
 - **Enlaces:** se arman con `app.base-url` + la vista del rol de quien recibe (por ejemplo `/colaborador/proyectos.html`).
 
@@ -59,6 +73,7 @@ y `emailService.enviar(...)`). Si agregas un aviso nuevo, agrégalo también aqu
 | Evento | Quién recibe | Tipo |
 |---|---|---|
 | Se publica un entregable nuevo | Los colaboradores del proyecto | `entregable_nuevo` |
+| Un colaborador entrega o reenvía un entregable | El/los PM del proyecto | `entregable_entregado` |
 | El PM revisa una entrega | Quien entregó | `entregable_revisado` |
 | Se abre un hilo nuevo en el foro | El equipo del proyecto (menos el autor) | `info` |
 | Alguien responde tu hilo | El autor del hilo | `foro_respuesta` |
@@ -67,6 +82,15 @@ y `emailService.enviar(...)`). Si agregas un aviso nuevo, agrégalo también aqu
 | Se crea un evento en el calendario de un proyecto | El equipo, según la audiencia del evento (menos quien lo crea) | `info` |
 | Mensaje directo nuevo | La otra persona, **solo con el primer mensaje sin leer** (no uno por mensaje) | `info` |
 | Se elimina un proyecto cancelado | Todos los Resource Managers | `info` |
+
+### Administración (respeta *Alertas críticas* de cada administrador)
+
+| Evento | Quién recibe | Código |
+|---|---|---|
+| Alguien crea su cuenta o usa una invitación | Todos los administradores activos | `AuthService.registrar`, `UsuarioService` |
+| Se cambia el rol de una cuenta | Todos los administradores activos | `UsuarioService.cambiarRol` |
+| Se suspende o reactiva una cuenta | Todos los administradores activos | `UsuarioService.cambiarEstado` |
+| Inicio de sesión en Administración (después del 2FA) | El propio administrador | `SesionSegura` |
 
 ### Resumen semanal (se puede apagar)
 
@@ -90,7 +114,6 @@ Estos casos hoy no generan aviso ni correo (algunos solo se ven en la app):
 
 | Caso | Qué pasa hoy | ¿Conviene agregarlo? |
 |---|---|---|
-| Un colaborador **entrega** un entregable | El PM no recibe aviso; lo ve en Entregables | Sí: aviso al PM |
 | Cambiar la contraseña (Mi cuenta o con el enlace) | Sin correo de confirmación | Sí: correo de seguridad ("tu contraseña cambió") |
 | Activar o desactivar la verificación en dos pasos (2FA) | Sin correo | Sí, por seguridad |
 | Mensajes en el **chat de un proyecto** | Solo el contador de no leídos | No: sería demasiado correo |

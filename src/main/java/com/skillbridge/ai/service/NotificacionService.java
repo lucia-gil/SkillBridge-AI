@@ -112,7 +112,8 @@ public class NotificacionService {
                     // El remitente ya es "SkillBridge AI": el asunto es el título del aviso.
                     emailService.enviar(new EmailService.Correo(usuario.getCorreo(), titulo,
                             etiquetaPara(tipoCodigo, enlaceAccion), titulo, detalle, enlaceCompleto,
-                            textoBotonPara(tipoCodigo, enlaceAccion), tipoEvento != null));
+                            textoBotonPara(tipoCodigo, enlaceAccion), tipoEvento != null)
+                            .conNombre(usuario.getNombreCompleto()));
                 }));
     }
 

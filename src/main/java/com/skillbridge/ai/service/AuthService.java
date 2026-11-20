@@ -462,7 +462,7 @@ public class AuthService {
                 "Recibimos una solicitud para restablecer la contraseña de " + usuario.getCorreo() + ". "
                         + "El enlace es válido por " + RECUPERACION_MINUTOS + " minutos y se puede usar una sola vez.\n\n"
                         + "Si no fuiste tú, ignora este correo: tu contraseña actual sigue funcionando.",
-                link, "Restablecer contraseña", false));
+                link, "Restablecer contraseña", false).conNombre(usuario.getNombreCompleto()));
     }
 
     /** true si el token existe, no fue usado y todavia no vencio (para pintar el formulario o el error en restablecer-password.html). */
