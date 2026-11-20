@@ -236,4 +236,4 @@ nohup java -jar skillbridge-ai.jar > app.log 2>&1 &
 
 **Zona horaria:** la app trabaja siempre en hora de Perú (`America/Lima`, UTC-5), aunque el EC2 o RDS estén en UTC. La fija `SkillbridgeAiApplication` para Java y `spring.datasource.hikari.connection-init-sql` para MySQL (`NOW()` y las columnas con `DEFAULT CURRENT_TIMESTAMP`). Si usas el perfil `prod`, incluye `serverTimezone=America/Lima` en `DB_URL`, igual que en `application.properties`. En RDS puedes además poner `time_zone = America/Lima` en el grupo de parámetros, para que las consultas manuales también muestren hora de Perú.
 
-`app.base-url` en `application.properties` debe apuntar a la URL pública (se usa para los enlaces de los correos). En producción conviene `spring.thymeleaf.cache=true` y, con HTTPS, `server.servlet.session.cookie.secure=true`.
+`app.base-url` en `application.properties` apunta a la IP elástica de EC2 (`http://13.216.85.235:8080`; se cambia con la variable `APP_BASE_URL`) y debe ser la URL pública (se usa para los enlaces de los correos). En producción conviene `spring.thymeleaf.cache=true` y, con HTTPS, `server.servlet.session.cookie.secure=true`.
