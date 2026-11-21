@@ -48,7 +48,6 @@ public class LoginExitosoHandler implements AuthenticationSuccessHandler {
         if (dobleFactorService.estaActivo(usuario.getUsuarioId())) {
             SesionSegura.cerrar(request);
             HttpSession pendiente = request.getSession(true);
-            pendiente.setAttribute(PortalFilter.VERSION, request.getAttribute(PortalFilter.VERSION));
             pendiente.setMaxInactiveInterval(5 * 60);
             pendiente.setAttribute(SesionKeys.PENDIENTE_2FA, usuario);
             pendiente.setAttribute(SesionKeys.INTENTOS_2FA, 0);

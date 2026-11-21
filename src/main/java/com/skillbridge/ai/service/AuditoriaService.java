@@ -80,8 +80,10 @@ public class AuditoriaService {
 
     /** Envuelve un valor simple en JSON valido de una sola propiedad, para valor_anterior/valor_nuevo. */
     public static String json(String campo, Object valor) {
-        String v = valor == null ? "null" : "\"" + String.valueOf(valor).replace("\"", "\\\"") + "\"";
-        return "{\"" + campo + "\":" + v + "}";
+        var objeto = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+        if (valor == null) objeto.putNull(campo);
+        else objeto.put(campo, String.valueOf(valor));
+        return objeto.toString();
     }
 
     // ───────────────────── Consulta (administrador/auditoria.html) ─────────────────────
@@ -106,6 +108,23 @@ public class AuditoriaService {
                 .map(log -> new AuditoriaFila(
                         log.getFecha() == null ? "" : log.getFecha().format(FORMATO),
                         etiquetaUsuario(log.getUsuarioId(), nombres), log.getAccion(), log.getDetalle()));
+    }
+
+    public record EventoExportado(String fecha, String usuario, String accion, String tipo, String severidad,
+                                  String entidad, Long entidadId, String detalle, String anterior, String nuevo) {}
+
+    public org.springframework.data.domain.Slice<EventoExportado> buscarExportacion(LocalDateTime desde, LocalDateTime hasta,
+            String usuario, String accion, Pageable pageable) {
+        Map<Long, String> nombres = new HashMap<>();
+        return auditoriaLogRepository.buscarExportacion(desde, hasta, usuario.trim(), accion.trim(), pageable)
+                .map(log -> {
+                    String nombre = etiquetaUsuario(log.getUsuarioId(), nombres);
+                    String fecha = log.getFecha() == null ? "" : log.getFecha().format(FORMATO);
+                    AuditoriaFila fila = new AuditoriaFila(fecha, nombre, log.getAccion(), log.getDetalle());
+                    return new EventoExportado(fecha, fila.getUsuarioLabel(), log.getAccion(),
+                            fila.getTipoLabel(), fila.getSeveridadCrudo(), log.getEntidadAfectada(), log.getEntidadId(),
+                            log.getDetalle(), log.getValorAnterior(), log.getValorNuevo());
+                });
     }
 
     public Map<String, Long> severidades(LocalDateTime desde, LocalDateTime hasta, String usuario, String accion) {

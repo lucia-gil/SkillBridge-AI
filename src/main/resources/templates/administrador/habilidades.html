@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/kpi-hero.css">
 <link rel="stylesheet" href="/css/tonos-categoria.css">
 <link rel="stylesheet" href="/css/habilidades.css">
+<link rel="stylesheet" th:href="@{/css/admin-flujos.css}">
 </head>
 <body class="admin-app">
 <div class="app-shell">
@@ -30,9 +31,14 @@
             <h2 class="kpi-hero-title">¿Qué sabe hacer tu equipo?</h2>
             <p class="kpi-hero-sub">Ordena las habilidades por categoría y detecta las que nadie ha declarado todavía.</p>
           </div>
-          <button type="button" class="kpi-hero-action" id="add-skill-btn">
-            <svg class="icon"><use href="/img/icons.svg#icon-plus"></use></svg><span>Agregar habilidad</span>
-          </button>
+          <div class="flow-actions">
+            <a class="btn btn-secondary" th:href="@{/administrador/habilidades/fusionar.html}">
+              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-shuffle"></use></svg> Fusionar habilidades
+            </a>
+            <button type="button" class="kpi-hero-action" id="add-skill-btn">
+              <svg class="icon"><use href="/img/icons.svg#icon-plus"></use></svg><span>Agregar habilidad</span>
+            </button>
+          </div>
         </div>
         <div class="kpi-hero-grid">
           <article class="hero-card">

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invitaciones masivas · SkillBridge AI</title>
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/base.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/layout.css}">
+  <link rel="stylesheet" th:href="@{/css/polish.css}">
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <link rel="stylesheet" th:href="@{/css/admin-flujos.css}">
+</head>
+<body class="admin-app">
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content admin-workflow" id="page-content">
+      <nav class="flow-crumb" aria-label="Ubicación">
+        <a th:href="@{/administrador/usuarios.html#invitaciones}">Usuarios y roles</a>
+        <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-chevron-right"></use></svg>
+        <span>Invitaciones masivas</span>
+      </nav>
+
+      <header class="flow-hero">
+        <span class="flow-emblem"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-users"></use></svg></span>
+        <div>
+          <h1>Invitaciones masivas</h1>
+          <p>Autoriza varios correos para el registro y asigna el rol de cada cuenta.</p>
+        </div>
+      </header>
+
+      <p class="callout danger" role="alert" th:if="${error}" th:text="${error}"></p>
+
+      <div class="flow-grid">
+        <section class="card flow-card flow-stack" aria-labelledby="inv-archivo">
+          <h2 id="inv-archivo">Adjuntar archivo</h2>
+          <form class="flow-stack" method="post" enctype="multipart/form-data"
+                th:action="@{/administrador/usuarios/importar/validar}">
+            <div class="flow-file">
+              <label for="archivo-invitaciones">Archivo de invitaciones</label>
+              <input id="archivo-invitaciones" name="archivo" type="file" required
+                     accept=".csv,.xlsx" aria-describedby="inv-limite">
+              <span id="inv-limite">CSV o Excel .xlsx · Hasta 200 filas · Máximo 1 MB</span>
+            </div>
+            <div class="flow-actions">
+              <button class="btn btn-primary" type="submit">Validar archivo</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card flow-card flow-stack" aria-labelledby="inv-formato">
+          <h2 id="inv-formato">Plantilla y formato</h2>
+          <div class="flow-actions">
+            <a class="btn btn-secondary btn-sm" th:href="@{/administrador/usuarios/importar/plantilla(formato='xlsx')}">
+              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-download"></use></svg> Excel
+            </a>
+            <a class="btn btn-secondary btn-sm" th:href="@{/administrador/usuarios/importar/plantilla(formato='csv')}">
+              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-download"></use></svg> CSV
+            </a>
+          </div>
+          <p class="flow-muted">Completa un correo y un rol por fila. Usa una sola hoja en Excel o un CSV UTF-8 separado por comas o punto y coma.</p>
+          <code class="flow-code">correo,rol</code>
+          <ul class="flow-roles" aria-label="Valores válidos para el rol">
+            <li><code class="badge badge-neutral">miembro</code></li>
+            <li><code class="badge badge-blue">resource_manager</code></li>
+            <li><code class="badge badge-blue">administrador</code></li>
+          </ul>
+        </section>
+      </div>
+
+      <section class="card flow-card flow-stack" th:if="${revision != null}" id="revision-invitaciones" aria-labelledby="inv-revision">
+        <div class="flow-row flow-spread">
+          <div>
+            <h2 id="inv-revision">Vista previa</h2>
+            <p class="flow-muted" th:text="${revision.archivo()}">invitaciones.xlsx</p>
+          </div>
+          <form method="post" th:action="@{/administrador/usuarios/importar/descartar}">
+            <button class="btn btn-secondary btn-sm" type="submit">Descartar revisión</button>
+          </form>
+        </div>
+        <dl class="flow-metrics">
+          <div><dt>Filas leídas</dt><dd th:text="${revision.filas().size()}">0</dd></div>
+          <div><dt>Listas para autorizar</dt><dd th:text="${revision.validas()}">0</dd></div>
+          <div><dt>Con observaciones</dt><dd th:text="${revision.rechazadas()}">0</dd></div>
+        </dl>
+        <div class="table-scroll flow-table flow-review" tabindex="0" aria-label="Resultado de la validación">
+          <table class="data-table">
+            <thead><tr><th scope="col">Fila</th><th scope="col">Correo</th><th scope="col">Rol</th><th scope="col">Validación</th></tr></thead>
+            <tbody>
+              <tr th:each="fila : ${revision.filas()}">
+                <td class="mono" th:text="${fila.numero()}">2</td>
+                <td class="cell-primary" th:text="${fila.correo().isEmpty() ? '—' : fila.correo()}">correo</td>
+                <td th:text="${fila.rolLabel()}">Miembro</td>
+                <td>
+                  <span th:if="${fila.valida()}" class="badge badge-green">Lista</span>
+                  <span th:unless="${fila.valida()}" th:text="${fila.error()}">Revisar dato</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flow-row flow-spread" th:if="${revision.validas() > 0}">
+          <p class="flow-muted">La confirmación autoriza y pone en cola el envío de las filas válidas.</p>
+          <form method="post" th:action="@{/administrador/usuarios/importar/confirmar}">
+            <input type="hidden" name="token" th:value="${revision.token()}">
+            <button class="btn btn-primary" type="submit" th:text="'Autorizar correos (' + ${revision.validas()} + ')'">Autorizar correos</button>
+          </form>
+        </div>
+        <p class="flow-muted" th:unless="${revision.validas() > 0}">Corrige las observaciones y vuelve a adjuntar el archivo para continuar.</p>
+      </section>
+    </main>
+  </div>
+</div>
+<script th:src="@{/js/toast.js}"></script>
+<script th:src="@{/js/dropdown.js}"></script>
+<script th:src="@{/js/topbar-actions.js}"></script>
+<script th:src="@{/js/global-search.js}"></script>
+<script th:src="@{/js/mobile-nav.js}"></script>
+<script th:src="@{/js/admin-ui.js}"></script>
+<script th:src="@{/js/admin-importacion.js}"></script>
+</body>
+</html>

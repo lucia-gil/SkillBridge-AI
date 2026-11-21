@@ -4,6 +4,8 @@ import com.skillbridge.ai.dto.AuditoriaFila;
 import com.skillbridge.ai.dto.TopUsuarioAuditoria;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.AuditoriaService;
+import com.skillbridge.ai.service.AuditoriaExcelService;
+import com.skillbridge.ai.service.ReporteExportService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
@@ -20,7 +22,11 @@ import java.time.LocalDate;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 /** Auditoría (administrador/auditoria.html). Ver Javadoc de AuditoriaFila: tipo/severidad/origen se derivan del texto de "accion", no son columnas reales. */
 @Controller
@@ -30,9 +36,15 @@ public class AdminAuditoriaController {
     private final AuditoriaService auditoriaService;
     private final ShellModelBuilder shellModelBuilder;
 
-    public AdminAuditoriaController(AuditoriaService auditoriaService, ShellModelBuilder shellModelBuilder) {
+    private final AuditoriaExcelService excel;
+    private final ReporteExportService reportes;
+
+    public AdminAuditoriaController(AuditoriaService auditoriaService, ShellModelBuilder shellModelBuilder,
+                                    AuditoriaExcelService excel, ReporteExportService reportes) {
         this.auditoriaService = auditoriaService;
         this.shellModelBuilder = shellModelBuilder;
+        this.excel = excel;
+        this.reportes = reportes;
     }
 
     @GetMapping("/auditoria.html")
@@ -45,7 +57,7 @@ public class AdminAuditoriaController {
 
         Page<AuditoriaFila> pagina = auditoriaService.buscar(
                 desde == null ? null : desde.atStartOfDay(), hasta == null ? null : hasta.plusDays(1).atStartOfDay(),
-                usuario, accion, PageRequest.of(Math.max(0, page), 12, Sort.by(Sort.Direction.DESC, "fecha")));
+                usuario, accion, PageRequest.of(Math.max(0, page), 12, Sort.by(Sort.Direction.DESC, "fecha", "id")));
         List<AuditoriaFila> eventos = pagina.getContent();
         List<TopUsuarioAuditoria> topUsuarios = auditoriaService.topUsuarios(5);
         Map<String, Long> porSeveridad = auditoriaService.severidades(
@@ -65,5 +77,22 @@ public class AdminAuditoriaController {
         model.addAttribute("mediaCount", porSeveridad.getOrDefault("Media", 0L));
         model.addAttribute("infoCount", porSeveridad.getOrDefault("Info", 0L));
         return "administrador/auditoria";
+    }
+
+    @GetMapping("/auditoria/exportar")
+    public ResponseEntity<StreamingResponseBody> exportar(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "") String usuario, @RequestParam(defaultValue = "") String accion) {
+        if ((desde != null && hasta != null && desde.isAfter(hasta)) || LocalDate.MAX.equals(hasta)
+                || usuario.length() > 100 || accion.length() > 100) {
+            return ResponseEntity.badRequest().build();
+        }
+        String nombre = reportes.nombreArchivo("skillbridge-auditoria") + ".xlsx";
+        StreamingResponseBody archivo = salida -> excel.escribir(desde, hasta, usuario, accion, salida);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + nombre)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo);
     }
 }

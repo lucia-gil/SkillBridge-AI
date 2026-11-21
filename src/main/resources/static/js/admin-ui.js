@@ -102,6 +102,7 @@
 
   function enhanceLowDataStates() {
     document.querySelectorAll(".admin-app .card").forEach(function (card) {
+      if (card.closest(".admin-workflow, [data-admin-compact]")) return;
       var body = card.querySelector(".data-table tbody");
       if (!body || card.querySelector(".admin-complementary-panel")) return;
       var rows = Array.prototype.slice.call(body.children).filter(function (row) { return !row.hidden; });

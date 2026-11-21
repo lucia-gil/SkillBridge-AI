@@ -182,6 +182,12 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  var abrirProyecto = new URLSearchParams(window.location.search).get("ver");
+  if (abrirProyecto && /^\d+$/.test(abrirProyecto)) {
+    var detalleSolicitado = document.querySelector('[data-view-project="' + abrirProyecto + '"]');
+    if (detalleSolicitado) detalleSolicitado.click();
+  }
+
   // Nuevo proyecto: stack con chips del catálogo de habilidades
   // (SBAI.techInput) y rango de fechas con mínimo de 7 días, atajos y
   // resumen en vivo (SBAI.dateRange). Ambos en /js/proyecto-form.js.

@@ -5,9 +5,11 @@
 <link rel="stylesheet" href="/css/admin-visual.css">
 </head><body class="admin-app"><div class="app-shell"><div th:replace="~{fragments/sidebar :: sidebar}"></div><div class="main-content"><div th:replace="~{fragments/topbar :: topbar}"></div>
 <main class="page-content admin-audit-page insight-page">
-  <header class="admin-audit-intro insight-audit-hero"><div><span class="admin-section-caption">CENTRO DE TRAZABILIDAD</span><h1>Cada acción, en contexto.</h1><p>Explora la actividad de la plataforma y encuentra el detalle detrás de cada cambio.</p></div><a class="btn btn-secondary" href="/administrador/reportes.html">Ver reportes</a></header>
+  <header class="admin-audit-intro insight-audit-hero"><div><span class="admin-section-caption">CENTRO DE TRAZABILIDAD</span><h1>Cada acción, en contexto.</h1><p>Explora la actividad de la plataforma y encuentra el detalle detrás de cada cambio.</p></div><a class="btn btn-primary" th:href="@{/administrador/auditoria/exportar(desde=${desde},hasta=${hasta},usuario=${usuarioFiltro},accion=${accionFiltro})}">
+    <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-download"></use></svg> Exportar Excel
+  </a></header>
   <section class="admin-audit-summary insight-audit-kpis" aria-label="Resumen de los resultados"><div><strong th:text="${pagina.totalElements}">0</strong><span>Eventos encontrados</span></div><div data-tone="red"><strong th:text="${altaCount}">0</strong><span>Severidad alta en el filtro</span></div><div data-tone="amber"><strong th:text="${mediaCount}">0</strong><span>Severidad media en el filtro</span></div><div data-tone="blue"><strong th:text="${infoCount}">0</strong><span>Informativos en el filtro</span></div></section>
-  <section class="card admin-audit-main insight-events"><div class="admin-audit-section-head"><div><h2>Registro de eventos</h2><p>Los filtros consultan todo el registro. Los indicadores incluyen todas las coincidencias. Tipo y severidad se derivan de la acción. El origen se estima a partir del actor.</p></div></div>
+  <section class="card admin-audit-main insight-events" data-admin-compact><div class="admin-audit-section-head"><div><h2>Registro de eventos</h2><p>La exportación incluye todas las coincidencias de los filtros aplicados, con el detalle y los valores del cambio disponibles.</p></div></div>
     <form novalidate class="admin-audit-filters" method="get" action="/administrador/auditoria.html">
       <label>Desde<input class="input" type="date" name="desde" th:value="${desde}"></label><label>Hasta<input class="input" type="date" name="hasta" th:value="${hasta}"></label>
       <label>Usuario<input class="input" type="search" name="usuario" th:value="${usuarioFiltro}" maxlength="100" placeholder="Nombre del usuario"></label>

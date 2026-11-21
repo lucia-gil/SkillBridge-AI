@@ -28,10 +28,6 @@ import java.io.IOException;
  */
 @Component
 public class AccesoDenegadoHandler implements AccessDeniedHandler {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.skillbridge.ai.service.IncidenteService incidentes;
-
-
     private final FlashMapManager flashMapManager = new SessionFlashMapManager();
 
     @Override
@@ -55,7 +51,6 @@ public class AccesoDenegadoHandler implements AccessDeniedHandler {
             return;
         }
 
-        incidentes.registrar(com.skillbridge.ai.service.IncidenteService.Regla.AUTORIZACION);
         // Decisión del equipo: el acceso negado se muestra explícito con
         // templates/error/403.html, en vez de redirigir en silencio al inicio.
         response.sendError(HttpServletResponse.SC_FORBIDDEN,

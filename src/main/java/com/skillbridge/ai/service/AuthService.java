@@ -335,7 +335,7 @@ public class AuthService {
         }
 
         // ── Correo pre-autorizado (RF01/RF02) ──
-        Optional<CorreoAutorizado> oAcceso = correoAutorizadoRepository.findByCorreoIgnoreCase(correoFinal);
+        Optional<CorreoAutorizado> oAcceso = correoAutorizadoRepository.bloquearPorCorreo(correoFinal);
         if (oAcceso.isEmpty() || Boolean.TRUE.equals(oAcceso.get().getUtilizado())) {
             errores.put("correo", "Este correo no está autorizado. Usa el correo al que te llegó la invitación, o pide a un Administrador que lo habilite.");
             return ResultadoRegistro.conErrores(errores);

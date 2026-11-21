@@ -109,6 +109,18 @@ public class UsuariosController {
         return "redirect:/administrador/usuarios.html";
     }
 
+    @PostMapping("/usuarios/correos-autorizados/{id}/reenviar")
+    public String reenviar(@PathVariable Long id, HttpSession session, RedirectAttributes flash) {
+        UsuarioSesion actor = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
+        try {
+            usuarioService.reenviarInvitacion(id, actor.getUsuarioId());
+            flash.addFlashAttribute("exito", "Invitación puesta en cola para reenvío.");
+        } catch (OperacionInvalidaException ex) {
+            flash.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/administrador/usuarios.html#invitaciones";
+    }
+
     /** Cambiar el rol de una invitación todavía no usada (modelo v7). */
     @PostMapping("/usuarios/correos-autorizados/{id}/rol")
     public String cambiarRolInvitacion(@PathVariable Long id, @RequestParam String rol,

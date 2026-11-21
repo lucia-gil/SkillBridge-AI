@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pendientes de proyectos · SkillBridge AI</title>
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/base.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/layout.css}">
+  <link rel="stylesheet" th:href="@{/css/polish.css}">
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <link rel="stylesheet" th:href="@{/css/admin-flujos.css}">
+</head>
+<body class="admin-app">
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content admin-workflow" id="page-content">
+      <header class="flow-hero">
+        <span class="flow-emblem"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-calendar"></use></svg></span>
+        <div>
+          <h1>Pendientes de proyectos</h1>
+          <p>Revisa proyectos sin responsable, entregables atrasados y asignaciones que están por terminar.</p>
+        </div>
+        <a class="btn btn-secondary" th:href="@{/administrador/proyectos.html}">Ver proyectos</a>
+      </header>
+
+      <nav class="flow-nav" aria-label="Tipos de pendientes">
+        <a th:each="resumen : ${bandeja.resumen()}"
+           th:href="@{/administrador/pendientes.html(tipo=${resumen.tipo().slug()})}"
+           th:attr="aria-current=${resumen.tipo() == bandeja.tipo() ? 'page' : null}">
+          <svg class="icon" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#' + ${resumen.tipo().icono()}"></use></svg>
+          <span th:text="${resumen.tipo().titulo()}">Pendiente</span>
+          <strong th:text="${resumen.total()}">0</strong>
+        </a>
+      </nav>
+
+      <section class="card flow-card flow-stack" aria-labelledby="pendientes-titulo" th:with="tipo=${bandeja.tipo().slug()}">
+        <div>
+          <h2 id="pendientes-titulo" th:text="${bandeja.tipo().titulo()}">Pendientes</h2>
+          <p class="flow-muted" th:text="${bandeja.tipo().descripcion()}"></p>
+        </div>
+        <div class="flow-empty" th:if="${bandeja.filas().isEmpty()}">
+          <strong>Sin pendientes en esta vista</strong>
+          <span>Consulta las demás categorías para revisar su estado.</span>
+        </div>
+        <div class="table-scroll flow-table" th:unless="${bandeja.filas().isEmpty()}">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col" th:text="${tipo == 'sin-lider' ? 'Proyecto' : (tipo == 'entregables' ? 'Entregable' : 'Persona')}">Proyecto</th>
+                <th scope="col" th:unless="${tipo == 'sin-lider'}">Proyecto</th>
+                <th scope="col" th:text="${tipo == 'sin-lider' ? 'Fecha de inicio' : (tipo == 'entregables' ? 'Venció el' : 'Termina el')}">Fecha</th>
+                <th scope="col" th:if="${tipo == 'entregables'}">Envíos pendientes</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="fila : ${bandeja.filas()}">
+                <td class="cell-primary" th:text="${fila.titulo()}">Pendiente</td>
+                <td th:unless="${tipo == 'sin-lider'}" th:text="${fila.proyecto()}">Proyecto</td>
+                <td th:text="${fila.fechaLabel(bandeja.tipo())}">Fecha</td>
+                <td th:if="${tipo == 'entregables'}"><span class="badge badge-amber" th:text="${fila.cantidad()}">0</span></td>
+                <td>
+                  <a class="btn btn-secondary btn-sm" th:if="${tipo == 'entregables'}"
+                     th:href="@{/administrador/entregables/{id}.html(id=${fila.id()})}">Ver entregable</a>
+                  <a class="btn btn-secondary btn-sm" th:unless="${tipo == 'entregables'}"
+                     th:href="@{/administrador/proyectos.html(ver=${fila.proyectoId()})}">Ver proyecto</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <nav class="flow-actions" th:if="${bandeja.paginas() > 1}" aria-label="Páginas de pendientes">
+          <a class="btn btn-secondary btn-sm" th:if="${bandeja.pagina() > 0}"
+             th:href="@{/administrador/pendientes.html(tipo=${tipo},pagina=${bandeja.pagina() - 1})}">Anterior</a>
+          <span class="flow-muted" th:text="'Página ' + ${bandeja.pagina() + 1} + ' de ' + ${bandeja.paginas()}">Página 1</span>
+          <a class="btn btn-secondary btn-sm" th:if="${bandeja.pagina() + 1 < bandeja.paginas()}"
+             th:href="@{/administrador/pendientes.html(tipo=${tipo},pagina=${bandeja.pagina() + 1})}">Siguiente</a>
+        </nav>
+      </section>
+    </main>
+  </div>
+</div>
+<script th:src="@{/js/toast.js}"></script>
+<script th:src="@{/js/dropdown.js}"></script>
+<script th:src="@{/js/topbar-actions.js}"></script>
+<script th:src="@{/js/global-search.js}"></script>
+<script th:src="@{/js/mobile-nav.js}"></script>
+<script th:src="@{/js/admin-ui.js}"></script>
+</body>
+</html>

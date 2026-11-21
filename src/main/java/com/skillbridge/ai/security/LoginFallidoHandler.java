@@ -23,16 +23,11 @@ import java.io.IOException;
  */
 @Component
 public class LoginFallidoHandler implements AuthenticationFailureHandler {
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.skillbridge.ai.service.IncidenteService incidentes;
-
-
     private final FlashMapManager flashMapManager = new SessionFlashMapManager();
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException {
-        incidentes.registrar(com.skillbridge.ai.service.IncidenteService.Regla.AUTENTICACION);
         String mensaje = exception instanceof BadCredentialsException && exception.getMessage() != null
                 ? exception.getMessage()
                 : "No se pudo iniciar sesión. Inténtalo de nuevo en unos minutos.";

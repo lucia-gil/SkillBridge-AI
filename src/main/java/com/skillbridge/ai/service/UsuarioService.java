@@ -17,7 +17,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Locale;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,8 +89,7 @@ public class UsuarioService {
      * Admite varios dominios a la vez separados por coma (p. ej.
      * "gmail.com, pucp.edu.pe") para permitir invitar con cualquiera de ellos.
      */
-    private Pattern patronCorreoDominio() {
-        String dominio = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com").trim();
+    private Pattern patronCorreoDominio(String dominio) {
         if (dominio.isEmpty() || dominio.equals("*")) {
             return PATRON_CORREO_GENERICO;
         }
@@ -245,59 +248,120 @@ public class UsuarioService {
      */
     @Transactional
     public void invitar(String correoCrudo, String rolCrudo, Long actorId) {
-        String rolAsignado = normalizarRol(rolCrudo);
-        if (correoCrudo == null || correoCrudo.isBlank()) {
-            throw new OperacionInvalidaException("Ingresa un correo corporativo.");
+        InvitacionEntrada entrada = validarInvitacion(new InvitacionEntrada(correoCrudo, rolCrudo), dominioInvitacion());
+        autorizar(entrada, actorId, "individual");
+        notificacionService.avisarAdministradores("info", "Invitación registrada",
+                "Se autorizó una cuenta con el rol de " + etiquetaRol(entrada.rol()) + ". Revisa la invitación en Usuarios y roles.");
+    }
+
+    public record InvitacionEntrada(String correo, String rol) {}
+
+    record DominioInvitacion(Pattern patron, String dominios) {
+        void validar(String correo) {
+            if (correo.isBlank()) throw new OperacionInvalidaException("Ingresa un correo corporativo.");
+            if (correo.length() > 150 || !PATRON_CORREO_GENERICO.matcher(correo).matches()) {
+                throw new OperacionInvalidaException("Ingresa un correo válido de hasta 150 caracteres.");
+            }
+            if (!patron.matcher(correo).matches()) {
+                throw new OperacionInvalidaException("Usa uno de los dominios permitidos: " + dominios + ".");
+            }
         }
-        String correo = correoCrudo.trim().toLowerCase();
-        String dominioPermitido = configuracionService.valor(configuracionService.obtenerMapa(), "dominio_correo_permitido", "nexacorp.com").trim();
-        boolean dominioLibre = dominioPermitido.isEmpty() || dominioPermitido.equals("*");
-        if (!patronCorreoDominio().matcher(correo).matches()) {
-            throw new OperacionInvalidaException(dominioLibre ? "Ingresa un correo válido."
-                    : "Ingresa un correo con uno de estos dominios: " + dominiosPermitidosTexto(dominioPermitido) + ".");
-        }
+    }
+
+    DominioInvitacion dominioInvitacion() {
+        String configurado = configuracionService.valor(configuracionService.obtenerMapa(),
+                "dominio_correo_permitido", "nexacorp.com").trim();
+        return new DominioInvitacion(patronCorreoDominio(configurado), dominiosPermitidosTexto(configurado));
+    }
+
+    InvitacionEntrada validarInvitacion(InvitacionEntrada entrada, DominioInvitacion dominio) {
+        String correo = normalizarCorreoInvitacion(entrada.correo());
+        dominio.validar(correo);
+        String rol = normalizarRol(entrada.rol());
         if (usuarioRepository.existsByCorreoIgnoreCase(correo)) {
             throw new OperacionInvalidaException("Ese correo ya tiene una cuenta creada.");
         }
         if (correoAutorizadoRepository.existsByCorreoIgnoreCase(correo)) {
             throw new OperacionInvalidaException("Ese correo ya fue invitado anteriormente.");
         }
+        return new InvitacionEntrada(correo, rol);
+    }
+
+    static String normalizarCorreoInvitacion(String correo) {
+        return correo == null ? "" : correo.strip().toLowerCase(Locale.ROOT);
+    }
+
+    @Transactional
+    public int invitarLote(List<InvitacionEntrada> entradas, boolean excel, Long actorId) {
+        DominioInvitacion dominio = dominioInvitacion();
+        List<InvitacionEntrada> validadas = entradas.stream()
+                .map(entrada -> validarInvitacion(entrada, dominio))
+                .sorted(Comparator.comparing(InvitacionEntrada::correo))
+                .toList();
+        String origen = excel ? "masiva_excel" : "masiva_csv";
+        for (InvitacionEntrada entrada : validadas) {
+            autorizar(entrada, actorId, origen);
+        }
+        int total = validadas.size();
+        auditoriaService.registrar(actorId, "INVITACIONES_MASIVAS", "correo_autorizado", null,
+                null, AuditoriaService.json("total", total), "Carga masiva desde " + (excel ? "Excel" : "CSV") + ".");
+        notificacionService.avisarAdministradores("info", "Invitaciones masivas registradas",
+                "Se autorizaron " + total + " correos para el autoregistro. Revisa el envío en Usuarios y roles.");
+        return total;
+    }
+
+    private void autorizar(InvitacionEntrada entrada, Long actorId, String origen) {
         CorreoAutorizado acceso = new CorreoAutorizado();
-        acceso.setCorreo(correo);
-        acceso.setEstadoEnvio("En cola");
+        acceso.setCorreo(entrada.correo());
         acceso.setAutorizadoPorId(actorId);
-        acceso.setOrigenCarga("individual");
-        acceso.setUtilizado(false);
-        acceso.setRolAsignado(rolAsignado);
-        correoAutorizadoRepository.save(acceso);
-
+        acceso.setOrigenCarga(origen);
+        acceso.setRolAsignado(entrada.rol());
+        encolarInvitacion(acceso, LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
         auditoriaService.registrar(actorId, "USUARIO_INVITADO", "correo_autorizado", acceso.getId(),
-                null, "{\"correo\":\"" + correo + "\",\"rol_organizacional\":" + (rolAsignado == null ? "null" : "\"" + rolAsignado + "\"") + "}",
-                "Se autorizó el correo " + correo + " para autoregistro como " + etiquetaRol(rolAsignado) + ".");
-        notificacionService.avisarAdministradores("info", "Invitación registrada",
-                "Se autorizó una cuenta con el rol de " + etiquetaRol(rolAsignado) + ". Revisa la invitación en Usuarios y roles.");
+                null, AuditoriaService.json("rol_organizacional", entrada.rol()),
+                "Se autorizó el correo " + entrada.correo() + " para autoregistro como " + etiquetaRol(entrada.rol()) + ".");
+    }
 
-        // Correo real al invitado: todavía no existe su perfil (recién se
-        // crea al completar /auth/registro.html), así que se manda directo
-        // con EmailService en vez de pasar por NotificacionService (que
-        // necesita un perfilId ya existente).
-        // El link lleva directo al registro con el correo ya escrito: ese
-        // correo exacto es el único que puede usar para crear la cuenta.
+    private void encolarInvitacion(CorreoAutorizado acceso, LocalDateTime ahora) {
+        acceso.setEstadoEnvio("En cola");
+        acceso.setUltimoEnvio(ahora);
+        correoAutorizadoRepository.saveAndFlush(acceso);
+
+        String correo = acceso.getCorreo();
+        String rol = etiquetaRol(acceso.getRolAsignado());
         String rutaRegistro = "/auth/registro.html?correo="
                 + java.net.URLEncoder.encode(correo, java.nio.charset.StandardCharsets.UTF_8);
         String linkRegistro = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl + rutaRegistro : rutaRegistro;
-        String comoRol = rolAsignado == null
-                ? "como Miembro (podrás liderar o colaborar en proyectos)"
-                : "como " + etiquetaRol(rolAsignado);
         emailService.enviar(new EmailService.Correo(correo,
-                "Fuiste invitado a SkillBridge AI" + (rolAsignado == null ? "" : " como " + etiquetaRol(rolAsignado)),
-                "Invitación",
-                "¡Ya puedes registrarte en SkillBridge AI!",
-                "Un administrador autorizó tu correo (" + correo + ") para crear tu cuenta " + comoRol + ".\n\n"
-                        + "Completa tu registro con el botón. Usa este mismo correo: es el único autorizado para tu cuenta. "
-                        + "Cuando inicies sesión verás directamente tu panel.",
+                "Fuiste invitado a SkillBridge AI",
+                "Invitación", "¡Ya puedes registrarte en SkillBridge AI!",
+                "Un administrador autorizó " + correo + " para crear tu cuenta como " + rol
+                        + ". Usa este mismo correo para completar tu registro.",
                 linkRegistro, "Crear mi cuenta", false), ok -> jdbcInvitaciones.update(
-                        "UPDATE correos_autorizados SET estado_envio=? WHERE id=?", ok ? "Aceptado por SMTP" : "Fallo SMTP", acceso.getId()));
+                        "UPDATE correos_autorizados SET estado_envio=? WHERE id=? AND ultimo_envio=?",
+                        ok ? "Aceptado por SMTP" : "Fallo SMTP", acceso.getId(), ahora));
+    }
+
+    @Transactional
+    public void reenviarInvitacion(Long id, Long actorId) {
+        CorreoAutorizado acceso = invitacionPendiente(id);
+        LocalDateTime ahora = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        if (acceso.getUltimoEnvio() != null && acceso.getUltimoEnvio().plusMinutes(1).isAfter(ahora)) {
+            throw new OperacionInvalidaException("Espera un minuto desde el último intento de envío.");
+        }
+        dominioInvitacion().validar(acceso.getCorreo());
+        encolarInvitacion(acceso, ahora);
+        auditoriaService.registrar(actorId, "INVITACION_REENVIADA", "correo_autorizado", id,
+                null, null, "Se puso en cola el reenvío a " + acceso.getCorreo() + ".");
+    }
+
+    private CorreoAutorizado invitacionPendiente(Long id) {
+        CorreoAutorizado acceso = correoAutorizadoRepository.bloquearPorId(id)
+                .orElseThrow(() -> new OperacionInvalidaException("Esa invitación ya no existe."));
+        if (Boolean.TRUE.equals(acceso.getUtilizado())) {
+            throw new OperacionInvalidaException("Ese correo ya completó el registro.");
+        }
+        return acceso;
     }
 
     // ─────────────── CRUD de Correos autorizados (lista blanca de registro) ───────────────
@@ -311,7 +375,8 @@ public class UsuarioService {
                         c.getId(), c.getCorreo(),
                         c.getFechaAutorizacion() != null ? c.getFechaAutorizacion().format(FORMATO_FECHA_AUTORIZACION) : "—",
                         Boolean.TRUE.equals(c.getUtilizado()), c.getRolAsignado(),
-                        c.getEstadoEnvio() == null ? "Autorizado · envío desconocido" : c.getEstadoEnvio()))
+                        c.getEstadoEnvio() == null ? "Sin datos de envío" : c.getEstadoEnvio(),
+                        c.getUltimoEnvio() == null ? "—" : c.getUltimoEnvio().format(FORMATO_FECHA_AUTORIZACION)))
                 .collect(Collectors.toList());
     }
 
@@ -324,11 +389,7 @@ public class UsuarioService {
     /** Cambia el rol de una invitación todavía no usada (modelo v7, fase 3). */
     @Transactional
     public void cambiarRolInvitacion(Long id, String rolCrudo, Long actorId) {
-        CorreoAutorizado acceso = correoAutorizadoRepository.findById(id)
-                .orElseThrow(() -> new OperacionInvalidaException("Esa invitación ya no existe."));
-        if (Boolean.TRUE.equals(acceso.getUtilizado())) {
-            throw new OperacionInvalidaException("Ese correo ya se registró: cambia su rol desde la lista de usuarios.");
-        }
+        CorreoAutorizado acceso = invitacionPendiente(id);
         String nuevo = normalizarRol(rolCrudo);
         String anterior = acceso.getRolAsignado();
         if (java.util.Objects.equals(anterior, nuevo)) {
@@ -343,11 +404,7 @@ public class UsuarioService {
 
     @Transactional
     public void revocarAutorizacion(Long id, Long actorId) {
-        CorreoAutorizado acceso = correoAutorizadoRepository.findById(id)
-                .orElseThrow(() -> new OperacionInvalidaException("Esa autorización ya no existe."));
-        if (Boolean.TRUE.equals(acceso.getUtilizado())) {
-            throw new OperacionInvalidaException("Ese correo ya se registró; no se puede revocar. Elimina la cuenta desde la lista de usuarios si corresponde.");
-        }
+        CorreoAutorizado acceso = invitacionPendiente(id);
         String correo = acceso.getCorreo();
         correoAutorizadoRepository.delete(acceso);
         auditoriaService.registrar(actorId, "USUARIO_INVITACION_REVOCADA", "correo_autorizado", id, null, null,

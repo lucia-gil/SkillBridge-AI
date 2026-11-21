@@ -86,7 +86,6 @@ public class NotificacionFila {
         if (enlaceAccion == null) return null;
         String ruta = enlaceAccion.startsWith("/administrador/")
                 ? enlaceAccion.substring("/administrador/".length()) : enlaceAccion;
-        if (ruta.matches("seguridad[.]html[?]id=[0-9]+")) return "/administrador/" + ruta;
         return switch (ruta) {
             case "inicio.html", "usuarios.html", "proyectos.html", "auditoria.html", "configuracion.html",
                     "reportes.html", "cursos.html", "catalogos.html", "habilidades.html" -> "/administrador/" + ruta;

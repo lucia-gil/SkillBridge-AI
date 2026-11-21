@@ -36,6 +36,12 @@ public class CorreoAutorizado {
     public String getEstadoEnvio() { return estadoEnvio; }
     public void setEstadoEnvio(String estadoEnvio) { this.estadoEnvio = estadoEnvio; }
 
+    @Column(name = "ultimo_envio")
+    private LocalDateTime ultimoEnvio;
+
+    public LocalDateTime getUltimoEnvio() { return ultimoEnvio; }
+    public void setUltimoEnvio(LocalDateTime ultimoEnvio) { this.ultimoEnvio = ultimoEnvio; }
+
     @Column(name = "fecha_uso")
     private LocalDateTime fechaUso;
 

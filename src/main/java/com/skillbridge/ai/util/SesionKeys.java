@@ -10,4 +10,7 @@ public final class SesionKeys {
     /** Contraseña correcta, falta el código TOTP (todavía NO autenticado en Spring Security). */
     public static final String PENDIENTE_2FA = "PENDIENTE_2FA";
     public static final String INTENTOS_2FA = "INTENTOS_2FA";
+
+    /** Segundo factor completado. Se mantiene la clave de las sesiones vigentes. */
+    public static final String SEGUNDO_FACTOR = "portal.segundoFactor";
 }

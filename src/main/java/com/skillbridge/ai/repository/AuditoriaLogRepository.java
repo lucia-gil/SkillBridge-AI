@@ -17,19 +17,23 @@ public interface AuditoriaLogRepository extends JpaRepository<AuditoriaLog, Long
     // la tabla completa sin límite.
     List<AuditoriaLog> findTop200ByOrderByFechaDesc();
 
-    @Query("select a from AuditoriaLog a where " +
-            "(:desde is null or a.fecha >= :desde) and (:hasta is null or a.fecha < :hasta) " +
-            "and (:accion = '' or lower(a.accion) like lower(concat('%', :accion, '%'))) " +
-            "and (:usuario = '' or exists (select u.id from Usuario u where u.id = a.usuarioId " +
-            "and lower(u.nombreCompleto) like lower(concat('%', :usuario, '%'))))")
+    String FILTROS = """
+            (:desde is null or a.fecha >= :desde) and (:hasta is null or a.fecha < :hasta)
+            and (:accion = '' or lower(a.accion) like lower(concat('%', :accion, '%')))
+            and (:usuario = '' or exists (select u.id from Usuario u where u.id = a.usuarioId
+            and lower(u.nombreCompleto) like lower(concat('%', :usuario, '%'))))
+            """;
+
+    @Query("select a from AuditoriaLog a where " + FILTROS)
     Page<AuditoriaLog> buscar(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta,
                              @Param("usuario") String usuario, @Param("accion") String accion, Pageable pageable);
 
-    @Query("select a.accion, count(a) from AuditoriaLog a where " +
-            "(:desde is null or a.fecha >= :desde) and (:hasta is null or a.fecha < :hasta) " +
-            "and (:accion = '' or lower(a.accion) like lower(concat('%', :accion, '%'))) " +
-            "and (:usuario = '' or exists (select u.id from Usuario u where u.id = a.usuarioId " +
-            "and lower(u.nombreCompleto) like lower(concat('%', :usuario, '%')))) group by a.accion")
+    @Query("select a from AuditoriaLog a where " + FILTROS)
+    org.springframework.data.domain.Slice<AuditoriaLog> buscarExportacion(
+            @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta,
+            @Param("usuario") String usuario, @Param("accion") String accion, Pageable pageable);
+
+    @Query("select a.accion, count(a) from AuditoriaLog a where " + FILTROS + " group by a.accion")
     List<Object[]> contarPorAccion(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta,
                                   @Param("usuario") String usuario, @Param("accion") String accion);
 

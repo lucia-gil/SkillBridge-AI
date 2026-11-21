@@ -1,7 +1,6 @@
 package com.skillbridge.ai.controller;
 
 import com.skillbridge.ai.dto.UsuarioSesion;
-import com.skillbridge.ai.security.PortalFilter;
 import com.skillbridge.ai.service.DobleFactorService;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
@@ -29,7 +28,7 @@ public class EnrolamientoController {
     public String activar(@RequestParam String codigo, HttpSession session, Model model) {
         var u = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         if (servicio.activar(u.getUsuarioId(), codigo)) {
-            session.setAttribute(PortalFilter.SEGUNDO_FACTOR, true);
+            session.setAttribute(SesionKeys.SEGUNDO_FACTOR, true);
             return "redirect:/administrador/inicio.html";
         }
         model.addAttribute("error", "Código incorrecto. Verifica la hora de tu autenticador.");

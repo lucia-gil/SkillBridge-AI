@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fusionar habilidades · SkillBridge AI</title>
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/base.css}">
+  <link rel="stylesheet" th:href="@{/css/components.css}">
+  <link rel="stylesheet" th:href="@{/css/layout.css}">
+  <link rel="stylesheet" th:href="@{/css/polish.css}">
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <link rel="stylesheet" th:href="@{/css/admin-flujos.css}">
+</head>
+<body class="admin-app">
+<div class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/topbar :: topbar}"></div>
+    <main class="page-content admin-workflow" id="page-content">
+      <nav class="flow-crumb" aria-label="Ubicación">
+        <a th:href="@{/administrador/habilidades.html}">Catálogo de habilidades</a>
+        <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-chevron-right"></use></svg>
+        <span>Fusionar habilidades</span>
+      </nav>
+      <header class="flow-hero">
+        <span class="flow-emblem"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-shuffle"></use></svg></span>
+        <div>
+          <h1>Fusionar habilidades</h1>
+          <p>Consolida dos nombres del catálogo y traslada sus referencias a la habilidad que conservarás.</p>
+        </div>
+      </header>
+      <p class="callout danger" role="alert" th:if="${error}" th:text="${error}"></p>
+
+      <section class="card flow-card flow-stack" aria-labelledby="fusion-seleccion">
+        <h2 id="fusion-seleccion">Seleccionar habilidades</h2>
+        <p class="flow-muted" th:if="${opciones.size() < 2}">Agrega al menos dos habilidades al catálogo para poder fusionarlas.</p>
+        <form class="flow-stack" method="get" th:if="${opciones.size() >= 2}"
+              th:action="@{/administrador/habilidades/fusionar.html}">
+          <div class="flow-select">
+            <label>Duplicado que se retirará
+              <select class="select" name="origen" required>
+                <option value="">Selecciona una habilidad</option>
+                <option th:each="op : ${opciones}" th:value="${op.id()}"
+                        th:selected="${op.id().equals(origen)}" th:text="|${op.nombre()} · ${op.categoria()}|">Duplicado</option>
+              </select>
+            </label>
+            <label>Habilidad que se conservará
+              <select class="select" name="destino" required>
+                <option value="">Selecciona una habilidad</option>
+                <option th:each="op : ${opciones}" th:value="${op.id()}"
+                        th:selected="${op.id().equals(destino)}" th:text="|${op.nombre()} · ${op.categoria()}|">Destino</option>
+              </select>
+            </label>
+          </div>
+          <div class="flow-actions"><button class="btn btn-primary" type="submit">Revisar impacto</button></div>
+        </form>
+      </section>
+
+      <section class="card flow-card flow-stack" th:if="${vista != null}" aria-labelledby="fusion-impacto">
+        <h2 id="fusion-impacto">Impacto de la fusión</h2>
+        <div class="flow-transfer">
+          <div><span>Se retirará</span><strong th:text="${vista.origen().nombre()}">Origen</strong></div>
+          <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-arrow-right"></use></svg>
+          <div><span>Se conservará</span><strong th:text="${vista.destino().nombre()}">Destino</strong></div>
+        </div>
+        <dl class="flow-metrics">
+          <div><dt>Perfiles</dt><dd th:text="${vista.perfiles()}">0</dd></div>
+          <div><dt>Requisitos de proyectos</dt><dd th:text="${vista.requisitos()}">0</dd></div>
+          <div><dt>Etiquetas de proyectos</dt><dd th:text="${vista.tecnologias()}">0</dd></div>
+          <div><dt>Cursos</dt><dd th:text="${vista.cursos()}">0</dd></div>
+          <div><dt>Constancias</dt><dd th:text="${vista.constancias()}">0</dd></div>
+        </dl>
+        <p class="flow-muted" th:if="${vista.perfilesCompartidos() > 0}"
+           th:text="|Perfiles con ambas habilidades: ${vista.perfilesCompartidos()}. Se prioriza la declaración validada y, ante el mismo estado, el mayor nivel.|"></p>
+        <form class="flow-row flow-spread" method="post" th:action="@{/administrador/habilidades/fusionar}">
+          <input type="hidden" name="token" th:value="${token}">
+          <label class="flow-row"><input type="checkbox" name="confirmar" value="true" required> Confirmo el traslado y retiro del duplicado.</label>
+          <button class="btn btn-primary" type="submit">Fusionar habilidades</button>
+        </form>
+      </section>
+    </main>
+  </div>
+</div>
+<script th:src="@{/js/toast.js}"></script>
+<script th:src="@{/js/dropdown.js}"></script>
+<script th:src="@{/js/topbar-actions.js}"></script>
+<script th:src="@{/js/global-search.js}"></script>
+<script th:src="@{/js/mobile-nav.js}"></script>
+<script th:src="@{/js/admin-ui.js}"></script>
+</body>
+</html>

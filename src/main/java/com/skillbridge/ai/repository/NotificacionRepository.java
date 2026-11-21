@@ -13,7 +13,11 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
 
     // Los avisos internos de administración usan rutas absolutas de ese panel.
     // Si cambia el rol del destinatario, esos avisos quedan fuera de su bandeja.
-    String BANDEJA = "n.perfilId = :perfilId and (:admin = true or coalesce(n.enlaceAccion, '') not like '/administrador/%')";
+    String BANDEJA = """
+            n.perfilId = :perfilId
+            and (:admin = true or coalesce(n.enlaceAccion, '') not like '/administrador/%')
+            and coalesce(n.enlaceAccion, '') not like '/administrador/seguridad.html?id=%'
+            """;
 
     @Query("select n from Notificacion n join fetch n.tipo where " + BANDEJA + " order by n.fechaCreacion desc, n.id desc")
     List<Notificacion> listarPorPerfil(@Param("perfilId") Long perfilId, @Param("admin") boolean admin, Pageable pagina);

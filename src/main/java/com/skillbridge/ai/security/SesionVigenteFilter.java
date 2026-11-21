@@ -98,7 +98,7 @@ public class SesionVigenteFilter extends OncePerRequestFilter {
                         response.sendRedirect(request.getContextPath() + "/administrador/enrolamiento.html");
                         return;
                     }
-                    if (activo && !Boolean.TRUE.equals(sesion.getAttribute(PortalFilter.SEGUNDO_FACTOR))) {
+                    if (activo && !Boolean.TRUE.equals(sesion.getAttribute(SesionKeys.SEGUNDO_FACTOR))) {
                         SesionSegura.cerrar(request);
                         response.sendRedirect(request.getContextPath() + "/auth/login.html");
                         return;

@@ -86,7 +86,10 @@
           </div>
         </section>
         <section class="card card-pad">
-          <h3 style="font-size:var(--fs-md); margin-bottom:var(--space-4);">Requiere tu atención</h3>
+          <div class="admin-section-head">
+            <h3 style="font-size:var(--fs-md);">Requiere tu atención</h3>
+            <a class="btn btn-secondary btn-sm" th:href="@{/administrador/pendientes.html}">Ver pendientes</a>
+          </div>
           <div style="display:flex; flex-direction:column; gap:var(--space-3);">
             <!-- Modelo v7: ser Miembro (sin rol fijo) es lo normal; ya no es una alerta. -->
             <div class="callout warn" style="margin:0;" th:if="${habilidadesSinAsignar > 0}">
