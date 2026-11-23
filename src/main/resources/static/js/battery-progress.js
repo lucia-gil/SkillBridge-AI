@@ -33,6 +33,8 @@
   }
   function build(bar, texto) {
     if (bar.dataset.battery) return; bar.dataset.battery = "1";
+    var host0 = bar.closest("[data-escala]");
+    if (host0 && host0.getAttribute("data-escala") === "ninguna") return;
     var fill = bar.querySelector(".progress-bar-fill"); if (!fill) return;
     var p = pct(fill);
     var host = bar.closest("[data-etiqueta]");
