@@ -43,17 +43,37 @@
   var filters = page.querySelector('.admin-audit-filters');
   if (filters) {
     var validation = page.querySelector('.insight-validation');
-    filters.addEventListener('submit',function(e){
-      var desde=filters.elements.desde, hasta=filters.elements.hasta;
+    function masDeSeisMeses(inicio, fin) {
+      var partes = inicio.split('-').map(Number);
+      var anio = partes[0], mes = partes[1], dia = partes[2];
+      var ultimoDia = new Date(Date.UTC(anio, mes + 6, 0));
+      var limite = new Date(ultimoDia);
+      limite.setUTCDate(Math.min(dia, ultimoDia.getUTCDate()));
+      return new Date(fin) > limite;
+    }
+
+    filters.addEventListener('submit', function (e) {
+      var desde = filters.elements.desde;
+      var hasta = filters.elements.hasta;
+      var error = '';
+      var exportando = e.submitter && e.submitter.name === 'formato';
       if ((desde.value && hasta.value && desde.value > hasta.value) || !filters.checkValidity()) {
-        e.preventDefault();e.stopImmediatePropagation();
-        validation.hidden=false;validation.textContent='Revisa el rango: la fecha de inicio debe ser anterior o igual a la fecha final. Usa fechas válidas.';
-        desde.setAttribute('aria-invalid','true');desde.focus();
-        var submit=filters.querySelector('[type="submit"]'); submit.disabled=false;submit.removeAttribute('aria-busy');delete submit.dataset.adminLoading;
-        var spinner=submit.querySelector('.admin-loading-spinner');if(spinner)spinner.remove();
+        error = 'Ingresa fechas válidas. La fecha inicial debe ser igual o anterior a la final.';
+      } else if (exportando && desde.value && hasta.value && masDeSeisMeses(desde.value, hasta.value)) {
+        error = 'Acorta el rango a un máximo de 6 meses para descargar la auditoría.';
       }
-    },true);
-    filters.addEventListener('input',function(){validation.hidden=true;filters.elements.desde.removeAttribute('aria-invalid');});
+      if (error) {
+        e.preventDefault();
+        validation.hidden = false;
+        validation.textContent = error;
+        desde.setAttribute('aria-invalid', 'true');
+        desde.focus();
+      }
+    }, true);
+    filters.addEventListener('input', function () {
+      validation.hidden = true;
+      filters.elements.desde.removeAttribute('aria-invalid');
+    });
   }
   var states=Array.from(page.querySelectorAll('[data-project-state]')), total=states.reduce(function(n,e){return n+Math.max(0,Number(e.dataset.count)||0);},0);
   if(total){

@@ -53,25 +53,13 @@
 
       <p class="label-mono" id="step-label" style="margin-bottom:var(--space-4);">PASO 1 DE 3</p>
 
-      <form id="registro-form" th:action="@{/auth/registro.html}" method="post">
+      <form id="registro-form" th:action="@{/auth/registro.html}" method="post"
+            th:attr="data-dni-url=@{/auth/registro/verificar-dni},data-csrf-name=${_csrf.parameterName}">
       <input type="hidden" id="habilidades-json" name="habilidadesJson" value="[]">
 
       <!-- ================= PASO 1 ================= -->
       <section class="wizard-panel active" data-panel="1">
         <p class="field-hint" style="margin-bottom:var(--space-5);">Usa el correo al que te llegó la invitación: solo pueden registrarse los correos que un Administrador autorizó.</p>
-
-        <div class="field-row">
-          <div class="field" th:classappend="${errores != null and errores['nombres'] != null} ? 'has-error'">
-            <label class="field-label" for="reg-nombres">Nombres</label>
-            <input class="input" id="reg-nombres" name="nombres" placeholder="Ricardo" th:value="${valNombres} ?: ''">
-            <div class="field-error" th:if="${errores != null and errores['nombres'] != null}" style="display:flex;" th:text="${errores['nombres']}">Escribe tus nombres.</div>
-          </div>
-          <div class="field" th:classappend="${errores != null and errores['apellidos'] != null} ? 'has-error'">
-            <label class="field-label" for="reg-apellidos">Apellidos</label>
-            <input class="input" id="reg-apellidos" name="apellidos" placeholder="Bastos" th:value="${valApellidos} ?: ''">
-            <div class="field-error" th:if="${errores != null and errores['apellidos'] != null}" style="display:flex;" th:text="${errores['apellidos']}">Escribe tus apellidos.</div>
-          </div>
-        </div>
 
         <div class="field" id="field-reg-email" th:classappend="${errores != null and errores['correo'] != null} ? 'has-error'">
           <label class="field-label" for="reg-email">Correo de tu invitación</label>
@@ -81,6 +69,29 @@
             <span id="reg-domain-label" th:text="${desdeInvitacion} ? 'Verificando el correo de tu invitación…' : 'Escribe el correo de tu invitación'">Escribe el correo de tu invitación</span>
           </div>
           <div class="field-error" id="reg-email-server-error" th:if="${errores != null and errores['correo'] != null}" style="display:flex;" th:text="${errores['correo']}">Este correo no está autorizado.</div>
+        </div>
+
+        <div class="field" id="field-reg-dni" th:classappend="${errores['dni'] != null} ? 'has-error'">
+          <label class="field-label" for="reg-dni">DNI</label>
+          <input class="input" id="reg-dni" name="dni" type="text" inputmode="numeric" autocomplete="off"
+                 maxlength="8" pattern="[0-9]{8}" placeholder="8 dígitos" th:value="${valDni}"
+                 aria-describedby="reg-dni-status" th:aria-invalid="${errores['dni'] != null}">
+          <div class="reg-email-status" id="reg-dni-status" aria-live="polite"
+               th:attr="data-estado=${errores['dni'] != null} ? 'formato' : 'vacio'">
+            <span class="reg-email-status-icon" aria-hidden="true"></span>
+            <span th:text="${errores['dni']} ?: 'Escribe tu DNI para completar tus datos.'">Escribe tu DNI para completar tus datos.</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="reg-nombres">Nombres</label>
+            <input class="input" id="reg-nombres" autocomplete="off" readonly>
+          </div>
+          <div class="field">
+            <label class="field-label" for="reg-apellidos">Apellidos</label>
+            <input class="input" id="reg-apellidos" autocomplete="off" readonly>
+          </div>
         </div>
 
         <div class="field-row">
@@ -273,6 +284,100 @@ document.addEventListener("DOMContentLoaded", function () {
   emailInput.addEventListener("blur", function () { clearTimeout(temporizadorCorreo); if (emailInput.value.trim()) verificarCorreo(); });
   if (emailInput.value.trim()) verificarCorreo();
 
+  const registroForm = document.getElementById("registro-form");
+  const dniInput = document.getElementById("reg-dni");
+  const dniField = document.getElementById("field-reg-dni");
+  const dniStatus = document.getElementById("reg-dni-status");
+  const dniLabel = dniStatus.lastElementChild;
+  const nombresInput = document.getElementById("reg-nombres");
+  const apellidosInput = document.getElementById("reg-apellidos");
+  const formatoDni = /^[0-9]{8}$/;
+  const mensajesDni = {
+    vacio: "Escribe tu DNI para completar tus datos.",
+    correo: "Escribe primero el correo de tu invitación.",
+    formato: "Escribe un DNI de 8 dígitos.",
+    verificando: "Consultando el padrón…",
+    encontrado: "Datos completados con el padrón.",
+    no_encontrado: "No se encuentra en nuestros registros",
+    no_autorizado: "Usa el correo autorizado de tu invitación para consultar el DNI.",
+    limite: "Demasiadas consultas. Espera unos minutos.",
+    error: "La consulta de DNI no está disponible en este momento."
+  };
+  let temporizadorDni;
+  let consultaDni;
+  let dniVerificado = false;
+
+  function pintarDni(estado, mensaje) {
+    const invalido = estado === "formato" || estado === "no_encontrado" || estado === "no_autorizado";
+    dniStatus.dataset.estado = estado === "encontrado" ? "autorizado" : estado === "no_encontrado" ? "formato" : estado;
+    dniLabel.textContent = mensaje || mensajesDni[estado];
+    dniField.classList.toggle("has-error", invalido);
+    dniInput.setAttribute("aria-invalid", String(invalido));
+  }
+
+  function verificarDni() {
+    clearTimeout(temporizadorDni);
+    const dni = dniInput.value;
+    const correo = emailInput.value.trim();
+    if (!formatoDni.test(dni)) {
+      pintarDni("formato");
+      return Promise.resolve(false);
+    }
+    if (!FORMATO_CORREO.test(correo)) {
+      pintarDni("correo");
+      return Promise.resolve(false);
+    }
+    if (dniVerificado) return Promise.resolve(true);
+    if (consultaDni) return consultaDni.promesa;
+
+    pintarDni("verificando");
+    const consulta = new AbortController();
+    const csrf = registroForm.elements[registroForm.dataset.csrfName];
+    const body = new URLSearchParams({ dni, correo });
+    if (csrf) body.set(csrf.name, csrf.value);
+    consulta.promesa = fetch(registroForm.dataset.dniUrl, {
+      method: "POST", body, signal: consulta.signal,
+      credentials: "same-origin", headers: { Accept: "application/json" }
+    }).then(r => r.json()).then(data => {
+      if (consulta.signal.aborted) return false;
+      dniVerificado = data.estado === "encontrado";
+      if (dniVerificado) {
+        nombresInput.value = data.nombres;
+        apellidosInput.value = data.apellidos;
+      }
+      const estado = Object.hasOwn(mensajesDni, data.estado) ? data.estado : "error";
+      pintarDni(estado, data.mensaje);
+      return dniVerificado;
+    }).catch(() => {
+      if (!consulta.signal.aborted) pintarDni("error");
+      return false;
+    }).finally(() => {
+      if (consultaDni === consulta) consultaDni = null;
+    });
+    consultaDni = consulta;
+    return consulta.promesa;
+  }
+
+  function actualizarDni() {
+    clearTimeout(temporizadorDni);
+    if (consultaDni) consultaDni.abort();
+    consultaDni = null;
+    dniVerificado = false;
+    nombresInput.value = "";
+    apellidosInput.value = "";
+    if (!dniInput.value) pintarDni("vacio");
+    else if (!formatoDni.test(dniInput.value)) pintarDni("formato");
+    else if (!FORMATO_CORREO.test(emailInput.value.trim())) pintarDni("correo");
+    else {
+      pintarDni("verificando");
+      temporizadorDni = setTimeout(verificarDni, 400);
+    }
+  }
+
+  dniInput.addEventListener("input", actualizarDni);
+  emailInput.addEventListener("input", actualizarDni);
+  if (formatoDni.test(dniInput.value) && dniInput.getAttribute("aria-invalid") !== "true") actualizarDni();
+
   /* ---- Medidor de fuerza de contraseña ----
      Las 4 casillas (12 caracteres, mayúscula+número, símbolo, coinciden) se
      exigen TODAS para avanzar (antes solo pedía 2 de 4, lo que dejaba pasar
@@ -340,29 +445,24 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   /* ---- Navegación entre pasos ---- */
-  var correoListo = false;
-  function goStep(n) {
-    if (n === 2 && !correoListo) {
-      verificarCorreo().then(function (estado) {
-        if (estado === "no_autorizado" || estado === "registrado" || estado === "formato" || estado === "vacio") {
-          SBAI.toast.show(estado === "registrado" ? "Ya existe una cuenta con este correo. Inicia sesión."
-            : "Usa el correo autorizado al que te llegó la invitación.", { type: "error" });
-          emailInput.focus();
-          return;
-        }
-        // "autorizado", o "error"/"limite" (no se bloquea: el servidor valida al enviar).
-        correoListo = true;
-        goStep(2);
-        correoListo = false;
-      });
-      return;
-    }
+  async function goStep(n) {
     if (n === 2) {
-      var nombresOk = document.getElementById("reg-nombres").value.trim().length > 0;
-      var apellidosOk = document.getElementById("reg-apellidos").value.trim().length > 0;
+      const correo = emailInput.value.trim();
+      const estado = await verificarCorreo();
+      if (emailInput.value.trim() !== correo) return;
+      if (["no_autorizado", "registrado", "formato", "vacio"].includes(estado)) {
+        SBAI.toast.show(estado === "registrado" ? "Ya existe una cuenta con este correo. Inicia sesión."
+          : "Usa el correo autorizado al que te llegó la invitación.", { type: "error" });
+        emailInput.focus();
+        return;
+      }
+      if (!await verificarDni()) {
+        dniInput.focus();
+        return;
+      }
       var pw = evalPassword();
       var policyOk = document.getElementById("reg-policy").checked;
-      if (!nombresOk || !apellidosOk || !pw.lenOk || !pw.upNumOk || !pw.specialOk || !pw.matchOk || !policyOk) {
+      if (!pw.lenOk || !pw.upNumOk || !pw.specialOk || !pw.matchOk || !policyOk) {
         SBAI.toast.show("Completa tus datos, una contraseña que cumpla los 4 requisitos y acepta la política para continuar.", { type: "error" });
         return;
       }
@@ -386,12 +486,24 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderSummary() {
-    var nombre = document.getElementById("reg-nombres").value + " " + document.getElementById("reg-apellidos").value;
-    var html = '<div class="info-row"><span class="info-row-label">Nombre</span><span class="info-row-value">' + nombre + '</span></div>' +
-      '<div class="info-row"><span class="info-row-label">Correo</span><span class="info-row-value">' + emailInput.value + '</span></div>' +
-      '<div class="info-row"><span class="info-row-label">Cargo</span><span class="info-row-value">' + (document.getElementById("reg-cargo").value || "—") + '</span></div>' +
-      '<div class="info-row"><span class="info-row-label">Habilidades</span><span class="info-row-value">' + addedSkills.map(function (s) { return s.nombre + " (" + s.nivel + ")"; }).join(", ") + '</span></div>';
-    document.getElementById("summary-body").innerHTML = html;
+    const resumen = [
+      ["Nombre", nombresInput.value + " " + apellidosInput.value],
+      ["Correo", emailInput.value],
+      ["Cargo", document.getElementById("reg-cargo").value || "—"],
+      ["Habilidades", addedSkills.map(s => s.nombre + " (" + s.nivel + ")").join(", ")]
+    ];
+    document.getElementById("summary-body").replaceChildren(...resumen.map(([etiqueta, valor]) => {
+      const fila = document.createElement("div");
+      fila.className = "info-row";
+      const titulo = document.createElement("span");
+      titulo.className = "info-row-label";
+      titulo.textContent = etiqueta;
+      const texto = document.createElement("span");
+      texto.className = "info-row-value";
+      texto.textContent = valor;
+      fila.append(titulo, texto);
+      return fila;
+    }));
   }
 
   document.querySelectorAll("[data-go-step]").forEach(function (btn) {
@@ -401,7 +513,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // Justo antes de que el navegador envíe el <form>, se serializan las
   // habilidades declaradas (en memoria) al input oculto que sí viaja al
   // servidor.
-  document.getElementById("registro-form").addEventListener("submit", function (e) {
+  registroForm.addEventListener("submit", function (e) {
+    if (!dniVerificado) {
+      e.preventDefault();
+      goStep(1);
+      dniInput.focus();
+      verificarDni();
+      return;
+    }
     if (!addedSkills.length) {
       e.preventDefault();
       goStep(2);

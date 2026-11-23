@@ -64,7 +64,7 @@
       var form = e.target;
       if (!form.closest || !form.closest(".admin-app") || e.defaultPrevented || !form.checkValidity()) return;
       var button = e.submitter;
-      if (!button || button.dataset.adminLoading === "1") return;
+      if (!button || button.hasAttribute("data-admin-no-loading") || button.dataset.adminLoading === "1") return;
       button.dataset.adminLoading = "1";
       button.setAttribute("aria-busy", "true");
       var spinner = document.createElement("span");

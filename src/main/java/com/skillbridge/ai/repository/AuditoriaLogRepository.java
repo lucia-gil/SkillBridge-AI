@@ -3,6 +3,7 @@ package com.skillbridge.ai.repository;
 import com.skillbridge.ai.model.AuditoriaLog;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,10 +29,30 @@ public interface AuditoriaLogRepository extends JpaRepository<AuditoriaLog, Long
     Page<AuditoriaLog> buscar(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta,
                              @Param("usuario") String usuario, @Param("accion") String accion, Pageable pageable);
 
-    @Query("select a from AuditoriaLog a where " + FILTROS)
-    org.springframework.data.domain.Slice<AuditoriaLog> buscarExportacion(
-            @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta,
-            @Param("usuario") String usuario, @Param("accion") String accion, Pageable pageable);
+    interface DatosExportacion {
+        Long getId();
+        LocalDateTime getFecha();
+        Long getUsuarioId();
+        String getNombreUsuario();
+        String getAccion();
+        String getEntidad();
+        Long getEntidadId();
+        String getDetalle();
+        String getAnterior();
+        String getNuevo();
+    }
+
+    @Query("""
+            select a.id as id, a.fecha as fecha, a.usuarioId as usuarioId,
+                   u.nombreCompleto as nombreUsuario, a.accion as accion,
+                   a.entidadAfectada as entidad, a.entidadId as entidadId,
+                   a.detalle as detalle, a.valorAnterior as anterior, a.valorNuevo as nuevo
+            from AuditoriaLog a left join Usuario u on u.id = a.usuarioId
+            where
+            """ + FILTROS)
+    Slice<DatosExportacion> buscarExportacion(@Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta, @Param("usuario") String usuario,
+            @Param("accion") String accion, Pageable pageable);
 
     @Query("select a.accion, count(a) from AuditoriaLog a where " + FILTROS + " group by a.accion")
     List<Object[]> contarPorAccion(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta,

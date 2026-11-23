@@ -5,16 +5,27 @@
 <link rel="stylesheet" href="/css/admin-visual.css">
 </head><body class="admin-app"><div class="app-shell"><div th:replace="~{fragments/sidebar :: sidebar}"></div><div class="main-content"><div th:replace="~{fragments/topbar :: topbar}"></div>
 <main class="page-content admin-audit-page insight-page">
-  <header class="admin-audit-intro insight-audit-hero"><div><span class="admin-section-caption">CENTRO DE TRAZABILIDAD</span><h1>Cada acción, en contexto.</h1><p>Explora la actividad de la plataforma y encuentra el detalle detrás de cada cambio.</p></div><a class="btn btn-primary" th:href="@{/administrador/auditoria/exportar(desde=${desde},hasta=${hasta},usuario=${usuarioFiltro},accion=${accionFiltro})}">
-    <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-download"></use></svg> Exportar Excel
-  </a></header>
+  <header class="admin-audit-intro insight-audit-hero"><div><span class="admin-section-caption">CENTRO DE TRAZABILIDAD</span><h1>Cada acción, en contexto.</h1><p>Explora la actividad de la plataforma y encuentra el detalle detrás de cada cambio.</p></div></header>
   <section class="admin-audit-summary insight-audit-kpis" aria-label="Resumen de los resultados"><div><strong th:text="${pagina.totalElements}">0</strong><span>Eventos encontrados</span></div><div data-tone="red"><strong th:text="${altaCount}">0</strong><span>Severidad alta en el filtro</span></div><div data-tone="amber"><strong th:text="${mediaCount}">0</strong><span>Severidad media en el filtro</span></div><div data-tone="blue"><strong th:text="${infoCount}">0</strong><span>Informativos en el filtro</span></div></section>
-  <section class="card admin-audit-main insight-events" data-admin-compact><div class="admin-audit-section-head"><div><h2>Registro de eventos</h2><p>La exportación incluye todas las coincidencias de los filtros aplicados, con el detalle y los valores del cambio disponibles.</p></div></div>
-    <form novalidate class="admin-audit-filters" method="get" action="/administrador/auditoria.html">
+  <section class="card admin-audit-main insight-events" data-admin-compact><div class="admin-audit-section-head"><div><h2>Registro de eventos</h2><p>Consulta los eventos y descarga todas las coincidencias con su detalle y los valores del cambio.</p></div></div>
+    <form novalidate class="admin-audit-filters" method="get" th:action="@{/administrador/auditoria.html}">
       <label>Desde<input class="input" type="date" name="desde" th:value="${desde}"></label><label>Hasta<input class="input" type="date" name="hasta" th:value="${hasta}"></label>
       <label>Usuario<input class="input" type="search" name="usuario" th:value="${usuarioFiltro}" maxlength="100" placeholder="Nombre del usuario"></label>
       <label>Acción<input class="input" type="search" name="accion" th:value="${accionFiltro}" maxlength="100" placeholder="Ej. LOGIN o CURSO"></label>
       <button class="btn btn-primary" type="submit">Aplicar filtros</button><a class="btn btn-secondary" href="/administrador/auditoria.html">Limpiar</a>
+      <div class="admin-audit-export">
+        <p>Descarga hasta 6 meses con los filtros de arriba. Sin fechas, se descargan los últimos 6 meses. Si indicas solo una fecha, se completa el rango automáticamente.</p>
+        <div class="btn-group">
+          <button class="btn btn-secondary" type="submit" name="formato" value="xlsx" data-admin-no-loading
+                  th:formaction="@{/administrador/auditoria/exportar}">
+            <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-download"></use></svg> Descargar Excel
+          </button>
+          <button class="btn btn-secondary" type="submit" name="formato" value="csv" data-admin-no-loading
+                  th:formaction="@{/administrador/auditoria/exportar}">
+            <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-download"></use></svg> Descargar CSV
+          </button>
+        </div>
+      </div>
     </form>
     <p class="insight-validation" role="alert" hidden></p>
     <div th:if="${pagina.empty}" class="admin-audit-empty"><strong>Sin eventos para esta búsqueda</strong><p>Prueba otro rango de fechas, usuario o acción.</p><a href="/administrador/auditoria.html" class="btn btn-secondary">Ver todos los eventos</a></div>

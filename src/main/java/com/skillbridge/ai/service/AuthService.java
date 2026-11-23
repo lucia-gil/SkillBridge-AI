@@ -54,8 +54,6 @@ public class AuthService {
     private static final int MAX_INTENTOS = 5;
     private static final long VENTANA_MS = 10 * 60 * 1000L;
 
-    private static final Pattern PATRON_NOMBRE = Pattern.compile("^[A-Za-zÁÉÍÓÚáéíóúÑñÜü ]{2,50}$");
-
     private final UsuarioRepository usuarioRepository;
     private final PerfilRepository perfilRepository;
     private final CorreoAutorizadoRepository correoAutorizadoRepository;
@@ -69,6 +67,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final TokenRecuperacionPasswordRepository tokenRecuperacionRepository;
     private final EmailService emailService;
+    private final PadronDniService padronDni;
 
     @Value("${app.base-url:}")
     private String baseUrl;
@@ -89,7 +88,8 @@ public class AuthService {
                         JdbcTemplate jdbcTemplate,
                         PasswordEncoder passwordEncoder,
                         TokenRecuperacionPasswordRepository tokenRecuperacionRepository,
-                        EmailService emailService) {
+                        EmailService emailService,
+                        PadronDniService padronDni) {
         this.passwordEncoder = passwordEncoder;
         this.usuarioRepository = usuarioRepository;
         this.perfilRepository = perfilRepository;
@@ -102,6 +102,7 @@ public class AuthService {
         this.jdbcTemplate = jdbcTemplate;
         this.tokenRecuperacionRepository = tokenRecuperacionRepository;
         this.emailService = emailService;
+        this.padronDni = padronDni;
     }
 
     /**
@@ -289,21 +290,11 @@ public class AuthService {
     public ResultadoRegistro registrar(RegistroRequest req) {
         Map<String, String> errores = new LinkedHashMap<>();
 
-        String nombres = limpiar(req.nombres());
-        String apellidos = limpiar(req.apellidos());
         String correo = limpiar(req.correo());
         String correoFinal = correo != null ? correo.toLowerCase() : null;
 
-        if (nombres == null || nombres.isEmpty()) {
-            errores.put("nombres", "Escribe tus nombres.");
-        } else if (!PATRON_NOMBRE.matcher(nombres).matches()) {
-            errores.put("nombres", "Solo letras y espacios (2-50 caracteres).");
-        }
-
-        if (apellidos == null || apellidos.isEmpty()) {
-            errores.put("apellidos", "Escribe tus apellidos.");
-        } else if (!PATRON_NOMBRE.matcher(apellidos).matches()) {
-            errores.put("apellidos", "Solo letras y espacios (2-50 caracteres).");
+        if (!padronDni.formatoValido(req.dni())) {
+            errores.put("dni", "Escribe un DNI de 8 dígitos.");
         }
 
         // Sin filtro de dominio: vale el correo exacto que autorizó el Administrador
@@ -346,11 +337,22 @@ public class AuthService {
             return ResultadoRegistro.conErrores(errores);
         }
 
+        if (!padronDni.disponible()) {
+            errores.put("dni", PadronDniService.NO_DISPONIBLE);
+            return ResultadoRegistro.conErrores(errores);
+        }
+        Optional<PadronDniService.Persona> personaRegistrada = padronDni.buscar(req.dni());
+        if (personaRegistrada.isEmpty()) {
+            errores.put("dni", PadronDniService.NO_ENCONTRADO);
+            return ResultadoRegistro.conErrores(errores);
+        }
+        var persona = personaRegistrada.get();
+
         // ── Crear usuario + perfil ──
         Usuario usuario = new Usuario();
         usuario.setCorreo(correoFinal);
         usuario.setContrasenaHash(passwordEncoder.encode(contrasena));
-        usuario.setNombreCompleto(nombres + " " + apellidos);
+        usuario.setNombreCompleto(persona.nombres() + " " + persona.apellidos());
         // Modelo v7 (fase 3): la cuenta nace con el rol con el que se la
         // invitó (null = Miembro). Así el primer inicio de sesión ya abre el
         // panel correcto, sin pasos manuales del Administrador.

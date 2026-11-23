@@ -9,6 +9,12 @@ import com.skillbridge.ai.repository.UsuarioRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -110,21 +117,46 @@ public class AuditoriaService {
                         etiquetaUsuario(log.getUsuarioId(), nombres), log.getAccion(), log.getDetalle()));
     }
 
-    public record EventoExportado(String fecha, String usuario, String accion, String tipo, String severidad,
-                                  String entidad, Long entidadId, String detalle, String anterior, String nuevo) {}
+    static final String[] COLUMNAS_EXPORTACION = {"ID de evento", "Fecha y hora (Lima)", "Usuario", "ID de usuario",
+            "Acción", "Tipo", "Severidad", "Origen", "Entidad afectada", "ID de entidad",
+            "Detalle y motivo", "Valor anterior", "Valor nuevo"};
 
-    public org.springframework.data.domain.Slice<EventoExportado> buscarExportacion(LocalDateTime desde, LocalDateTime hasta,
-            String usuario, String accion, Pageable pageable) {
-        Map<Long, String> nombres = new HashMap<>();
-        return auditoriaLogRepository.buscarExportacion(desde, hasta, usuario.trim(), accion.trim(), pageable)
-                .map(log -> {
-                    String nombre = etiquetaUsuario(log.getUsuarioId(), nombres);
-                    String fecha = log.getFecha() == null ? "" : log.getFecha().format(FORMATO);
-                    AuditoriaFila fila = new AuditoriaFila(fecha, nombre, log.getAccion(), log.getDetalle());
-                    return new EventoExportado(fecha, fila.getUsuarioLabel(), log.getAccion(),
-                            fila.getTipoLabel(), fila.getSeveridadCrudo(), log.getEntidadAfectada(), log.getEntidadId(),
-                            log.getDetalle(), log.getValorAnterior(), log.getValorNuevo());
-                });
+    public record EventoExportado(Long id, LocalDateTime fecha, Long usuarioId, String usuario, String accion,
+                                  String tipo, String severidad, String origen, String entidad, Long entidadId,
+                                  String detalle, String anterior, String nuevo) {
+        String[] columnas(String fechaFormateada) {
+            return new String[]{Objects.toString(id, ""), fechaFormateada, usuario, Objects.toString(usuarioId, ""),
+                    accion, tipo, severidad, origen, entidad, Objects.toString(entidadId, ""), detalle, anterior, nuevo};
+        }
+    }
+
+    @FunctionalInterface
+    public interface DestinoExportacion {
+        void escribir(EventoExportado evento) throws IOException;
+    }
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public long recorrerExportacion(LocalDate desde, LocalDate hasta, String usuario, String accion,
+                                   DestinoExportacion destino) throws IOException {
+        LocalDateTime inicio = desde.atStartOfDay();
+        LocalDateTime fin = hasta.plusDays(1).atStartOfDay();
+        Pageable pagina = PageRequest.of(0, 500, Sort.by(Sort.Direction.DESC, "fecha", "id"));
+        long total = 0;
+        while (true) {
+            var lote = auditoriaLogRepository.buscarExportacion(inicio, fin, usuario.trim(), accion.trim(), pagina);
+            for (var log : lote) {
+                String nombre = log.getNombreUsuario();
+                if (nombre == null && log.getUsuarioId() != null) nombre = "Usuario eliminado";
+                AuditoriaFila fila = new AuditoriaFila("", nombre, log.getAccion(), log.getDetalle());
+                String origen = log.getUsuarioId() == null ? "Sistema" : "Manual";
+                destino.escribir(new EventoExportado(log.getId(), log.getFecha(), log.getUsuarioId(),
+                        fila.getUsuarioLabel(), log.getAccion(), fila.getTipoLabel(), fila.getSeveridadCrudo(),
+                        origen, log.getEntidad(), log.getEntidadId(), log.getDetalle(), log.getAnterior(), log.getNuevo()));
+                total++;
+            }
+            if (!lote.hasNext()) return total;
+            pagina = lote.nextPageable();
+        }
     }
 
     public Map<String, Long> severidades(LocalDateTime desde, LocalDateTime hasta, String usuario, String accion) {

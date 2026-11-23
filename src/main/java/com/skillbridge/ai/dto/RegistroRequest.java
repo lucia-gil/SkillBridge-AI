@@ -2,10 +2,9 @@ package com.skillbridge.ai.dto;
 
 import java.util.List;
 
-/** Datos crudos (ya recortados/trim) enviados por auth/registro.html. */
+/** Datos enviados por auth/registro.html. */
 public record RegistroRequest(
-        String nombres,
-        String apellidos,
+        String dni,
         String correo,
         String cargo,
         String contrasena,

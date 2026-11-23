@@ -6,11 +6,13 @@ import com.skillbridge.ai.dto.*;
 import com.skillbridge.ai.security.SesionSegura;
 import com.skillbridge.ai.service.AuthService;
 import com.skillbridge.ai.service.DobleFactorService;
+import com.skillbridge.ai.service.PadronDniService;
 import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,16 +40,19 @@ public class AuthController {
     private final ObjectMapper objectMapper;
     private final DobleFactorService dobleFactorService;
     private final SesionSegura sesionSegura;
+    private final PadronDniService padronDni;
 
     private static final String PENDIENTE_2FA = SesionKeys.PENDIENTE_2FA;
     private static final String INTENTOS_2FA = SesionKeys.INTENTOS_2FA;
 
     public AuthController(AuthService authService, ObjectMapper objectMapper,
-                          DobleFactorService dobleFactorService, SesionSegura sesionSegura) {
+                          DobleFactorService dobleFactorService, SesionSegura sesionSegura,
+                          PadronDniService padronDni) {
         this.authService = authService;
         this.objectMapper = objectMapper;
         this.dobleFactorService = dobleFactorService;
         this.sesionSegura = sesionSegura;
+        this.padronDni = padronDni;
     }
 
     @GetMapping("/")
@@ -206,22 +211,46 @@ public class AuthController {
     @ResponseBody
     public ResponseEntity<Map<String, String>> verificarCorreo(@RequestParam(value = "correo", required = false) String correo,
                                                                HttpServletRequest request) {
+        if (!permitirVerificacion(request)) return estadoVerificacion(429, "limite");
+        return estadoVerificacion(200, authService.estadoCorreoRegistro(correo));
+    }
+
+    @PostMapping("/auth/registro/verificar-dni")
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> verificarDni(
+            @RequestParam(defaultValue = "") String dni,
+            @RequestParam(defaultValue = "") String correo,
+            HttpServletRequest request) {
+        if (!permitirVerificacion(request)) return estadoVerificacion(429, "limite");
+        if (!padronDni.formatoValido(dni)) return estadoVerificacion(400, "formato");
+        if (!AuthService.CORREO_AUTORIZADO.equals(authService.estadoCorreoRegistro(correo))) {
+            return estadoVerificacion(403, "no_autorizado");
+        }
+        if (!padronDni.disponible()) return estadoVerificacion(503, "error");
+        return padronDni.buscar(dni)
+                .map(persona -> ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                        .body(Map.of("estado", "encontrado", "nombres", persona.nombres(), "apellidos", persona.apellidos())))
+                .orElseGet(() -> ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                        .body(Map.of("estado", "no_encontrado", "mensaje", PadronDniService.NO_ENCONTRADO)));
+    }
+
+    private boolean permitirVerificacion(HttpServletRequest request) {
         String ip = obtenerIp(request);
         long ahora = System.currentTimeMillis();
         long[] contador = verificacionesPorIp.compute(ip, (k, v) ->
                 (v == null || ahora - v[1] > VENTANA_VERIFICACION_MS) ? new long[]{1, ahora} : new long[]{v[0] + 1, v[1]});
-        if (verificacionesPorIp.size() > 10_000) verificacionesPorIp.clear();
-        if (contador[0] > MAX_VERIFICACIONES) {
-            return ResponseEntity.status(429).body(Map.of("estado", "limite"));
+        if (verificacionesPorIp.size() > 10_000) {
+            verificacionesPorIp.entrySet().removeIf(e -> ahora - e.getValue()[1] > VENTANA_VERIFICACION_MS);
         }
-        return ResponseEntity.ok()
-                .header("Cache-Control", "no-store")
-                .body(Map.of("estado", authService.estadoCorreoRegistro(correo)));
+        return contador[0] <= MAX_VERIFICACIONES;
+    }
+
+    private ResponseEntity<Map<String, String>> estadoVerificacion(int codigo, String estado) {
+        return ResponseEntity.status(codigo).cacheControl(CacheControl.noStore()).body(Map.of("estado", estado));
     }
 
     @PostMapping("/auth/registro.html")
-    public String registro(@RequestParam String nombres,
-                           @RequestParam String apellidos,
+    public String registro(@RequestParam(required = false) String dni,
                            @RequestParam String correo,
                            @RequestParam(required = false) String cargo,
                            @RequestParam String contrasena,
@@ -237,13 +266,12 @@ public class AuthController {
             habilidades = Collections.emptyList();
         }
 
-        RegistroRequest req = new RegistroRequest(nombres, apellidos, correo, cargo, contrasena, contrasena2, habilidades);
+        RegistroRequest req = new RegistroRequest(dni, correo, cargo, contrasena, contrasena2, habilidades);
         ResultadoRegistro resultado = authService.registrar(req);
 
         if (!resultado.isExito()) {
             redirectAttributes.addFlashAttribute("errores", resultado.getErrores());
-            redirectAttributes.addFlashAttribute("valNombres", nombres);
-            redirectAttributes.addFlashAttribute("valApellidos", apellidos);
+            if (padronDni.formatoValido(dni)) redirectAttributes.addFlashAttribute("valDni", dni);
             redirectAttributes.addFlashAttribute("valCorreo", correo);
             redirectAttributes.addFlashAttribute("valCargo", cargo);
             return "redirect:/auth/registro.html";

@@ -5,7 +5,7 @@ import com.skillbridge.ai.dto.TopUsuarioAuditoria;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.AuditoriaService;
 import com.skillbridge.ai.service.AuditoriaExcelService;
-import com.skillbridge.ai.service.ReporteExportService;
+import com.skillbridge.ai.service.AuditoriaCsvService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
@@ -19,12 +19,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -37,14 +41,16 @@ public class AdminAuditoriaController {
     private final ShellModelBuilder shellModelBuilder;
 
     private final AuditoriaExcelService excel;
-    private final ReporteExportService reportes;
+    private final AuditoriaCsvService csv;
+    private static final ZoneId LIMA = ZoneId.of("America/Lima");
+    private static final long MESES_EXPORTACION = 6;
 
     public AdminAuditoriaController(AuditoriaService auditoriaService, ShellModelBuilder shellModelBuilder,
-                                    AuditoriaExcelService excel, ReporteExportService reportes) {
+                                    AuditoriaExcelService excel, AuditoriaCsvService csv) {
         this.auditoriaService = auditoriaService;
         this.shellModelBuilder = shellModelBuilder;
         this.excel = excel;
-        this.reportes = reportes;
+        this.csv = csv;
     }
 
     @GetMapping("/auditoria.html")
@@ -83,16 +89,51 @@ public class AdminAuditoriaController {
     public ResponseEntity<StreamingResponseBody> exportar(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
-            @RequestParam(defaultValue = "") String usuario, @RequestParam(defaultValue = "") String accion) {
-        if ((desde != null && hasta != null && desde.isAfter(hasta)) || LocalDate.MAX.equals(hasta)
-                || usuario.length() > 100 || accion.length() > 100) {
-            return ResponseEntity.badRequest().build();
+            @RequestParam(defaultValue = "") String usuario, @RequestParam(defaultValue = "") String accion,
+            @RequestParam(defaultValue = "xlsx") String formato) {
+        if (!"xlsx".equals(formato) && !"csv".equals(formato)) {
+            throw errorExportacion("Selecciona el formato Excel (.xlsx) o CSV.");
         }
-        String nombre = reportes.nombreArchivo("skillbridge-auditoria") + ".xlsx";
-        StreamingResponseBody archivo = salida -> excel.escribir(desde, hasta, usuario, accion, salida);
+        if (usuario.length() > 100 || accion.length() > 100) {
+            throw errorExportacion("Los filtros de usuario y acción admiten hasta 100 caracteres.");
+        }
+        if (!fechaValida(desde) || !fechaValida(hasta)) {
+            throw errorExportacion("Ingresa fechas válidas para la exportación.");
+        }
+
+        LocalDate fin = hasta != null ? hasta : LocalDate.now(LIMA);
+        if (desde != null && hasta == null) fin = desde.plusMonths(MESES_EXPORTACION);
+        LocalDate inicio = desde;
+        if (inicio == null) {
+            inicio = fin.minusMonths(MESES_EXPORTACION);
+            if (inicio.plusMonths(MESES_EXPORTACION).isBefore(fin)) inicio = inicio.plusDays(1);
+        }
+        if (!fechaValida(inicio) || !fechaValida(fin) || fin.isBefore(inicio)
+                || fin.isAfter(inicio.plusMonths(MESES_EXPORTACION))) {
+            throw errorExportacion("Selecciona un rango de hasta 6 meses. La fecha final debe ser igual o posterior a la inicial.");
+        }
+
+        LocalDate inicioExportacion = inicio;
+        LocalDate finExportacion = fin;
+        boolean esCsv = "csv".equals(formato);
+        String nombre = "skillbridge-auditoria_" + inicio + "_" + fin + "." + formato;
+        StreamingResponseBody archivo = salida -> {
+            if (esCsv) csv.escribir(inicioExportacion, finExportacion, usuario, accion, salida);
+            else excel.escribir(inicioExportacion, finExportacion, usuario, accion, salida);
+        };
+        String tipo = esCsv ? "text/csv;charset=UTF-8"
+                : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + nombre)
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(nombre).build().toString())
+                .contentType(MediaType.parseMediaType(tipo))
                 .body(archivo);
+    }
+
+    private boolean fechaValida(LocalDate fecha) {
+        return fecha == null || (fecha.getYear() >= 1000 && fecha.isBefore(LocalDate.of(9999, 12, 31)));
+    }
+
+    private ResponseStatusException errorExportacion(String mensaje) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, mensaje);
     }
 }
