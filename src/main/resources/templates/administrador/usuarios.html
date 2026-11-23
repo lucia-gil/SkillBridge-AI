@@ -95,7 +95,7 @@
           </div>
         </div>
         <div class="table-scroll">
-          <table class="data-table">
+          <table class="data-table admin-users-table">
             <thead><tr><th>Usuario</th><th>Rol</th><th>Cargo</th><th>Cuenta desde</th><th>Estado</th><th>Identidad</th><th>Acciones</th></tr></thead>
             <tbody id="users-body">
               <tr th:each="u : ${usuarios}" th:data-id="${u.id}"
@@ -122,16 +122,16 @@
                 <td class="cell-actions" th:if="${u.id == usuarioActualId}">
                   <span class="badge badge-blue">Tu cuenta</span>
                 </td>
-                <td class="cell-actions" th:unless="${u.id == usuarioActualId}"
+                <td class="cell-actions admin-user-actions" th:unless="${u.id == usuarioActualId}"
                     th:attr="data-lidera=${u.proyectosQueLideraTexto}, data-colabora=${u.asignacionesComoColaboradorTexto}">
-                  <button type="button" data-edit-role
-                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}, data-rol-crudo=${u.rolOrganizacionalCrudo}">Editar rol</button>
-                  <button type="button" class="danger" th:if="${u.estado == 'activo'}" data-suspend
-                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}">Suspender</button>
-                  <button type="button" data-reactivate th:if="${u.estado != 'activo'}"
-                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}">Reactivar</button>
-                  <button type="button" class="danger" data-delete
-                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}">Eliminar</button>
+                  <button type="button" data-edit-role aria-label="Editar rol" title="Editar rol"
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}, data-rol-crudo=${u.rolOrganizacionalCrudo}"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-edit"></use></svg></button>
+                  <button type="button" class="danger" th:if="${u.estado == 'activo'}" data-suspend aria-label="Suspender" title="Suspender"
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-user-x"></use></svg></button>
+                  <button type="button" data-reactivate aria-label="Reactivar" title="Reactivar" th:if="${u.estado != 'activo'}"
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-user-check"></use></svg></button>
+                  <button type="button" class="danger" data-delete aria-label="Eliminar" title="Eliminar"
+                          th:attr="data-id=${u.id}, data-nombre=${u.nombreCompleto}, data-correo=${u.correo}"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-trash"></use></svg></button>
                 </td>
               </tr>
             </tbody>

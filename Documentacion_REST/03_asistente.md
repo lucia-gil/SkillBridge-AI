@@ -142,3 +142,15 @@ El navegador la consulta al cargar el asistente y luego cada 3 s hasta que termi
 |---|---|
 | 200 | Estado actual |
 | 401 | Sin sesión |
+
+## Organización del historial para Administración
+
+El historial devuelto por `GET /api/asistente/conversaciones` incluye `proyectoId`, `proyectoNombre` y `archivada`. Un proyecto ausente se representa con `null`.
+
+| Método y ruta | Cuerpo JSON | Respuesta |
+|---|---|---|
+| `POST /api/asistente/conversaciones` | `{}` | `201` con un borrador guardado |
+| `PUT /api/asistente/conversaciones/{id}/archivo` | `{"archivada":true}` para archivar o `false` para restaurar | `204` |
+| `PUT /api/asistente/conversaciones/{id}/proyecto` | `{"proyectoId":3}` para vincular o `{"proyectoId":null}` para quitar el vínculo | `204` |
+
+Las escrituras requieren la vista Administrador, sesión y CSRF. El servidor comprueba el propietario y el alcance de la conversación. Un enlace con `?c={id}` abre el historial con esos mismos permisos.

@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="campana">
-  <link rel="stylesheet" th:href="@{/css/admin-notificaciones.css(v=2)}">
+  <link rel="stylesheet" th:href="@{/css/admin-notificaciones.css(v=3)}">
   <script th:src="@{/js/admin-notificaciones.js(v=2)}" defer></script>
   <details class="an-bell" data-an-bell
            th:attr="data-an-unread=${unreadCount},data-an-source=@{/administrador/notificaciones/recientes},data-an-inbox=@{/administrador/notificaciones.html},data-an-icons=@{/img/icons.svg}">

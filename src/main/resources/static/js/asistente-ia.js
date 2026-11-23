@@ -18,7 +18,21 @@
   var $input = $("#as-input"), $send = $("#as-send"), $borrar = $("#as-borrar");
   var $renombrar = $("#as-renombrar"), $fijar = $("#as-fijar"), $adj = $("#as-adjuntos"), $file = $("#as-file");
   var MAX_ADJ = Number($("#as-clip").data("max")) || 3, MAX_BYTES = 5 * 1024 * 1024;
-  var estado = { id: null, enviando: false, conversaciones: [], archivos: [] };
+  var administrar = $app.attr("data-organizar") === "true";
+  var estado = { id: null, enviando: false, conversaciones: [], archivos: [], archivadas: false };
+  var $buscar = $("#as-filtrar"), $vistas = $("[data-as-archivadas]");
+  var $vinculo = $("#as-proyecto-activo"), $archivada = $("#as-conversacion-archivada");
+  var $dialogo = $("#as-vincular-proyecto"), $proyecto = $("#as-proyecto");
+  var peticionLista = 0;
+
+  function pintarProyecto() {
+    var c = actual();
+    $vinculo.prop("hidden", !c || !c.proyectoId);
+    if (c && c.proyectoId) {
+      $vinculo.text(c.proyectoNombre).attr("href", "/administrador/proyectos.html?ver=" + c.proyectoId);
+    }
+    $archivada.prop("hidden", !c || !c.archivada);
+  }
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -134,29 +148,111 @@
   }
 
   /* ---------------- Historial ---------------- */
+  function item(c) {
+    var activa = c.id === estado.id;
+    return '<li class="as-hist-li' + (activa ? ' is-active' : '') + '" data-id="' + c.id + '">' +
+      '<button type="button" class="as-hist-item' + (activa ? ' is-active' : '') + '" data-id="' + c.id + '"' +
+      (activa ? ' aria-current="true"' : '') + '>' + icon(c.fijada ? "icon-pin" : "icon-message", "icon-sm") +
+      '<span><b>' + esc(c.titulo) + '</b><small>' + esc(c.cuando) + '</small></span></button>' +
+      '<button type="button" class="as-hist-more" data-menu="' + c.id + '" aria-label="Opciones de ' +
+      esc(c.titulo) + '" aria-haspopup="menu" aria-expanded="false">' + icon("icon-more-h", "icon-sm") + '</button></li>';
+  }
+
+  function grupo(nombre, lista, icono) {
+    if (!lista.length) return "";
+    return '<li><details class="as-project-group" open><summary>' + icon(icono, "icon-sm") +
+      '<span>' + esc(nombre) + '</span><small>' + lista.length + '</small>' + icon("icon-chevron-down", "as-group-chevron") +
+      '</summary><ul>' + lista.map(item).join("") + '</ul></details></li>';
+  }
+
+  function normalizar(texto) {
+    return String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+
   function pintarLista() {
-    if (!estado.conversaciones.length) {
-      $lista.html('<li class="as-hist-empty">Tus conversaciones aparecerán aquí.</li>');
+    cerrarMenu();
+    pintarProyecto();
+    var lista = estado.conversaciones;
+    var consulta = normalizar($buscar.val()).trim();
+    if (administrar) {
+      lista = lista.filter(function (c) {
+        return Boolean(c.archivada) === estado.archivadas
+          && normalizar(c.titulo + " " + (c.proyectoNombre || "")).includes(consulta);
+      });
+    }
+    if (!lista.length) {
+      var aviso = consulta ? "Sin coincidencias." : estado.archivadas
+        ? "No hay conversaciones archivadas." : "Tus conversaciones aparecerán aquí.";
+      $lista.html('<li class="as-hist-empty">' + aviso + '</li>');
       return;
     }
-    var fijadas = estado.conversaciones.filter(function (c) { return c.fijada; });
-    var resto = estado.conversaciones.filter(function (c) { return !c.fijada; });
-    function item(c) {
-      return '<li class="as-hist-li' + (c.id === estado.id ? " is-active" : "") + '" data-id="' + c.id + '">' +
-          '<button type="button" class="as-hist-item' + (c.id === estado.id ? " is-active" : "") + '" data-id="' + c.id + '"' +
-          (c.id === estado.id ? ' aria-current="true"' : "") + ">" + icon(c.fijada ? "icon-pin" : "icon-message", "icon-sm") +
-          '<span><b>' + esc(c.titulo) + "</b><small>" + esc(c.cuando) + "</small></span></button>" +
-          '<button type="button" class="as-hist-more" data-menu="' + c.id + '" aria-label="Opciones de la conversación" aria-haspopup="menu">' + icon("icon-more-h", "icon-sm") + "</button></li>";
-    }
-    $lista.html((fijadas.length ? '<li class="as-hist-group">Fijadas</li>' + fijadas.map(item).join("") +
+    if (!administrar) {
+      var fijadas = lista.filter(function (c) { return c.fijada; });
+      var resto = lista.filter(function (c) { return !c.fijada; });
+      $lista.html((fijadas.length ? '<li class="as-hist-group">Fijadas</li>' + fijadas.map(item).join("") +
         (resto.length ? '<li class="as-hist-group">Recientes</li>' : "") : "") + resto.map(item).join(""));
+      return;
+    }
+    var sinProyecto = [];
+    var proyectos = new Map();
+    lista.forEach(function (c) {
+      if (c.proyectoId == null) { sinProyecto.push(c); return; }
+      if (!proyectos.has(c.proyectoId)) proyectos.set(c.proyectoId, []);
+      proyectos.get(c.proyectoId).push(c);
+    });
+    var orden = Array.from(proyectos.values()).sort(function (a, b) {
+      return String(a[0].proyectoNombre).localeCompare(String(b[0].proyectoNombre), "es");
+    });
+    $lista.html(orden.map(function (l) { return grupo(l[0].proyectoNombre, l, "icon-folder"); }).join("") +
+      grupo("Sin proyecto", sinProyecto, "icon-message-circle"));
   }
 
   function cargarLista() {
+    var version = ++peticionLista;
     return api.get("/api/asistente/conversaciones").done(function (lista) {
+      if (version !== peticionLista) return;
       estado.conversaciones = lista;
       pintarLista();
-    }).fail(function () { $lista.html('<li class="as-hist-empty">No se pudo cargar el historial.</li>'); });
+    }).fail(function () {
+      if (version === peticionLista) $lista.html('<li class="as-hist-empty">No se pudo cargar el historial.</li>');
+    });
+  }
+
+  function vistaArchivo(archivadas) {
+    estado.archivadas = archivadas;
+    $vistas.each(function () { $(this).attr("aria-pressed", String($(this).attr("data-as-archivadas") === String(archivadas))); });
+    pintarLista();
+  }
+
+  function error(xhr) {
+    SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" });
+  }
+
+  function archivar(c) {
+    var archivo = !c.archivada;
+    api.put("/api/asistente/conversaciones/" + c.id + "/archivo", { archivada: archivo }).done(function () {
+      c.archivada = archivo;
+      if (estado.id === c.id) vistaArchivo(archivo);
+      cargarLista();
+      SBAI.toast.show(archivo ? "Conversación archivada." : "Conversación restaurada.", { type: "success" });
+    }).fail(error);
+  }
+
+  function vincular(c) {
+    $dialogo.data("id", c.id);
+    $proyecto.val(c.proyectoId == null ? "" : String(c.proyectoId));
+    $("#as-project-error").prop("hidden", true);
+    $dialogo[0].showModal();
+  }
+
+  function copiarEnlace(id) {
+    var destino = new URL(location.pathname, location.origin);
+    destino.searchParams.set("c", id);
+    $.when(copiarTexto(destino.toString())).done(function () {
+      SBAI.toast.show("Enlace copiado.", { type: "success" });
+    }).fail(function () {
+      SBAI.toast.show("No se pudo copiar el enlace.", { type: "error" });
+    });
   }
 
   function actual() { return estado.conversaciones.filter(function (x) { return x.id === estado.id; })[0]; }
@@ -168,7 +264,7 @@
       estado.conversaciones.sort(function (a, b) { return (b.fijada ? 1 : 0) - (a.fijada ? 1 : 0); });
       if (v.id === estado.id) $titulo.text(v.titulo);
       pintarLista();
-      mostrarVacio(estado.id == null);
+      mostrarVacio(estado.id == null || $empty.is(":visible"));
     }).fail(function (xhr) { SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" }); });
   }
   function fijar(id) {
@@ -183,8 +279,9 @@
     var c = estado.conversaciones.filter(function (x) { return x.id === id; })[0];
     if (!c) return;
     var $in = $('<input class="as-rename" maxlength="120" aria-label="Nuevo nombre de la conversación">').val(c.titulo);
-    var $orig = $donde.contents().detach();
-    $donde.append($in);
+    var $fila = $donde.closest(".as-hist-item");
+    var $orig = $fila.length ? $() : $donde.contents().detach();
+    if ($fila.length) $fila.hide().after($in); else $donde.append($in);
     $in.trigger("focus").trigger("select");
     var listo = false;
     function terminar(guardar) {
@@ -193,6 +290,7 @@
       var nuevo = $.trim($in.val());
       $in.remove();
       $donde.append($orig);
+      $fila.show();
       if (guardar && nuevo && nuevo !== c.titulo) cambiar(id, { titulo: nuevo }); else pintarLista();
     }
     $in.on("keydown", function (e) {
@@ -201,31 +299,72 @@
     }).on("blur", function () { terminar(true); });
   }
 
-  /* Menú ⋯ de cada conversación */
-  function cerrarMenu() { $(".as-menu").remove(); $(".as-hist-more").attr("aria-expanded", "false"); }
+  /* Acciones de la conversación. */
+  var $origenMenu = $();
+  function cerrarMenu(devolverFoco) {
+    $(".as-menu").remove();
+    $origenMenu.attr("aria-expanded", "false");
+    if (devolverFoco) $origenMenu.trigger("focus");
+    $origenMenu = $();
+  }
+
+  function opcion(accion, icono, texto, clase) {
+    return '<button type="button" role="menuitem" data-acc="' + accion + '" class="' + (clase || "") + '">' +
+      icon(icono, "icon-sm") + texto + '</button>';
+  }
+
   $lista.on("click", ".as-hist-more", function (e) {
     e.stopPropagation();
-    var id = Number($(this).data("menu")), abierto = $(this).attr("aria-expanded") === "true";
+    var $boton = $(this), id = Number($boton.data("menu")), abierto = $boton.attr("aria-expanded") === "true";
     cerrarMenu();
     if (abierto) return;
-    var c = estado.conversaciones.filter(function (x) { return x.id === id; })[0];
-    var $m = $('<div class="as-menu" role="menu">' +
-      '<button type="button" role="menuitem" data-acc="renombrar">' + icon("icon-edit", "icon-sm") + "Cambiar nombre</button>" +
-      '<button type="button" role="menuitem" data-acc="fijar">' + icon("icon-pin", "icon-sm") + (c && c.fijada ? "Quitar de fijadas" : "Fijar") + "</button>" +
-      '<button type="button" role="menuitem" data-acc="eliminar" class="is-danger">' + icon("icon-trash", "icon-sm") + "Eliminar</button></div>");
-    $(this).attr("aria-expanded", "true").closest("li").append($m);
+    var c = estado.conversaciones.find(function (x) { return x.id === id; });
+    if (!c) return;
+    var $li = $boton.closest("li");
+    var acciones = opcion("renombrar", "icon-edit", "Cambiar nombre") +
+      opcion("fijar", "icon-pin", c.fijada ? "Quitar de fijadas" : "Fijar");
+    if (administrar) {
+      acciones += opcion("proyecto", "icon-folder", "Vincular a proyecto") +
+        opcion("archivo", c.archivada ? "icon-refresh" : "icon-bookmark", c.archivada ? "Restaurar" : "Archivar") +
+        opcion("copiar", "icon-copy", "Copiar enlace");
+    }
+    var $m = $('<div class="as-menu as-menu-flotante" role="menu" aria-label="Acciones de la conversación">' +
+      acciones + opcion("eliminar", "icon-trash", "Eliminar", "is-danger") + '</div>').appendTo(document.body);
+    var rect = this.getBoundingClientRect();
+    $m.css({
+      left: Math.max(8, Math.min(rect.right - $m.outerWidth(), innerWidth - $m.outerWidth() - 8)),
+      top: Math.max(8, rect.bottom + $m.outerHeight() + 8 > innerHeight ? rect.top - $m.outerHeight() : rect.bottom + 4)
+    });
+    $origenMenu = $boton.attr("aria-expanded", "true");
     $m.find("button").first().trigger("focus");
+    $m.on("keydown", function (ev) {
+      var teclas = ["ArrowDown", "ArrowUp", "Home", "End"];
+      if (!teclas.includes(ev.key)) return;
+      ev.preventDefault();
+      var $items = $m.find("button"), indice = $items.index(document.activeElement);
+      var destino = ev.key === "Home" ? 0 : ev.key === "End" ? $items.length - 1
+        : (indice + (ev.key === "ArrowDown" ? 1 : -1) + $items.length) % $items.length;
+      $items.eq(destino).trigger("focus");
+    });
     $m.on("click", "button", function (ev) {
       ev.stopPropagation();
-      var acc = $(this).data("acc"), $li = $m.closest("li");
-      cerrarMenu();
+      var acc = $(this).data("acc");
+      cerrarMenu(true);
       if (acc === "renombrar") renombrar(id, $li.find(".as-hist-item span").first());
       else if (acc === "fijar") fijar(id);
+      else if (acc === "proyecto") vincular(c);
+      else if (acc === "archivo") archivar(c);
+      else if (acc === "copiar") copiarEnlace(id);
       else eliminar(id);
     });
   });
-  $(document).on("click", function (e) { if (!$(e.target).closest(".as-menu").length) cerrarMenu(); })
-    .on("keydown", function (e) { if (e.key === "Escape") cerrarMenu(); });
+  $(document).on("click", function (e) {
+    if (!$(e.target).closest(".as-menu").length) cerrarMenu();
+  }).on("keydown", function (e) {
+    if (e.key === "Escape" && $origenMenu.length) cerrarMenu(true);
+  });
+  $lista.on("scroll", function () { cerrarMenu(); });
+  $(window).on("resize scroll", function () { cerrarMenu(); });
 
   function url(id) {
     try { history.replaceState(null, "", location.pathname + (id ? "?c=" + id : "")); } catch (e) { /* sin historial */ }
@@ -276,22 +415,26 @@
   }
 
   function abrir(id, alTerminar) {
+    if (estado.enviando && estado.id !== id) return;
     if (estado.id !== id) dejarDeEsperar();
     estado.id = id;
-    pintarLista();
+    var elegida = actual();
+    if (administrar && elegida) vistaArchivo(Boolean(elegida.archivada)); else pintarLista();
     $msgs.children(":not(#as-empty)").remove();
     $empty.hide();
     $msgs.append('<div class="as-cargando">Cargando conversación…</div>');
     api.get("/api/asistente/conversaciones/" + id).done(function (mensajes) {
+      if (estado.id !== id) return;
       $msgs.find(".as-cargando").remove();
       var c = estado.conversaciones.filter(function (x) { return x.id === id; })[0];
       $titulo.text(c ? c.titulo : "Conversación");
       $msgs.append(mensajes.map(burbuja).join(""));
-      mostrarVacio(false);
+      mostrarVacio(administrar && !mensajes.length);
       $msgs.scrollTop($msgs[0].scrollHeight);
       url(id);
       if (alTerminar) alTerminar();
     }).fail(function (xhr) {
+      if (estado.id !== id) return;
       $msgs.find(".as-cargando").remove();
       SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" });
       nueva();
@@ -316,7 +459,7 @@
   function enviar(texto) {
     texto = $.trim(texto);
     var archivos = estado.archivos.slice();
-    if ((!texto && !archivos.length) || estado.enviando) return;
+    if ((!texto && !archivos.length) || estado.enviando || $input.prop("disabled")) return;
     estado.enviando = true;
     mostrarVacio(false);
     $empty.hide();
@@ -374,11 +517,40 @@
   }).on("input", function () {
     this.style.height = "auto";
     this.style.height = Math.min(this.scrollHeight, 160) + "px";
-    $send.prop("disabled", (!$.trim(this.value) && !estado.archivos.length) || estado.enviando);
+    $send.prop("disabled", this.disabled || (!$.trim(this.value) && !estado.archivos.length) || estado.enviando);
   });
   $msgs.on("click", "[data-as-sug]", function () { enviar($(this).text()); });
   $lista.on("click", ".as-hist-item", function () { abrir(Number($(this).data("id"))); });
-  $("#as-nueva").on("click", nueva);
+  $("#as-nueva").on("click", function () {
+    if (estado.enviando) return;
+    if (!administrar) { nueva(); return; }
+    var $boton = $(this).prop("disabled", true);
+    api.post("/api/asistente/conversaciones").done(function (c) {
+      estado.conversaciones.unshift(c);
+      $buscar.val("");
+      abrir(c.id);
+      cargarLista();
+    }).fail(error).always(function () { $boton.prop("disabled", false); });
+  });
+  $buscar.on("input", pintarLista);
+  $vistas.on("click", function () { vistaArchivo($(this).attr("data-as-archivadas") === "true"); });
+  $("#as-project-cancel").on("click", function () { $dialogo[0].close(); });
+  $("#as-project-form").on("submit", function (e) {
+    e.preventDefault();
+    var $boton = $(this).find("[type=submit]").prop("disabled", true);
+    var proyectoId = Number($proyecto.val()) || null;
+    api.put("/api/asistente/conversaciones/" + $dialogo.data("id") + "/proyecto", { proyectoId: proyectoId })
+      .done(function () {
+        $dialogo[0].close();
+        cargarLista();
+        SBAI.toast.show(proyectoId ? "Proyecto vinculado." : "Vínculo quitado.", { type: "success" });
+      }).fail(function (xhr) {
+        $("#as-project-error").text(api.mensajeError(xhr)).prop("hidden", false);
+      }).always(function () { $boton.prop("disabled", false); });
+  });
+  $("#as-toggle-contexto").on("click", function () {
+    $(this).attr("aria-expanded", String($app.toggleClass("contexto-abierto").hasClass("contexto-abierto")));
+  });
   $("#as-ver-hist").on("click", function () {
     var abierto = $app.toggleClass("hist-abierto").hasClass("hist-abierto");
     $(this).attr("aria-expanded", abierto ? "true" : "false");

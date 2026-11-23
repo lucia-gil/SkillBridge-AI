@@ -576,3 +576,89 @@
 .admin-app .admin-audit-bottom{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:1rem;margin-top:1.5rem;align-items:start}.admin-app .admin-audit-bottom .admin-audit-section-head{padding:0}.admin-app .admin-audit-user{display:flex;align-items:center;gap:.7rem;padding:.7rem 0;border-top:1px solid var(--border-subtle)}.admin-app .admin-audit-user strong{flex:1;font-size:.85rem}.admin-app .admin-audit-user>span:last-child{font-size:.78rem;color:var(--text-secondary)}.admin-app .admin-audit-guide p{color:var(--text-secondary);font-size:.85rem;line-height:1.6;margin:.6rem 0 1rem}.admin-app .admin-audit-guide a{color:var(--blue-accent);font-size:.85rem;font-weight:650}
 @media(max-width:1100px){.admin-app .admin-audit-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-app .admin-home-actions{grid-template-columns:1fr}}
 @media(max-width:600px){.admin-app .admin-home-actions-grid,.admin-app .admin-audit-filters{grid-template-columns:1fr}.admin-app .admin-audit-intro{align-items:start;flex-direction:column}.admin-app .admin-home-event time{font-size:.7rem}}
+
+/* Habilidades declaradas y medidores del administrador. */
+.admin-skills-chart { margin-top: var(--space-6); }
+.admin-skills-chart .admin-section-head { margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+.admin-skills-chart h2 { font-size: var(--fs-md); }
+.admin-skills-chart .admin-section-head p { margin-top: 4px; color: var(--text-secondary); font-size: var(--fs-sm); }
+.admin-skills-plot {
+  --skills-columns: minmax(75px, 1fr) minmax(65px, 3.5fr) minmax(56px, max-content);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--surface-sunken);
+  padding: clamp(12px, 2vw, 22px);
+}
+.admin-skills-axis, .admin-skills-list li {
+  display: grid;
+  grid-template-columns: var(--skills-columns);
+  align-items: center;
+  gap: clamp(9px, 2vw, 24px);
+}
+.admin-skills-axis { color: var(--text-secondary); font-size: 11px; padding-bottom: 9px; }
+.admin-skills-axis > :nth-child(2) { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+.admin-skills-axis > :last-child, .admin-skills-list strong { text-align: right; }
+.admin-skills-list { margin: 0; padding: 0; list-style: none; }
+.admin-skills-list li { padding-block: 11px; border-top: 1px solid var(--border-subtle); font-size: var(--fs-sm); }
+.admin-skills-list li > span { overflow-wrap: anywhere; font-weight: 600; }
+.admin-skills-list strong { font-variant-numeric: tabular-nums; }
+.admin-skills-track { height: 12px; border-radius: 999px; background: var(--border-subtle); overflow: hidden; }
+.admin-skills-track span { display: block; width: var(--share); height: 100%; border-radius: inherit; background: linear-gradient(90deg, #274a9e, #5485e5); }
+.admin-skills-list li:first-child .admin-skills-track span { background: linear-gradient(90deg, #1b4886, #248e96); }
+
+.admin-progress { --progress-fill: #4777ce; display: flex; align-items: center; gap: 9px; min-width: 85px; }
+.admin-progress[data-tone="complete"], .admin-progress[data-tone="available"] { --progress-fill: #25867f; }
+[data-theme="dark"] .admin-progress { --progress-fill: #7ca4ef; }
+[data-theme="dark"] .admin-progress:is([data-tone="complete"], [data-tone="available"]) { --progress-fill: #66ccc0; }
+.admin-progress progress {
+  display: block;
+  appearance: none;
+  flex: 1;
+  width: 100%;
+  min-width: 40px;
+  height: 7px;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--border-subtle);
+  color: var(--progress-fill);
+  accent-color: var(--progress-fill);
+}
+.admin-progress progress::-webkit-progress-bar { background: var(--border-subtle); }
+.admin-progress progress::-webkit-progress-value { border-radius: 999px; background: var(--progress-fill); }
+.admin-progress progress::-moz-progress-bar { border-radius: 999px; background: var(--progress-fill); }
+.admin-progress strong { font-size: var(--fs-xs); min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; }
+
+.admin-app .admin-users-table .admin-user-actions { white-space: nowrap; }
+.admin-app .admin-users-table .admin-user-actions > button {
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 9px;
+  color: var(--blue-fg);
+  background: var(--surface);
+}
+.admin-app .admin-users-table .admin-user-actions > button.danger { color: var(--red-fg); }
+.admin-app .admin-users-table .admin-user-actions > button[data-reactivate] { color: var(--green-fg); }
+.admin-app .admin-users-table .admin-user-actions > button:hover { background: var(--blue-bg); border-color: var(--blue-fg); }
+.admin-app .admin-users-table .admin-user-actions > button.danger:hover { background: var(--red-bg); border-color: var(--red-fg); }
+.admin-app .admin-users-table .admin-user-actions > button[data-reactivate]:hover { background: var(--green-bg); border-color: var(--green-fg); }
+.admin-app .admin-users-table .admin-user-actions > button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.admin-users-table .admin-user-actions button .icon { width: 16px; height: 16px; color: currentColor; }
+
+
+.admin-project-name { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.admin-project-name .avatar { flex-shrink: 0; }
+
+@media (min-width: 980px) and (max-width: 1440px) {
+  .admin-app :is(.admin-users-table, .admin-projects-table) :is(th, td) { padding-inline: 9px; }
+  .admin-app .admin-projects-table :is(.cell-person, .cell-person-name) { white-space: normal; }
+  .admin-app .admin-projects-table .cell-person-text { max-width: 185px; }
+  .admin-app .admin-projects-table .miembros-pill { padding-inline: 7px; white-space: nowrap; }
+  .admin-app .admin-projects-table .admin-progress { min-width: 90px; }
+  .admin-app .admin-users-table .cell-person-sub { overflow-wrap: anywhere; white-space: normal; }
+  .admin-app .admin-users-table .admin-user-actions > button { width: 34px; height: 34px; }
+}

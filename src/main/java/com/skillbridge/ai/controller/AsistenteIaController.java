@@ -37,9 +37,12 @@ public class AsistenteIaController {
     private final ShellModelBuilder shell;
     private final AsistenteConversacionService conversacionService;
     private final AsistenteContextoService contextoService;
+    private final com.skillbridge.ai.repository.ProyectoRepository proyectos;
 
     public AsistenteIaController(ShellModelBuilder shell, AsistenteConversacionService conversacionService,
-                                 AsistenteContextoService contextoService, com.skillbridge.ai.service.agente.LimiteAgenteService limite) {
+                                 AsistenteContextoService contextoService, com.skillbridge.ai.service.agente.LimiteAgenteService limite,
+                                 com.skillbridge.ai.repository.ProyectoRepository proyectos) {
+        this.proyectos = proyectos;
         this.limite=limite;
         this.shell = shell;
         this.conversacionService = conversacionService;
@@ -48,6 +51,8 @@ public class AsistenteIaController {
 
     public record MensajeRequest(Long conversacionId, String mensaje) {}
     public record CambioRequest(String titulo, Boolean fijada) {}
+    public record ArchivoRequest(Boolean archivada) {}
+    public record ProyectoRequest(Long proyectoId) {}
 
     // ───────────────────────── Página ─────────────────────────
 
@@ -65,6 +70,11 @@ public class AsistenteIaController {
         model.addAttribute("maxAdjuntos", AsistenteConversacionService.MAX_ADJUNTOS);
         model.addAttribute("motivo", conversacionService.motivoIndisponible());
         model.addAttribute("alcance", alcance(rol));
+        boolean asistenteAdmin = Roles.ADMINISTRADOR.equals(rol);
+        model.addAttribute("asistenteAdmin", asistenteAdmin);
+        if (asistenteAdmin) {
+            model.addAttribute("proyectosAsistente", proyectos.findAll(org.springframework.data.domain.Sort.by("nombre")));
+        }
         return "compartido/asistente-ia";
     }
 
@@ -74,6 +84,27 @@ public class AsistenteIaController {
     @ResponseBody
     public List<AsistenteConversacionService.ConversacionVista> conversaciones(HttpSession session) {
         return conversacionService.conversaciones(sesion(session));
+    }
+
+    @PostMapping("/api/asistente/conversaciones")
+    @ResponseBody
+    public ResponseEntity<AsistenteConversacionService.ConversacionVista> crear(HttpSession session) {
+        return ResponseEntity.status(201).body(conversacionService.crearBorrador(sesion(session)));
+    }
+
+    @PutMapping("/api/asistente/conversaciones/{id}/archivo")
+    @ResponseBody
+    public ResponseEntity<Void> archivar(@PathVariable Long id, @RequestBody ArchivoRequest body, HttpSession session) {
+        if (body.archivada() == null) throw new OperacionInvalidaException("Indica si quieres archivar la conversación.");
+        conversacionService.archivar(id, body.archivada(), sesion(session));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/api/asistente/conversaciones/{id}/proyecto")
+    @ResponseBody
+    public ResponseEntity<Void> vincularProyecto(@PathVariable Long id, @RequestBody ProyectoRequest body, HttpSession session) {
+        conversacionService.vincularProyecto(id, body.proyectoId(), sesion(session));
+        return ResponseEntity.noContent().build();
     }
 
     /** Conversación cuya respuesta todavía se está generando ({"conversacionId": null} si no hay). */

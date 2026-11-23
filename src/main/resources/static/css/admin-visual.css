@@ -53,3 +53,18 @@
 }
 .admin-audit-export .btn-group { flex-wrap: wrap; }
 .admin-audit-export .icon { width: 15px; height: 15px; }
+
+/* Mantiene la señal de severidad al enfocar, pasar el cursor y desplazar la tabla. */
+.admin-app .admin-audit-table tr[data-severity="Alta"] {
+  --severity-line: #ba384f;
+  --severity-row: color-mix(in srgb, var(--surface) 86%, #eb6579);
+  --severity-hover: color-mix(in srgb, var(--surface) 77%, #eb6579);
+}
+.admin-app .admin-audit-table tr[data-severity="Media"] {
+  --severity-line: #b46a1d;
+  --severity-row: color-mix(in srgb, var(--surface) 90%, #e8a548);
+  --severity-hover: color-mix(in srgb, var(--surface) 82%, #e8a548);
+}
+.admin-app .admin-audit-table tr:is([data-severity="Alta"], [data-severity="Media"]) > td { background: var(--severity-row); }
+.admin-app .admin-audit-table tr:is([data-severity="Alta"], [data-severity="Media"]):is(:hover, :focus-within) > td { background: var(--severity-hover); }
+.admin-app .admin-audit-table tr:is([data-severity="Alta"], [data-severity="Media"]) > td:first-child { box-shadow: inset 4px 0 var(--severity-line); }

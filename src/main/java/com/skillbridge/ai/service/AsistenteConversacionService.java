@@ -7,8 +7,12 @@ import com.skillbridge.ai.model.AsistenteMensaje;
 import com.skillbridge.ai.repository.AsistenteAdjuntoRepository;
 import com.skillbridge.ai.repository.AsistenteConversacionRepository;
 import com.skillbridge.ai.repository.AsistenteMensajeRepository;
+import com.skillbridge.ai.repository.AsistenteOrganizacionRepository;
+import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
+import com.skillbridge.ai.util.RecursoNoEncontradoException;
 import com.skillbridge.ai.util.Roles;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,13 +56,22 @@ public class AsistenteConversacionService {
     private static final Set<String> TIPOS_BINARIOS = Set.of("image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf");
     private static final Set<String> EXT_TEXTO = Set.of("txt", "csv", "md", "json", "log", "xml", "java", "sql", "js", "html", "css", "yml", "yaml", "properties");
 
-    public record ConversacionVista(Long id, String titulo, String cuando, boolean fijada) {}
+    private static final String TITULO_BORRADOR = "Nueva conversación";
+
+    public record ConversacionVista(Long id, String titulo, String cuando, boolean fijada,
+                                   Long proyectoId, String proyectoNombre, boolean archivada) {
+        public ConversacionVista(Long id, String titulo, String cuando, boolean fijada) {
+            this(id, titulo, cuando, fijada, null, null, false);
+        }
+    }
     public record AdjuntoVista(Long id, String nombre, String tipo, String tamano, boolean imagen) {}
     public record MensajeVista(Long id, boolean deUsuario, String texto, String hora, List<AdjuntoVista> adjuntos) {}
     public record Respuesta(Long conversacionId, String titulo, boolean nueva, String respuesta, boolean ok,
                             String hora, List<AsistenteContextoService.Accion> acciones, List<AdjuntoVista> adjuntos) {}
 
     private final AsistenteConversacionRepository conversacionRepository;
+    private final AsistenteOrganizacionRepository organizacion;
+    private final ProyectoRepository proyectos;
     private final AsistenteMensajeRepository mensajeRepository;
     private final AsistenteContextoService contextoService;
     private final AsistenteIaService asistenteIaService;
@@ -75,7 +88,11 @@ public class AsistenteConversacionService {
                                         AsistenteContextoService contextoService, AsistenteIaService asistenteIaService,
                                         AsistenteAdjuntoRepository adjuntoRepository, com.skillbridge.ai.service.agente.HerramientasAgente herramientas, com.skillbridge.ai.service.agente.ConfirmacionAgenteService confirmaciones,
                                         com.skillbridge.ai.service.agente.PoliticaAgente politica,
-                                        com.skillbridge.ai.repository.AgenteAlcanceRepository alcanceRepository) {
+                                        com.skillbridge.ai.repository.AgenteAlcanceRepository alcanceRepository,
+                                        AsistenteOrganizacionRepository organizacion,
+                                        ProyectoRepository proyectos) {
+        this.organizacion = organizacion;
+        this.proyectos = proyectos;
         this.politica = politica;
         this.alcanceRepository = alcanceRepository;
         this.confirmaciones = confirmaciones;
@@ -101,8 +118,46 @@ public class AsistenteConversacionService {
 
     @Transactional(readOnly = true)
     public List<ConversacionVista> conversaciones(UsuarioSesion s) {
+        if (Roles.ADMINISTRADOR.equals(rolDe(s))) {
+            return organizacion.historial(s.getUsuarioId(), rolDe(s), politica.firma(s)).stream()
+                    .map(c -> new ConversacionVista(c.id(), c.titulo(), cuando(c.actualizada()), c.fijada(),
+                            c.proyectoId(), c.proyectoNombre(), c.archivada()))
+                    .toList();
+        }
         return conversacionRepository.findTop30ByUsuarioIdAndRolOrderByFijadaDescFechaActualizacionDesc(s.getUsuarioId(), rolDe(s)).stream()
                 .filter(c -> alcanceValido(c.getId(), s)).map(c -> new ConversacionVista(c.getId(), c.getTitulo(), cuando(c.getFechaActualizacion()), c.isFijada())).toList();
+    }
+
+    @Transactional
+    public ConversacionVista crearBorrador(UsuarioSesion s) {
+        exigirAdministrador(s);
+        AsistenteConversacion c = conversacionRepository.save(
+                new AsistenteConversacion(s.getUsuarioId(), rolDe(s), TITULO_BORRADOR));
+        alcanceRepository.save(new com.skillbridge.ai.model.AgenteAlcance(c.getId(), politica.firma(s)));
+        return new ConversacionVista(c.getId(), c.getTitulo(), cuando(c.getFechaActualizacion()), c.isFijada());
+    }
+
+    @Transactional
+    public void archivar(Long id, boolean archivada, UsuarioSesion s) {
+        exigirAdministrador(s);
+        exigirPropia(id, s);
+        organizacion.archivar(id, archivada);
+    }
+
+    @Transactional
+    public void vincularProyecto(Long id, Long proyectoId, UsuarioSesion s) {
+        exigirAdministrador(s);
+        exigirPropia(id, s);
+        if (proyectoId != null && !proyectos.existsById(proyectoId)) {
+            throw new RecursoNoEncontradoException("Ese proyecto ya no existe.");
+        }
+        organizacion.vincular(id, proyectoId);
+    }
+
+    private static void exigirAdministrador(UsuarioSesion s) {
+        if (!Roles.ADMINISTRADOR.equals(rolDe(s))) {
+            throw new AccessDeniedException("Acción reservada para administración.");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -139,15 +194,20 @@ public class AsistenteConversacionService {
     public AsistenteAdjunto adjunto(Long id, UsuarioSesion s) {
         Long dueno = adjuntoRepository.duenoDe(id);
         Long conversacion = adjuntoRepository.conversacionDe(id);
-        if (conversacion == null) throw new com.skillbridge.ai.util.RecursoNoEncontradoException("Ese archivo ya no existe.");
+        if (conversacion == null) throw new RecursoNoEncontradoException("Ese archivo ya no existe.");
         exigirPropia(conversacion, s);
-        if (dueno == null || !dueno.equals(s.getUsuarioId())) throw new com.skillbridge.ai.util.RecursoNoEncontradoException("Ese archivo ya no existe.");
-        return adjuntoRepository.findById(id).orElseThrow(() -> new com.skillbridge.ai.util.RecursoNoEncontradoException("Ese archivo ya no existe."));
+        if (dueno == null || !dueno.equals(s.getUsuarioId())) throw new RecursoNoEncontradoException("Ese archivo ya no existe.");
+        return adjuntoRepository.findById(id).orElseThrow(() -> new RecursoNoEncontradoException("Ese archivo ya no existe."));
     }
 
     @Transactional
     public void eliminar(Long conversacionId, UsuarioSesion s) {
-        conversacionRepository.delete(exigirPropia(conversacionId, s));
+        AsistenteConversacion conversacion = exigirPropia(conversacionId, s);
+        if (conversacionId.equals(conversacionEnCurso(s))) {
+            throw new OperacionInvalidaException("Espera a que llegue la respuesta para eliminar la conversación.");
+        }
+        alcanceRepository.deleteById(conversacionId);
+        conversacionRepository.delete(conversacion);
     }
 
     /**
@@ -207,6 +267,14 @@ public class AsistenteConversacionService {
         // Memoria: los últimos turnos de esta conversación (antes del mensaje nuevo)
         List<AsistenteMensaje> previos = new ArrayList<>(mensajeRepository.findTop12ByConversacionIdOrderByIdDesc(conv.getId()));
         Collections.reverse(previos);
+        boolean titularBorrador = !nueva && Roles.ADMINISTRADOR.equals(rol) && previos.isEmpty()
+                && TITULO_BORRADOR.equals(conv.getTitulo());
+        if (titularBorrador) {
+            String provisional = titulo(mensaje);
+            if (conversacionRepository.titularSiNoCambio(conv.getId(), TITULO_BORRADOR, provisional) == 1) {
+                conv.renombrar(provisional);
+            }
+        }
         AsistenteMensaje guardado = mensajeRepository.save(new AsistenteMensaje(conv.getId(), AsistenteMensaje.USUARIO, mensaje));
 
         // Adjuntos: se guardan; imágenes y PDF viajan a la IA, los de texto se leen y se agregan al mensaje
@@ -244,7 +312,7 @@ public class AsistenteConversacionService {
         AsistenteContextoService.Contexto ctx = new AsistenteContextoService.Contexto("", List.of(), List.of(), List.of());
         // Conversación nueva: la IA le pone un título que resume la petición, en paralelo.
         // Mientras tanto queda el provisional (las primeras palabras del mensaje).
-        java.util.concurrent.CompletableFuture<String> tituloIa = nueva && !mensaje.isEmpty() && agenteHabilitado
+        java.util.concurrent.CompletableFuture<String> tituloIa = (nueva || titularBorrador) && !mensaje.isEmpty() && agenteHabilitado
                 ? java.util.concurrent.CompletableFuture.supplyAsync(() -> asistenteIaService.titularConversacion(mensaje), titulos)
                 : null;
 
@@ -271,7 +339,7 @@ public class AsistenteConversacionService {
                 tituloIa.thenAccept(t -> aplicarTituloIa(id, provisional, t));
             }
         }
-        return new Respuesta(conv.getId(), titulo, nueva, r.texto(), r.ok(),
+        return new Respuesta(conv.getId(), titulo, nueva || titularBorrador, r.texto(), r.ok(),
                 LocalDateTime.now().format(HORA), r.ok() ? ctx.acciones() : List.of(), adjuntosVista);
     }
 
@@ -313,8 +381,8 @@ public class AsistenteConversacionService {
 
     private AsistenteConversacion exigirPropia(Long id, UsuarioSesion s) {
         AsistenteConversacion c = conversacionRepository.findById(id)
-                .orElseThrow(() -> new com.skillbridge.ai.util.RecursoNoEncontradoException("Esa conversación ya no existe."));
-        if (!c.getUsuarioId().equals(s.getUsuarioId()) || !c.getRol().equals(rolDe(s)) || !alcanceValido(id,s)) throw new com.skillbridge.ai.util.RecursoNoEncontradoException("Esa conversación ya no existe.");
+                .orElseThrow(() -> new RecursoNoEncontradoException("Esa conversación ya no existe."));
+        if (!c.getUsuarioId().equals(s.getUsuarioId()) || !c.getRol().equals(rolDe(s)) || !alcanceValido(id,s)) throw new RecursoNoEncontradoException("Esa conversación ya no existe.");
         return c;
     }
 

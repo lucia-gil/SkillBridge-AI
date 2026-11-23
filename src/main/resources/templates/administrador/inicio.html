@@ -138,16 +138,22 @@
         </div>
       </section>
 
-      <section class="card card-pad" style="margin-top:var(--space-6);">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-4);">
-          <h3 style="font-size:var(--fs-md);">Catálogo de habilidades · más declaradas</h3>
-          <a href="habilidades.html" class="btn btn-secondary btn-sm">Ver catálogo completo</a>
+      <section class="card card-pad admin-skills-chart" aria-labelledby="admin-skills-title">
+        <div class="admin-section-head">
+          <div><h2 id="admin-skills-title">Habilidades más declaradas</h2><p>Personas que declaran cada habilidad en su perfil</p></div>
+          <a href="habilidades.html" class="btn btn-secondary btn-sm">Ver catálogo</a>
         </div>
-        <div th:if="${topHabilidades.isEmpty()}" class="text-tertiary" style="font-size:var(--fs-sm);">Todavía nadie ha declarado habilidades.</div>
-        <div th:each="s : ${topHabilidades}" class="rank-row" style="padding:var(--space-3) 0; border-bottom:1px solid var(--border-subtle);">
-            <span class="rank-name" style="font-size:var(--fs-sm); font-weight:500;" th:text="${s.nombre()}">Habilidad</span>
-            <div data-escala="ranking" class="progress-bar" th:attr="data-etiqueta=${s.vacantes()} + ' persona(s)'"><div class="progress-bar-fill" th:style="'width:' + ${maxDeclarada > 0 ? (s.vacantes() * 100 / maxDeclarada) : 0} + '%;'"></div></div>
-          </div>
+        <p th:if="${topHabilidades.isEmpty()}" class="admin-home-empty">Todavía nadie ha declarado habilidades.</p>
+        <div th:unless="${topHabilidades.isEmpty()}" class="admin-skills-plot">
+          <div class="admin-skills-axis" aria-hidden="true"><span>Habilidad</span><span><b>0</b><b th:text="${maxDeclarada}">5</b></span><span>Personas</span></div>
+          <ul class="admin-skills-list">
+            <li th:each="s : ${topHabilidades}">
+              <span th:text="${s.nombre()}">Habilidad</span>
+              <div class="admin-skills-track" aria-hidden="true"><span th:style="|--share: ${maxDeclarada > 0 ? (s.vacantes() * 100.0 / maxDeclarada) : 0}%|"></span></div>
+              <strong><span th:text="${s.vacantes()}">0</span><span class="sr-only" th:text="${s.vacantes() == 1 ? ' persona' : ' personas'}"></span></strong>
+            </li>
+          </ul>
+        </div>
       </section>
 
       <section class="card card-pad admin-home-activity">

@@ -39,18 +39,20 @@
         </div>
         <div data-project-filters="proyectos-admin"></div>
         <div class="table-scroll">
-          <table class="data-table">
+          <table class="data-table admin-projects-table">
             <thead><tr><th>Proyecto</th><th>PM</th><th>Periodo / duración</th><th>Miembros</th><th>% Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               <tr th:each="p, stat : ${proyectos}" data-filter-row="proyectos-admin" th:attr="data-f-estado=${p.estadoCrudo},data-f-search=${#strings.toLowerCase(p.nombre)}">
                 <td class="cell-person">
-                  <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
-                  <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="2"></span></span>
+                  <div class="admin-project-name">
+                    <span class="avatar avatar-sm" style="border-radius:var(--radius-sm); background:var(--navy-700);" th:text="${#strings.substring(p.nombre, 0, 1)}">P</span>
+                    <span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span data-tech-list th:attr="data-tech-list=${#strings.listJoin(p.tecnologias, ',')}" data-max="2"></span></span>
+                  </div>
                 </td>
                 <td th:text="${p.pmNombre}">PM</td>
                 <td><span data-periodo th:attr="data-ini=${p.fechaInicioLabel},data-fin=${p.fechaFinLabel}">fechas</span></td>
                 <td><span class="miembros-pill" th:attr="data-n=${p.equipoSize}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg><span th:text="${p.equipoSize} + (${p.equipoSize} == 1 ? ' miembro' : ' miembros')">0 miembros</span></span></td>
-                <td><div class="progress-inline" style="min-width:100px;"><div class="progress-bar"><div class="progress-bar-fill" th:style="'width:' + ${p.avance} + '%;'"></div></div><span class="progress-value" th:text="${p.avance} + '%'">0%</span></div></td>
+                <td><div class="admin-progress" th:attr="data-tone=${p.avance == 100 ? 'complete' : 'default'}"><progress max="100" th:value="${p.avance}" aria-label="Avance del proyecto"></progress><strong aria-hidden="true" th:text="${p.avance} + '%'">0%</strong></div></td>
                 <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
                 <td class="cell-actions"><button type="button" th:attr="data-view-project=${p.id}">Ver detalle</button></td>
               </tr>
