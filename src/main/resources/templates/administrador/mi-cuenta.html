@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="/css/polish.css">
 
 <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" th:href="@{/css/identidad-dni.css}">
 </head>
 
 
@@ -537,6 +538,8 @@
               flex-direction:column;
               gap:var(--space-6);
             ">
+          <section th:replace="~{fragments/identidad-dni :: cuenta}"></section>
+
           <!-- RESUMEN (RG-222: la columna derecha ya no queda vacía) -->
           <section class="card card-pad account-summary">
             <h3 class="account-aside-title">Resumen de tu cuenta</h3>

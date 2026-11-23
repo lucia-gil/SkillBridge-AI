@@ -32,7 +32,9 @@
         <tr th:each="m : ${d.equipo}" th:if="${m.rolEnProyectoCrudo == 'project_manager'}" data-mini-row class="is-pinned"
             th:attr="data-buscar=${m.nombre + ' ' + m.correo}, data-miembro-perfil=${m.perfilId}">
           <td class="cell-person"><span class="avatar avatar-sm" th:text="${m.iniciales}">AB</span>
-            <span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">correo</span></span></td>
+            <span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">correo</span>
+              <span th:if="${perfilesVerificados != null and perfilesVerificados.contains(m.perfilId)}"
+                    class="badge badge-green">DNI verificado</span></span></td>
           <td><span class="badge badge-blue">Project Manager</span></td>
           <td class="mono" style="text-align:right;" th:text="${m.cargaPorcentaje} + '%'">0%</td>
           <td th:if="${acciones}" class="cell-actions"><span class="text-tertiary" style="font-size:var(--fs-xs);">Lidera</span></td>
@@ -40,7 +42,9 @@
         <tr th:each="m : ${d.equipo}" th:if="${m.rolEnProyectoCrudo == 'colaborador'}" data-mini-row
             th:attr="data-buscar=${m.nombre + ' ' + m.correo}, data-miembro-perfil=${m.perfilId}">
           <td class="cell-person"><span class="avatar avatar-sm" th:text="${m.iniciales}">AB</span>
-            <span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">correo</span></span></td>
+            <span class="cell-person-text"><span class="cell-person-name" th:text="${m.nombre}">Nombre</span><span class="cell-person-sub" th:text="${m.correo}">correo</span>
+              <span th:if="${perfilesVerificados != null and perfilesVerificados.contains(m.perfilId)}"
+                    class="badge badge-green">DNI verificado</span></span></td>
           <td><span class="badge badge-neutral">Colaborador</span></td>
           <td class="mono" style="text-align:right;" th:text="${m.cargaPorcentaje} + '%'">0%</td>
           <td th:if="${acciones}" class="cell-actions">

@@ -67,6 +67,7 @@ public class RmColaboradoresController {
     private final com.skillbridge.ai.service.PerfilVistaService perfilVistaService;
     private final com.skillbridge.ai.service.ConfiguracionService configuracionService;
     private final com.skillbridge.ai.service.ResumenProfesionalIaService resumenProfesionalIaService;
+    private final com.skillbridge.ai.service.IdentidadDniService identidadDni;
 
     public RmColaboradoresController(PerfilRepository perfilRepository, AsignacionRepository asignacionRepository,
                                      HabilidadRepository habilidadRepository, HabilidadService habilidadService,
@@ -75,7 +76,8 @@ public class RmColaboradoresController {
                                      com.skillbridge.ai.service.ProyectoService proyectoService,
                                      com.skillbridge.ai.service.PerfilVistaService perfilVistaService,
                                      com.skillbridge.ai.service.ConfiguracionService configuracionService,
-                                     com.skillbridge.ai.service.ResumenProfesionalIaService resumenProfesionalIaService) {
+                                     com.skillbridge.ai.service.ResumenProfesionalIaService resumenProfesionalIaService,
+                                     com.skillbridge.ai.service.IdentidadDniService identidadDni) {
         this.auditoriaService = auditoriaService;
         this.usuarioService = usuarioService;
         this.perfilRepository = perfilRepository;
@@ -87,6 +89,7 @@ public class RmColaboradoresController {
         this.perfilVistaService = perfilVistaService;
         this.configuracionService = configuracionService;
         this.resumenProfesionalIaService = resumenProfesionalIaService;
+        this.identidadDni = identidadDni;
     }
 
     @GetMapping("/colaboradores.html")
@@ -168,6 +171,7 @@ public class RmColaboradoresController {
                 perfiles.size() + " miembros · capacidad, carga y perfiles del equipo");
 
         model.addAttribute("colaboradores", filas);
+        model.addAttribute("usuariosVerificados", identidadDni.usuariosVerificados(filas.stream().map(ColaboradorFila::getUsuarioId).toList()));
         model.addAttribute("catalogoHabilidades", catalogoHabilidades);
         model.addAttribute("habilidadIdSeleccionada", habilidadId);
         model.addAttribute("estadoSeleccionado", estado);
@@ -207,6 +211,7 @@ public class RmColaboradoresController {
 
         model.addAttribute("perfil", p);
         model.addAttribute("vista", perfilVistaService.armar(p));
+        model.addAttribute("identidadVerificada", identidadDni.verificada(p.getUsuarioId()));
         model.addAttribute("resumenIa", resumenProfesionalIaService.obtener(perfilId).orElse(null));
         model.addAttribute("resumenIaActualizando", resumenProfesionalIaService.estaActualizando(perfilId));
         model.addAttribute("analisisIa", resumenProfesionalIaService.analisisGuardados(perfilId));

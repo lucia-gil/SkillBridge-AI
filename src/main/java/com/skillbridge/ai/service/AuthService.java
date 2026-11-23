@@ -15,6 +15,7 @@ import com.skillbridge.ai.repository.UsuarioRepository;
 import com.skillbridge.ai.model.TokenRecuperacionPassword;
 import com.skillbridge.ai.util.PasswordPolicy;
 import com.skillbridge.ai.util.Roles;
+import com.skillbridge.ai.util.OperacionInvalidaException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -67,7 +68,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final TokenRecuperacionPasswordRepository tokenRecuperacionRepository;
     private final EmailService emailService;
-    private final PadronDniService padronDni;
+    private final ConsultaPeruDniService consultaDni;
+    private final IdentidadDniService identidadDni;
 
     @Value("${app.base-url:}")
     private String baseUrl;
@@ -89,7 +91,7 @@ public class AuthService {
                         PasswordEncoder passwordEncoder,
                         TokenRecuperacionPasswordRepository tokenRecuperacionRepository,
                         EmailService emailService,
-                        PadronDniService padronDni) {
+                        ConsultaPeruDniService consultaDni, IdentidadDniService identidadDni) {
         this.passwordEncoder = passwordEncoder;
         this.usuarioRepository = usuarioRepository;
         this.perfilRepository = perfilRepository;
@@ -102,7 +104,8 @@ public class AuthService {
         this.jdbcTemplate = jdbcTemplate;
         this.tokenRecuperacionRepository = tokenRecuperacionRepository;
         this.emailService = emailService;
-        this.padronDni = padronDni;
+        this.consultaDni = consultaDni;
+        this.identidadDni = identidadDni;
     }
 
     /**
@@ -122,6 +125,8 @@ public class AuthService {
     public static final String CORREO_AUTORIZADO = "autorizado";
     public static final String CORREO_NO_AUTORIZADO = "no_autorizado";
     public static final String CORREO_YA_REGISTRADO = "registrado";
+    public static final String CORREO_REQUIERE_ENLACE = "requiere_enlace";
+    public static final String ENLACE_REQUERIDO = "Abre el enlace vigente que recibiste en tu correo de invitación. Si venció, solicita el reenvío.";
 
     /**
      * Estado de un correo para el registro, consultando la BD:
@@ -143,6 +148,14 @@ public class AuthService {
                 .filter(c -> !Boolean.TRUE.equals(c.getUtilizado()))
                 .map(c -> CORREO_AUTORIZADO)
                 .orElse(CORREO_NO_AUTORIZADO);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Long> invitacionParaConsultarDni(String correo, String firma) {
+        if (!CORREO_AUTORIZADO.equals(estadoCorreoRegistro(correo))) return Optional.empty();
+        return correoAutorizadoRepository.findByCorreoIgnoreCase(correo.strip())
+                .filter(invitacion -> identidadDni.firmaValida(invitacion, firma))
+                .map(CorreoAutorizado::getId);
     }
 
     public PasswordEncoder passwordEncoder() {
@@ -287,13 +300,13 @@ public class AuthService {
     // ───────────────────────── Registro ─────────────────────────
 
     @Transactional
-    public ResultadoRegistro registrar(RegistroRequest req) {
+    public ResultadoRegistro registrar(RegistroRequest req, String firma) {
         Map<String, String> errores = new LinkedHashMap<>();
 
         String correo = limpiar(req.correo());
         String correoFinal = correo != null ? correo.toLowerCase() : null;
 
-        if (!padronDni.formatoValido(req.dni())) {
+        if (!consultaDni.formatoValido(req.dni())) {
             errores.put("dni", "Escribe un DNI de 8 dígitos.");
         }
 
@@ -332,21 +345,24 @@ public class AuthService {
             return ResultadoRegistro.conErrores(errores);
         }
 
+        if (!identidadDni.firmaValida(oAcceso.get(), firma)) {
+            errores.put("correo", ENLACE_REQUERIDO);
+            return ResultadoRegistro.conErrores(errores);
+        }
+
         if (usuarioRepository.existsByCorreoIgnoreCase(correoFinal)) {
             errores.put("_global", "Ya existe una cuenta registrada con ese correo.");
             return ResultadoRegistro.conErrores(errores);
         }
 
-        if (!padronDni.disponible()) {
-            errores.put("dni", PadronDniService.NO_DISPONIBLE);
+        Long invitacionId = oAcceso.get().getId();
+        ConsultaPeruDniService.Persona persona;
+        try {
+            persona = identidadDni.validarRegistro(req.dni(), invitacionId);
+        } catch (OperacionInvalidaException ex) {
+            errores.put("dni", ex.getMessage());
             return ResultadoRegistro.conErrores(errores);
         }
-        Optional<PadronDniService.Persona> personaRegistrada = padronDni.buscar(req.dni());
-        if (personaRegistrada.isEmpty()) {
-            errores.put("dni", PadronDniService.NO_ENCONTRADO);
-            return ResultadoRegistro.conErrores(errores);
-        }
-        var persona = personaRegistrada.get();
 
         // ── Crear usuario + perfil ──
         Usuario usuario = new Usuario();
@@ -360,7 +376,8 @@ public class AuthService {
         usuario.setRolOrganizacional(Roles.ADMINISTRADOR.equals(rolInvitado) || Roles.RESOURCE_MANAGER.equals(rolInvitado)
                 ? rolInvitado : null);
         usuario.setEstado("activo");
-        usuario = usuarioRepository.save(usuario);
+        usuario = usuarioRepository.saveAndFlush(usuario);
+        identidadDni.registrar(req.dni(), invitacionId, usuario.getId());
 
         Perfil perfil = new Perfil();
         perfil.setUsuarioId(usuario.getId());

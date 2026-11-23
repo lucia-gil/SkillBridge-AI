@@ -148,6 +148,7 @@
                   <a th:unless="${esPm}" th:href="@{/resource-manager/colaboradores/{id}(id=${m.perfilId()})}" th:text="${m.nombre()}">Nombre</a>
                   <b th:if="${esPm}" th:text="${m.nombre()}">Nombre</b>
                   <small><span th:text="${m.cargo()}">Cargo</span><span class="pd-pm-tag" th:if="${m.esPm()}">PM</span></small>
+                  <small><span th:replace="~{fragments/identidad-dni :: estado(${perfilesVerificados.contains(m.perfilId())})}"></span></small>
                 </div>
                 <div class="pd-team-load" th:title="${m.cargaProyecto()} + '% en este proyecto · ' + ${m.cargaTotal()} + '% en total'">
                   <div class="pd-load-bar"><span class="is-total" th:style="'width:' + ${m.cargaTotal() > 100 ? 100 : m.cargaTotal()} + '%'"></span><span class="is-here" th:style="'width:' + ${m.cargaProyecto() > 100 ? 100 : m.cargaProyecto()} + '%'"></span></div>

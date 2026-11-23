@@ -6,7 +6,9 @@ import com.skillbridge.ai.dto.*;
 import com.skillbridge.ai.security.SesionSegura;
 import com.skillbridge.ai.service.AuthService;
 import com.skillbridge.ai.service.DobleFactorService;
-import com.skillbridge.ai.service.PadronDniService;
+import com.skillbridge.ai.service.ConsultaPeruDniService;
+import com.skillbridge.ai.service.IdentidadDniService;
+import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,19 +42,21 @@ public class AuthController {
     private final ObjectMapper objectMapper;
     private final DobleFactorService dobleFactorService;
     private final SesionSegura sesionSegura;
-    private final PadronDniService padronDni;
+    private final ConsultaPeruDniService consultaDni;
+    private final IdentidadDniService identidadDni;
 
     private static final String PENDIENTE_2FA = SesionKeys.PENDIENTE_2FA;
     private static final String INTENTOS_2FA = SesionKeys.INTENTOS_2FA;
 
     public AuthController(AuthService authService, ObjectMapper objectMapper,
                           DobleFactorService dobleFactorService, SesionSegura sesionSegura,
-                          PadronDniService padronDni) {
+                          ConsultaPeruDniService consultaDni, IdentidadDniService identidadDni) {
         this.authService = authService;
         this.objectMapper = objectMapper;
         this.dobleFactorService = dobleFactorService;
         this.sesionSegura = sesionSegura;
-        this.padronDni = padronDni;
+        this.consultaDni = consultaDni;
+        this.identidadDni = identidadDni;
     }
 
     @GetMapping("/")
@@ -137,14 +141,23 @@ public class AuthController {
 
     // ───────────────────────── Registro ─────────────────────────
 
-    /**
-     * El correo de invitación (UsuarioService.invitar) trae el link
-     * /auth/registro.html?correo=..., así el campo llega precargado con el
-     * correo exacto que autorizó el Administrador. Si vuelve de un intento
-     * fallido, manda lo que la persona escribió (flash valCorreo).
-     */
     @GetMapping("/auth/registro.html")
-    public String registroForm(@RequestParam(value = "correo", required = false) String correoInvitacion, Model model) {
+    public String registroForm(@RequestParam(value = "correo", required = false) String correoInvitacion,
+                               @RequestParam(required = false) String firma,
+                               HttpSession session, HttpServletResponse response, Model model,
+                               RedirectAttributes flash) {
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Referrer-Policy", "no-referrer");
+        if (firma != null) {
+            if (authService.invitacionParaConsultarDni(correoInvitacion, firma).isPresent()) {
+                session.setAttribute(SesionKeys.FIRMA_INVITACION, firma);
+                flash.addFlashAttribute("valCorreo", correoInvitacion);
+            } else {
+                session.removeAttribute(SesionKeys.FIRMA_INVITACION);
+                flash.addFlashAttribute("errores", Map.of("correo", AuthService.ENLACE_REQUERIDO));
+            }
+            return "redirect:/auth/registro.html";
+        }
         if (!model.containsAttribute("errores")) {
             model.addAttribute("errores", Collections.emptyMap());
         }
@@ -152,7 +165,7 @@ public class AuthController {
         if (!model.containsAttribute("valCorreo") && desdeInvitacion) {
             model.addAttribute("valCorreo", correoInvitacion.trim().toLowerCase());
         }
-        model.addAttribute("desdeInvitacion", desdeInvitacion);
+        model.addAttribute("desdeInvitacion", session.getAttribute(SesionKeys.FIRMA_INVITACION) != null);
         return "auth/registro";
     }
 
@@ -198,12 +211,15 @@ public class AuthController {
     // averiguar en masa qué correos están autorizados.
     private static final int MAX_VERIFICACIONES = 30;
     private static final long VENTANA_VERIFICACION_MS = 10 * 60 * 1000L;
-    private final Map<String, long[]> verificacionesPorIp = new ConcurrentHashMap<>();
+    private final Map<String, VentanaVerificacion> verificacionesPorIp = new ConcurrentHashMap<>();
+    private final Map<Long, VentanaVerificacion> verificacionesPorInvitacion = new ConcurrentHashMap<>();
+
+    private record VentanaVerificacion(long inicio, int intentos) {}
 
     /**
      * Verificación en vivo del paso 1 de registro.html: ¿este correo puede
      * registrarse? Consulta correos_autorizados (y usuarios). Responde
-     * {"estado": "autorizado" | "no_autorizado" | "registrado" | "formato" | "limite"}.
+     * El estado "autorizado" también requiere un enlace de invitación vigente en la sesión.
      * El servidor vuelve a validar todo al enviar el formulario (AuthService.registrar),
      * así que esto es solo ayuda visual.
      */
@@ -212,7 +228,12 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> verificarCorreo(@RequestParam(value = "correo", required = false) String correo,
                                                                HttpServletRequest request) {
         if (!permitirVerificacion(request)) return estadoVerificacion(429, "limite");
-        return estadoVerificacion(200, authService.estadoCorreoRegistro(correo));
+        String estado = authService.estadoCorreoRegistro(correo);
+        if (AuthService.CORREO_AUTORIZADO.equals(estado)
+                && authService.invitacionParaConsultarDni(correo, firmaDe(request)).isEmpty()) {
+            estado = AuthService.CORREO_REQUIERE_ENLACE;
+        }
+        return estadoVerificacion(200, estado);
     }
 
     @PostMapping("/auth/registro/verificar-dni")
@@ -222,27 +243,44 @@ public class AuthController {
             @RequestParam(defaultValue = "") String correo,
             HttpServletRequest request) {
         if (!permitirVerificacion(request)) return estadoVerificacion(429, "limite");
-        if (!padronDni.formatoValido(dni)) return estadoVerificacion(400, "formato");
-        if (!AuthService.CORREO_AUTORIZADO.equals(authService.estadoCorreoRegistro(correo))) {
-            return estadoVerificacion(403, "no_autorizado");
+        if (!consultaDni.formatoValido(dni)) return estadoVerificacion(400, "formato");
+        var invitacion = authService.invitacionParaConsultarDni(correo, firmaDe(request));
+        if (invitacion.isEmpty()) return estadoVerificacion(403, AuthService.CORREO_REQUIERE_ENLACE);
+        if (!permitir(verificacionesPorInvitacion, invitacion.get(), 8)) return estadoVerificacion(429, "limite");
+        if (!identidadDni.disponible()) return estadoVerificacion(503, "error");
+        try {
+            var persona = identidadDni.validarRegistro(dni, invitacion.get());
+            return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                    .body(Map.of("estado", "encontrado", "nombres", persona.nombres(), "apellidos", persona.apellidos()));
+        } catch (ConsultaPeruDniService.ConsultaNoDisponible ex) {
+            return ResponseEntity.status(ex.limite() ? 429 : 503).cacheControl(CacheControl.noStore())
+                    .body(Map.of("estado", ex.limite() ? "limite" : "error", "mensaje", ex.getMessage()));
+        } catch (OperacionInvalidaException ex) {
+            String estado = ConsultaPeruDniService.NO_ENCONTRADO.equals(ex.getMessage()) ? "no_encontrado" : "no_coincide";
+            return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                    .body(Map.of("estado", estado, "mensaje", ex.getMessage()));
         }
-        if (!padronDni.disponible()) return estadoVerificacion(503, "error");
-        return padronDni.buscar(dni)
-                .map(persona -> ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                        .body(Map.of("estado", "encontrado", "nombres", persona.nombres(), "apellidos", persona.apellidos())))
-                .orElseGet(() -> ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                        .body(Map.of("estado", "no_encontrado", "mensaje", PadronDniService.NO_ENCONTRADO)));
+    }
+
+    private String firmaDe(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        return session == null ? null : (String) session.getAttribute(SesionKeys.FIRMA_INVITACION);
     }
 
     private boolean permitirVerificacion(HttpServletRequest request) {
-        String ip = obtenerIp(request);
+        return permitir(verificacionesPorIp, obtenerIp(request), MAX_VERIFICACIONES);
+    }
+
+    private <K> boolean permitir(Map<K, VentanaVerificacion> ventanas, K id, int maximo) {
         long ahora = System.currentTimeMillis();
-        long[] contador = verificacionesPorIp.compute(ip, (k, v) ->
-                (v == null || ahora - v[1] > VENTANA_VERIFICACION_MS) ? new long[]{1, ahora} : new long[]{v[0] + 1, v[1]});
-        if (verificacionesPorIp.size() > 10_000) {
-            verificacionesPorIp.entrySet().removeIf(e -> ahora - e.getValue()[1] > VENTANA_VERIFICACION_MS);
+        var uso = ventanas.compute(id, (k, anterior) ->
+                anterior == null || ahora - anterior.inicio() >= VENTANA_VERIFICACION_MS
+                        ? new VentanaVerificacion(ahora, 1)
+                        : new VentanaVerificacion(anterior.inicio(), Math.min(maximo + 1, anterior.intentos() + 1)));
+        if (ventanas.size() > 10_000) {
+            ventanas.entrySet().removeIf(e -> ahora - e.getValue().inicio() >= VENTANA_VERIFICACION_MS);
         }
-        return contador[0] <= MAX_VERIFICACIONES;
+        return uso.intentos() <= maximo;
     }
 
     private ResponseEntity<Map<String, String>> estadoVerificacion(int codigo, String estado) {
@@ -256,7 +294,18 @@ public class AuthController {
                            @RequestParam String contrasena,
                            @RequestParam String contrasena2,
                            @RequestParam(required = false, defaultValue = "[]") String habilidadesJson,
-                           RedirectAttributes redirectAttributes) {
+                           HttpServletRequest request, RedirectAttributes redirectAttributes) {
+        if (!permitirVerificacion(request)) {
+            redirectAttributes.addFlashAttribute("errores", Map.of("correo", "Demasiadas solicitudes. Espera unos minutos."));
+            return "redirect:/auth/registro.html";
+        }
+
+        var invitacion = authService.invitacionParaConsultarDni(correo, firmaDe(request));
+        if (invitacion.isPresent() && !permitir(verificacionesPorInvitacion, invitacion.get(), 8)) {
+            redirectAttributes.addFlashAttribute("errores", Map.of("correo", "Hay demasiadas consultas para esta invitación. Espera unos minutos."));
+            redirectAttributes.addFlashAttribute("valCorreo", correo);
+            return "redirect:/auth/registro.html";
+        }
 
         List<HabilidadDeclarada> habilidades;
         try {
@@ -267,16 +316,22 @@ public class AuthController {
         }
 
         RegistroRequest req = new RegistroRequest(dni, correo, cargo, contrasena, contrasena2, habilidades);
-        ResultadoRegistro resultado = authService.registrar(req);
+        ResultadoRegistro resultado;
+        try {
+            resultado = authService.registrar(req, firmaDe(request));
+        } catch (OperacionInvalidaException ex) {
+            resultado = ResultadoRegistro.conErrores(Map.of("dni", ex.getMessage()));
+        }
 
         if (!resultado.isExito()) {
             redirectAttributes.addFlashAttribute("errores", resultado.getErrores());
-            if (padronDni.formatoValido(dni)) redirectAttributes.addFlashAttribute("valDni", dni);
             redirectAttributes.addFlashAttribute("valCorreo", correo);
             redirectAttributes.addFlashAttribute("valCargo", cargo);
             return "redirect:/auth/registro.html";
         }
 
+        HttpSession session = request.getSession(false);
+        if (session != null) session.removeAttribute(SesionKeys.FIRMA_INVITACION);
         redirectAttributes.addFlashAttribute("exito", "Cuenta creada exitosamente. Ya puedes iniciar sesión.");
         redirectAttributes.addFlashAttribute("correoIntentado", correo);
         return "redirect:/auth/login.html";

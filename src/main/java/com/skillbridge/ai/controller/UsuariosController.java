@@ -1,6 +1,8 @@
 package com.skillbridge.ai.controller;
 
 import com.skillbridge.ai.dto.UsuarioFila;
+import com.skillbridge.ai.dto.CorreoAutorizadoFila;
+import com.skillbridge.ai.service.IdentidadDniService;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.service.UsuarioService;
@@ -26,10 +28,12 @@ public class UsuariosController {
 
     private final UsuarioService usuarioService;
     private final ShellModelBuilder shellModelBuilder;
+    private final IdentidadDniService identidadDni;
 
-    public UsuariosController(UsuarioService usuarioService, ShellModelBuilder shellModelBuilder) {
+    public UsuariosController(UsuarioService usuarioService, ShellModelBuilder shellModelBuilder, IdentidadDniService identidadDni) {
         this.usuarioService = usuarioService;
         this.shellModelBuilder = shellModelBuilder;
+        this.identidadDni = identidadDni;
     }
 
     @GetMapping("/usuarios.html")
@@ -44,7 +48,12 @@ public class UsuariosController {
 
         model.addAttribute("usuarios", usuarios);
         model.addAttribute("kpis", kpis);
-        model.addAttribute("correosAutorizados", usuarioService.listarAutorizados());
+        var invitaciones = usuarioService.listarAutorizados();
+        model.addAttribute("correosAutorizados", invitaciones);
+        model.addAttribute("padronDisponible", identidadDni.disponible());
+        model.addAttribute("usuariosVerificados", identidadDni.usuariosVerificados(usuarios.stream().map(UsuarioFila::getId).toList()));
+        model.addAttribute("invitacionesConDni", identidadDni.invitacionesReservadas(invitaciones.stream()
+                .filter(c -> !c.utilizado()).map(CorreoAutorizadoFila::id).toList()));
         // Para ocultar en la tabla las acciones sobre la propia cuenta (modelo v7).
         model.addAttribute("usuarioActualId", sesion.getUsuarioId());
         return "administrador/usuarios";
@@ -54,10 +63,11 @@ public class UsuariosController {
     public String invitar(@RequestParam String correo,
                           // Modelo v7: rol con el que nacerá la cuenta (NINGUNO = Miembro).
                           @RequestParam(required = false) String rol,
+                          @RequestParam(required = false) String dni,
                           HttpSession session, RedirectAttributes redirectAttributes) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         try {
-            usuarioService.invitar(correo, rol, sesion.getUsuarioId());
+            usuarioService.invitar(correo, rol, dni, sesion.getUsuarioId());
             redirectAttributes.addFlashAttribute("exito", "Correo autorizado. Invitación en cola para " + correo + ".");
         } catch (OperacionInvalidaException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

@@ -2,6 +2,7 @@ package com.skillbridge.ai.controller;
 
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.ProyectoVistaService;
+import com.skillbridge.ai.service.IdentidadDniService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
@@ -22,10 +23,12 @@ public class ProyectoVistaController {
 
     private final ShellModelBuilder shell;
     private final ProyectoVistaService vistaService;
+    private final IdentidadDniService identidadDni;
 
-    public ProyectoVistaController(ShellModelBuilder shell, ProyectoVistaService vistaService) {
+    public ProyectoVistaController(ShellModelBuilder shell, ProyectoVistaService vistaService, IdentidadDniService identidadDni) {
         this.shell = shell;
         this.vistaService = vistaService;
+        this.identidadDni = identidadDni;
     }
 
     @GetMapping("/project-manager/proyectos/{id}.html")
@@ -50,6 +53,8 @@ public class ProyectoVistaController {
             ProyectoVistaService.Vista v = vistaService.vista(id);
             shell.aplicar(model, sesion, menuActivo, v.detalle().getNombre(), "Detalle del proyecto");
             model.addAttribute("v", v);
+            model.addAttribute("perfilesVerificados", identidadDni.perfilesVerificados(v.equipo().stream()
+                    .map(ProyectoVistaService.Miembro::perfilId).toList()));
             model.addAttribute("area", area);
             model.addAttribute("esPm", "project-manager".equals(area));
             model.addAttribute("volverUrl", volver);

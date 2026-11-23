@@ -52,6 +52,7 @@ public class UsuarioService {
     private final AsignacionRepository asignacionRepository;
     private final ProyectoService proyectoService;
     private final NotificacionService notificacionService;
+    private final IdentidadDniService identidadDni;
 
     @Value("${app.base-url:}")
     private String baseUrl;
@@ -64,7 +65,7 @@ public class UsuarioService {
                            EmailService emailService,
                            AsignacionRepository asignacionRepository,
                            ProyectoService proyectoService,
-                           NotificacionService notificacionService) {
+                           NotificacionService notificacionService, IdentidadDniService identidadDni) {
         this.usuarioRepository = usuarioRepository;
         this.perfilRepository = perfilRepository;
         this.correoAutorizadoRepository = correoAutorizadoRepository;
@@ -74,6 +75,7 @@ public class UsuarioService {
         this.asignacionRepository = asignacionRepository;
         this.proyectoService = proyectoService;
         this.notificacionService = notificacionService;
+        this.identidadDni = identidadDni;
     }
 
     private static final Pattern PATRON_CORREO_GENERICO = Pattern.compile(
@@ -248,8 +250,13 @@ public class UsuarioService {
      */
     @Transactional
     public void invitar(String correoCrudo, String rolCrudo, Long actorId) {
+        invitar(correoCrudo, rolCrudo, null, actorId);
+    }
+
+    @Transactional
+    public void invitar(String correoCrudo, String rolCrudo, String dni, Long actorId) {
         InvitacionEntrada entrada = validarInvitacion(new InvitacionEntrada(correoCrudo, rolCrudo), dominioInvitacion());
-        autorizar(entrada, actorId, "individual");
+        autorizar(entrada, actorId, "individual", dni);
         notificacionService.avisarAdministradores("info", "Invitación registrada",
                 "Se autorizó una cuenta con el rol de " + etiquetaRol(entrada.rol()) + ". Revisa la invitación en Usuarios y roles.");
     }
@@ -300,7 +307,7 @@ public class UsuarioService {
                 .toList();
         String origen = excel ? "masiva_excel" : "masiva_csv";
         for (InvitacionEntrada entrada : validadas) {
-            autorizar(entrada, actorId, origen);
+            autorizar(entrada, actorId, origen, null);
         }
         int total = validadas.size();
         auditoriaService.registrar(actorId, "INVITACIONES_MASIVAS", "correo_autorizado", null,
@@ -310,13 +317,14 @@ public class UsuarioService {
         return total;
     }
 
-    private void autorizar(InvitacionEntrada entrada, Long actorId, String origen) {
+    private void autorizar(InvitacionEntrada entrada, Long actorId, String origen, String dni) {
         CorreoAutorizado acceso = new CorreoAutorizado();
         acceso.setCorreo(entrada.correo());
         acceso.setAutorizadoPorId(actorId);
         acceso.setOrigenCarga(origen);
         acceso.setRolAsignado(entrada.rol());
         encolarInvitacion(acceso, LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+        if (dni != null && !dni.isBlank()) identidadDni.reservar(dni, acceso.getId(), actorId);
         auditoriaService.registrar(actorId, "USUARIO_INVITADO", "correo_autorizado", acceso.getId(),
                 null, AuditoriaService.json("rol_organizacional", entrada.rol()),
                 "Se autorizó el correo " + entrada.correo() + " para autoregistro como " + etiquetaRol(entrada.rol()) + ".");
@@ -327,16 +335,18 @@ public class UsuarioService {
         acceso.setUltimoEnvio(ahora);
         correoAutorizadoRepository.saveAndFlush(acceso);
 
+        String firma = identidadDni.firmarInvitacion(acceso)
+                .orElseThrow(() -> new OperacionInvalidaException("Configura el servicio de identidad para emitir enlaces de invitación."));
         String correo = acceso.getCorreo();
         String rol = etiquetaRol(acceso.getRolAsignado());
         String rutaRegistro = "/auth/registro.html?correo="
-                + java.net.URLEncoder.encode(correo, java.nio.charset.StandardCharsets.UTF_8);
+                + java.net.URLEncoder.encode(correo, java.nio.charset.StandardCharsets.UTF_8) + "&firma=" + firma;
         String linkRegistro = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl + rutaRegistro : rutaRegistro;
         emailService.enviar(new EmailService.Correo(correo,
                 "Fuiste invitado a SkillBridge AI",
                 "Invitación", "¡Ya puedes registrarte en SkillBridge AI!",
                 "Un administrador autorizó " + correo + " para crear tu cuenta como " + rol
-                        + ". Usa este mismo correo para completar tu registro.",
+                        + ". Abre este enlace en los próximos 7 días para completar tu registro.",
                 linkRegistro, "Crear mi cuenta", false), ok -> jdbcInvitaciones.update(
                         "UPDATE correos_autorizados SET estado_envio=? WHERE id=? AND ultimo_envio=?",
                         ok ? "Aceptado por SMTP" : "Fallo SMTP", acceso.getId(), ahora));
@@ -362,6 +372,12 @@ public class UsuarioService {
             throw new OperacionInvalidaException("Ese correo ya completó el registro.");
         }
         return acceso;
+    }
+
+    @Transactional
+    public void vincularDniInvitacion(Long invitacionId, String dni, Long actorId) {
+        CorreoAutorizado acceso = invitacionPendiente(invitacionId);
+        identidadDni.reservar(dni, acceso.getId(), actorId);
     }
 
     // ─────────────── CRUD de Correos autorizados (lista blanca de registro) ───────────────

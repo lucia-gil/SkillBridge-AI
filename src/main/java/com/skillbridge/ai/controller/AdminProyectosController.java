@@ -4,6 +4,7 @@ import com.skillbridge.ai.dto.ProyectoDetalle;
 import com.skillbridge.ai.dto.ProyectoFila;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.ExtraccionProyectoIaService;
+import com.skillbridge.ai.service.IdentidadDniService;
 import com.skillbridge.ai.service.ProyectoService;
 import com.skillbridge.ai.service.SelectorPersonasService;
 import com.skillbridge.ai.service.TecnologiaCatalogoService;
@@ -45,18 +46,20 @@ public class AdminProyectosController {
     private final CambioEstadoProyecto cambioEstadoProyecto;
     private final SelectorPersonasService selectorPersonasService;
     private final ExtraccionProyectoIaService extraccionProyectoIaService;
+    private final IdentidadDniService identidadDni;
 
     public AdminProyectosController(ProyectoService proyectoService, ShellModelBuilder shellModelBuilder,
                                     TecnologiaCatalogoService tecnologiaCatalogoService,
                                     CambioEstadoProyecto cambioEstadoProyecto,
                                     SelectorPersonasService selectorPersonasService,
-                                    ExtraccionProyectoIaService extraccionProyectoIaService) {
+                                    ExtraccionProyectoIaService extraccionProyectoIaService, IdentidadDniService identidadDni) {
         this.proyectoService = proyectoService;
         this.shellModelBuilder = shellModelBuilder;
         this.tecnologiaCatalogoService = tecnologiaCatalogoService;
         this.cambioEstadoProyecto = cambioEstadoProyecto;
         this.selectorPersonasService = selectorPersonasService;
         this.extraccionProyectoIaService = extraccionProyectoIaService;
+        this.identidadDni = identidadDni;
     }
 
     @GetMapping("/proyectos.html")
@@ -79,6 +82,8 @@ public class AdminProyectosController {
         model.addAttribute("cargaPm", ProyectoService.CARGA_PM_POR_DEFECTO);
         model.addAttribute("proyectos", proyectos);
         model.addAttribute("detalles", detalles);
+        model.addAttribute("perfilesVerificados", identidadDni.perfilesVerificados(detalles.stream()
+                .flatMap(d -> d.getEquipo().stream()).map(m -> m.getPerfilId()).distinct().toList()));
         model.addAttribute("catalogoTecnologias", tecnologiaCatalogoService.catalogo());
         model.addAttribute("maxTecnologias", TecnologiaCatalogoService.MAX_TECNOLOGIAS);
         return "administrador/proyectos";

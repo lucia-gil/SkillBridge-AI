@@ -144,7 +144,9 @@
                   <span class="cl-load-label" th:text="${c.cargaLabel}">Sin asignación</span>
                 </div>
               </td>
-              <td data-label="Estado"><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span></td>
+              <td data-label="Estado"><span class="badge" th:classappend="${c.estadoBadgeClass}" th:text="${c.estadoLabel}">Estado</span>
+                  <span th:if="${usuariosVerificados.contains(c.usuarioId)}" class="badge badge-green">DNI verificado</span>
+              </td>
               <td class="cl-actions">
                 <!-- El perfil se abre con el nombre. Aquí va Ajustar carga (antes en Ocupación):
                      bajar la dedicación o finalizar asignaciones; "Rebalancear" si pasa el límite. -->

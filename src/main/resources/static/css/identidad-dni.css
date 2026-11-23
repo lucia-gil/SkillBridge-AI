@@ -1,0 +1,75 @@
+.identidad-cuenta { display: grid; gap: 14px; scroll-margin-top: 84px; }
+.identidad-encabezado { display: flex; align-items: center; gap: 12px; }
+.identidad-encabezado h2, .identidad-encabezado h3 { margin: 0; }
+.identidad-encabezado p, .identidad-ayuda {
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  margin: 3px 0 0;
+}
+.identidad-icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  height: 42px;
+  border: 1px solid var(--green-border);
+  border-radius: 12px;
+  color: var(--green-fg);
+  background: var(--green-bg);
+}
+.identidad-datos { display: grid; gap: 8px; margin: 0; font-size: var(--fs-xs); }
+.identidad-datos div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
+.identidad-datos dt { color: var(--text-secondary); }
+.identidad-datos dd { margin: 0; font-weight: var(--fw-semibold); }
+.identidad-revalidar { padding-top: 12px; border-top: 1px solid var(--border-default); }
+.identidad-revalidar summary { font-size: var(--fs-xs); font-weight: var(--fw-semibold); cursor: pointer; }
+.identidad-revalidar form, .identidad-consulta { display: grid; gap: 8px; }
+.identidad-revalidar form { margin-top: 12px; }
+.identidad-revalidar .btn { justify-self: start; }
+.identidad-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: var(--space-6);
+}
+.identidad-admin .identidad-encabezado { flex: 1 1 250px; }
+.identidad-dialogo {
+  width: min(calc(100% - 28px), 500px);
+  max-height: calc(100dvh - 28px);
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px #0003;
+}
+.identidad-dialogo::backdrop { background: rgb(14 23 42 / 55%); }
+.identidad-dialogo form { display: grid; gap: 18px; padding: 24px; }
+.identidad-dialogo .field { margin: 0; }
+.identidad-dialogo .btn-group { flex-wrap: wrap; justify-content: flex-end; }
+.identidad-consulta-controles { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.identidad-respuesta {
+  display: block;
+  color: var(--text-secondary);
+  background: var(--surface-sunken);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  margin: 0;
+}
+.identidad-respuesta[hidden] { display: none; }
+.identidad-respuesta[data-estado="exito"] { color: var(--green-fg); background: var(--green-bg); }
+.identidad-respuesta[data-estado="error"] { color: var(--red-fg); background: var(--red-bg); }
+.identidad-celda { min-width: 140px; }
+.identidad-celda .badge { margin-bottom: 3px; }
+.identidad-celda button { display: block; }
+
+.identidad-cuenta > .badge { justify-self: start; }
+.identidad-dialogo [hidden] { display: none; }

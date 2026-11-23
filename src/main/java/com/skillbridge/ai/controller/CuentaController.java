@@ -4,6 +4,7 @@ import com.skillbridge.ai.dto.CuentaResumen;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.model.Usuario;
 import com.skillbridge.ai.service.CuentaService;
+import com.skillbridge.ai.service.IdentidadDniService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
@@ -31,13 +32,15 @@ public class CuentaController {
 
     private final CuentaService cuentaService;
     private final ShellModelBuilder shellModelBuilder;
+    private final IdentidadDniService identidadDni;
 
     public CuentaController(
             CuentaService cuentaService,
-            ShellModelBuilder shellModelBuilder) {
+            ShellModelBuilder shellModelBuilder, IdentidadDniService identidadDni) {
 
         this.cuentaService = cuentaService;
         this.shellModelBuilder = shellModelBuilder;
+        this.identidadDni = identidadDni;
     }
 
     @GetMapping({
@@ -86,6 +89,8 @@ public class CuentaController {
         );
 
         model.addAttribute("resumen", resumen);
+        model.addAttribute("identidadDni", identidadDni.estadoPropio(sesion.getUsuarioId()).orElse(null));
+        model.addAttribute("padronDisponible", identidadDni.disponible());
         model.addAttribute(
                 "esAdministrador",
                 Roles.ADMINISTRADOR.equals(

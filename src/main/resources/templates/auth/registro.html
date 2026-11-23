@@ -59,7 +59,7 @@
 
       <!-- ================= PASO 1 ================= -->
       <section class="wizard-panel active" data-panel="1">
-        <p class="field-hint" style="margin-bottom:var(--space-5);">Usa el correo al que te llegó la invitación: solo pueden registrarse los correos que un Administrador autorizó.</p>
+        <p class="field-hint" style="margin-bottom:var(--space-5);">Abre el enlace de tu invitación y usa el mismo correo para completar el registro.</p>
 
         <div class="field" id="field-reg-email" th:classappend="${errores != null and errores['correo'] != null} ? 'has-error'">
           <label class="field-label" for="reg-email">Correo de tu invitación</label>
@@ -74,7 +74,7 @@
         <div class="field" id="field-reg-dni" th:classappend="${errores['dni'] != null} ? 'has-error'">
           <label class="field-label" for="reg-dni">DNI</label>
           <input class="input" id="reg-dni" name="dni" type="text" inputmode="numeric" autocomplete="off"
-                 maxlength="8" pattern="[0-9]{8}" placeholder="8 dígitos" th:value="${valDni}"
+                 maxlength="8" pattern="[0-9]{8}" placeholder="8 dígitos"
                  aria-describedby="reg-dni-status" th:aria-invalid="${errores['dni'] != null}">
           <div class="reg-email-status" id="reg-dni-status" aria-live="polite"
                th:attr="data-estado=${errores['dni'] != null} ? 'formato' : 'vacio'">
@@ -227,6 +227,7 @@ document.addEventListener("DOMContentLoaded", function () {
     autorizado: "Correo autorizado: puedes crear tu cuenta",
     no_autorizado: "Este correo no está autorizado. Usa el correo al que te llegó la invitación.",
     registrado: "Ya existe una cuenta con este correo.",
+    requiere_enlace: "Abre el enlace vigente que recibiste en tu invitación.",
     limite: "Demasiadas consultas. Espera unos minutos.",
     error: "No pudimos verificar el correo ahora. Se validará al crear la cuenta."
   };
@@ -247,7 +248,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // El mensaje del servidor (si volvió de un intento fallido) se reemplaza por el estado en vivo.
     var errorServidor = document.getElementById("reg-email-server-error");
     if (errorServidor && estado !== "verificando" && estado !== "error") errorServidor.style.display = "none";
-    var conError = estado === "formato" || estado === "no_autorizado" || estado === "registrado";
+    var conError = estado === "formato" || estado === "no_autorizado" || estado === "registrado" || estado === "requiere_enlace";
     document.getElementById("field-reg-email").classList.toggle("has-error", conError);
   }
 
@@ -296,10 +297,12 @@ document.addEventListener("DOMContentLoaded", function () {
     vacio: "Escribe tu DNI para completar tus datos.",
     correo: "Escribe primero el correo de tu invitación.",
     formato: "Escribe un DNI de 8 dígitos.",
-    verificando: "Consultando el padrón…",
-    encontrado: "Datos completados con el padrón.",
+    verificando: "Consultando el DNI…",
+    encontrado: "Datos completados con Consulta Perú.",
     no_encontrado: "No se encuentra en nuestros registros",
+    no_coincide: "Ese DNI no corresponde a esta invitación. Consulta al administrador.",
     no_autorizado: "Usa el correo autorizado de tu invitación para consultar el DNI.",
+    requiere_enlace: "Abre el enlace vigente que recibiste en tu invitación.",
     limite: "Demasiadas consultas. Espera unos minutos.",
     error: "La consulta de DNI no está disponible en este momento."
   };
@@ -308,8 +311,8 @@ document.addEventListener("DOMContentLoaded", function () {
   let dniVerificado = false;
 
   function pintarDni(estado, mensaje) {
-    const invalido = estado === "formato" || estado === "no_encontrado" || estado === "no_autorizado";
-    dniStatus.dataset.estado = estado === "encontrado" ? "autorizado" : estado === "no_encontrado" ? "formato" : estado;
+    const invalido = estado === "formato" || estado === "no_encontrado" || estado === "no_autorizado" || estado === "no_coincide" || estado === "requiere_enlace";
+    dniStatus.dataset.estado = estado === "encontrado" ? "autorizado" : invalido ? "formato" : estado;
     dniLabel.textContent = mensaje || mensajesDni[estado];
     dniField.classList.toggle("has-error", invalido);
     dniInput.setAttribute("aria-invalid", String(invalido));
@@ -450,9 +453,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const correo = emailInput.value.trim();
       const estado = await verificarCorreo();
       if (emailInput.value.trim() !== correo) return;
-      if (["no_autorizado", "registrado", "formato", "vacio"].includes(estado)) {
-        SBAI.toast.show(estado === "registrado" ? "Ya existe una cuenta con este correo. Inicia sesión."
-          : "Usa el correo autorizado al que te llegó la invitación.", { type: "error" });
+      if (["no_autorizado", "registrado", "formato", "vacio", "requiere_enlace"].includes(estado)) {
+        SBAI.toast.show(MENSAJES_CORREO[estado], { type: "error" });
         emailInput.focus();
         return;
       }

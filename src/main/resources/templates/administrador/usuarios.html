@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/css/kpi-hero.css">
 <link rel="stylesheet" href="/css/admin.css">
 <link rel="stylesheet" th:href="@{/css/admin-flujos.css}">
+<link rel="stylesheet" th:href="@{/css/identidad-dni.css}">
 </head>
 <body class="admin-app">
 <div class="app-shell">
@@ -65,7 +66,18 @@
         </div>
       </section>
 
-      <section class="card" style="margin-top:var(--space-6);">
+      <section class="card card-pad identidad-admin" aria-labelledby="identidad-admin-titulo">
+        <header class="identidad-encabezado">
+          <span class="identidad-icono" aria-hidden="true"><svg class="icon"><use href="/img/icons.svg#icon-shield-check"></use></svg></span>
+          <div>
+            <h2 id="identidad-admin-titulo">Identidad por DNI</h2>
+            <p th:text="${padronDisponible ? 'Consulta Perú · Busca por DNI o vincula una cuenta o invitación.' : 'El servicio de DNI no está configurado.'}"></p>
+          </div>
+        </header>
+        <button th:if="${padronDisponible}" class="btn btn-secondary" type="button" data-identidad-abrir="consultar">Consultar DNI</button>
+      </section>
+
+      <section class="card" id="usuarios-registrados" style="margin-top:var(--space-6); scroll-margin-top:80px;">
         <div class="table-toolbar">
           <div>
             <strong th:text="${usuarios.size()} + ' usuarios'">0 usuarios</strong>
@@ -79,12 +91,12 @@
             <select class="select" data-filter-scope="users" data-filter-key="estado">
               <option value="todos">Estado: todos</option><option>Activo</option><option>Bloqueado</option>
             </select>
-            <button type="button" class="btn btn-primary btn-sm" id="invite-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
+            <button type="button" class="btn btn-primary btn-sm" data-identidad-abrir="invitar"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-plus"></use></svg>Invitar usuario</button>
           </div>
         </div>
         <div class="table-scroll">
           <table class="data-table">
-            <thead><tr><th>Usuario</th><th>Rol</th><th>Cargo</th><th>Cuenta desde</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Cargo</th><th>Cuenta desde</th><th>Estado</th><th>Identidad</th><th>Acciones</th></tr></thead>
             <tbody id="users-body">
               <tr th:each="u : ${usuarios}" th:data-id="${u.id}"
                   data-filter-row="users" th:attr="data-f-rol=${u.rolLabel}, data-f-estado=${u.estadoLabel}, data-f-search=${#strings.toLowerCase(u.nombreCompleto + ' ' + u.correo)}">
@@ -96,6 +108,14 @@
                 <td th:text="${u.cargo}">—</td>
                 <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${u.cuentaDesde}">—</td>
                 <td><span class="badge" th:classappend="${u.estadoBadgeClass}" th:text="${u.estadoLabel}">Estado</span></td>
+                <td class="identidad-celda" th:with="verificada=${usuariosVerificados.contains(u.id)}">
+                  <span th:replace="~{fragments/identidad-dni :: estado(${verificada})}"></span>
+                  <div class="cell-actions" th:if="${padronDisponible and !verificada}">
+                    <button type="button" data-identidad-abrir="cuenta"
+                            th:attr="data-identidad-accion=@{/administrador/usuarios/{id}/identidad(id=${u.id})},
+                                     data-identidad-etiqueta=|${u.nombreCompleto} · ${u.correo}|">Vincular DNI</button>
+                  </div>
+                </td>
                 <!-- Modelo v7: nadie actúa sobre su propia cuenta; los datos de
                      participación permiten avisar (o bloquear) antes de cambiar
                      rol o suspender. -->
@@ -150,13 +170,24 @@
         </div>
         <div class="table-scroll">
           <table class="data-table invite-table">
-            <thead><tr><th>Correo</th><th>Rol al registrarse</th><th>Autorizado el</th><th>Registro</th><th>Envío de correo</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Correo</th><th>Rol al registrarse</th><th>Autorizado el</th><th>Registro</th><th>Identidad</th><th>Envío de correo</th><th>Acciones</th></tr></thead>
             <tbody>
               <tr th:each="c : ${correosAutorizados}" data-correo-row th:attr="data-correo=${#strings.toLowerCase(c.correo())},data-estado=${c.utilizado() ? 'registrado' : 'pendiente'},data-fallo=${c.envio() == 'Fallo SMTP'}">
                 <td class="cell-primary invite-email" th:text="${c.correo()}">correo</td>
                 <td><span class="badge" th:classappend="${c.rolAsignado() == null} ? 'badge-neutral' : 'badge-blue'" th:text="${c.rolLabel()}">Miembro</span></td>
                 <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${c.fechaAutorizacion()}">—</td>
                 <td><span class="badge" th:classappend="${c.estadoBadgeClass()}" th:text="${c.estadoLabel()}">Pendiente</span></td>
+                <td class="identidad-celda" th:with="reservada=${invitacionesConDni.contains(c.id())}">
+                  <span th:if="${c.utilizado()}" class="text-tertiary">—</span>
+                  <span th:unless="${c.utilizado()}" class="badge"
+                        th:classappend="${reservada ? 'badge-green' : 'badge-neutral'}"
+                        th:text="${reservada ? 'DNI asociado' : 'Sin DNI asociado'}">Sin DNI asociado</span>
+                  <div class="cell-actions" th:if="${padronDisponible and !c.utilizado() and !reservada}">
+                    <button type="button" data-identidad-abrir="reserva"
+                            th:attr="data-identidad-accion=@{/administrador/usuarios/correos-autorizados/{id}/identidad(id=${c.id()})},
+                                     data-identidad-etiqueta=${c.correo()}">Asociar DNI</button>
+                  </div>
+                </td>
                 <td>
                   <span class="badge" th:classappend="${c.envio() == 'Fallo SMTP' ? 'badge-red' : (c.envio() == 'Aceptado por SMTP' ? 'badge-green' : 'badge-neutral')}"
                         th:text="${c.envio()}">Sin datos de envío</span>
@@ -224,11 +255,13 @@
         </script>
       </section>
 
+      <th:block th:replace="~{fragments/identidad-dni :: dialogosAdmin}"></th:block>
     </main>
   </div>
 </div>
 
 <script src="/js/toast.js"></script>
+<script defer th:src="@{/js/admin-identidad-dni.js}"></script>
 <script src="/js/dropdown.js"></script>
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
@@ -275,22 +308,6 @@ document.addEventListener("DOMContentLoaded", function () {
         '<span><strong>' + o.label + '</strong><span class="role-option-desc">' + o.desc + "</span></span></label>";
     }).join("");
   }
-
-  document.getElementById("invite-btn").addEventListener("click", function () {
-    var html = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><div><h2>Invitar usuario</h2><p>Autoriza el correo y elige con qué rol nacerá su cuenta.</p></div>' +
-      '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-      '<div class="modal-body"><div class="field"><label class="field-label">Correo corporativo</label><input class="input" type="email" id="invite-email" placeholder="correo@dominio.com"></div>' +
-      '<div class="field"><span class="field-label">Rol en la organización</span><div class="role-options">' + opcionesRol("NINGUNO") + '</div></div>' +
-      '<p class="field-hint">Se pondrá en cola un correo con el enlace de registro. Al completar sus datos e iniciar sesión verá directamente el panel de su rol. Puedes cambiar el rol mientras la invitación siga pendiente.</p></div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="invite-confirm">Enviar invitación</button></div></div>';
-    var backdrop = SBAI.modal.open(html);
-    backdrop.querySelector("#invite-confirm").addEventListener("click", function () {
-      var correo = backdrop.querySelector("#invite-email").value.trim();
-      if (!correo) { SBAI.toast.show("Ingresa un correo.", { type: "error" }); return; }
-      var rol = (backdrop.querySelector('input[name="rol-opcion"]:checked') || {}).value || "NINGUNO";
-      submitForm("/administrador/usuarios/invitar", { correo: correo, rol: rol });
-    });
-  });
 
   document.querySelectorAll("[data-invite-role]").forEach(function (btn) {
     btn.addEventListener("click", function () {
