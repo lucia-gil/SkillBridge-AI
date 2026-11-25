@@ -68,6 +68,19 @@ class TotpTest {
     }
 
     @Test
+    void pasoVerificadoDevuelveElPasoDelCodigo() {
+        long t = 59L;
+        long paso = t / 30;
+        String actual = Totp.codigo(CLAVE_RFC, paso);
+        // El mismo código pertenece siempre a su paso, aunque se envíe 30 s después.
+        assertThat(Totp.pasoVerificado(SECRETO_RFC, actual, t)).isEqualTo(paso);
+        assertThat(Totp.pasoVerificado(SECRETO_RFC, actual, t + 30)).isEqualTo(paso);
+        assertThat(Totp.pasoVerificado(SECRETO_RFC, actual, t + 60)).isEqualTo(-1);
+        assertThat(Totp.pasoVerificado(SECRETO_RFC, "12345x", t)).isEqualTo(-1);
+        assertThat(Totp.pasoVerificado(null, actual, t)).isEqualTo(-1);
+    }
+
+    @Test
     void verificarIgnoraEspaciosDelCodigo() {
         long t = 1_234_567_890L;
         assertThat(Totp.verificar(SECRETO_RFC, "005 924", t)).isTrue();

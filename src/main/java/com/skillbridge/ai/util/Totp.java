@@ -91,23 +91,33 @@ public final class Totp {
     }
 
     public static boolean verificar(String secretoBase32, String codigoIngresado, long epochSegundos) {
-        if (secretoBase32 == null || codigoIngresado == null) return false;
+        return pasoVerificado(secretoBase32, codigoIngresado, epochSegundos) >= 0;
+    }
+
+    /**
+     * Paso de 30 s al que corresponde el código (actual o +-1), o -1 si no es
+     * válido. Sirve para impedir que el mismo código se use dos veces.
+     */
+    public static long pasoVerificado(String secretoBase32, String codigoIngresado, long epochSegundos) {
+        if (secretoBase32 == null || codigoIngresado == null) return -1;
         String ingresado = codigoIngresado.replaceAll("\\s", "");
-        if (!ingresado.matches("\\d{" + DIGITOS + "}")) return false;
+        if (!ingresado.matches("\\d{" + DIGITOS + "}")) return -1;
         byte[] clave;
         try {
             clave = base32Decodificar(secretoBase32);
         } catch (IllegalArgumentException e) {
-            return false;
+            return -1;
         }
         long paso = epochSegundos / PASO_SEGUNDOS;
-        boolean ok = false;
+        long encontrado = -1;
         for (long d = -1; d <= 1; d++) {
             // comparacion en tiempo constante entre los 3 candidatos
-            ok |= java.security.MessageDigest.isEqual(
-                    codigo(clave, paso + d).getBytes(StandardCharsets.UTF_8), ingresado.getBytes(StandardCharsets.UTF_8));
+            if (java.security.MessageDigest.isEqual(
+                    codigo(clave, paso + d).getBytes(StandardCharsets.UTF_8), ingresado.getBytes(StandardCharsets.UTF_8))) {
+                encontrado = paso + d;
+            }
         }
-        return ok;
+        return encontrado;
     }
 
     /** URI otpauth:// que leen las apps autenticadoras (se dibuja como QR en el cliente). */

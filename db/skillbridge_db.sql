@@ -1226,6 +1226,8 @@ CREATE TABLE IF NOT EXISTS usuarios_2fa (
                                             secreto    VARCHAR(64)  NOT NULL,
     activo     TINYINT(1)   NOT NULL DEFAULT 0,
     creado_en  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- Último paso TOTP (30 s) aceptado: cada código sirve una sola vez.
+    ultimo_paso BIGINT      NULL,
     PRIMARY KEY (usuario_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

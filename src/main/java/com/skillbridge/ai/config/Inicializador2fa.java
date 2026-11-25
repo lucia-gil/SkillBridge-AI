@@ -28,5 +28,16 @@ public class Inicializador2fa implements CommandLineRunner {
         } catch (Exception e) {
             log.warn("No se pudo crear/verificar usuarios_2fa: {}", e.getMessage());
         }
+        try {
+            // Último paso TOTP aceptado: impide reutilizar un código dentro de su ventana.
+            Integer existe = jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.COLUMNS "
+                    + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios_2fa' AND COLUMN_NAME = 'ultimo_paso'", Integer.class);
+            if (existe != null && existe == 0) {
+                jdbc.execute("ALTER TABLE usuarios_2fa ADD COLUMN ultimo_paso BIGINT NULL");
+                log.info("usuarios_2fa: agregada la columna ultimo_paso.");
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo agregar usuarios_2fa.ultimo_paso: {}", e.getMessage());
+        }
     }
 }

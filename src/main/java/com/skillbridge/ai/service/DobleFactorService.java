@@ -46,12 +46,27 @@ public class DobleFactorService {
 
     public boolean activar(Long usuarioId, String codigo) {
         String s = secreto(usuarioId, false);
-        if (s == null || !Totp.verificar(s, codigo)) return false;
-        return jdbc.update("UPDATE usuarios_2fa SET activo=1 WHERE usuario_id=? AND activo=0 AND BINARY secreto=?", usuarioId, s) == 1;
+        long paso = Totp.pasoVerificado(s, codigo, ahora());
+        if (paso < 0) return false;
+        // El código con el que se activa queda usado: no sirve después para iniciar sesión.
+        return jdbc.update("UPDATE usuarios_2fa SET activo=1, ultimo_paso=? WHERE usuario_id=? AND activo=0 AND BINARY secreto=?",
+                paso, usuarioId, s) == 1;
     }
 
+    /**
+     * true si el código es válido y no se había usado antes. Cada código (paso
+     * de 30 s) sirve una sola vez: el UPDATE solo acepta un paso posterior al
+     * último usado, de forma atómica, así dos envíos del mismo código no pasan.
+     */
     public boolean verificar(Long usuarioId, String codigo) {
-        return Totp.verificar(secreto(usuarioId, true), codigo);
+        long paso = Totp.pasoVerificado(secreto(usuarioId, true), codigo, ahora());
+        if (paso < 0) return false;
+        return jdbc.update("UPDATE usuarios_2fa SET ultimo_paso=? WHERE usuario_id=? AND activo=1 "
+                + "AND (ultimo_paso IS NULL OR ultimo_paso < ?)", paso, usuarioId, paso) == 1;
+    }
+
+    private static long ahora() {
+        return System.currentTimeMillis() / 1000L;
     }
 
     public boolean desactivar(Long usuarioId, String codigo) {
