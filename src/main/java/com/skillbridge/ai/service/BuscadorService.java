@@ -66,8 +66,7 @@ public class BuscadorService {
 
         String rol = sesion.getRolEfectivo();
         String slug = Roles.slug(rol);
-        boolean ve_todo = Roles.ADMINISTRADOR.equals(rol) || Roles.RESOURCE_MANAGER.equals(rol);
-        boolean ve_personas = ve_todo || Roles.PROJECT_MANAGER.equals(rol);
+        boolean ve_personas = vePersonas(rol);
 
         // ---- Proyectos ----
         Set<Long> gestionados = new LinkedHashSet<>();
@@ -86,7 +85,7 @@ public class BuscadorService {
         // ---- Colaboradores ----
         if (ve_personas) {
             n = 0;
-            for (Perfil p : perfilRepository.listarActivosConUsuario()) {
+            for (Perfil p : personasVisibles(sesion)) {
                 if (n >= MAX_POR_GRUPO) break;
                 String nombre = p.getUsuario() != null ? p.getUsuario().getNombreCompleto() : "";
                 String correo = p.getUsuario() != null ? p.getUsuario().getCorreo() : "";
@@ -118,24 +117,49 @@ public class BuscadorService {
      * agregan a "gestionados"). Lo comparte BuscadorIaService.
      */
     List<Proyecto> proyectosVisibles(UsuarioSesion sesion, Set<Long> gestionados) {
+        if (sesion == null) return List.of();
         String rol = sesion.getRolEfectivo();
         if (Roles.ADMINISTRADOR.equals(rol) || Roles.RESOURCE_MANAGER.equals(rol)) {
             return proyectoRepository.findAllByOrderByFechaCreacionDesc();
         }
-        Set<Long> vistos = new LinkedHashSet<>();
+        Long perfilId = sesion.getPerfilId();
+        if (perfilId == null) return List.of();
         List<Proyecto> propios = new ArrayList<>();
-        if (sesion.getPerfilId() != null) {
-            for (Asignacion a : asignacionRepository.listarPorPerfil(sesion.getPerfilId())) {
-                if (a.getProyecto() != null && vistos.add(a.getProyecto().getId())) propios.add(a.getProyecto());
+        if (Roles.PROJECT_MANAGER.equals(rol)) {
+            // Vista Project Manager: solo los proyectos que lidera.
+            for (Proyecto p : asignacionRepository.listarProyectosGestionados(perfilId)) {
+                if (gestionados.add(p.getId())) propios.add(p);
             }
-            if (Roles.PROJECT_MANAGER.equals(rol)) {
-                for (Proyecto p : asignacionRepository.listarProyectosGestionados(sesion.getPerfilId())) {
-                    gestionados.add(p.getId());
-                    if (vistos.add(p.getId())) propios.add(p);
-                }
+        } else if (Roles.COLABORADOR.equals(rol)) {
+            // Vista Colaborador: solo los proyectos donde trabaja o trabajó como
+            // colaborador (las asignaciones canceladas no cuentan).
+            Set<Long> vistos = new LinkedHashSet<>();
+            for (Asignacion a : asignacionRepository.listarPorPerfil(perfilId)) {
+                if (a.getProyecto() == null || !Roles.COLABORADOR.equals(a.getRolEnProyecto())
+                        || "cancelada".equals(a.getEstado())) continue;
+                if (vistos.add(a.getProyecto().getId())) propios.add(a.getProyecto());
             }
         }
         return propios;
+    }
+
+    /** Admin, Resource Manager y Project Manager pueden buscar personas; el Colaborador no. */
+    static boolean vePersonas(String rol) {
+        return Roles.ADMINISTRADOR.equals(rol) || Roles.RESOURCE_MANAGER.equals(rol) || Roles.PROJECT_MANAGER.equals(rol);
+    }
+
+    /**
+     * Personas que puede encontrar quien busca: Admin y RM a todas las cuentas
+     * activas; el PM solo a Miembros asignables (no ve administradores ni
+     * resource managers); el Colaborador a nadie.
+     */
+    List<Perfil> personasVisibles(UsuarioSesion sesion) {
+        if (sesion == null || !vePersonas(sesion.getRolEfectivo())) return List.of();
+        List<Perfil> activos = perfilRepository.listarActivosConUsuario();
+        if (Roles.PROJECT_MANAGER.equals(sesion.getRolEfectivo())) {
+            return activos.stream().filter(ProyectoService::esMiembroAsignable).toList();
+        }
+        return activos;
     }
 
     /** Destino de un proyecto en el buscador global. */

@@ -86,7 +86,7 @@ public class BuscadorIaService {
         if (q.length() < 3) throw new OperacionInvalidaException("Escribe una pregunta un poco más larga.");
         if (q.length() > 300) q = q.substring(0, 300);
         String rol = s.getRolEfectivo();
-        boolean vePersonas = Roles.ADMINISTRADOR.equals(rol) || Roles.RESOURCE_MANAGER.equals(rol) || Roles.PROJECT_MANAGER.equals(rol);
+        boolean vePersonas = BuscadorService.vePersonas(rol);
         List<Habilidad> catalogo = habilidadRepository.findAll();
 
         // 1) Filtros: primero la IA; si no responde, palabras clave.
@@ -103,6 +103,11 @@ public class BuscadorIaService {
             f = new Filtros("proyectos", f.habilidades(), null, null, false, f.estados(), f.atrasados(), f.conVacantes(), f.texto());
             aviso = "Como Colaborador solo puedes buscar en tus propios proyectos.";
         }
+        if (!"personas".equals(f.buscar()) && Roles.COLABORADOR.equals(rol) && aviso == null) {
+            aviso = "Solo se muestran los proyectos en los que participas.";
+        } else if (!"personas".equals(f.buscar()) && Roles.PROJECT_MANAGER.equals(rol) && aviso == null) {
+            aviso = "Solo se muestran los proyectos que lideras.";
+        }
 
         // 2) Java busca con datos reales.
         List<Map<String, Object>> resultados = "personas".equals(f.buscar()) ? personas(f, s, catalogo) : proyectos(f, s, catalogo);
@@ -112,6 +117,7 @@ public class BuscadorIaService {
     // ───────────────────────── Personas ─────────────────────────
 
     private List<Map<String, Object>> personas(Filtros f, UsuarioSesion s, List<Habilidad> catalogo) {
+        if (!BuscadorService.vePersonas(s.getRolEfectivo())) return List.of();
         String slug = Roles.slug(s.getRolEfectivo());
         Map<String, Long> idPorNombre = catalogo.stream().collect(Collectors.toMap(h -> norm(h.getNombre()), Habilidad::getId, (a, b) -> a));
         Map<Long, String> nombrePorId = catalogo.stream().collect(Collectors.toMap(Habilidad::getId, Habilidad::getNombre));
@@ -123,7 +129,7 @@ public class BuscadorIaService {
 
         record Fila(Perfil p, int coinciden, int niveles, int libre, int carga, String detalle) {}
         List<Fila> filas = new ArrayList<>();
-        for (Perfil p : perfilRepository.listarActivosConUsuario()) {
+        for (Perfil p : buscadorService.personasVisibles(s)) {
             if (!ProyectoService.esMiembroAsignable(p)) continue;
             List<PerfilHabilidad> suyas = habsPorPerfil.getOrDefault(p.getId(), List.of());
             List<String> cumple = new ArrayList<>();
