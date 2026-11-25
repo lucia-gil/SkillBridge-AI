@@ -15,7 +15,7 @@ import static com.skillbridge.ai.service.AuditoriaService.COLUMNAS_EXPORTACION;
 @Service
 public class AuditoriaCsvService {
 
-    private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");   // día/mes/año, como el resto del sistema
     private final AuditoriaService auditoria;
 
     public AuditoriaCsvService(AuditoriaService auditoria) {

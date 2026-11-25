@@ -289,7 +289,7 @@ public class ResumenProfesionalIaService {
                 + "- \"fortalezas\": 3 a 5 viñetas cortas, solo lo que esté respaldado por las habilidades validadas y sus constancias.\n"
                 + "- \"evidencias\": un elemento por cada constancia, con la habilidad tal como se llama en la lista, un nombre "
                 + "corto para \"fuente\" (emisor y curso si aparecen; si no, el nombre del archivo o el dominio) y en \"detalle\" "
-                + "qué acredita en 1 o 2 líneas (emisor, fecha, horas o nota si aparecen). Si una habilidad validada no tiene "
+                + "qué acredita en 1 o 2 líneas (emisor, fecha, horas o nota si aparecen; las fechas siempre como día/mes/año, p. ej. 15/03/2024). Si una habilidad validada no tiene "
                 + "constancia, no la pongas en \"evidencias\".\n"
                 + "- \"sugerencias\": 1 a 3 ideas concretas para que el colaborador refuerce su perfil (p. ej. una habilidad "
                 + "validada sin constancia o una certificación que complemente lo que ya tiene). Lista vacía si no hace falta.\n"
@@ -351,7 +351,7 @@ public class ResumenProfesionalIaService {
                 + "colaborador y necesita un resumen previo de la constancia que adjuntó (PDF como documento y/o link), para no "
                 + "tener que abrirla completa. Responde SOLO con un JSON válido (sin markdown, sin ```), con esta forma exacta:\n"
                 + "{\"veredicto\": \"respalda\"|\"parcial\"|\"no_relacionada\"|\"no_legible\", \"resumen\": string, "
-                + "\"emisor\": string|null, \"curso\": string|null, \"titular\": string|null, \"fecha\": string|null, "
+                + "\"emisor\": string|null, \"curso\": string|null, \"titular\": string|null, \"fecha\": string|null (día/mes/año, p. ej. 15/03/2024; mes/año si solo aparece el mes), "
                 + "\"duracion\": string|null, \"nota\": string|null, \"alertas\": [string], "
                 + "\"nivel_sugerido\": \"basico\"|\"intermedio\"|\"avanzado\"|\"experto\"|null, \"motivo_nivel\": string|null}\n"
                 + "Reglas: en español, breve y objetivo. \"resumen\": 2 o 3 líneas que digan qué es la constancia y qué acredita. "
@@ -363,7 +363,7 @@ public class ResumenProfesionalIaService {
                 + "aunque sea MAYOR o MENOR que el declarado (basico: introducción o curso corto; intermedio: curso completo con "
                 + "práctica; avanzado: especialización, proyecto real o certificación técnica; experto: certificación profesional "
                 + "exigente o experiencia sostenida); null si es no_relacionada o no_legible. \"motivo_nivel\": una línea que lo explique. "
-                + "Hoy es " + java.time.LocalDate.now() + ": no marques como alerta una fecha anterior o igual a hoy. No inventes datos.";
+                + "Hoy es " + java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ": no marques como alerta una fecha anterior o igual a hoy. No inventes datos.";
         Perfil perfil = perfilRepository.buscarConUsuario(perfilId).orElse(null);
         String msg = "COLABORADOR: " + (perfil != null ? perfil.getUsuario().getNombreCompleto() : "—")
                 + "\nHABILIDAD A VALIDAR Y SU CONSTANCIA:" + f.texto();
