@@ -7,7 +7,8 @@
  *    endpoint:  "/resource-manager/proyectos/12/candidatos",   // JSON (GET)
  *    accion:    "/resource-manager/proyectos/12/asignar-varios", // POST final
  *    modo:      "asignar" | "proponer",
- *    extra:     { volver: "asignaciones" }                       // campos extra del POST
+ *    extra:     { volver: "asignaciones" },                      // campos extra del POST
+ *    q:         "Helena Ponce"                                   // búsqueda inicial (opcional)
  *  });
  *
  * Modo "pm" (fase 5): elegir UNA persona como Project Manager (al crear un
@@ -47,7 +48,7 @@
     var modoPm = opts.modo === "pm";
     var verbo = modoPm ? "Elegir" : proponer ? "Proponer" : "Asignar";
     var estado = {
-      q: "", habilidades: [], cargo: "", disponibleMin: "", experienciaMin: "",
+      q: (opts.q || "").trim(), habilidades: [], cargo: "", disponibleMin: "", experienciaMin: "",
       soloConCapacidad: false, dedicacion: modoPm ? (opts.dedicacion || 20) : 50, orden: modoPm ? "disponibilidad" : "match", pagina: 1
     };
     var seleccion = {};          // perfilId -> candidato
@@ -357,6 +358,7 @@
       });
     });
 
+    if (estado.q) $("#sp-q").value = estado.q;
     cargar();
     setTimeout(function () { $("#sp-q").focus(); }, 80);
     return bd;

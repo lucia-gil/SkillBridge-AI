@@ -114,7 +114,8 @@
               '<span class="gs-item-sub">' + esc(it.detalle) + "</span></span>" +
               '<span class="gs-item-go">↵</span></a>';
           });
-          if (!r.resultados.length) html += '<div class="gs-hint">Prueba con otras palabras o menos filtros.</div>';
+          // Sin chips = no se entendió la pregunta: el aviso del servidor ya dice qué probar.
+          if (!r.resultados.length && r.chips.length) html += '<div class="gs-hint">Prueba con otras palabras o menos filtros.</div>';
           panel.innerHTML = html;
           active = r.resultados.length ? 0 : -1; marcar();
         })

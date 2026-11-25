@@ -1,6 +1,55 @@
 (function () {
   'use strict';
   const rows = Array.from(document.querySelectorAll('[data-assignment-row]'));
+  const params = new URLSearchParams(window.location.search);
+
+  function esc(t) { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+
+  function abrirProponer(id, nombreProyecto, persona) {
+    window.SBAI.selectorPersonas.abrir({
+      proyecto: nombreProyecto || '',
+      endpoint: '/project-manager/proyectos/' + id + '/candidatos',
+      accion: '/project-manager/proyectos/' + id + '/proponer-varios',
+      modo: 'proponer',
+      extra: { volver: 'asignaciones' },
+      q: persona || ''
+    });
+  }
+
+  // ?proponer=Nombre desde el buscador global: la persona no está en ningún
+  // equipo del PM, así que se abre el selector "Proponer" con su nombre ya
+  // escrito. Con varios proyectos abiertos, primero se elige a cuál.
+  const proponer = params.get('proponer');
+  if (proponer && window.SBAI && window.SBAI.selectorPersonas) {
+    params.delete('proponer');
+    const limpia = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.history.replaceState(null, '', limpia);   // recargar no vuelve a abrirlo
+    const abiertos = rows.filter(function (r) { return r.dataset.proponible === 'true'; });
+    if (!abiertos.length) {
+      if (window.SBAI.toast) window.SBAI.toast.show('Ninguno de tus proyectos tiene vacantes abiertas para proponer a ' + proponer + '.', { type: 'error' });
+    } else if (abiertos.length === 1) {
+      abrirProponer(abiertos[0].dataset.proyectoId, abiertos[0].dataset.proyectoNombre, proponer);
+    } else {
+      const opciones = abiertos.map(function (r) {
+        return '<button type="button" class="btn btn-secondary btn-block" style="justify-content:space-between;margin-bottom:var(--space-2)" data-elegir-proyecto="' + esc(r.dataset.proyectoId) + '">' +
+          '<span>' + esc(r.dataset.proyectoNombre) + '</span><span class="text-tertiary">' + esc(r.dataset.vacantes) + ' vacante(s)</span></button>';
+      }).join('');
+      const bd = window.SBAI.modal.open(
+        '<div class="modal modal-confirm is-info" role="dialog" aria-modal="true" aria-labelledby="pp-titulo">' +
+        '<div class="mc-head"><div class="mc-head-text"><h2 class="mc-title" id="pp-titulo">¿A qué proyecto quieres proponer a ' + esc(proponer) + '?</h2>' +
+        '<p class="mc-desc">Solo aparecen tus proyectos con vacantes abiertas. La propuesta la revisa el Resource Manager.</p></div>' +
+        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
+        '<div class="modal-body mc-body">' + opciones + '</div></div>');
+      bd.querySelectorAll('[data-elegir-proyecto]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          const fila = abiertos.find(function (r) { return r.dataset.proyectoId === b.dataset.elegirProyecto; });
+          window.SBAI.modal.close(bd);
+          abrirProponer(fila.dataset.proyectoId, fila.dataset.proyectoNombre, proponer);
+        });
+      });
+    }
+  }
+
   if (!rows.length) return;
 
   const search = document.getElementById('assignment-search');
@@ -61,14 +110,7 @@
     // filtros en el servidor, selección múltiple). Ver selector-personas.js.
     const show = modal.querySelector('[data-show-assignment-form]');
     if (show && window.SBAI.selectorPersonas) show.addEventListener('click', function () {
-      const id = show.dataset.proyectoId;
-      window.SBAI.selectorPersonas.abrir({
-        proyecto: show.dataset.proyectoNombre || '',
-        endpoint: '/project-manager/proyectos/' + id + '/candidatos',
-        accion: '/project-manager/proyectos/' + id + '/proponer-varios',
-        modo: 'proponer',
-        extra: { volver: 'asignaciones' }
-      });
+      abrirProponer(show.dataset.proyectoId, show.dataset.proyectoNombre, '');
     });
 
     modal.querySelectorAll('[data-finalizar-asignacion]').forEach(function (button) {
@@ -97,7 +139,7 @@
   });
 
   // ?buscar= desde el buscador global del topbar (proyecto o persona).
-  const buscarParam = new URLSearchParams(window.location.search).get('buscar');
+  const buscarParam = params.get('buscar');
   if (buscarParam) search.value = buscarParam;
 
   search.addEventListener('input', function () { page = 1; render(); });

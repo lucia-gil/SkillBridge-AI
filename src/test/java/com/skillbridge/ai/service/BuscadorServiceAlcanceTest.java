@@ -141,6 +141,54 @@ class BuscadorServiceAlcanceTest {
     }
 
     @Test
+    @DisplayName("Personas: nadie se encuentra a sí mismo")
+    void personas_sinUnoMismo() {
+        Perfil yo = perfil(20, "Ana Rios", null);
+        Perfil otro = perfil(21, "Helena Ponce", null);
+        when(perfilRepository.listarActivosConUsuario()).thenReturn(List.of(yo, otro));
+
+        assertEquals(List.of(otro), buscador.personasVisibles(sesion(Roles.PROJECT_MANAGER, 20L)));
+    }
+
+    @Test
+    @DisplayName("PM: una persona de su equipo lleva a Asignaciones filtrado; una de fuera, a Proponer")
+    void destinoPm_equipoOProponer() {
+        Set<Long> equipo = Set.of(21L);
+        assertEquals("/project-manager/asignaciones.html?buscar=Helena+Ponce",
+                BuscadorService.destinoColaborador("project-manager", 21L, "Helena Ponce", equipo));
+        assertEquals("/project-manager/asignaciones.html?proponer=Renzo+Fernandez",
+                BuscadorService.destinoColaborador("project-manager", 22L, "Renzo Fernandez", equipo));
+        // El RM sigue yendo a la ficha completa y el Admin a Usuarios.
+        assertEquals("/resource-manager/colaboradores/22",
+                BuscadorService.destinoColaborador("resource-manager", 22L, "Renzo Fernandez", Set.of()));
+        assertEquals("/administrador/usuarios.html?buscar=Renzo+Fernandez",
+                BuscadorService.destinoColaborador("administrador", 22L, "Renzo Fernandez", Set.of()));
+    }
+
+    @Test
+    @DisplayName("Equipo del PM: personas con asignación activa en los proyectos que lidera")
+    void equipoDelPm() {
+        Proyecto liderado = proyecto(5, "Portal Andes");
+        Asignacion a = new Asignacion();
+        a.setPerfilId(21L);
+        when(asignacionRepository.listarProyectosGestionados(20L)).thenReturn(List.of(liderado));
+        when(asignacionRepository.listarEquipoDeProyecto(5L, "activa")).thenReturn(List.of(a));
+
+        assertEquals(Set.of(21L), buscador.equipoDelPm(sesion(Roles.PROJECT_MANAGER, 20L)));
+        assertTrue(buscador.equipoDelPm(sesion(Roles.RESOURCE_MANAGER, 30L)).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Buscador IA: un saludo no es un listado; 'todas las personas' o 'mis proyectos' sí")
+    void pideListado() {
+        assertFalse(BuscadorIaService.pideListado("holi"));
+        assertFalse(BuscadorIaService.pideListado("asdf qwer"));
+        assertTrue(BuscadorIaService.pideListado("muéstrame todas las personas"));
+        assertTrue(BuscadorIaService.pideListado("mis proyectos"));
+        assertTrue(BuscadorIaService.pideListado("¿quiénes están en mi equipo?"));
+    }
+
+    @Test
     @DisplayName("Buscador normal del Colaborador: no devuelve personas ni proyectos ajenos")
     void buscar_colaborador_sinAjenos() {
         Proyecto mio = proyecto(1, "Portal Clientes");

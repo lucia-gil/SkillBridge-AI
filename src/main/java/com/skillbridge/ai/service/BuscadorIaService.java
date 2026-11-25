@@ -109,9 +109,28 @@ public class BuscadorIaService {
             aviso = "Solo se muestran los proyectos que lideras.";
         }
 
+        // Sin ningún filtro y sin pedir un listado ("holi", "asdf"): no se
+        // devuelve a todo el mundo, se pide reformular.
+        if (sinFiltros(f) && !pideListado(q)) {
+            return new Respuesta("No entendí qué buscas.", List.of(), porIa,
+                    "Prueba con algo como «¿quién sabe Docker y está libre?» o «proyectos atrasados».", List.of());
+        }
+
         // 2) Java busca con datos reales.
         List<Map<String, Object>> resultados = "personas".equals(f.buscar()) ? personas(f, s, catalogo) : proyectos(f, s, catalogo);
         return new Respuesta(interpretacion(f, resultados.size()), chips(f), porIa, aviso, resultados);
+    }
+
+    private static boolean sinFiltros(Filtros f) {
+        return f.habilidades().isEmpty() && (f.nivelMin() == null || f.nivelMin() <= 1) && f.libreMin() == null
+                && !f.enBanca() && f.estados().isEmpty() && !f.atrasados() && !f.conVacantes() && f.texto() == null;
+    }
+
+    /** La pregunta pide un listado general ("todas las personas", "mis proyectos", "muéstrame el equipo"). */
+    static boolean pideListado(String pregunta) {
+        String q = " " + norm(pregunta).replaceAll("[^a-z0-9 ]", " ") + " ";
+        return Pattern.compile(" (persona|personas|gente|colaborador|colaboradores|equipo|equipos|quien|quienes|"
+                + "proyecto|proyectos|todo|todos|todas|lista|listar|muestra|muestrame|mostrar|mis) ").matcher(q).find();
     }
 
     // ───────────────────────── Personas ─────────────────────────
@@ -124,6 +143,7 @@ public class BuscadorIaService {
         Set<Long> pedidas = f.habilidades().stream().map(h -> idPorNombre.get(norm(h))).filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
         int nivelMin = f.nivelMin() != null ? f.nivelMin() : 1;
         int limite = proyectoService.limiteCargaConfigurado();
+        Set<Long> equipoPm = buscadorService.equipoDelPm(s);
         Map<Long, List<PerfilHabilidad>> habsPorPerfil = perfilHabilidadRepository.findAll().stream()
                 .collect(Collectors.groupingBy(ph -> ph.getId().getPerfilId()));
 
@@ -158,7 +178,7 @@ public class BuscadorIaService {
                 .limit(MAX)
                 .map(x -> BuscadorService.item("Personas", x.coinciden() == pedidas.size() && !pedidas.isEmpty() ? "icon-user-check" : "icon-user",
                         x.p().getUsuario().getNombreCompleto(), x.detalle(),
-                        BuscadorService.destinoColaborador(slug, x.p().getId(), x.p().getUsuario().getNombreCompleto())))
+                        BuscadorService.destinoColaborador(slug, x.p().getId(), x.p().getUsuario().getNombreCompleto(), equipoPm)))
                 .toList();
     }
 

@@ -85,6 +85,7 @@ public class BuscadorService {
         // ---- Colaboradores ----
         if (ve_personas) {
             n = 0;
+            Set<Long> equipoPm = equipoDelPm(sesion);
             for (Perfil p : personasVisibles(sesion)) {
                 if (n >= MAX_POR_GRUPO) break;
                 String nombre = p.getUsuario() != null ? p.getUsuario().getNombreCompleto() : "";
@@ -92,7 +93,7 @@ public class BuscadorService {
                 String cargo = p.getCargo() != null ? p.getCargo() : "";
                 if (normalizar(nombre + " " + cargo + " " + correo).contains(q)) {
                     salida.add(item("Colaboradores", "icon-user", nombre,
-                            cargo.isEmpty() ? correo : cargo, destinoColaborador(slug, p.getId(), nombre)));
+                            cargo.isEmpty() ? correo : cargo, destinoColaborador(slug, p.getId(), nombre, equipoPm)));
                     n++;
                 }
             }
@@ -155,7 +156,10 @@ public class BuscadorService {
      */
     List<Perfil> personasVisibles(UsuarioSesion sesion) {
         if (sesion == null || !vePersonas(sesion.getRolEfectivo())) return List.of();
-        List<Perfil> activos = perfilRepository.listarActivosConUsuario();
+        // Nadie se encuentra a sí mismo en "Personas".
+        List<Perfil> activos = perfilRepository.listarActivosConUsuario().stream()
+                .filter(p -> sesion.getPerfilId() == null || !sesion.getPerfilId().equals(p.getId()))
+                .toList();
         if (Roles.PROJECT_MANAGER.equals(sesion.getRolEfectivo())) {
             return activos.stream().filter(ProyectoService::esMiembroAsignable).toList();
         }
@@ -173,16 +177,34 @@ public class BuscadorService {
 
     /**
      * Admin: Usuarios filtrado. RM: directo a la ficha tipo CV del
-     * colaborador. PM: Asignaciones filtrado por la persona (la tabla
-     * ahora tambien busca por nombre de integrante).
+     * colaborador. PM (no ve fichas): si la persona ya está en uno de sus
+     * equipos, Asignaciones filtrado por ella; si no, Asignaciones con el
+     * selector "Proponer" abierto y su nombre ya escrito.
      */
-    static String destinoColaborador(String slug, Long perfilId, String nombre) {
+    static String destinoColaborador(String slug, Long perfilId, String nombre, Set<Long> equipoPm) {
         String b = codificar(nombre);
         switch (slug) {
             case "administrador": return "/administrador/usuarios.html?buscar=" + b;
             case "resource-manager": return "/resource-manager/colaboradores/" + perfilId;
-            default: return "/project-manager/asignaciones.html?buscar=" + b;
+            default:
+                return equipoPm.contains(perfilId)
+                        ? "/project-manager/asignaciones.html?buscar=" + b
+                        : "/project-manager/asignaciones.html?proponer=" + b;
         }
+    }
+
+    /** Personas con asignación activa en los proyectos que lidera el PM (vacío para otros roles). */
+    Set<Long> equipoDelPm(UsuarioSesion sesion) {
+        if (sesion == null || !Roles.PROJECT_MANAGER.equals(sesion.getRolEfectivo()) || sesion.getPerfilId() == null) {
+            return Set.of();
+        }
+        Set<Long> equipo = new java.util.HashSet<>();
+        for (Proyecto p : asignacionRepository.listarProyectosGestionados(sesion.getPerfilId())) {
+            for (Asignacion a : asignacionRepository.listarEquipoDeProyecto(p.getId(), "activa")) {
+                equipo.add(a.getPerfilId());
+            }
+        }
+        return equipo;
     }
 
     private static String destinoHabilidad(String slug, Long habilidadId, String nombre) {

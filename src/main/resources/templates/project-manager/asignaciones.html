@@ -84,7 +84,7 @@
           <table class="data-table">
             <thead><tr><th>Proyecto</th><th>Estado</th><th>Colaboradores</th><th>Cobertura</th><th>Vacantes</th><th>Acción</th></tr></thead>
             <tbody id="assignment-projects-body">
-            <tr th:each="p : ${proyectos}" data-assignment-row th:attr="data-name=${#strings.toLowerCase(p.nombre)},data-miembros=${#strings.toLowerCase(#strings.listJoin(p.equipo.![nombre], ' | '))},data-state=${p.estadoCrudo}">
+            <tr th:each="p : ${proyectos}" data-assignment-row th:attr="data-name=${#strings.toLowerCase(p.nombre)},data-miembros=${#strings.toLowerCase(#strings.listJoin(p.equipo.![nombre], ' | '))},data-state=${p.estadoCrudo},data-proyecto-id=${p.id},data-proyecto-nombre=${p.nombre},data-vacantes=${p.vacantes},data-proponible=${not p.cupoCompleto and (p.estadoCrudo == 'planificacion' or p.estadoCrudo == 'activo')}">
               <td class="cell-person"><span class="avatar avatar-sm" style="border-radius:var(--radius-sm);background:var(--navy-700)" th:text="${#strings.substring(p.nombre,0,1)}">P</span><span class="cell-person-text"><span class="cell-person-name" th:text="${p.nombre}">Proyecto</span><span class="cell-person-sub" th:text="'PM: ' + ${p.pmNombre}">PM</span></span></td>
               <td><span class="badge" th:classappend="${p.estadoBadgeClass}" th:text="${p.estadoLabel}">Estado</span></td>
               <td class="mono" th:text="${p.colaboradoresAsignados} + ' de ' + ${p.colaboradoresRequeridos}">0 de 0</td>
