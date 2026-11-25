@@ -176,9 +176,26 @@ public class AuthController {
         return "auth/recuperar-password";
     }
 
+    // Límite de correos de recuperación: evita llenar un buzón de enlaces.
+    private static final int MAX_RECUPERACIONES_POR_IP = 5;
+    private static final int MAX_RECUPERACIONES_POR_CORREO = 3;
+    private final Map<String, VentanaVerificacion> recuperacionesPorIp = new ConcurrentHashMap<>();
+    private final Map<String, VentanaVerificacion> recuperacionesPorCorreo = new ConcurrentHashMap<>();
+
     @PostMapping("/auth/recuperar-password.html")
-    public String recuperarPassword(@RequestParam String correo, RedirectAttributes redirectAttributes) {
-        authService.solicitarRecuperacion(correo);
+    public String recuperarPassword(@RequestParam String correo, HttpServletRequest request,
+                                    RedirectAttributes redirectAttributes) {
+        if (!permitir(recuperacionesPorIp, obtenerIp(request), MAX_RECUPERACIONES_POR_IP)) {
+            redirectAttributes.addFlashAttribute("error", "Hiciste demasiadas solicitudes. Espera unos minutos e inténtalo de nuevo.");
+            redirectAttributes.addFlashAttribute("correoIntentado", correo);
+            return "redirect:/auth/recuperar-password.html";
+        }
+        // Por correo el límite no se avisa: la pantalla dice lo mismo exista o
+        // no la cuenta, y simplemente no se manda otro enlace.
+        String clave = correo == null ? "" : correo.trim().toLowerCase();
+        if (permitir(recuperacionesPorCorreo, clave, MAX_RECUPERACIONES_POR_CORREO)) {
+            authService.solicitarRecuperacion(correo);
+        }
         // Mismo mensaje exista o no el correo (no revelar que correos estan
         // registrados) - ver AuthService.solicitarRecuperacion().
         redirectAttributes.addFlashAttribute("enviado", true);
@@ -201,7 +218,9 @@ public class AuthController {
         String error = authService.restablecerContrasena(token, contrasena, contrasena2);
         if (error != null) {
             redirectAttributes.addFlashAttribute("error", error);
-            return "redirect:/auth/restablecer-password.html?token=" + token;
+            // El token viene del usuario: se codifica para que no altere la URL de destino.
+            return "redirect:/auth/restablecer-password.html?token="
+                    + java.net.URLEncoder.encode(token, java.nio.charset.StandardCharsets.UTF_8);
         }
         redirectAttributes.addFlashAttribute("exito", "Contraseña actualizada. Ya puedes iniciar sesión.");
         return "redirect:/auth/login.html";
