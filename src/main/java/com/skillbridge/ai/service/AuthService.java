@@ -81,6 +81,10 @@ public class AuthService {
     @Value("${app.seguridad.bloquear-clave-demo:false}")
     private boolean bloquearClaveDemo;
 
+    /** Cierra las sesiones abiertas al restablecer la contraseña (null en tests unitarios). */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.skillbridge.ai.security.CierreSesiones cierreSesiones;
+
     /** Vigencia de un enlace de "olvide mi contraseña" (ver recuperar-password.html). */
     private static final long RECUPERACION_MINUTOS = 30;
 
@@ -537,8 +541,12 @@ public class AuthService {
         t.setUsado(true);
         tokenRecuperacionRepository.save(t);
 
+        // Quien tenía la contraseña vieja (o una sesión robada) queda fuera en todos los navegadores.
+        int cerradas = cierreSesiones != null ? cierreSesiones.cerrarTodas(usuario.getCorreo()) : 0;
+
         auditoriaService.registrar(usuario.getId(), "CONTRASENA_RESTABLECIDA", "usuario", usuario.getId(), null, null,
-                "Restablecimiento via enlace de \"olvide mi contraseña\" (" + usuario.getCorreo() + ")");
+                "Restablecimiento via enlace de \"olvide mi contraseña\" (" + usuario.getCorreo() + ")"
+                        + (cerradas > 0 ? "; se cerraron " + cerradas + " sesión(es) abierta(s)" : ""));
         return null;
     }
 
