@@ -91,6 +91,19 @@ public class AuthController {
         return "auth/login";
     }
 
+    /**
+     * Token CSRF vigente para los formularios de /auth/. Una pantalla de login
+     * abierta desde antes de que venciera la sesión trae un token que ya no
+     * sirve: js/csrf-fresco.js pide este justo antes de enviar, para que el
+     * primer intento no termine en "Tu sesión expiró".
+     */
+    @GetMapping(value = "/auth/csrf", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> csrfVigente(org.springframework.security.web.csrf.CsrfToken token) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(Map.of("token", token.getToken(), "param", token.getParameterName()));
+    }
+
     // ───────────────────────── Segundo factor ─────────────────────────
 
     @GetMapping("/auth/verificar-2fa.html")
