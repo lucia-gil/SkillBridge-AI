@@ -168,42 +168,80 @@
             </select>
           </div>
         </div>
-        <div class="table-scroll">
-          <table class="data-table invite-table">
-            <thead><tr><th>Correo</th><th>Rol al registrarse</th><th>Autorizado el</th><th>Registro</th><th>Identidad</th><th>Envío de correo</th><th>Acciones</th></tr></thead>
-            <tbody>
-              <tr th:each="c : ${correosAutorizados}" data-correo-row th:attr="data-correo=${#strings.toLowerCase(c.correo())},data-estado=${c.utilizado() ? 'registrado' : 'pendiente'},data-fallo=${c.envio() == 'Fallo SMTP'}">
-                <td class="cell-primary invite-email" th:text="${c.correo()}">correo</td>
-                <td><span class="badge" th:classappend="${c.rolAsignado() == null} ? 'badge-neutral' : 'badge-blue'" th:text="${c.rolLabel()}">Miembro</span></td>
-                <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${c.fechaAutorizacion()}">—</td>
-                <td><span class="badge" th:classappend="${c.estadoBadgeClass()}" th:text="${c.estadoLabel()}">Pendiente</span></td>
-                <td class="identidad-celda" th:with="reservada=${invitacionesConDni.contains(c.id())}">
+        <div class="table-scroll invite-scroll" th:unless="${correosAutorizados.isEmpty()}">
+          <table class="data-table invite-table" role="table" aria-labelledby="invitaciones-titulo">
+            <colgroup>
+              <col>
+              <col class="invite-col-role">
+              <col class="invite-col-date">
+              <col class="invite-col-registration">
+              <col class="invite-col-identity">
+              <col class="invite-col-delivery">
+              <col class="invite-col-actions">
+            </colgroup>
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col" role="columnheader">Correo</th>
+                <th scope="col" role="columnheader">Rol al registrarse</th>
+                <th scope="col" role="columnheader">Autorizado el</th>
+                <th scope="col" role="columnheader">Registro</th>
+                <th scope="col" role="columnheader">Identidad</th>
+                <th scope="col" role="columnheader">Envío de correo</th>
+                <th scope="col" role="columnheader">Acciones</th>
+              </tr>
+            </thead>
+            <tbody role="rowgroup">
+              <tr role="row" th:each="c : ${correosAutorizados}" data-correo-row
+                  th:attr="data-correo=${#strings.toLowerCase(c.correo())},data-estado=${c.utilizado() ? 'registrado' : 'pendiente'},data-fallo=${c.envio() == 'Fallo SMTP'}">
+                <td role="cell" class="cell-primary invite-email" th:text="${c.correo()}">correo</td>
+                <td role="cell">
+                  <span class="invite-label" aria-hidden="true">Rol al registrarse</span>
+                  <span class="badge" th:classappend="${c.rolAsignado() == null} ? 'badge-neutral' : 'badge-blue'" th:text="${c.rolLabel()}">Miembro</span>
+                </td>
+                <td role="cell">
+                  <span class="invite-label" aria-hidden="true">Autorizado el</span>
+                  <span class="invite-date" th:text="${c.fechaAutorizacion()}">—</span>
+                </td>
+                <td role="cell">
+                  <span class="invite-label" aria-hidden="true">Registro</span>
+                  <span class="badge" th:classappend="${c.estadoBadgeClass()}" th:text="${c.estadoLabel()}">Pendiente</span>
+                </td>
+                <td role="cell" th:with="reservada=${invitacionesConDni.contains(c.id())}">
+                  <span class="invite-label" aria-hidden="true">Identidad</span>
                   <span th:if="${c.utilizado()}" class="text-tertiary">—</span>
-                  <span th:unless="${c.utilizado()}" class="badge"
-                        th:classappend="${reservada ? 'badge-green' : 'badge-neutral'}"
-                        th:text="${reservada ? 'DNI asociado' : 'Sin DNI asociado'}">Sin DNI asociado</span>
-                  <div class="cell-actions" th:if="${padronDisponible and !c.utilizado() and !reservada}">
-                    <button type="button" data-identidad-abrir="reserva"
+                  <div class="invite-identity" th:unless="${c.utilizado()}">
+                    <span class="badge" th:classappend="${reservada ? 'badge-green' : 'badge-neutral'}"
+                          th:text="${reservada ? 'DNI asociado' : 'Sin DNI asociado'}">Sin DNI asociado</span>
+                    <button th:if="${padronDisponible and !reservada}" class="btn btn-secondary btn-sm invite-action"
+                            type="button" data-identidad-abrir="reserva"
                             th:attr="data-identidad-accion=@{/administrador/usuarios/correos-autorizados/{id}/identidad(id=${c.id()})},
                                      data-identidad-etiqueta=${c.correo()}">Asociar DNI</button>
                   </div>
                 </td>
-                <td>
+                <td role="cell" class="invite-delivery">
+                  <span class="invite-label" aria-hidden="true">Envío de correo</span>
                   <span class="badge" th:classappend="${c.envio() == 'Fallo SMTP' ? 'badge-red' : (c.envio() == 'Aceptado por SMTP' ? 'badge-green' : 'badge-neutral')}"
                         th:text="${c.envio()}">Sin datos de envío</span>
                   <span class="invite-attempt" th:if="${c.ultimoEnvio() != '—'}" th:text="|Intento ${c.ultimoEnvio()}|"></span>
                 </td>
-                <td>
-                  <div class="cell-actions flow-actions" th:unless="${c.utilizado()}">
+                <td role="cell" class="invite-actions-cell">
+                  <div class="invite-actions" th:unless="${c.utilizado()}">
                     <form method="post" th:action="@{/administrador/usuarios/correos-autorizados/{id}/reenviar(id=${c.id()})}">
-                      <button type="submit" class="invite-resend" th:attr="aria-label=|Reenviar invitación a ${c.correo()}|">Reenviar</button>
+                      <button type="submit" class="btn btn-secondary btn-sm invite-action invite-resend"
+                              th:attr="aria-label=|Reenviar invitación a ${c.correo()}|">
+                        <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-refresh"></use></svg>Reenviar
+                      </button>
                     </form>
-                    <button type="button" data-invite-role
-                            th:attr="data-id=${c.id()}, data-correo=${c.correo()}, data-rol=${c.rolValor()}">Cambiar rol</button>
-                    <button type="button" class="danger" data-revoke-invite
-                            th:attr="data-id=${c.id()}, data-correo=${c.correo()}">Revocar</button>
+                    <button type="button" class="btn btn-secondary btn-sm invite-action" data-invite-role
+                            th:attr="data-id=${c.id()}, data-correo=${c.correo()}, data-rol=${c.rolValor()}, aria-label=|Cambiar rol de ${c.correo()}|">
+                      <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-edit"></use></svg>Cambiar rol
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm invite-action invite-revoke" data-revoke-invite
+                            th:attr="data-id=${c.id()}, data-correo=${c.correo()}, aria-label=|Revocar invitación a ${c.correo()}|">
+                      <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-x"></use></svg>Revocar
+                    </button>
                   </div>
-                  <span class="text-tertiary" th:if="${c.utilizado()}">—</span>
+                  <span class="text-tertiary invite-no-actions" th:if="${c.utilizado()}">—</span>
                 </td>
               </tr>
             </tbody>

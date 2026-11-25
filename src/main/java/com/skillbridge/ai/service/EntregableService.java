@@ -11,6 +11,7 @@ import com.skillbridge.ai.repository.EntregaRepository;
 import com.skillbridge.ai.repository.EntregableRepository;
 import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
+import com.skillbridge.ai.util.RecursoNoEncontradoException;
 import com.skillbridge.ai.util.Roles;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -237,7 +238,7 @@ public class EntregableService {
     @Transactional(readOnly = true)
     public Entregable obtener(Long entregableId) {
         return entregableRepository.findById(entregableId)
-                .orElseThrow(() -> new OperacionInvalidaException("El entregable ya no existe."));
+                .orElseThrow(() -> new RecursoNoEncontradoException("El entregable ya no existe."));
     }
 
     @Transactional

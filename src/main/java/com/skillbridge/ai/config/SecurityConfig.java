@@ -150,7 +150,7 @@ public class SecurityConfig {
                     .referrerPolicy(referrer -> referrer.policy(
                             ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN)))
 
-            .addFilterBefore(new SesionVigenteFilter(usuarioRepository, authService, sesionSegura, configuracion, dobleFactor),
+            .addFilterBefore(new SesionVigenteFilter(usuarioRepository, authService, sesionSegura, configuracion, dobleFactor, accesoDenegadoHandler),
                     AnonymousAuthenticationFilter.class);
 
         return http.build();

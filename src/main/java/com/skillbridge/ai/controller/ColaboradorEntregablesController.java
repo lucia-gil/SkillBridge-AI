@@ -10,11 +10,13 @@ import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -59,14 +61,14 @@ public class ColaboradorEntregablesController {
         UsuarioSesion sesion = sesion(session);
         Entregable e = entregableService.obtener(id);
         var proyecto = proyectoRepository.findById(e.getProyectoId())
-                .orElseThrow(() -> new OperacionInvalidaException("El proyecto no existe."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         // Reutiliza misEntregables() y filtra el que corresponde: así la
         // regla "solo ve entregables de SUS proyectos" vive en un único
         // lugar (EntregableRepository.listarVisiblesParaPerfil), sin
         // duplicar la verificación de pertenencia acá.
         EntregableFila fila = entregableService.misEntregables(sesion.getPerfilId()).stream()
                 .filter(f -> f.getId().equals(id)).findFirst()
-                .orElseThrow(() -> new OperacionInvalidaException("No perteneces a este proyecto."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         shellModelBuilder.aplicar(model, sesion, "entregables.html", e.getTitulo(), proyecto.getNombre());
         model.addAttribute("entregable", e);

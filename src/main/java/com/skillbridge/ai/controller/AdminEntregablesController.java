@@ -10,10 +10,12 @@ import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
@@ -41,7 +43,7 @@ public class AdminEntregablesController {
     public String listar(@PathVariable Long proyectoId, HttpSession session, Model model) {
         UsuarioSesion sesion = sesion(session);
         var proyecto = proyectoRepository.findById(proyectoId)
-                .orElseThrow(() -> new OperacionInvalidaException("El proyecto no existe."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         List<EntregableFila> entregables = entregableService.listarParaGestion(proyectoId);
 
         shellModelBuilder.aplicar(model, sesion, "proyectos.html", "Entregables · " + proyecto.getNombre(),
@@ -97,7 +99,7 @@ public class AdminEntregablesController {
         UsuarioSesion sesion = sesion(session);
         Entregable e = entregableService.obtener(id);
         var proyecto = proyectoRepository.findById(e.getProyectoId())
-                .orElseThrow(() -> new OperacionInvalidaException("El proyecto no existe."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         List<EntregaFila> entregas = entregableService.detalleParaRevision(id, sesion.getPerfilId(), sesion.getRolEfectivo());
 
         shellModelBuilder.aplicar(model, sesion, "proyectos.html", e.getTitulo(),

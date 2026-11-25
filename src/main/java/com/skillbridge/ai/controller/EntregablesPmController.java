@@ -7,11 +7,13 @@ import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.model.Entregable;
 import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.service.EntregableService;
+import com.skillbridge.ai.service.ProyectoVistaService;
 import com.skillbridge.ai.service.ExtraccionEntregableIaService;
 import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -19,6 +21,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
@@ -41,14 +44,17 @@ public class EntregablesPmController {
 
     private final EntregableService entregableService;
     private final ProyectoRepository proyectoRepository;
+    private final ProyectoVistaService proyectoVistaService;
     private final ShellModelBuilder shellModelBuilder;
     private final ExtraccionEntregableIaService extraccionEntregableIaService;
 
     public EntregablesPmController(EntregableService entregableService, ProyectoRepository proyectoRepository,
+                                   ProyectoVistaService proyectoVistaService,
                                    ShellModelBuilder shellModelBuilder,
                                    ExtraccionEntregableIaService extraccionEntregableIaService) {
         this.entregableService = entregableService;
         this.proyectoRepository = proyectoRepository;
+        this.proyectoVistaService = proyectoVistaService;
         this.shellModelBuilder = shellModelBuilder;
         this.extraccionEntregableIaService = extraccionEntregableIaService;
     }
@@ -72,8 +78,9 @@ public class EntregablesPmController {
     @GetMapping("/proyectos/{proyectoId}/entregables.html")
     public String listar(@PathVariable Long proyectoId, HttpSession session, Model model) {
         UsuarioSesion sesion = sesion(session);
+        exigirProyectoPropio(sesion, proyectoId);
         var proyecto = proyectoRepository.findById(proyectoId)
-                .orElseThrow(() -> new OperacionInvalidaException("El proyecto no existe."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         List<EntregableFila> entregables = entregableService.listarParaGestion(proyectoId);
 
         shellModelBuilder.aplicar(model, sesion, "proyectos.html", "Entregables · " + proyecto.getNombre(),
@@ -128,8 +135,9 @@ public class EntregablesPmController {
     public String detalle(@PathVariable Long id, HttpSession session, Model model) {
         UsuarioSesion sesion = sesion(session);
         Entregable e = entregableService.obtener(id);
+        exigirProyectoPropio(sesion, e.getProyectoId());
         var proyecto = proyectoRepository.findById(e.getProyectoId())
-                .orElseThrow(() -> new OperacionInvalidaException("El proyecto no existe."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         List<EntregaFila> entregas = entregableService.detalleParaRevision(id, sesion.getPerfilId(), sesion.getRolEfectivo());
 
         shellModelBuilder.aplicar(model, sesion, "proyectos.html", e.getTitulo(),
@@ -154,6 +162,12 @@ public class EntregablesPmController {
             ra.addFlashAttribute("exito", "Entrega revisada.");
         } catch (OperacionInvalidaException ex) { ra.addFlashAttribute("error", ex.getMessage()); }
         return "redirect:/project-manager/entregables/" + entregableId + ".html";
+    }
+
+    private void exigirProyectoPropio(UsuarioSesion sesion, Long proyectoId) {
+        if (!proyectoVistaService.esPmDe(sesion.getPerfilId(), proyectoId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
     }
 
     private UsuarioSesion sesion(HttpSession session) { return (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO); }

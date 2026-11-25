@@ -1,65 +1,7 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acceso denegado · SkillBridge AI</title>
-  <link rel="icon" type="image/png" href="/img/logo-icon.png">
-  <link rel="stylesheet" href="/css/tokens.css">
-  <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/components.css">
-  <link rel="stylesheet" href="/css/layout.css">
-  <link rel="stylesheet" href="/css/polish.css">
-  <link rel="stylesheet" href="/css/auth-center.css">
-
-  <!--
-    error/403.html — Spring Boot resuelve automaticamente esta plantilla
-    (templates/error/403.html) cuando response.sendError(403) se dispara,
-    sin necesidad de un controlador propio. La dispara SesionInterceptor
-    cuando alguien entra a una seccion que no le corresponde por rol
-    (modelo v7): antes redirigia en silencio al inicio propio, ahora deja
-    explicito que el acceso fue negado.
-
-    Reutiliza el mismo layout de tarjeta centrada que auth/verificar-2fa.html
-    (.login-page / .auth-card) para mantener la identidad visual, con
-    estilos con alcance local a esta pagina.
-  -->
-  <style>
-    .login-page {
-      min-height: 100vh;
-      background: var(--canvas);
-      background-image:
-              radial-gradient(circle, rgba(239,68,68,0.06) 0%, transparent 60%),
-              radial-gradient(circle at 1px 1px, rgba(22,33,58,0.06) 1px, transparent 0);
-      background-size: 100% 100%, 22px 22px;
-      background-position: center -10%, 0 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: var(--space-6);
-    }
-    .auth-card { max-width: 420px; width: 100%; padding: var(--space-7) var(--space-6); text-align: center; }
-    .auth-card-header img { height: 28px; margin-bottom: var(--space-5); }
-    .error-icon {
-      width: 56px; height: 56px; border-radius: 50%;
-      background: var(--red-bg); color: var(--red-fg);
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto var(--space-4);
-    }
-    .error-icon svg { width: 28px; height: 28px; }
-  </style>
-</head>
-<body>
-<div class="login-page">
-  <div class="auth-card card">
-    <div class="auth-card-header"><img src="/img/logo-horizontal-tight.png" alt="SkillBridge AI"></div>
-    <div class="error-icon"><svg class="icon"><use href="/img/icons.svg#icon-shield"></use></svg></div>
-    <h2 class="auth-card-title">Acceso denegado</h2>
-    <p class="auth-card-sub">No tienes permiso para acceder a esta sección con tu cuenta actual. Si crees que es un error, contacta a tu Administrador.</p>
-    <a class="btn btn-primary btn-block btn-lg" style="margin-top:var(--space-5);" href="/">Volver al inicio</a>
-  </div>
-</div>
-<script src="/js/theme-toggle.js"></script>
-</body>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{error/estado :: pagina('Acceso denegado',
+        'No tienes permiso para acceder a esta sección con tu cuenta actual. Si necesitas acceso, contacta a tu administrador.', 'icon-shield')}">
+<head><title>Acceso denegado · SkillBridge AI</title></head>
+<body></body>
 </html>

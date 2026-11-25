@@ -7,11 +7,13 @@ import com.skillbridge.ai.service.ShellModelBuilder;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Vista de detalle de un proyecto (compartido/proyecto-detalle.html):
@@ -35,8 +37,7 @@ public class ProyectoVistaController {
     public String pm(@PathVariable Long id, HttpSession session, Model model, RedirectAttributes ra) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
         if (!vistaService.esPmDe(sesion.getPerfilId(), id)) {
-            ra.addFlashAttribute("error", "Ese proyecto no está bajo tu gestión.");
-            return "redirect:/project-manager/proyectos.html";
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
         return pintar(id, sesion, model, ra, "proyectos.html", "project-manager", "/project-manager/proyectos.html");
     }

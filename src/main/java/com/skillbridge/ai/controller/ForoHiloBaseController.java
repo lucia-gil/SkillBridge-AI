@@ -55,15 +55,9 @@ public abstract class ForoHiloBaseController {
     }
 
     @GetMapping("/foro-hilo.html")
-    public String hilo(@RequestParam Long id, HttpSession session, Model model, RedirectAttributes redirectAttributes) {
+    public String hilo(@RequestParam Long id, HttpSession session, Model model) {
         UsuarioSesion sesion = sesion(session);
-        HiloDetalle detalle;
-        try {
-            detalle = foroService.obtenerDetalle(id, sesion.getPerfilId(), esAdmin(sesion));
-        } catch (OperacionInvalidaException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            return "redirect:/" + base() + "/foros.html";
-        }
+        HiloDetalle detalle = foroService.obtenerDetalle(id, sesion.getPerfilId(), esAdmin(sesion));
 
         shellModelBuilder.aplicar(model, sesion, "foros.html", detalle.getTitulo(),
                 "Foros › " + detalle.getProyectoNombre());

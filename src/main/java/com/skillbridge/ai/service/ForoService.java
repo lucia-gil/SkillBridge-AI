@@ -25,6 +25,7 @@ import com.skillbridge.ai.repository.ForoTopicoRepository;
 import com.skillbridge.ai.repository.PerfilRepository;
 import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
+import com.skillbridge.ai.util.RecursoNoEncontradoException;
 import com.skillbridge.ai.util.Roles;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -472,8 +473,8 @@ public class ForoService {
     public HiloDetalle obtenerDetalle(Long hiloId, Long viewerPerfilId, boolean viewerEsAdmin) {
         ForoPublicacion hilo = foroPublicacionRepository.buscarHiloConDetalle(hiloId)
                 .filter(h -> h.getPublicacionPadreId() == null)
-                .orElseThrow(() -> new OperacionInvalidaException("El hilo ya no existe."));
-        exigirMiembro(viewerPerfilId, hilo.getProyectoId(), viewerEsAdmin);
+                .filter(h -> viewerEsAdmin || proyectosDelPerfil(viewerPerfilId).contains(h.getProyectoId()))
+                .orElseThrow(() -> new RecursoNoEncontradoException("El hilo no está disponible."));
         hilo.setNumVistas(hilo.getNumVistas() + 1);
         foroPublicacionRepository.save(hilo);
 

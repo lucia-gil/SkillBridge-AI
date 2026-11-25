@@ -48,12 +48,15 @@ public class SesionVigenteFilter extends OncePerRequestFilter {
 
     private final com.skillbridge.ai.service.ConfiguracionService configuracion;
     private final com.skillbridge.ai.service.DobleFactorService dobleFactor;
+    private final AccesoDenegadoHandler accesoDenegado;
 
     public SesionVigenteFilter(UsuarioRepository usuarioRepository, AuthService authService, SesionSegura sesionSegura,
                                com.skillbridge.ai.service.ConfiguracionService configuracion,
-                               com.skillbridge.ai.service.DobleFactorService dobleFactor) {
+                               com.skillbridge.ai.service.DobleFactorService dobleFactor,
+                               AccesoDenegadoHandler accesoDenegado) {
         this.configuracion = configuracion;
         this.dobleFactor = dobleFactor;
+        this.accesoDenegado = accesoDenegado;
         this.usuarioRepository = usuarioRepository;
         this.authService = authService;
         this.sesionSegura = sesionSegura;
@@ -89,7 +92,7 @@ public class SesionVigenteFilter extends OncePerRequestFilter {
                     String ruta = request.getServletPath();
                     boolean activo = dobleFactor.estaActivo(usuario.getUsuarioId());
                     if ("/cuenta/2fa/desactivar".equals(ruta)) {
-                        response.setStatus(403);
+                        accesoDenegado.prohibir(request, response, "El doble factor es obligatorio para administradores.");
                         return;
                     }
                     if (!activo && !ruta.equals("/administrador/enrolamiento.html")
