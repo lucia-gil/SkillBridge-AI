@@ -57,6 +57,9 @@ td.cell-actions > * + * { margin-left: var(--space-3); }
 .gs-input::placeholder { color: var(--text-tertiary); }
 .gs-clear { border: 0; background: none; color: var(--text-tertiary); cursor: pointer; padding: 4px; border-radius: 50%; display: inline-flex; }
 .gs-clear:hover { background: var(--border-subtle); color: var(--text-primary); }
+.gs-ia-btn { border: 0; cursor: pointer; padding: 5px; border-radius: 50%; display: inline-flex; color: #fff; background: linear-gradient(135deg, #3045e6, #7a4fe0); transition: opacity .15s, transform .15s; }
+.gs-ia-btn:hover:not(:disabled) { transform: scale(1.08); }
+.gs-ia-btn:disabled { opacity: .35; cursor: default; }
 .gs-field kbd { font-family: var(--font-mono); font-size: 10px; border: 1px solid var(--border-default); border-radius: 4px; padding: 2px 6px; background: var(--surface); }
 .gs-panel {
   position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 400; max-height: min(70vh, 460px); overflow-y: auto;
