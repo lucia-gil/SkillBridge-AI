@@ -77,7 +77,10 @@ public class AuthService {
     /** Vigencia de un enlace de "olvide mi contraseña" (ver recuperar-password.html). */
     private static final long RECUPERACION_MINUTOS = 30;
 
-    private final ConcurrentHashMap<String, int[]> intentosFallidos = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Intentos> intentosFallidos = new ConcurrentHashMap<>();
+
+    /** Fallos de una IP y cuándo empezó su ventana (epoch en ms, siempre en long). */
+    private record Intentos(int cantidad, long inicio) {}
 
     public AuthService(UsuarioRepository usuarioRepository,
                         PerfilRepository perfilRepository,
@@ -165,25 +168,21 @@ public class AuthService {
     // ───────────────────────── Login ─────────────────────────
 
     public boolean estaBloqueada(String ip) {
-        int[] datos = intentosFallidos.get(ip);
+        Intentos datos = intentosFallidos.get(ip);
         if (datos == null) return false;
         long ahora = System.currentTimeMillis();
-        if (ahora - datos[1] > VENTANA_MS) {
-            intentosFallidos.remove(ip);
+        if (ahora - datos.inicio() > VENTANA_MS) {
+            intentosFallidos.remove(ip, datos);
             return false;
         }
-        return datos[0] >= MAX_INTENTOS;
+        return datos.cantidad() >= MAX_INTENTOS;
     }
 
     private void registrarIntentoFallido(String ip) {
         long ahora = System.currentTimeMillis();
-        intentosFallidos.compute(ip, (k, v) -> {
-            if (v == null || ahora - v[1] > VENTANA_MS) {
-                return new int[]{1, (int) (ahora / 1000) * 1000};
-            }
-            v[0]++;
-            return v;
-        });
+        intentosFallidos.compute(ip, (k, v) -> v == null || ahora - v.inicio() > VENTANA_MS
+                ? new Intentos(1, ahora)
+                : new Intentos(v.cantidad() + 1, v.inicio()));
     }
 
     private void limpiarIntentos(String ip) {
