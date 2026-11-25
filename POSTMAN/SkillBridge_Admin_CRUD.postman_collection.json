@@ -1,0 +1,4357 @@
+{
+  "info": {
+    "name": "SkillBridge AI | CRUD y permisos de administración",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Pruebas funcionales sobre una instalación local con MySQL desechable. Configura las variables con cuentas y recursos ficticios. El recorrido modifica y da de baja registros. Usa una base recién preparada para cada ejecución."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:38091"
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "admin_email",
+      "value": ""
+    },
+    {
+      "key": "pm_email",
+      "value": ""
+    },
+    {
+      "key": "member_email",
+      "value": ""
+    },
+    {
+      "key": "fixture_own",
+      "value": ""
+    },
+    {
+      "key": "fixture_other",
+      "value": ""
+    },
+    {
+      "key": "fixture_target_user",
+      "value": ""
+    },
+    {
+      "key": "fixture_pm_profile",
+      "value": ""
+    },
+    {
+      "key": "inicio",
+      "value": ""
+    },
+    {
+      "key": "fin",
+      "value": ""
+    },
+    {
+      "key": "apertura",
+      "value": ""
+    },
+    {
+      "key": "cierre",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const origin = pm.variables.get(\"base_url\");",
+          "if (!/^http:\\/\\/(?:127\\.0\\.0\\.1|localhost):[0-9]+$/.test(origin || \"\")) {",
+          "  pm.execution.skipRequest();",
+          "  throw new Error(\"Usa una instancia local desechable con un puerto explícito.\");",
+          "}",
+          "if (!pm.collectionVariables.get(\"run_id\")) { pm.collectionVariables.set(\"run_id\", Date.now().toString(36)); }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Acceso y panel administrativo",
+      "item": [
+        {
+          "name": "Un visitante abre el panel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/auth/login.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir formulario de acceso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/auth/login.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const fields = pm.response.text().match(/<(?:input|meta)\\b[^>]*>/gi) || [];",
+                  "const isToken = field => /\\bname=[\"']_csrf[\"']/.test(field);",
+                  "const token = fields.filter(isToken).map(field => field.match(/\\b(?:value|content)=[\"']([^\"']+)[\"']/)).find(Boolean);",
+                  "pm.test('Token de formulario presente', () => pm.expect(token).to.exist);",
+                  "if (token) pm.collectionVariables.set('csrf', token[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autenticar admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/auth/login.html",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "{{admin_email}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/usuarios.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Panel de administrador",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/inicio.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Administrador\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Administrador\")); });",
+                  "const fields = pm.response.text().match(/<(?:input|meta)\\b[^>]*>/gi) || [];",
+                  "const isToken = field => /\\bname=[\"']_csrf[\"']/.test(field);",
+                  "const token = fields.filter(isToken).map(field => field.match(/\\b(?:value|content)=[\"']([^\"']+)[\"']/)).find(Boolean);",
+                  "pm.test('Token de formulario presente', () => pm.expect(token).to.exist);",
+                  "if (token) pm.collectionVariables.set('csrf', token[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir usuarios",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Usuarios\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Usuarios\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir proyectos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Proyectos\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Proyectos\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir habilidades",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Habilidades\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Habilidades\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir catalogos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Catálogos\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Catálogos\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir cursos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Catálogo\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Catálogo\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir reportes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/reportes.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Reportes\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Reportes\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir auditoria",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/auditoria.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Auditoría\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Auditoría\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir configuracion",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/configuracion.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Configuración\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Configuración\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir pendientes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/pendientes.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Pendientes\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Pendientes\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Campana administrativa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/administrador/notificaciones/recientes"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"Contrato de campana\", () => { pm.expect(pm.response.json()).to.have.property('sinLeer'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Exportar auditoría CSV",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/auditoria/exportar?formato=csv"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"Descarga CSV\", () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Exportar informe PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/reportes/exportar?formato=pdf"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"Descarga PDF\", () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Categorías y habilidades",
+      "item": [
+        {
+          "name": "Crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/categorias",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "Categoria QA {{run_id}}"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Categoría de prueba"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer la categoría",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Categoria QA {{run_id}}\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Categoria QA {{run_id}}\")); });",
+                  "const tags = pm.response.text().match(/<button\\b[^>]*>/g) || [];",
+                  "const current = tags.find(tag => tag.includes(pm.variables.replaceIn(\"Categoria QA {{run_id}}\")) && tag.includes(\"data-id=\"));",
+                  "const match = current && current.match(/\\bdata-id=\"(\\d+)\"/);",
+                  "pm.test('Identificador del registro de prueba', () => pm.expect(match).to.exist);",
+                  "if (match) pm.collectionVariables.set('id_cat', match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/categorias/{{id_cat}}/editar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "Categoria QA {{run_id}} Editada"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Cambio QA"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar edición de categoría",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Categoria QA {{run_id}} Editada\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Categoria QA {{run_id}} Editada\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear habilidad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "Habilidad QA {{run_id}}"
+                },
+                {
+                  "key": "categoriaId",
+                  "value": "{{id_cat}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer habilidad por API",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/administrador/api/habilidades?q=Habilidad%20QA%20{{run_id}}"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const records = pm.response.json().contenido;",
+                  "const item = records.find(x => x.nombre === pm.variables.replaceIn('Habilidad QA {{run_id}}'));",
+                  "pm.test('Habilidad encontrada en JSON', () => pm.expect(item).to.exist);",
+                  "if (item) pm.collectionVariables.set('id_skill', item.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar habilidad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades/{{id_skill}}/editar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "Habilidad QA {{run_id}} Editada"
+                },
+                {
+                  "key": "categoriaId",
+                  "value": "{{id_cat}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer habilidad editada",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/administrador/api/habilidades?q=Habilidad%20QA%20{{run_id}}"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Habilidad QA {{run_id}} Editada\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Habilidad QA {{run_id}} Editada\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar habilidad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades/{{id_skill}}/eliminar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar borrado de habilidad",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/administrador/api/habilidades?q=Habilidad%20QA%20{{run_id}}"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"Consulta sin resultados tras borrar\", () => { pm.expect(pm.response.json().contenido).to.be.empty; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear habilidad de fusión origen",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "Fusion origen QA {{run_id}}"
+                },
+                {
+                  "key": "categoriaId",
+                  "value": "{{id_cat}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer habilidad de fusión origen",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/administrador/api/habilidades?q=Fusion%20origen%20QA%20{{run_id}}"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const list = pm.response.json().contenido;",
+                  "const exact = list.find(item => item.nombre === pm.variables.replaceIn(\"Fusion origen QA {{run_id}}\"));",
+                  "pm.test('Se encuentra la habilidad de prueba', () => pm.expect(exact).to.exist);",
+                  "if (exact) pm.collectionVariables.set('id_origen', exact.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear habilidad de fusión destino",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "Fusion destino QA {{run_id}}"
+                },
+                {
+                  "key": "categoriaId",
+                  "value": "{{id_cat}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer habilidad de fusión destino",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/administrador/api/habilidades?q=Fusion%20destino%20QA%20{{run_id}}"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const list = pm.response.json().contenido;",
+                  "const exact = list.find(item => item.nombre === pm.variables.replaceIn(\"Fusion destino QA {{run_id}}\"));",
+                  "pm.test('Se encuentra la habilidad de prueba', () => pm.expect(exact).to.exist);",
+                  "if (exact) pm.collectionVariables.set('id_destino', exact.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Previsualizar fusión de habilidades",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades/fusionar.html?origen={{id_origen}}&destino={{id_destino}}"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Fusionar habilidades\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Fusionar habilidades\")); });",
+                  "const tags = pm.response.text().match(/<input\\b[^>]*>/g) || [];",
+                  "const field = tags.find(tag => tag.includes('name=\"token\"'));",
+                  "const token = field && field.match(/\\bvalue=\"([^\"]+)\"/);",
+                  "pm.test('Se emite token de previsualización', () => pm.expect(token).to.exist);",
+                  "if (token) pm.collectionVariables.set('fusion_token',token[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar fusión de habilidades",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades/fusionar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "token",
+                  "value": "{{fusion_token}}"
+                },
+                {
+                  "key": "confirmar",
+                  "value": "true"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar que se consolidó la habilidad origen",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/administrador/api/habilidades?q=Fusion%20origen%20QA%20{{run_id}}"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"La habilidad origen ya no existe\", () => { pm.expect(pm.response.json().contenido).to.be.empty; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar que se conserva la habilidad destino",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/administrador/api/habilidades?q=Fusion%20destino%20QA%20{{run_id}}"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Fusion destino QA {{run_id}}\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Fusion destino QA {{run_id}}\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar habilidad destino de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades/{{id_destino}}/eliminar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/categorias/{{id_cat}}/eliminar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/habilidades.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar borrado de categoría",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo omite Categoria QA {{run_id}}\", () => { pm.expect(pm.response.text()).to.not.include(pm.variables.replaceIn(\"Categoria QA {{run_id}}\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rechazar escritura de API sin CSRF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/habilidades",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "No debe guardarse"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => { pm.response.to.have.status(403); });",
+                  "pm.test(\"El cuerpo contiene Token CSRF\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Token CSRF\")); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Catálogos técnicos",
+      "item": [
+        {
+          "name": "Crear tipo de notificacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos/notificacion",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "codigo",
+                  "value": "not{{run_id}}"
+                },
+                {
+                  "key": "nombre",
+                  "value": "QA notificacion {{run_id}}"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture Postman"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/catalogos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer tipo de notificacion",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene QA notificacion {{run_id}}\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"QA notificacion {{run_id}}\")); });",
+                  "const tags = pm.response.text().match(/<button\\b[^>]*>/g) || [];",
+                  "const current = tags.find(tag => tag.includes(pm.variables.replaceIn(\"QA notificacion {{run_id}}\")) && tag.includes(\"data-id=\"));",
+                  "const match = current && current.match(/\\bdata-id=\"(\\d+)\"/);",
+                  "pm.test('Identificador del registro de prueba', () => pm.expect(match).to.exist);",
+                  "if (match) pm.collectionVariables.set('id_notificacion', match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar tipo de notificacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos/notificacion/{{id_notificacion}}/editar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "QA notificacion {{run_id}} Editado"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture editada"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/catalogos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar edición de notificacion",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene QA notificacion {{run_id}} Editado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"QA notificacion {{run_id}} Editado\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar tipo de notificacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos/notificacion/{{id_notificacion}}/eliminar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/catalogos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar borrado de notificacion",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo omite QA notificacion {{run_id}}\", () => { pm.expect(pm.response.text()).to.not.include(pm.variables.replaceIn(\"QA notificacion {{run_id}}\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear tipo de evento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos/evento",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "codigo",
+                  "value": "eve{{run_id}}"
+                },
+                {
+                  "key": "nombre",
+                  "value": "QA evento {{run_id}}"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture Postman"
+                },
+                {
+                  "key": "color",
+                  "value": "#336699"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/catalogos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer tipo de evento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene QA evento {{run_id}}\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"QA evento {{run_id}}\")); });",
+                  "const tags = pm.response.text().match(/<button\\b[^>]*>/g) || [];",
+                  "const current = tags.find(tag => tag.includes(pm.variables.replaceIn(\"QA evento {{run_id}}\")) && tag.includes(\"data-id=\"));",
+                  "const match = current && current.match(/\\bdata-id=\"(\\d+)\"/);",
+                  "pm.test('Identificador del registro de prueba', () => pm.expect(match).to.exist);",
+                  "if (match) pm.collectionVariables.set('id_evento', match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar tipo de evento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos/evento/{{id_evento}}/editar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "QA evento {{run_id}} Editado"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture editada"
+                },
+                {
+                  "key": "color",
+                  "value": "#336699"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/catalogos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar edición de evento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene QA evento {{run_id}} Editado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"QA evento {{run_id}} Editado\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar tipo de evento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos/evento/{{id_evento}}/eliminar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/catalogos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar borrado de evento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo omite QA evento {{run_id}}\", () => { pm.expect(pm.response.text()).to.not.include(pm.variables.replaceIn(\"QA evento {{run_id}}\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear tipo de audiencia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos/audiencia",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "codigo",
+                  "value": "aud{{run_id}}"
+                },
+                {
+                  "key": "nombre",
+                  "value": "QA audiencia {{run_id}}"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture Postman"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/catalogos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer tipo de audiencia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene QA audiencia {{run_id}}\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"QA audiencia {{run_id}}\")); });",
+                  "const tags = pm.response.text().match(/<button\\b[^>]*>/g) || [];",
+                  "const current = tags.find(tag => tag.includes(pm.variables.replaceIn(\"QA audiencia {{run_id}}\")) && tag.includes(\"data-id=\"));",
+                  "const match = current && current.match(/\\bdata-id=\"(\\d+)\"/);",
+                  "pm.test('Identificador del registro de prueba', () => pm.expect(match).to.exist);",
+                  "if (match) pm.collectionVariables.set('id_audiencia', match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar tipo de audiencia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos/audiencia/{{id_audiencia}}/editar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "QA audiencia {{run_id}} Editado"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture editada"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/catalogos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar edición de audiencia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene QA audiencia {{run_id}} Editado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"QA audiencia {{run_id}} Editado\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar tipo de audiencia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos/audiencia/{{id_audiencia}}/eliminar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/catalogos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar borrado de audiencia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/catalogos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo omite QA audiencia {{run_id}}\", () => { pm.expect(pm.response.text()).to.not.include(pm.variables.replaceIn(\"QA audiencia {{run_id}}\")); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Cursos y ciclo de publicación",
+      "item": [
+        {
+          "name": "Crear curso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "titulo",
+                  "value": "Curso QA {{run_id}}"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture de curso"
+                },
+                {
+                  "key": "url",
+                  "value": "https://example.test/formacion"
+                },
+                {
+                  "key": "nivel",
+                  "value": "BASICO"
+                },
+                {
+                  "key": "duracionHoras",
+                  "value": "2"
+                },
+                {
+                  "key": "tipo",
+                  "value": "CURSO"
+                },
+                {
+                  "key": "idioma",
+                  "value": "ES"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/cursos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer curso recién creado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Curso QA {{run_id}}\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Curso QA {{run_id}}\")); });",
+                  "const raw = pm.response.text().match(/\\bcursos:\\s*(\\[[\\s\\S]*?\\]),\\s*misHabilidades:/);",
+                  "pm.test('Catálogo serializado en la página', () => pm.expect(raw).to.exist);",
+                  "const courses = raw ? JSON.parse(raw[1]) : [];",
+                  "const match = courses.find(course => course.titulo === pm.variables.replaceIn('Curso QA {{run_id}}'));",
+                  "pm.test('Curso persistido', () => pm.expect(match).to.exist);",
+                  "if (match) pm.collectionVariables.set('id_curso', match.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar curso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos/{{id_curso}}/editar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "titulo",
+                  "value": "Curso QA {{run_id}} Editado"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture de curso"
+                },
+                {
+                  "key": "url",
+                  "value": "https://example.test/formacion"
+                },
+                {
+                  "key": "nivel",
+                  "value": "BASICO"
+                },
+                {
+                  "key": "duracionHoras",
+                  "value": "3"
+                },
+                {
+                  "key": "tipo",
+                  "value": "CURSO"
+                },
+                {
+                  "key": "idioma",
+                  "value": "ES"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/cursos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar edición de curso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Curso QA {{run_id}} Editado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Curso QA {{run_id}} Editado\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar curso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos/{{id_curso}}/estado",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "estado",
+                  "value": "PUBLICADO"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/cursos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar estado publicado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Curso QA {{run_id}} Editado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Curso QA {{run_id}} Editado\")); });",
+                  "const raw = pm.response.text().match(/\\bcursos:\\s*(\\[[\\s\\S]*?\\]),\\s*misHabilidades:/);",
+                  "pm.test('Catálogo serializado en la página', () => pm.expect(raw).to.exist);",
+                  "const courses = raw ? JSON.parse(raw[1]) : [];",
+                  "const match = courses.find(course => course.titulo === pm.variables.replaceIn('Curso QA {{run_id}} Editado'));",
+                  "pm.test('Curso persistido', () => pm.expect(match).to.exist);",
+                  "if (match) pm.collectionVariables.set('id_curso', match.id);",
+                  "",
+                  "pm.test('El curso conserva el estado PUBLICADO', () => pm.expect(match && match.estado).to.eql('PUBLICADO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Destacar curso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos/{{id_curso}}/destacar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"Destacado activado\", () => { pm.expect(pm.response.json().destacado).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archivar curso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos/{{id_curso}}/estado",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "estado",
+                  "value": "ARCHIVADO"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/cursos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar archivo de curso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/cursos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Curso QA {{run_id}} Editado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Curso QA {{run_id}} Editado\")); });",
+                  "const raw = pm.response.text().match(/\\bcursos:\\s*(\\[[\\s\\S]*?\\]),\\s*misHabilidades:/);",
+                  "pm.test('Catálogo serializado en la página', () => pm.expect(raw).to.exist);",
+                  "const courses = raw ? JSON.parse(raw[1]) : [];",
+                  "const match = courses.find(course => course.titulo === pm.variables.replaceIn('Curso QA {{run_id}} Editado'));",
+                  "pm.test('Curso persistido', () => pm.expect(match).to.exist);",
+                  "if (match) pm.collectionVariables.set('id_curso', match.id);",
+                  "",
+                  "pm.test('El curso conserva el estado ARCHIVADO', () => pm.expect(match && match.estado).to.eql('ARCHIVADO'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 Proyectos y entregables",
+      "item": [
+        {
+          "name": "Crear proyecto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "Proyecto QA {{run_id}}"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture"
+                },
+                {
+                  "key": "fechaInicio",
+                  "value": "{{inicio}}"
+                },
+                {
+                  "key": "fechaFinEstimada",
+                  "value": "{{fin}}"
+                },
+                {
+                  "key": "colaboradoresRequeridos",
+                  "value": "2"
+                },
+                {
+                  "key": "pmPerfilId",
+                  "value": "{{fixture_pm_profile}}"
+                },
+                {
+                  "key": "dedicacion",
+                  "value": "10"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/proyectos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer proyecto y su ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Proyecto QA {{run_id}}\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Proyecto QA {{run_id}}\")); });",
+                  "const rows = pm.response.text().match(/<tr\\b[\\s\\S]*?<\\/tr>/gi) || [];",
+                  "const selected = rows.find(value => value.includes(pm.variables.replaceIn(\"data-filter-row=\\\"proyectos-admin\\\"\")) && value.includes(pm.variables.replaceIn(\"Proyecto QA {{run_id}}\")));",
+                  "pm.test('Estado del registro en el listado', () => pm.expect(selected).to.exist);",
+                  "",
+                  "    const match = selected && selected.match(/\\bdata-view-project=\"(\\d+)\"/);",
+                  "    pm.test('Identificador del registro de prueba', () => pm.expect(match).to.exist);",
+                  "    if (match) pm.collectionVariables.set('id_proyecto', match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Activar proyecto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos/{{id_proyecto}}/estado",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "estado",
+                  "value": "activo"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/proyectos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar estado activo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const rows = pm.response.text().match(/<tr\\b[\\s\\S]*?<\\/tr>/gi) || [];",
+                  "const selected = rows.find(value => value.includes(pm.variables.replaceIn(\"data-f-estado=\\\"activo\\\"\")) && value.includes(pm.variables.replaceIn(\"Proyecto QA {{run_id}}\")));",
+                  "pm.test('Estado del registro en el listado', () => pm.expect(selected).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear entregable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos/{{id_proyecto}}/entregables",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "titulo",
+                  "value": "Entregable QA {{run_id}}"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture de entregable"
+                },
+                {
+                  "key": "fechaApertura",
+                  "value": "{{apertura}}"
+                },
+                {
+                  "key": "fechaCierre",
+                  "value": "{{cierre}}"
+                },
+                {
+                  "key": "puntajeMaximo",
+                  "value": "20"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/entregables.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer lista de entregables",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos/{{id_proyecto}}/entregables.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Entregable QA {{run_id}}\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Entregable QA {{run_id}}\")); });",
+                  "const tags = pm.response.text().match(/<button\\b[^>]*>/g) || [];",
+                  "const current = tags.find(tag => tag.includes(pm.variables.replaceIn(\"Entregable QA {{run_id}}\")) && tag.includes(\"data-editar=\"));",
+                  "const match = current && current.match(/\\bdata-editar=\"(\\d+)\"/);",
+                  "pm.test('Identificador del registro de prueba', () => pm.expect(match).to.exist);",
+                  "if (match) pm.collectionVariables.set('id_ent', match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer detalle del entregable",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/entregables/{{id_ent}}.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Entregable QA {{run_id}}\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Entregable QA {{run_id}}\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar entregable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/entregables/{{id_ent}}/editar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "titulo",
+                  "value": "Entregable QA {{run_id}} Editado"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Fixture de entregable"
+                },
+                {
+                  "key": "fechaApertura",
+                  "value": "{{apertura}}"
+                },
+                {
+                  "key": "fechaCierre",
+                  "value": "{{cierre}}"
+                },
+                {
+                  "key": "puntajeMaximo",
+                  "value": "20"
+                },
+                {
+                  "key": "proyectoId",
+                  "value": "{{id_proyecto}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/entregables.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar edición de entregable",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos/{{id_proyecto}}/entregables.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Entregable QA {{run_id}} Editado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Entregable QA {{run_id}} Editado\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar entregable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/entregables/{{id_ent}}/cancelar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "proyectoId",
+                  "value": "{{id_proyecto}}"
+                },
+                {
+                  "key": "motivo",
+                  "value": "Cierre de prueba"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/entregables.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar cancelación de entregable",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos/{{id_proyecto}}/entregables.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const rows = pm.response.text().match(/<tr\\b[\\s\\S]*?<\\/tr>/gi) || [];",
+                  "const selected = rows.find(value => value.includes(pm.variables.replaceIn(\"data-f-estado=\\\"cancelado\\\"\")) && value.includes(pm.variables.replaceIn(\"Entregable QA {{run_id}} Editado\")));",
+                  "pm.test('Estado del registro en el listado', () => pm.expect(selected).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar proyecto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos/{{id_proyecto}}/estado",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "estado",
+                  "value": "cancelado"
+                },
+                {
+                  "key": "razonCancelacion",
+                  "value": "Cierre de prueba"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/proyectos.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar cancelación de proyecto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/proyectos.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const rows = pm.response.text().match(/<tr\\b[\\s\\S]*?<\\/tr>/gi) || [];",
+                  "const selected = rows.find(value => value.includes(pm.variables.replaceIn(\"data-f-estado=\\\"cancelado\\\"\")) && value.includes(pm.variables.replaceIn(\"Proyecto QA {{run_id}}\")));",
+                  "pm.test('Estado del registro en el listado', () => pm.expect(selected).to.exist);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 Usuarios e invitaciones",
+      "item": [
+        {
+          "name": "Leer la cuenta ficticia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene qa-account@example.test\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"qa-account@example.test\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cambiar rol de cuenta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios/{{fixture_target_user}}/rol",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "rol",
+                  "value": "resource_manager"
+                },
+                {
+                  "key": "motivo",
+                  "value": "Cambio QA"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/usuarios.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar nuevo rol",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const rows = pm.response.text().match(/<tr\\b[\\s\\S]*?<\\/tr>/gi) || [];",
+                  "const selected = rows.find(value => value.includes(pm.variables.replaceIn(\"data-f-rol=\\\"Resource Manager\\\"\")) && value.includes(pm.variables.replaceIn(\"qa-account@example.test\")));",
+                  "pm.test('Estado del registro en el listado', () => pm.expect(selected).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspender cuenta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios/{{fixture_target_user}}/estado",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "activar",
+                  "value": "false"
+                },
+                {
+                  "key": "motivo",
+                  "value": "Suspensión de prueba"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/usuarios.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar suspensión",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const rows = pm.response.text().match(/<tr\\b[\\s\\S]*?<\\/tr>/gi) || [];",
+                  "const selected = rows.find(value => value.includes(pm.variables.replaceIn(\"data-f-estado=\\\"Bloqueado\\\"\")) && value.includes(pm.variables.replaceIn(\"qa-account@example.test\")));",
+                  "pm.test('Estado del registro en el listado', () => pm.expect(selected).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar cuenta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios/{{fixture_target_user}}/estado",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "activar",
+                  "value": "true"
+                },
+                {
+                  "key": "motivo",
+                  "value": "Reactivación de prueba"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/usuarios.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar reactivación",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const rows = pm.response.text().match(/<tr\\b[\\s\\S]*?<\\/tr>/gi) || [];",
+                  "const selected = rows.find(value => value.includes(pm.variables.replaceIn(\"data-f-estado=\\\"Activo\\\"\")) && value.includes(pm.variables.replaceIn(\"qa-account@example.test\")));",
+                  "pm.test('Estado del registro en el listado', () => pm.expect(selected).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar cuenta ficticia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios/{{fixture_target_user}}/eliminar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "motivo",
+                  "value": "Limpieza QA"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/usuarios.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar baja de cuenta",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo omite qa-account@example.test\", () => { pm.expect(pm.response.text()).to.not.include(pm.variables.replaceIn(\"qa-account@example.test\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir importador de invitaciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios/importar.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene Invitaciones masivas\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Invitaciones masivas\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Descargar plantilla CSV de invitaciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios/importar/plantilla?formato=csv"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"Descarga CSV\", () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear invitación",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios/invitar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "correo",
+                  "value": "qa-invite-{{run_id}}@example.test"
+                },
+                {
+                  "key": "rol",
+                  "value": "miembro"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/usuarios.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer invitación pendiente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene qa-invite-{{run_id}}@example.test\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"qa-invite-{{run_id}}@example.test\")); });",
+                  "const tags = pm.response.text().match(/<button\\b[^>]*>/g) || [];",
+                  "const current = tags.find(tag => tag.includes(pm.variables.replaceIn(\"qa-invite-{{run_id}}@example.test\")) && tag.includes(\"data-id=\"));",
+                  "const match = current && current.match(/\\bdata-id=\"(\\d+)\"/);",
+                  "pm.test('Identificador del registro de prueba', () => pm.expect(match).to.exist);",
+                  "if (match) pm.collectionVariables.set('id_invite', match[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cambiar rol de invitación",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios/correos-autorizados/{{id_invite}}/rol",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "rol",
+                  "value": "resource_manager"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/usuarios.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar rol de invitación",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const rows = pm.response.text().match(/<tr\\b[\\s\\S]*?<\\/tr>/gi) || [];",
+                  "const selected = rows.find(value => value.includes(pm.variables.replaceIn(\"data-rol=\\\"resource_manager\\\"\")) && value.includes(pm.variables.replaceIn(\"qa-invite-{{run_id}}@example.test\")));",
+                  "pm.test('Estado del registro en el listado', () => pm.expect(selected).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revocar invitación",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios/correos-autorizados/{{id_invite}}/eliminar",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/usuarios.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar revocación",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo omite qa-invite-{{run_id}}@example.test\", () => { pm.expect(pm.response.text()).to.not.include(pm.variables.replaceIn(\"qa-invite-{{run_id}}@example.test\")); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 Configuración y vistas de error",
+      "item": [
+        {
+          "name": "Leer configuración actual",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/configuracion.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene limite_carga_colaborador\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"limite_carga_colaborador\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar configuración",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/administrador/configuracion",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "expiracion_sesion_minutos",
+                  "value": "45"
+                },
+                {
+                  "key": "limite_carga_colaborador",
+                  "value": "93"
+                },
+                {
+                  "key": "maximo_proyectos_simultaneos",
+                  "value": "5"
+                },
+                {
+                  "key": "auto_aprobar_asignaciones_menores_a",
+                  "value": "0"
+                },
+                {
+                  "key": "peso_matching_habilidades",
+                  "value": "50"
+                },
+                {
+                  "key": "peso_matching_experiencia",
+                  "value": "30"
+                },
+                {
+                  "key": "peso_matching_disponibilidad",
+                  "value": "20"
+                },
+                {
+                  "key": "foro_max_ediciones",
+                  "value": "4"
+                },
+                {
+                  "key": "dominio_correo_permitido",
+                  "value": "example.test"
+                },
+                {
+                  "key": "doble_factor_obligatorio_admin",
+                  "value": "false"
+                },
+                {
+                  "key": "asistente_ia_habilitado",
+                  "value": "false"
+                },
+                {
+                  "key": "resumenes_ia_foros_activos",
+                  "value": "false"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/administrador/configuracion.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar persistencia de la configuración",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/configuracion.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"Límite de carga configurado\", () => { pm.expect(pm.response.text()).to.match(/name=\"limite_carga_colaborador\"[^>]*value=\"93\"/i); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 diseñada en página administrativa inexistente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/qa-ruta-inexistente.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => { pm.response.to.have.status(404); });",
+                  "pm.test(\"El cuerpo contiene Página no encontrada\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Página no encontrada\")); });",
+                  "pm.test(\"El cuerpo contiene Volver al inicio\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Volver al inicio\")); });",
+                  "pm.test(\"El cuerpo contiene /css/auth-center.css\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"/css/auth-center.css\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404 diseñada en entregable inexistente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/entregables/900001.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => { pm.response.to.have.status(404); });",
+                  "pm.test(\"El cuerpo contiene Página no encontrada\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Página no encontrada\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cerrar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/auth/logout",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/auth/login.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir formulario de acceso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/auth/login.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const fields = pm.response.text().match(/<(?:input|meta)\\b[^>]*>/gi) || [];",
+                  "const isToken = field => /\\bname=[\"']_csrf[\"']/.test(field);",
+                  "const token = fields.filter(isToken).map(field => field.match(/\\b(?:value|content)=[\"']([^\"']+)[\"']/)).find(Boolean);",
+                  "pm.test('Token de formulario presente', () => pm.expect(token).to.exist);",
+                  "if (token) pm.collectionVariables.set('csrf', token[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autenticar pm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/auth/login.html",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "{{pm_email}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/project-manager/inicio.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PM lee proyecto asignado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/project-manager/proyectos/{{fixture_own}}/entregables.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "pm.test(\"El cuerpo contiene QA PM Propio\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"QA PM Propio\")); });",
+                  "const fields = pm.response.text().match(/<(?:input|meta)\\b[^>]*>/gi) || [];",
+                  "const isToken = field => /\\bname=[\"']_csrf[\"']/.test(field);",
+                  "const token = fields.filter(isToken).map(field => field.match(/\\b(?:value|content)=[\"']([^\"']+)[\"']/)).find(Boolean);",
+                  "pm.test('Token de formulario presente', () => pm.expect(token).to.exist);",
+                  "if (token) pm.collectionVariables.set('csrf', token[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PM recibe una vista 403 fuera de su proyecto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/project-manager/proyectos/{{fixture_other}}/entregables.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => { pm.response.to.have.status(403); });",
+                  "pm.test(\"El cuerpo contiene Acceso denegado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Acceso denegado\")); });",
+                  "pm.test(\"El cuerpo contiene Volver al inicio\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Volver al inicio\")); });",
+                  "pm.test(\"El cuerpo contiene /css/auth-center.css\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"/css/auth-center.css\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PM recibe 403 diseñada al ir al panel administrativo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => { pm.response.to.have.status(403); });",
+                  "pm.test(\"El cuerpo contiene Acceso denegado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Acceso denegado\")); });",
+                  "pm.test(\"El cuerpo contiene Volver al inicio\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Volver al inicio\")); });",
+                  "pm.test(\"El cuerpo contiene /css/auth-center.css\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"/css/auth-center.css\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PM recibe 403 JSON en API administrativa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/administrador/api/habilidades"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => { pm.response.to.have.status(403); });",
+                  "pm.test(\"JSON de error\", () => { pm.expect(pm.response.json().error).to.be.a(\"string\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cerrar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/auth/logout",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/auth/login.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir formulario de acceso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/auth/login.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => { pm.response.to.have.status(200); });",
+                  "const fields = pm.response.text().match(/<(?:input|meta)\\b[^>]*>/gi) || [];",
+                  "const isToken = field => /\\bname=[\"']_csrf[\"']/.test(field);",
+                  "const token = fields.filter(isToken).map(field => field.match(/\\b(?:value|content)=[\"']([^\"']+)[\"']/)).find(Boolean);",
+                  "pm.test('Token de formulario presente', () => pm.expect(token).to.exist);",
+                  "if (token) pm.collectionVariables.set('csrf', token[1]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autenticar member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": "{{base_url}}/auth/login.html",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "{{member_email}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 302\", () => { pm.response.to.have.status(302); });",
+                  "pm.test(\"Redirección esperada\", () => { pm.expect(pm.response.headers.get(\"Location\") || \"\").to.include(\"/colaborador/inicio.html\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Colaborador recibe 403 diseñada al ir al panel administrativo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/administrador/usuarios.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => { pm.response.to.have.status(403); });",
+                  "pm.test(\"El cuerpo contiene Acceso denegado\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Acceso denegado\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Colaborador recibe 404 diseñada en entregable no visible",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/colaborador/entregables/{{id_ent}}.html"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => { pm.response.to.have.status(404); });",
+                  "pm.test(\"El cuerpo contiene Página no encontrada\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Página no encontrada\")); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Colaborador recibe 404 diseñada en hilo no disponible",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": "{{base_url}}/colaborador/foro-hilo.html?id=900001"
+          },
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => { pm.response.to.have.status(404); });",
+                  "pm.test(\"El cuerpo contiene Página no encontrada\", () => { pm.expect(pm.response.text()).to.include(pm.variables.replaceIn(\"Página no encontrada\")); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
