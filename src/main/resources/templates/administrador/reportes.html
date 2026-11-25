@@ -21,14 +21,14 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content insight-page" id="page-content">
 
-      <section class="kpi-hero insight-hero">
+      <section class="kpi-hero">
         <div class="kpi-hero-head">
           <div>
-            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-bar-chart"></use></svg>INTELIGENCIA DE PLATAFORMA</span>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-bar-chart"></use></svg>Administración · Reportes</span>
             <h2 class="kpi-hero-title">Una visión clara de tu organización</h2>
             <p class="kpi-hero-sub">Talento, proyectos y capacidad. Tus indicadores, en un solo lugar.</p>
           </div>
-          <div class="admin-report-actions"><span class="insight-live">Datos actuales</span><a class="btn btn-secondary" data-export="Excel" href="/administrador/reportes/exportar?formato=xlsx">Exportar Excel</a><a class="btn btn-secondary" data-export="PDF" href="/administrador/reportes/exportar?formato=pdf">Exportar PDF</a></div>
+          <div class="admin-report-actions"><span class="insight-live">Datos actuales</span><a class="kpi-hero-action" data-export="Excel" href="/administrador/reportes/exportar?formato=xlsx">Exportar Excel</a><a class="kpi-hero-action" data-export="PDF" href="/administrador/reportes/exportar?formato=pdf">Exportar PDF</a></div>
         </div>
         <div class="kpi-hero-grid">
           <article class="hero-card">
@@ -131,5 +131,6 @@
 
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/admin-ui.js"></script><script src="/js/admin-visual.js"></script>
+<script src="/js/paginacion.js"></script>
 </body>
 </html>

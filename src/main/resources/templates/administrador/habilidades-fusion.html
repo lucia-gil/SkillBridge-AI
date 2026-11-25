@@ -12,6 +12,7 @@
   <link rel="stylesheet" th:href="@{/css/polish.css}">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <link rel="stylesheet" th:href="@{/css/admin-flujos.css}">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
 </head>
 <body class="admin-app">
 <div class="app-shell">
@@ -24,13 +25,15 @@
         <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-chevron-right"></use></svg>
         <span>Fusionar habilidades</span>
       </nav>
-      <header class="flow-hero">
-        <span class="flow-emblem"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-shuffle"></use></svg></span>
-        <div>
-          <h1>Fusionar habilidades</h1>
-          <p>Consolida dos nombres del catálogo y traslada sus referencias a la habilidad que conservarás.</p>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-shuffle"></use></svg>Administración · Talento</span>
+            <h2 class="kpi-hero-title">Fusionar habilidades</h2>
+            <p class="kpi-hero-sub">Consolida dos nombres del catálogo y traslada sus referencias a la habilidad que conservarás.</p>
+          </div>
         </div>
-      </header>
+      </section>
       <p class="callout danger" role="alert" th:if="${error}" th:text="${error}"></p>
 
       <section class="card flow-card flow-stack" aria-labelledby="fusion-seleccion">

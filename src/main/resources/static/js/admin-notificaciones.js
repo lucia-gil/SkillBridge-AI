@@ -170,8 +170,17 @@
     rows.forEach((row) => { row.hidden = !visible.has(row); });
     pager.hidden = !matches.length;
     empty.hidden = matches.length > 0;
-    count.textContent = matches.length ? `${start + 1}–${start + visible.size} de ${matches.length} avisos` : "";
-    pageLabel.textContent = `Página ${page + 1} de ${pages}`;
+    count.textContent = matches.length ? `Mostrando ${visible.size} de ${matches.length} avisos` : "";
+    // Botones numerados, como en el resto de tablas del sitio.
+    pageLabel.replaceChildren(...Array.from({ length: pages }, (_, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "page-btn page-num" + (i === page ? " active" : "");
+      b.textContent = String(i + 1);
+      if (i === page) b.setAttribute("aria-current", "page");
+      b.addEventListener("click", () => { page = i; render(); });
+      return b;
+    }));
     previous.disabled = page === 0;
     next.disabled = page === pages - 1;
   }

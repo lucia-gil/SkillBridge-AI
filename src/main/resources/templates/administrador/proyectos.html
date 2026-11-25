@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/css/proyecto-form.css">
 <link rel="stylesheet" th:href="@{/css/admin-proyecto-documento.css}">
 <link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/kpi-hero.css">
 </head>
 <body th:attr="data-carga-pm=${cargaPm}" class="admin-app">
 <div class="app-shell">
@@ -20,6 +21,39 @@
   <div class="main-content">
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content" id="page-content">
+
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-folder"></use></svg>Administración · Portafolio</span>
+            <h2 class="kpi-hero-title">Proyectos de la organización</h2>
+            <p class="kpi-hero-sub">Vista global con su líder, equipo, avance y estado. Crea proyectos y revisa el detalle de cada uno.</p>
+          </div>
+          <a class="kpi-hero-action" th:href="@{/administrador/pendientes.html}"><svg class="icon"><use href="/img/icons.svg#icon-calendar"></use></svg><span>Ver pendientes</span></a>
+        </div>
+        <div class="kpi-hero-grid">
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg></span><span class="hero-card-label">Proyectos</span></div>
+            <div class="hero-card-value" th:text="${proyectos.size()}">0</div>
+            <p class="hero-card-meta">registrados en total</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></span><span class="hero-card-label">Activos</span></div>
+            <div class="hero-card-value" th:text="${proyectos.?[estadoCrudo == 'activo'].size()}">0</div>
+            <p class="hero-card-meta">en ejecución</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-calendar"></use></svg></span><span class="hero-card-label">En planificación</span></div>
+            <div class="hero-card-value" th:text="${proyectos.?[estadoCrudo == 'planificacion'].size()}">0</div>
+            <p class="hero-card-meta">por iniciar</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span><span class="hero-card-label">En pausa</span></div>
+            <div class="hero-card-value" th:text="${proyectos.?[estadoCrudo == 'en_pausa'].size()}">0</div>
+            <p class="hero-card-meta">detenidos por ahora</p>
+          </article>
+        </div>
+      </section>
 
       <section class="card">
         <div class="table-toolbar">

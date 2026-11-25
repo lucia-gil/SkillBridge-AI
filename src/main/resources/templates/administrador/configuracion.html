@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/css/polish.css">
 <link rel="stylesheet" href="/css/admin.css">
 <link rel="stylesheet" th:href="@{/css/admin-configuracion.css}">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
 </head>
 <body class="admin-app">
 <div class="app-shell">
@@ -20,11 +21,16 @@
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content cfg-page" id="page-content">
 
-      <header class="cfg-hero">
-        <span class="cfg-hero-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-sliders"></use></svg></span>
-        <div><h1>Configuración</h1><p>Administra el acceso, las asignaciones y las preferencias de la plataforma.</p></div>
-        <a class="cfg-hero-link" th:href="@{/administrador/auditoria.html}">Ver auditoría <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-arrow-right"></use></svg></a>
-      </header>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-sliders"></use></svg>Administración · Plataforma</span>
+            <h2 class="kpi-hero-title">Configuración</h2>
+            <p class="kpi-hero-sub">Administra el acceso, las asignaciones y las preferencias de la plataforma.</p>
+          </div>
+          <a class="kpi-hero-action" th:href="@{/administrador/auditoria.html}"><svg class="icon"><use href="/img/icons.svg#icon-shield"></use></svg><span>Ver auditoría</span></a>
+        </div>
+      </section>
       <div class="cfg-feedback" th:if="${exito}" role="status" th:text="${exito}"></div>
       <div class="cfg-feedback cfg-feedback-error" th:if="${error}" role="alert" th:text="${error}"></div>
 

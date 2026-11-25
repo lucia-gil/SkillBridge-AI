@@ -77,8 +77,10 @@
   }
   var states=Array.from(page.querySelectorAll('[data-project-state]')), total=states.reduce(function(n,e){return n+Math.max(0,Number(e.dataset.count)||0);},0);
   if(total){
-    var palette=['#218e88','#5476c5','#c79a4b','#8e79b3','#be7381'], offset=0;
-    var slices=states.map(function(e,i){e.style.setProperty('--state-color',palette[i%palette.length]);var start=offset;offset+=(Math.max(0,Number(e.dataset.count)||0)/total)*100;return palette[i%palette.length]+' '+start+'% '+offset+'%';});
+    // Cada estado con su color semántico del sitio (el mismo de su etiqueta).
+    var colores={'activo':'var(--green-fg)','planificación':'var(--violet-fg)','planificacion':'var(--violet-fg)','en pausa':'var(--amber-fg)','completado':'var(--blue-fg)','cancelado':'var(--red-fg)'};
+    var respaldo=['var(--blue-fg)','var(--green-fg)','var(--amber-fg)','var(--violet-fg)','var(--red-fg)'], offset=0;
+    var slices=states.map(function(e,i){var c=colores[(e.dataset.label||'').trim().toLowerCase()]||respaldo[i%respaldo.length];e.style.setProperty('--state-color',c);var start=offset;offset+=(Math.max(0,Number(e.dataset.count)||0)/total)*100;return c+' '+start+'% '+offset+'%';});
     var ring=page.querySelector('.insight-donut');ring.style.background='conic-gradient('+slices.join(',')+')';ring.setAttribute('aria-label',states.map(function(e){return e.dataset.label+': '+e.dataset.count;}).join(', '));
     page.querySelector('[data-project-total]').textContent=total;page.querySelector('.insight-donut-wrap').hidden=false;
   }

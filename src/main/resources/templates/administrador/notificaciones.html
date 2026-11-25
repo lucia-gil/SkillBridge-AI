@@ -18,19 +18,27 @@
   <div class="main-content">
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main id="page-content" class="page-content an-center" data-an-center>
-      <header class="an-hero">
-        <div class="an-hero-copy">
-          <span class="an-hero-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-bell"></use></svg></span>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
           <div>
-            <h1>Notificaciones</h1>
-            <p>Revisa los avisos de tu cuenta y los cambios de acceso en la plataforma.</p>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-bell"></use></svg>Administración · Bandeja</span>
+            <h2 class="kpi-hero-title">Notificaciones</h2>
+            <p class="kpi-hero-sub">Revisa los avisos de tu cuenta y los cambios de acceso en la plataforma.</p>
           </div>
         </div>
-        <div class="an-metrics" aria-label="Resumen de la bandeja">
-          <div><strong th:text="${noLeidas}">0</strong><span>Sin leer</span></div>
-          <div><strong th:text="${notificaciones.size() - noLeidas}">0</strong><span>Leídas</span></div>
+        <div class="kpi-hero-grid kpi-hero-grid-2" aria-label="Resumen de la bandeja">
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-bell"></use></svg></span><span class="hero-card-label">Sin leer</span></div>
+            <div class="hero-card-value" th:text="${noLeidas}">0</div>
+            <p class="hero-card-meta">avisos por revisar</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span><span class="hero-card-label">Leídas</span></div>
+            <div class="hero-card-value" th:text="${notificaciones.size() - noLeidas}">0</div>
+            <p class="hero-card-meta">ya revisados</p>
+          </article>
         </div>
-      </header>
+      </section>
 
       <div th:if="${exito}" class="an-feedback" role="status" th:text="${exito}"></div>
       <div th:if="${error}" class="an-feedback an-feedback-error" role="alert" th:text="${error}"></div>
@@ -118,8 +126,8 @@
           </div>
           <div class="an-pager" data-an-pager hidden>
             <span data-an-count role="status"></span>
-            <div><button type="button" class="page-btn" data-an-prev aria-label="Página anterior">‹</button>
-              <span data-an-page></span>
+            <div class="pagination"><button type="button" class="page-btn" data-an-prev aria-label="Página anterior">‹</button>
+              <span class="pagination" data-an-page></span>
               <button type="button" class="page-btn" data-an-next aria-label="Página siguiente">›</button></div>
           </div>
         </section>

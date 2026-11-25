@@ -389,7 +389,8 @@
 .admin-app .card-header,.admin-app .table-toolbar{gap:1rem;flex-wrap:wrap}
 .admin-app .data-table td{padding:.75rem 1rem;vertical-align:middle}
 .admin-app .data-table th{white-space:nowrap}
-.admin-app .table-scroll{height:auto;max-height:min(65vh,720px);overflow:auto}
+/* Las tablas crecen con su contenido y se paginan, como en los demás roles (sin scroll interno). */
+.admin-app .table-scroll{height:auto;max-height:none;overflow-x:auto;overflow-y:visible}
 .admin-app .card-pad{padding:clamp(1rem,2vw,1.5rem)}
 .admin-app .btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-height:38px;white-space:normal;text-align:center}
 .admin-app .btn:focus-visible,.admin-app button:focus-visible,.admin-app a:focus-visible{outline:3px solid var(--blue-accent);outline-offset:2px}
@@ -412,7 +413,6 @@
   min-height: 0;
 }
 
-.admin-app .table-scroll { max-height: min(58vh, 680px); }
 .admin-app .data-table td { padding: .75rem 1rem; }
 .admin-app .admin-low-data .table-scroll { max-height: none; }
 
@@ -604,7 +604,7 @@
 .admin-skills-list strong { font-variant-numeric: tabular-nums; }
 .admin-skills-track { height: 12px; border-radius: 999px; background: var(--border-subtle); overflow: hidden; }
 .admin-skills-track span { display: block; width: var(--share); height: 100%; border-radius: inherit; background: linear-gradient(90deg, #274a9e, #5485e5); }
-.admin-skills-list li:first-child .admin-skills-track span { background: linear-gradient(90deg, #1b4886, #248e96); }
+/* La primera barra ya no cambia a verde azulado: todas usan el azul del sitio. */
 
 .admin-progress { --progress-fill: #4777ce; display: flex; align-items: center; gap: 9px; min-width: 85px; }
 .admin-progress[data-tone="complete"], .admin-progress[data-tone="available"] { --progress-fill: #25867f; }

@@ -12,6 +12,7 @@
   <link rel="stylesheet" th:href="@{/css/polish.css}">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <link rel="stylesheet" th:href="@{/css/admin-flujos.css}">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
 </head>
 <body class="admin-app">
 <div class="app-shell">
@@ -19,14 +20,16 @@
   <div class="main-content">
     <div th:replace="~{fragments/topbar :: topbar}"></div>
     <main class="page-content admin-workflow" id="page-content">
-      <header class="flow-hero">
-        <span class="flow-emblem"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-calendar"></use></svg></span>
-        <div>
-          <h1>Pendientes de proyectos</h1>
-          <p>Revisa proyectos sin responsable, entregables atrasados y asignaciones que están por terminar.</p>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-calendar"></use></svg>Administración · Seguimiento</span>
+            <h2 class="kpi-hero-title">Pendientes de proyectos</h2>
+            <p class="kpi-hero-sub">Revisa proyectos sin responsable, entregables atrasados y asignaciones que están por terminar.</p>
+          </div>
+          <a class="kpi-hero-action" th:href="@{/administrador/proyectos.html}"><svg class="icon"><use href="/img/icons.svg#icon-folder"></use></svg><span>Ver proyectos</span></a>
         </div>
-        <a class="btn btn-secondary" th:href="@{/administrador/proyectos.html}">Ver proyectos</a>
-      </header>
+      </section>
 
       <nav class="flow-nav" aria-label="Tipos de pendientes">
         <a th:each="resumen : ${bandeja.resumen()}"

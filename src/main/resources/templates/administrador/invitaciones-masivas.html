@@ -12,6 +12,7 @@
   <link rel="stylesheet" th:href="@{/css/polish.css}">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <link rel="stylesheet" th:href="@{/css/admin-flujos.css}">
+  <link rel="stylesheet" href="/css/kpi-hero.css">
 </head>
 <body class="admin-app">
 <div class="app-shell">
@@ -25,13 +26,15 @@
         <span>Invitaciones masivas</span>
       </nav>
 
-      <header class="flow-hero">
-        <span class="flow-emblem"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-users"></use></svg></span>
-        <div>
-          <h1>Invitaciones masivas</h1>
-          <p>Autoriza varios correos para el registro y asigna el rol de cada cuenta.</p>
+      <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-users"></use></svg>Administración · Accesos</span>
+            <h2 class="kpi-hero-title">Invitaciones masivas</h2>
+            <p class="kpi-hero-sub">Autoriza varios correos para el registro y asigna el rol de cada cuenta.</p>
+          </div>
         </div>
-      </header>
+      </section>
 
       <p class="callout danger" role="alert" th:if="${error}" th:text="${error}"></p>
 

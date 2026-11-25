@@ -873,6 +873,10 @@ a.cell-link:hover { color: var(--blue-link); text-decoration: none; }
 .page-btn { width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border-default); background: var(--surface); font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-secondary); cursor: pointer; }
 .page-btn:hover { border-color: var(--border-strong); }
 .page-btn.active { background: var(--navy-700); border-color: var(--navy-700); color: white; }
+/* Paginación con enlaces (páginas del servidor, p. ej. Auditoría): mismo aspecto que los botones. */
+a.page-btn, span.page-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+a.page-btn:hover { text-decoration: none; color: var(--text-primary); }
+.page-btn.is-disabled { opacity: .45; cursor: default; }
 
 /* Match score ring (AI Talent Matching) */
 .match-ring { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }

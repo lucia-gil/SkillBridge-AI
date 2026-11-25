@@ -5,8 +5,37 @@
 <link rel="stylesheet" href="/css/admin-visual.css">
 </head><body class="admin-app"><div class="app-shell"><div th:replace="~{fragments/sidebar :: sidebar}"></div><div class="main-content"><div th:replace="~{fragments/topbar :: topbar}"></div>
 <main class="page-content admin-audit-page insight-page">
-  <header class="admin-audit-intro insight-audit-hero"><div><span class="admin-section-caption">CENTRO DE TRAZABILIDAD</span><h1>Cada acción, en contexto.</h1><p>Explora la actividad de la plataforma y encuentra el detalle detrás de cada cambio.</p></div></header>
-  <section class="admin-audit-summary insight-audit-kpis" aria-label="Resumen de los resultados"><div><strong th:text="${pagina.totalElements}">0</strong><span>Eventos encontrados</span></div><div data-tone="red"><strong th:text="${altaCount}">0</strong><span>Severidad alta en el filtro</span></div><div data-tone="amber"><strong th:text="${mediaCount}">0</strong><span>Severidad media en el filtro</span></div><div data-tone="blue"><strong th:text="${infoCount}">0</strong><span>Informativos en el filtro</span></div></section>
+  <section class="kpi-hero">
+        <div class="kpi-hero-head">
+          <div>
+            <span class="kpi-hero-eyebrow"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-shield"></use></svg>Administración · Trazabilidad</span>
+            <h2 class="kpi-hero-title">Cada acción, en contexto</h2>
+            <p class="kpi-hero-sub">Explora la actividad de la plataforma y encuentra el detalle detrás de cada cambio.</p>
+          </div>
+        </div>
+        <div class="kpi-hero-grid" aria-label="Resumen de los resultados">
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-blue"><svg class="icon"><use href="/img/icons.svg#icon-activity"></use></svg></span><span class="hero-card-label">Eventos encontrados</span></div>
+            <div class="hero-card-value" th:text="${pagina.totalElements}">0</div>
+            <p class="hero-card-meta">con los filtros actuales</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span><span class="hero-card-label">Severidad alta</span></div>
+            <div class="hero-card-value" th:text="${altaCount}">0</div>
+            <p class="hero-card-meta">en el filtro</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-alert-circle"></use></svg></span><span class="hero-card-label">Severidad media</span></div>
+            <div class="hero-card-value" th:text="${mediaCount}">0</div>
+            <p class="hero-card-meta">en el filtro</p>
+          </article>
+          <article class="hero-card">
+            <div class="hero-card-top"><span class="hero-card-icon tone-violet"><svg class="icon"><use href="/img/icons.svg#icon-info"></use></svg></span><span class="hero-card-label">Informativos</span></div>
+            <div class="hero-card-value" th:text="${infoCount}">0</div>
+            <p class="hero-card-meta">en el filtro</p>
+          </article>
+        </div>
+      </section>
   <section class="card admin-audit-main insight-events" data-admin-compact><div class="admin-audit-section-head"><div><h2>Registro de eventos</h2><p>Consulta los eventos y descarga todas las coincidencias con su detalle y los valores del cambio.</p></div></div>
     <form novalidate class="admin-audit-filters" method="get" th:action="@{/administrador/auditoria.html}">
       <label>Desde<input class="input" type="date" name="desde" th:value="${desde}"></label><label>Hasta<input class="input" type="date" name="hasta" th:value="${hasta}"></label>
@@ -33,7 +62,15 @@
       <tr th:each="a : ${eventos}" th:attr="data-severity=${a.severidadCrudo}"><td class="mono" th:text="${a.fechaLabel}">Fecha</td><td th:text="${a.usuarioLabel}">Usuario</td><td><strong th:text="${a.accion}">Acción</strong></td><td class="admin-audit-detail"><span th:text="${a.detalle}">Detalle</span></td><td th:text="${a.tipoLabel}">Tipo</td><td><span class="badge" th:classappend="${a.severidadBadgeClass}" th:text="${a.severidadCrudo}">Info</span></td><td><button type="button" class="insight-detail-btn" aria-label="Ver detalle del evento">Ver detalle ↗</button></td></tr>
     </tbody></table></div>
     <div class="admin-audit-footer"><span th:text="'Mostrando ' + ${eventos.size()} + ' de ' + ${pagina.totalElements} + ' eventos'">0 eventos</span>
-      <nav class="admin-audit-pagination" th:if="${pagina.totalPages > 1}" aria-label="Páginas de auditoría"><a th:if="${pagina.hasPrevious()}" th:href="@{/administrador/auditoria.html(desde=${desde},hasta=${hasta},usuario=${usuarioFiltro},accion=${accionFiltro},page=${pagina.number - 1})}">← Anterior</a><span th:text="'Página ' + ${pagina.number + 1} + ' de ' + ${pagina.totalPages}">Página 1</span><a th:if="${pagina.hasNext()}" th:href="@{/administrador/auditoria.html(desde=${desde},hasta=${hasta},usuario=${usuarioFiltro},accion=${accionFiltro},page=${pagina.number + 1})}">Siguiente →</a></nav>
+      <nav class="pagination" th:if="${pagina.totalPages > 1}" aria-label="Páginas de auditoría"
+           th:with="desdePag=${T(java.lang.Math).max(0, pagina.number - 2)},hastaPag=${T(java.lang.Math).min(pagina.totalPages - 1, pagina.number + 2)}">
+        <a class="page-btn" th:if="${pagina.hasPrevious()}" th:href="@{/administrador/auditoria.html(desde=${desde},hasta=${hasta},usuario=${usuarioFiltro},accion=${accionFiltro},page=${pagina.number - 1})}" aria-label="Página anterior">‹</a>
+        <span class="page-btn is-disabled" th:unless="${pagina.hasPrevious()}" aria-hidden="true">‹</span>
+        <a th:each="n : ${#numbers.sequence(desdePag, hastaPag)}" class="page-btn page-num" th:classappend="${n == pagina.number} ? 'active'"
+           th:href="@{/administrador/auditoria.html(desde=${desde},hasta=${hasta},usuario=${usuarioFiltro},accion=${accionFiltro},page=${n})}" th:text="${n + 1}" th:attr="aria-current=${n == pagina.number} ? 'page' : null">1</a>
+        <a class="page-btn" th:if="${pagina.hasNext()}" th:href="@{/administrador/auditoria.html(desde=${desde},hasta=${hasta},usuario=${usuarioFiltro},accion=${accionFiltro},page=${pagina.number + 1})}" aria-label="Página siguiente">›</a>
+        <span class="page-btn is-disabled" th:unless="${pagina.hasNext()}" aria-hidden="true">›</span>
+      </nav>
     </div>
   </section>
   <section class="admin-audit-bottom insight-audit-bottom"><div class="card card-pad"><div class="admin-audit-section-head"><div><span class="admin-section-caption">PARTICIPACIÓN</span><h2>Usuarios con más eventos</h2><p>Ranking global de todos los eventos.</p></div></div><p th:if="${topUsuarios.isEmpty()}" class="admin-home-empty">Todavía no hay actividad de usuarios.</p><div th:each="u : ${topUsuarios}" class="admin-audit-user"><span class="avatar avatar-sm" th:text="${u.iniciales}">AS</span><strong th:text="${u.nombre}">Usuario</strong><span th:text="${u.eventos} + ' eventos'">0 eventos</span></div></div>

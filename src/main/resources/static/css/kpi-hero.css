@@ -76,6 +76,8 @@
 .kpi-hero-action:hover { transform: translateY(-1px); box-shadow: 0 10px 20px -8px rgba(0, 0, 0, .4); text-decoration: none; color: var(--hero-blue-1); }
 .kpi-hero-action .icon { width: 16px; height: 16px; }
 
+/* Encabezado sin tarjetas (solo título y acción): sin espacio sobrante abajo. */
+.kpi-hero-head:last-child { margin-bottom: 0; }
 .kpi-hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); }
 
 /* ── Tarjeta ── */
