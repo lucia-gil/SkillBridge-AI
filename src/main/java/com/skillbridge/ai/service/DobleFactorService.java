@@ -44,6 +44,16 @@ public class DobleFactorService {
         return Map.of("secreto", s, "uri", Totp.uri(EMISOR, correo, s));
     }
 
+    /**
+     * La clave generada que aún no se activó (para volver a mostrar el QR si
+     * el usuario recarga o se equivoca de código), o vacío si no hay.
+     */
+    public java.util.Optional<Map<String, String>> configuracionPendiente(Long usuarioId, String correo) {
+        if (usuarioId == null || estaActivo(usuarioId)) return java.util.Optional.empty();
+        String s = secreto(usuarioId, false);
+        return s == null ? java.util.Optional.empty() : java.util.Optional.of(Map.of("secreto", s, "uri", Totp.uri(EMISOR, correo, s)));
+    }
+
     public boolean activar(Long usuarioId, String codigo) {
         String s = secreto(usuarioId, false);
         long paso = Totp.pasoVerificado(s, codigo, ahora());

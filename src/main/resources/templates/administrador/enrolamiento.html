@@ -1,11 +1,211 @@
-<!doctype html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><title>Activar doble factor</title>
-<link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/components.css"></head>
-<body><main class="card card-pad"><h1>Configura el doble factor para entrar al panel</h1>
-<p>Genera una clave y agrégala a tu autenticador como una cuenta basada en tiempo.</p>
-<form method="post" th:action="@{/administrador/enrolamiento/iniciar}"><button>Generar clave</button></form>
-<p th:if="${secreto}" th:text="${secreto}"></p><p role="alert" th:text="${error}"></p>
-<form method="post" th:action="@{/administrador/enrolamiento/activar}"><label>Código de seis dígitos
-<input name="codigo" required pattern="[0-9]{6}" autocomplete="one-time-code" inputmode="numeric"></label>
-<button>Verificar y entrar</button></form>
-<form method="post" th:action="@{/auth/logout}"><button>Cerrar sesión</button></form></main></body></html>
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activa la verificación en dos pasos · SkillBridge AI</title>
+  <link rel="icon" type="image/png" href="/img/logo-icon.png">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/polish.css">
+  <link rel="stylesheet" href="/css/auth-center.css">
+
+  <!--
+    Enrolamiento obligatorio del doble factor para el Administrador
+    (SesionVigenteFilter lo trae aquí hasta que lo active). Misma tarjeta
+    centrada que auth/verificar-2fa.html, con los tres pasos numerados.
+    El QR se dibuja en el navegador con vendor-qrcode.js (sin servicios
+    externos), igual que en "Mi cuenta".
+  -->
+  <style>
+    .login-page {
+      min-height: 100vh;
+      background: var(--canvas);
+      background-image:
+              radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 60%),
+              radial-gradient(circle at 1px 1px, rgba(22,33,58,0.06) 1px, transparent 0);
+      background-size: 100% 100%, 22px 22px;
+      background-position: center -10%, 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-6);
+    }
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-3);
+      padding: var(--space-8);
+      width: 100%;
+      max-width: 480px;
+    }
+    .auth-card-header { text-align: center; margin-bottom: var(--space-5); }
+    .auth-card-header img { height: 34px; width: auto; margin: 0 auto; display: block; }
+    .auth-card-title, .auth-card-sub { text-align: center; }
+    .auth-card-sub { margin-bottom: var(--space-6); }
+
+    .enr-badge {
+      display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+      width: fit-content; margin: 0 auto var(--space-3);
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--violet-bg); border: 1px solid var(--violet-border); color: var(--violet-fg);
+      font-size: var(--fs-xs); font-weight: var(--fw-semibold);
+    }
+    .enr-badge .icon { width: 14px; height: 14px; }
+
+    .enr-pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-5); }
+    .enr-paso { display: grid; grid-template-columns: 28px 1fr; gap: var(--space-3); }
+    .enr-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: var(--fs-sm); font-weight: var(--fw-semibold);
+      background: var(--violet-bg); color: var(--violet-fg); border: 1px solid var(--violet-border);
+    }
+    .enr-paso.is-hecho .enr-num { background: var(--green-bg); color: var(--green-fg); border-color: var(--green-border); }
+    .enr-paso h3 { font-size: var(--fs-sm); font-weight: var(--fw-semibold); margin: 3px 0 var(--space-1); color: var(--text-primary); }
+    .enr-paso p { font-size: var(--fs-sm); color: var(--text-secondary); margin: 0; }
+
+    .enr-qr-box {
+      margin-top: var(--space-3); padding: var(--space-4);
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface-2, var(--canvas));
+      display: grid; justify-items: center; gap: var(--space-3);
+    }
+    .enr-qr { width: 168px; height: 168px; padding: 10px; background: #fff; border-radius: var(--radius-md); }
+    .enr-qr svg { width: 100%; height: 100%; display: block; }
+    .enr-clave-label { font-size: var(--fs-xs); color: var(--text-tertiary); text-align: center; }
+    .enr-clave {
+      display: flex; align-items: center; gap: var(--space-2); width: 100%;
+      padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+      border: 1px dashed var(--border-default); border-radius: var(--radius-md); background: var(--surface);
+    }
+    .enr-clave code { flex: 1; font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: .06em; word-break: break-all; color: var(--text-primary); }
+
+    .enr-aviso { margin-top: var(--space-2); font-size: var(--fs-xs); color: var(--text-tertiary); }
+
+    .enr-error {
+      background: var(--red-bg); border: 1px solid var(--red-border); color: var(--red-fg-strong);
+      padding: 10px 14px; border-radius: 8px; margin-bottom: var(--space-5); font-size: var(--fs-sm);
+    }
+    .enr-otp { width: 100%; max-width: none; text-align: center; font-family: var(--font-mono); font-size: var(--fs-lg); letter-spacing: .4em; }
+    .enr-otp:focus { border-color: #8B5CF6; box-shadow: 0 0 0 4px rgba(139,92,246,0.16); outline: none; }
+
+    .auth-card .btn-primary {
+      background: linear-gradient(135deg, #8B5CF6 0%, #22D3EE 100%);
+      border: none;
+      box-shadow: 0 4px 14px rgba(139,92,246,0.28);
+    }
+    .auth-card .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+
+    .enr-salir { display: flex; justify-content: center; margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border-subtle); }
+    .enr-salir button {
+      display: inline-flex; align-items: center; gap: var(--space-2);
+      background: none; border: 0; cursor: pointer; font: inherit;
+      font-size: var(--fs-sm); color: var(--text-secondary);
+    }
+    .enr-salir button:hover { color: var(--text-primary); }
+    .enr-salir .icon { width: 16px; height: 16px; }
+
+    @media (max-width: 480px) { .auth-card { padding: var(--space-6); } }
+  </style>
+</head>
+<body>
+<div class="login-page">
+  <div class="auth-card card">
+    <div class="auth-card-header"><img src="/img/logo-horizontal-tight.png" alt="SkillBridge AI"></div>
+    <div class="enr-badge"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-shield-check"></use></svg>Obligatorio para Administradores</div>
+    <h2 class="auth-card-title">Activa la verificación en dos pasos</h2>
+    <p class="auth-card-sub">Además de tu contraseña, al entrar se te pedirá un código de tu celular. Solo se configura una vez.</p>
+
+    <div class="enr-error" role="alert" th:if="${error}" th:text="${error}">Código incorrecto.</div>
+
+    <ol class="enr-pasos">
+      <li class="enr-paso is-hecho">
+        <span class="enr-num" aria-hidden="true">1</span>
+        <div>
+          <h3>Instala una app autenticadora</h3>
+          <p>Google Authenticator o Microsoft Authenticator, gratis en tu celular.</p>
+        </div>
+      </li>
+
+      <li class="enr-paso" th:classappend="${secreto != null} ? 'is-hecho'">
+        <span class="enr-num" aria-hidden="true">2</span>
+        <div>
+          <h3>Agrega SkillBridge AI a la app</h3>
+          <th:block th:if="${secreto == null}">
+            <p>Genera tu código QR y escanéalo con la app.</p>
+            <form method="post" th:action="@{/administrador/enrolamiento/iniciar}" style="margin-top:var(--space-3)">
+              <button type="submit" class="btn btn-secondary btn-block">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-shield"></use></svg>Generar código QR
+              </button>
+            </form>
+          </th:block>
+          <th:block th:if="${secreto != null}">
+            <p>En la app pulsa <b>+</b> y escanea este código.</p>
+            <div class="enr-qr-box">
+              <div class="enr-qr" data-enr-qr th:attr="data-uri=${uri}" role="img" aria-label="Código QR para la app autenticadora"></div>
+              <span class="enr-clave-label">¿No puedes escanear? Elige «Ingresar una clave» y escribe esta:</span>
+              <div class="enr-clave">
+                <code data-enr-clave th:text="${secreto}">CLAVE</code>
+                <button type="button" class="btn btn-tertiary btn-sm btn-icon-only" data-enr-copiar aria-label="Copiar clave" title="Copiar clave">
+                  <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-copy"></use></svg>
+                </button>
+              </div>
+            </div>
+            <p class="enr-aviso">No vuelvas a generar el código después de agregarlo: el anterior dejaría de servir.</p>
+          </th:block>
+        </div>
+      </li>
+
+      <li class="enr-paso">
+        <span class="enr-num" aria-hidden="true">3</span>
+        <div>
+          <h3>Escribe el código de 6 dígitos</h3>
+          <p>El que muestra la app para SkillBridge AI. Cambia cada 30 segundos.</p>
+          <form method="post" th:action="@{/administrador/enrolamiento/activar}" autocomplete="off" style="margin-top:var(--space-3)">
+            <label class="field-label sr-only" for="enr-codigo">Código de seis dígitos</label>
+            <input class="input enr-otp" id="enr-codigo" name="codigo" required pattern="[0-9]{6}" maxlength="6"
+                   inputmode="numeric" autocomplete="one-time-code" placeholder="000000"
+                   th:autofocus="${secreto != null or error != null}">
+            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:var(--space-4)">Verificar y entrar</button>
+          </form>
+        </div>
+      </li>
+    </ol>
+
+    <form class="enr-salir" method="post" th:action="@{/auth/logout}">
+      <button type="submit"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-log-out"></use></svg>Cerrar sesión</button>
+    </form>
+  </div>
+</div>
+<script src="/js/vendor-qrcode.js"></script>
+<script>
+  (function () {
+    var codigo = document.getElementById("enr-codigo");
+    codigo.addEventListener("input", function () { codigo.value = codigo.value.replace(/\D/g, "").slice(0, 6); });
+
+    var caja = document.querySelector("[data-enr-qr]");
+    if (caja && caja.getAttribute("data-uri") && window.qrcode) {
+      var qr = qrcode(0, "M");
+      qr.addData(caja.getAttribute("data-uri"));
+      qr.make();
+      caja.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    }
+
+    var copiar = document.querySelector("[data-enr-copiar]");
+    if (copiar && navigator.clipboard) {
+      copiar.addEventListener("click", function () {
+        navigator.clipboard.writeText(document.querySelector("[data-enr-clave]").textContent.trim()).then(function () {
+          copiar.querySelector("use").setAttribute("href", "/img/icons.svg#icon-check");
+          setTimeout(function () { copiar.querySelector("use").setAttribute("href", "/img/icons.svg#icon-copy"); }, 1500);
+        });
+      });
+    }
+  })();
+</script>
+<script src="/js/theme-toggle.js"></script>
+</body>
+</html>
