@@ -122,11 +122,68 @@
   @media (max-width: 960px) {
     .rp-row, .rp-evid, .rp-suggest, .rp-steps { grid-template-columns: minmax(0, 1fr); }
   }
+  /* ═════════ Exportar a PDF (Descargar PDF → Guardar como PDF) ═════════
+     - @page con margen 0: Chrome/Edge ya no imprimen su cabecera y pie
+       (fecha, título de la pestaña, URL y número de página).
+     - print-color-adjust: exact: se respetan fondos y colores (cabecera,
+       avatar con iniciales, logos de habilidades, íconos de cifras).
+     - Diseño compacto en una sola hoja A4 mientras el contenido quepa; si hay
+       muchas habilidades o constancias, pasa a una segunda hoja sin cortar
+       ninguna tarjeta por la mitad. */
+  @page { size: A4; margin: 0; }
   @media print {
-    .sidebar, .topbar, .rp-actions, .rp-info, .rp-no-print { display: none !important; }
-    .main-content, .page-content { margin: 0 !important; padding: 0 !important; }
-    .card, .rp-ev { box-shadow: none !important; break-inside: avoid; }
+    html, body, .app-shell, .main-content, .page-content { background: #fff !important; min-height: 0 !important; height: auto !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    :root, :root[data-theme="dark"] { color-scheme: light; }
+    .sidebar, .topbar, .rp-actions, .rp-info, .rp-no-print, .mobile-nav, .toast-container { display: none !important; }
+    .app-shell { display: block !important; }
+    .mv, .mv-in { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }   /* sin animación de entrada: todo visible al imprimir */
+    .main-content, .page-content { margin: 0 !important; padding: 0 !important; max-width: none !important; width: auto !important; }
+    .page-content { padding: 12mm 13mm 10mm !important; }
+    .card, .rp-ev { box-shadow: none !important; break-inside: avoid; page-break-inside: avoid; }
+    .card { border-color: #E3E7ED !important; }
+
+    /* Cabecera */
+    .rp-hero::before { height: 64px; }
+    .rp-hero-body { padding: 24px 22px 16px; gap: 18px; flex-wrap: nowrap; }
+    .rp-hero-body .rp-id { padding-top: 40px; }
+    .rp-avatar { width: 80px; height: 80px; font-size: 1.5rem; border-width: 4px; border-color: #fff; background: #16213A; color: #fff; }
+    .rp-name { font-size: 20px; }
+    .rp-titular { margin-top: 8px; font-size: 14.5px; }
+    .rp-meta { margin-top: 8px; }
+
+    /* Cifras: siempre las 4 en una fila */
+    .rp-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+    .rp-kpi { padding: 10px 16px; gap: 10px; border-top: 0 !important; }
+    .rp-kpi + .rp-kpi { border-left: 1px solid #E3E7ED !important; }
+    .rp-kpi-ico { width: 32px; height: 32px; border-radius: 9px; }
+    .rp-kpi strong { font-size: 17px; }
+    .rp-kpi span { font-size: 11px; white-space: nowrap; }
+    .rp-kpi { padding: 10px 12px; }
+
+    /* Resumen y fortalezas lado a lado */
+    .rp-row { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) !important; gap: 14px; margin-top: 14px; }
+    .card-pad { padding: 16px 18px !important; }
+    .rp-title { font-size: 15px; margin-bottom: 10px; }
+    .rp-title-ico { width: 26px; height: 26px; }
+    .rp-text { font-size: 12.5px; line-height: 1.6; color: #3B4657; }
+    .rp-skills-box { padding-top: 12px; }
+    .rp-skills-label { padding-top: 10px; font-size: 10px; }
+    .rp-skill { font-size: 11.5px; }
+    .rp-strengths { gap: 6px; }
+    .rp-strengths li { font-size: 12px; padding: 6px 9px; }
+
+    /* Constancias en 2 columnas */
+    .rp-block { margin-top: 14px !important; }
+    .rp-evid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
+    .rp-ev { padding: 10px 14px; }
+    .rp-ev-source, .rp-ev-detail { font-size: 12px; }
+
+    /* Pie propio del documento (reemplaza al del navegador) */
+    .rp-print-foot { display: flex !important; }
   }
+  .rp-print-foot { display: none; justify-content: space-between; margin-top: 14px; padding-top: 8px; border-top: 1px solid #E3E7ED;
+                   font-size: 10.5px; color: #8A94A6; }
 </style>
 </head>
 <body>
@@ -256,6 +313,9 @@
           <svg class="icon"><use href="/img/icons.svg#icon-info"></use></svg>
           <span>Lo arma la IA solo con las habilidades que el Resource Manager validó y lo ven <strong>tú y el Resource Manager</strong>.
             No se edita a mano: se actualiza cada vez que se valida una habilidad. Si cambias una constancia o el nivel de una habilidad validada, vuelve a revisión.</span>
+        </div>
+        <div class="rp-print-foot">
+          <span>Resumen profesional generado con IA en SkillBridge AI a partir de habilidades validadas por el Resource Manager.</span>
         </div>
       </th:block>
 
