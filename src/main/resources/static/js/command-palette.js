@@ -12,6 +12,12 @@
 
   function normalize(str) { return window.SBAI.tableFilter.normalize(str); }
   function icon(name) { return window.SBAI.modal.icon(name); }
+  // Todo texto que se pinta con innerHTML pasa por aquí (lo escrito y los datos).
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
 
   function buildIndex() {
     var items = [];
@@ -34,7 +40,7 @@
     var resultsEl = backdropEl.querySelector(".cmdk-results");
 
     if (!results.length) {
-      resultsEl.innerHTML = '<div class="cmdk-empty">Sin resultados para “' + query + '”. Prueba con otro nombre.</div>';
+      resultsEl.innerHTML = '<div class="cmdk-empty">Sin resultados para “' + esc(query) + '”. Prueba con otro nombre.</div>';
       return;
     }
 
@@ -46,11 +52,11 @@
 
     var html = "";
     Object.keys(groups).forEach(function (groupName) {
-      html += '<div class="cmdk-group-label">' + groupName + "</div>";
+      html += '<div class="cmdk-group-label">' + esc(groupName) + "</div>";
       groups[groupName].slice(0, 6).forEach(function (it, idx) {
-        html += '<div class="cmdk-item" data-cmdk-type="' + it.type + '" data-cmdk-title="' + it.title.replace(/"/g, "&quot;") + '">' +
+        html += '<div class="cmdk-item" data-cmdk-type="' + esc(it.type) + '" data-cmdk-title="' + esc(it.title) + '">' +
           '<span class="cmdk-item-icon">' + icon(it.icon) + "</span>" +
-          '<span class="cmdk-item-text"><span class="cmdk-item-title">' + it.title + '</span><span class="cmdk-item-sub">' + it.sub + "</span></span>" +
+          '<span class="cmdk-item-text"><span class="cmdk-item-title">' + esc(it.title) + '</span><span class="cmdk-item-sub">' + esc(it.sub) + "</span></span>" +
           "</div>";
       });
     });
@@ -67,7 +73,7 @@
     close();
     if (type === "Proyectos") {
       var p = MOCK.findProject(title);
-      window.SBAI.toast.show("<strong>" + title + "</strong> · " + p.cliente + " · avance " + p.avance + "% · " + p.estado, { icon: "icon-folder" });
+      window.SBAI.toast.show(title + " · " + p.cliente + " · avance " + p.avance + "% · " + p.estado, { icon: "icon-folder" });
       return;
     }
     if (type === "Colaboradores") {
@@ -76,7 +82,7 @@
         window.location.href = "colaboradores.html?buscar=" + encodeURIComponent(title);
         return;
       }
-      window.SBAI.toast.show("<strong>" + title + "</strong> · " + c.cargo + " · ocupación promedio " + c.ocupacionProm + "%", { icon: "icon-user" });
+      window.SBAI.toast.show(title + " · " + c.cargo + " · ocupación promedio " + c.ocupacionProm + "%", { icon: "icon-user" });
       return;
     }
     if (type === "Habilidades") {
@@ -84,7 +90,7 @@
         window.location.href = "habilidades.html?buscar=" + encodeURIComponent(title);
         return;
       }
-      window.SBAI.toast.show("Mostrando <strong>" + title + "</strong> en el catálogo de habilidades.", { icon: "icon-book" });
+      window.SBAI.toast.show("Mostrando “" + title + "” en el catálogo de habilidades.", { icon: "icon-book" });
       return;
     }
   }

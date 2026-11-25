@@ -268,10 +268,10 @@
         asignacionesDe[perfil] = r.asignaciones;
         actualizarFila(btn, r);
         if (document.body.contains(backdrop)) pintar();
-        window.SBAI.toast.show(esc(r.mensaje), { type: "success" });
+        window.SBAI.toast.show(r.mensaje, { type: "success" });
       }
       function fallo(xhr) {
-        window.SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" });
+        window.SBAI.toast.show(api.mensajeError(xhr), { type: "error" });
       }
 
       backdrop.addEventListener("input", function (e) { if (e.target.classList.contains("rb-input")) recalcular(); });

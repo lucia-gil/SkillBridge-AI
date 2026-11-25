@@ -24,7 +24,7 @@
     return '<svg class="icon ' + (cls || "") + '" aria-hidden="true"><use href="/img/icons.svg#' + name + '"></use></svg>';
   }
   function toast(msg, tipo) {
-    if (window.SBAI.toast) window.SBAI.toast.show(esc(msg), { type: tipo || "default" });
+    if (window.SBAI.toast) window.SBAI.toast.show(msg, { type: tipo || "default" });
   }
 
   /* ---------------- Tarjeta de candidato ---------------- */

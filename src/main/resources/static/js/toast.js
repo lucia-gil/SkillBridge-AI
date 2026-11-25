@@ -25,7 +25,7 @@
   function show(message, opts) {
     opts = opts || {};
     var type = opts.type || "default";
-    var icon = opts.icon || ICONS[type] || ICONS.default;
+    var icon = String(opts.icon || ICONS[type] || ICONS.default).replace(/[^a-z0-9-]/gi, "");
     var el = document.createElement("div");
     el.className = "toast" + (type !== "default" ? " " + type : "");
     // Antes esto usaba window.SBAI.state.STATIC (variable que solo existia
@@ -38,8 +38,11 @@
     // reales (ver, por ejemplo, fragments/topbar.html).
     el.innerHTML =
         '<svg class="icon toast-icon"><use href="/img/icons.svg#' + icon + '"></use></svg>' +
-        '<div class="toast-text">' + message + "</div>" +
+        '<div class="toast-text"></div>' +
         '<button type="button" class="toast-close" aria-label="Cerrar"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-x"></use></svg></button>';
+    // El mensaje va como TEXTO, nunca como HTML: puede traer datos del
+    // servidor o escritos por usuarios (nombres, errores, mensajes flash).
+    el.querySelector(".toast-text").textContent = message == null ? "" : String(message);
     region().appendChild(el);
 
     var timer = setTimeout(function () { dismiss(el); }, opts.duration || 4200);

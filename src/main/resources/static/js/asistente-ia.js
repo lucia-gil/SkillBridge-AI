@@ -225,7 +225,7 @@
   }
 
   function error(xhr) {
-    SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" });
+    SBAI.toast.show(api.mensajeError(xhr), { type: "error" });
   }
 
   function archivar(c) {
@@ -265,7 +265,7 @@
       if (v.id === estado.id) $titulo.text(v.titulo);
       pintarLista();
       mostrarVacio(estado.id == null || $empty.is(":visible"));
-    }).fail(function (xhr) { SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" }); });
+    }).fail(function (xhr) { SBAI.toast.show(api.mensajeError(xhr), { type: "error" }); });
   }
   function fijar(id) {
     var c = estado.conversaciones.filter(function (x) { return x.id === id; })[0];
@@ -436,7 +436,7 @@
     }).fail(function (xhr) {
       if (estado.id !== id) return;
       $msgs.find(".as-cargando").remove();
-      SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" });
+      SBAI.toast.show(api.mensajeError(xhr), { type: "error" });
       nueva();
     });
     $app.removeClass("hist-abierto");
@@ -566,7 +566,7 @@
   function agregarArchivos(lista) {
     Array.prototype.forEach.call(lista, function (f) {
       if (estado.archivos.length >= MAX_ADJ) { SBAI.toast.show("Puedes adjuntar hasta " + MAX_ADJ + " archivos por mensaje.", { type: "error" }); return; }
-      if (!TIPOS.test(f.type || "") && !EXT.test(f.name)) { SBAI.toast.show(esc(f.name) + ": tipo no admitido (imágenes, PDF o texto).", { type: "error" }); return; }
+      if (!TIPOS.test(f.type || "") && !EXT.test(f.name)) { SBAI.toast.show(f.name + ": tipo no admitido (imágenes, PDF o texto).", { type: "error" }); return; }
       var total = estado.archivos.reduce(function (a, x) { return a + x.size; }, 0) + f.size;
       if (total > MAX_BYTES) { SBAI.toast.show("Los adjuntos de un mensaje pueden pesar hasta 5 MB en total.", { type: "error" }); return; }
       estado.archivos.push(f);
@@ -615,7 +615,7 @@
           SBAI.toast.show("Conversación eliminada.", { type: "success" });
           if (id === estado.id) nueva();
           cargarLista();
-        }).fail(function (xhr) { SBAI.toast.show(esc(api.mensajeError(xhr)), { type: "error" }); });
+        }).fail(function (xhr) { SBAI.toast.show(api.mensajeError(xhr), { type: "error" }); });
       }
     });
   }
