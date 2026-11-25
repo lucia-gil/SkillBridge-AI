@@ -188,7 +188,7 @@
           <section class="card pd-card" aria-labelledby="pd-h-esp">
             <header class="pd-card-head"><div><h3 id="pd-h-esp">Espacios del proyecto</h3></div></header>
             <ul class="pd-links">
-              <li th:if="${esPm}"><a th:href="@{/project-manager/chat.html(proyecto=${d.id})}"><svg class="icon"><use href="/img/icons.svg#icon-message-circle"></use></svg><span>Chat del equipo</span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
+              <li th:if="${esPm}"><a th:href="@{/project-manager/chat.html(proyecto=${d.id})}"><svg class="icon"><use href="/img/icons.svg#icon-chat-bubble"></use></svg><span>Chat del equipo</span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
               <li th:if="${esPm}"><a th:href="@{/project-manager/foros.html}"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg><span>Foro <small th:text="'· ' + ${v.hilosForo()} + ' hilo(s)'"></small></span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>
               <li th:unless="${esPm}"><span class="pd-link-static"><svg class="icon"><use href="/img/icons.svg#icon-message"></use></svg><span>Foro <small th:text="'· ' + ${v.hilosForo()} + ' hilo(s)'"></small></span></span></li>
               <li th:if="${d.githubUrl != null and !#strings.isEmpty(d.githubUrl)}"><a th:href="${d.githubUrl}" target="_blank" rel="noopener noreferrer"><svg class="icon pd-gh"><use href="/img/icons.svg#icon-github"></use></svg><span>Repositorio en GitHub</span><svg class="icon icon-sm pd-go"><use href="/img/icons.svg#icon-chevron-right"></use></svg></a></li>

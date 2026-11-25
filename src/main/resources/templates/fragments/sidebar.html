@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <!--
     fragments/sidebar.html — Sidebar principal de SkillBridge AI.
+
+    De arriba abajo:
+      1. Logo.
+      2. Rol (o, para un Miembro que lidera proyectos, el selector
+         "Project Manager | Colaborador" para cambiar de vista).
+      3. Menú del rol, agrupado: NavService marca con nuevoGrupo() dónde va
+         una línea separadora.
+      4. Pie fijo: los ítems con alPie() (Notificaciones, Configuración) y
+         Bridgie, el asistente de IA (lleva a asistente-ia.html).
 -->
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
-
 <aside class="sidebar" th:fragment="sidebar">
-
     <!-- LOGO -->
     <div class="sidebar-brand">
         <img
@@ -22,43 +29,66 @@
         >
     </div>
 
-    <!-- ROL -->
-    <div class="sidebar-role-badge" th:text="${roleLabel}">
+    <!-- ROL. Un Miembro que lidera proyectos ve aquí el cambio de vista
+         (antes estaba en el topbar). sec:authorize: solo con la autoridad
+         project_manager (ver security/SesionSegura.autoridades). -->
+    <nav class="sidebar-view-switch" sec:authorize="hasAuthority('project_manager')" aria-label="Ver como">
+        <a href="/project-manager/inicio.html" data-short="PM"
+           th:classappend="${vistaActualEsPm} ? 'active'"
+           th:attr="aria-current=${vistaActualEsPm} ? 'page' : null"><span>Project Manager</span></a>
+        <a href="/colaborador/inicio.html" data-short="Colab."
+           th:classappend="${!vistaActualEsPm} ? 'active'"
+           th:attr="aria-current=${!vistaActualEsPm} ? 'page' : null"><span>Colaborador</span></a>
+    </nav>
+    <div class="sidebar-role-badge" sec:authorize="!hasAuthority('project_manager')" th:text="${roleLabel}">
         ROL
     </div>
 
     <!-- NAVEGACIÓN -->
     <nav class="sidebar-nav" aria-label="Navegación principal">
+        <th:block th:each="item : ${navItems}" th:unless="${item.alPie}">
+            <div class="sidebar-sep" th:if="${item.nuevoGrupo}" role="presentation"></div>
+            <a
+                    class="sidebar-nav-item"
+                    th:classappend="${item.href == activeHref} ? 'active'"
+                    th:href="@{'/' + ${rolSlug} + '/' + ${item.href}}"
+                    th:attr="aria-current=${item.href == activeHref} ? 'page' : null,title=${item.label}"
+            >
+                <svg class="icon">
+                    <use th:href="@{'/img/icons.svg#' + ${item.icon}}"></use>
+                </svg>
+                <span class="sidebar-nav-item-label" th:text="${item.label}">Label</span>
+                <span class="counter-badge" th:if="${item.badge != null and item.badge > 0}" th:text="${item.badge}">0</span>
+            </a>
+        </th:block>
+    </nav>
 
+    <!-- PIE: ítems fijos + Bridgie -->
+    <div class="sidebar-foot">
         <a
                 class="sidebar-nav-item"
+                th:each="item : ${navItems}"
+                th:if="${item.alPie}"
                 th:classappend="${item.href == activeHref} ? 'active'"
                 th:href="@{'/' + ${rolSlug} + '/' + ${item.href}}"
-                th:each="item : ${navItems}"
+                th:attr="aria-current=${item.href == activeHref} ? 'page' : null,title=${item.label}"
         >
             <svg class="icon">
                 <use th:href="@{'/img/icons.svg#' + ${item.icon}}"></use>
             </svg>
-
-            <span
-                    class="sidebar-nav-item-label"
-                    th:text="${item.label}"
-            >
-                Label
-            </span>
-
-            <span
-                    class="counter-badge"
-                    th:if="${item.badge != null and item.badge > 0}"
-                    th:text="${item.badge}"
-            >
-                0
-            </span>
+            <span class="sidebar-nav-item-label" th:text="${item.label}">Label</span>
+            <span class="counter-badge" th:if="${item.badge != null and item.badge > 0}" th:text="${item.badge}">0</span>
         </a>
 
-    </nav>
-
+        <a class="bridgie-pill"
+           th:href="@{'/' + ${rolSlug} + '/asistente-ia.html'}"
+           th:classappend="${activeHref == 'asistente-ia.html'} ? 'active'"
+           th:attr="aria-current=${activeHref == 'asistente-ia.html'} ? 'page' : null"
+           title="Bridgie, tu asistente de IA">
+            <span class="bridgie-face"><img src="/img/bridgie.png" alt="" width="44" height="44"></span>
+            <span class="bridgie-text">Bridgie<small>Tu asistente de IA</small></span>
+        </a>
+    </div>
 </aside>
-
 </body>
 </html>

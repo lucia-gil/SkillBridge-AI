@@ -16,59 +16,61 @@ import java.util.List;
 @Service
 public class NavService {
 
+    /**
+     * Ítems del sidebar por rol, agrupados: {@code nuevoGrupo()} dibuja una
+     * línea separadora antes del ítem y {@code alPie()} lo deja fijo abajo.
+     * El Asistente IA no va en el menú: se abre desde Bridgie (pie del sidebar).
+     */
     public List<NavItem> itemsPara(String rolSlug) {
         List<NavItem> items = new ArrayList<>();
         switch (rolSlug) {
             case "administrador" -> {
                 items.add(new NavItem("Inicio", "icon-home", "inicio.html"));
-                items.add(new NavItem("Usuarios y roles", "icon-users", "usuarios.html"));
+                items.add(new NavItem("Usuarios y roles", "icon-users", "usuarios.html").nuevoGrupo());
                 items.add(new NavItem("Catálogo de habilidades", "icon-book", "habilidades.html"));
                 items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
-                items.add(new NavItem("Catálogos técnicos", "icon-list", "catalogos.html"));
-                items.add(new NavItem("Proyectos", "icon-folder", "proyectos.html"));
+                items.add(new NavItem("Proyectos", "icon-folder", "proyectos.html").nuevoGrupo());
                 items.add(new NavItem("Pendientes", "icon-calendar", "pendientes.html"));
-                items.add(new NavItem("Mensajes", "icon-message-circle", "chat.html"));
-                items.add(new NavItem("Reportes globales", "icon-bar-chart", "reportes.html"));
-                items.add(new NavItem("Asistente IA", "icon-sparkles", "asistente-ia.html"));
+                items.add(new NavItem("Mensajes", "icon-chat-bubble", "chat.html").nuevoGrupo());
+                items.add(new NavItem("Reportes globales", "icon-bar-chart", "reportes.html").nuevoGrupo());
                 items.add(new NavItem("Auditoría", "icon-shield", "auditoria.html"));
-                items.add(new NavItem("Notificaciones", "icon-bell", "notificaciones.html"));
-                items.add(new NavItem("Configuración", "icon-sliders", "configuracion.html"));
+                items.add(new NavItem("Catálogos técnicos", "icon-list", "catalogos.html").nuevoGrupo());
+                items.add(new NavItem("Notificaciones", "icon-bell", "notificaciones.html").alPie());
+                items.add(new NavItem("Configuración", "icon-sliders", "configuracion.html").alPie());
             }
             case "resource-manager" -> {
                 items.add(new NavItem("Inicio", "icon-home", "inicio.html"));
-                items.add(new NavItem("Asignaciones", "icon-target", "asignaciones.html"));
                 // Colaboradores incluye la antigua "Ocupación del equipo" (capacidad y Ajustar carga).
-                items.add(new NavItem("Colaboradores", "icon-users", "colaboradores.html"));
-                items.add(new NavItem("Mensajes", "icon-message-circle", "chat.html"));
+                items.add(new NavItem("Colaboradores", "icon-users", "colaboradores.html").nuevoGrupo());
+                items.add(new NavItem("Asignaciones", "icon-target", "asignaciones.html"));
                 items.add(new NavItem("AI Talent Matching", "icon-search-check", "ai-talent-matching.html"));
+                items.add(new NavItem("Mensajes", "icon-chat-bubble", "chat.html").nuevoGrupo());
                 items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
+                items.add(new NavItem("Reportes", "icon-bar-chart", "reportes.html").nuevoGrupo());
                 items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
-                items.add(new NavItem("Reportes", "icon-bar-chart", "reportes.html"));
             }
             case "project-manager" -> {
                 items.add(new NavItem("Inicio", "icon-home", "inicio.html"));
-                items.add(new NavItem("Proyectos", "icon-folder", "proyectos.html"));
+                items.add(new NavItem("Proyectos", "icon-folder", "proyectos.html").nuevoGrupo());
                 items.add(new NavItem("Asignaciones", "icon-target", "asignaciones.html"));
-                items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
                 items.add(new NavItem("AI Talent Matching", "icon-search-check", "ai-talent-matching.html"));
-                items.add(new NavItem("Foros", "icon-message", "foros.html"));
-                items.add(new NavItem("Chat", "icon-message-circle", "chat.html"));
-                items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
-                items.add(new NavItem("Asistente IA", "icon-sparkles", "asistente-ia.html"));
                 items.add(new NavItem("Reportes", "icon-bar-chart", "reportes.html"));
+                items.add(new NavItem("Chat", "icon-chat-bubble", "chat.html").nuevoGrupo());
+                items.add(new NavItem("Foros", "icon-message", "foros.html"));
+                items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
+                items.add(new NavItem("Cursos", "icon-graduation", "cursos.html").nuevoGrupo());
             }
             default -> { // colaborador
                 items.add(new NavItem("Inicio", "icon-home", "inicio.html"));
-                items.add(new NavItem("Mi perfil", "icon-user", "perfil.html"));
+                items.add(new NavItem("Mi perfil", "icon-user", "perfil.html").nuevoGrupo());
                 items.add(new NavItem("Resumen profesional", "icon-award", "resumen-profesional.html"));
-                items.add(new NavItem("Mis proyectos", "icon-folder", "proyectos.html"));
+                items.add(new NavItem("Mis proyectos", "icon-folder", "proyectos.html").nuevoGrupo());
                 items.add(new NavItem("Entregables", "icon-file-text", "entregables.html"));
                 items.add(new NavItem("Calendario", "icon-calendar", "calendario.html"));
+                items.add(new NavItem("Chat", "icon-chat-bubble", "chat.html").nuevoGrupo());
                 items.add(new NavItem("Foros", "icon-message", "foros.html"));
-                items.add(new NavItem("Chat", "icon-message-circle", "chat.html"));
-                items.add(new NavItem("Cursos", "icon-graduation", "cursos.html"));
-                items.add(new NavItem("Asistente IA", "icon-sparkles", "asistente-ia.html"));
-                items.add(new NavItem("Notificaciones", "icon-bell", "notificaciones.html"));
+                items.add(new NavItem("Cursos", "icon-graduation", "cursos.html").nuevoGrupo());
+                items.add(new NavItem("Notificaciones", "icon-bell", "notificaciones.html").alPie());
             }
         }
         return items;

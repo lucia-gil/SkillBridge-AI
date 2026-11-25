@@ -5,7 +5,8 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
-<header class="topbar" th:fragment="topbar">
+<th:block th:fragment="topbar">
+<header class="topbar">
   <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 
   <!-- Token CSRF de Spring Security para formularios/fetch armados por JS -->
@@ -46,37 +47,10 @@
   <div class="topbar-actions">
 
 
-    <!-- VER COMO (modelo v7): un Miembro que lidera proyectos alterna entre
-         su vista Project Manager y su vista Colaborador. Cada vista muestra
-         solo los proyectos de ese papel, con sus permisos. -->
-    <!-- sec:authorize (thymeleaf-extras-springsecurity6): solo se pinta si el
-         usuario tiene la autoridad project_manager, es decir, es Miembro y
-         lidera al menos un proyecto (ver security/SesionSegura.autoridades). -->
-    <nav class="segmented view-switch" sec:authorize="hasAuthority('project_manager')" aria-label="Ver como">
-      <span class="view-switch-label">Ver como</span>
-      <a class="segmented-btn" href="/project-manager/inicio.html" data-short="PM"
-         th:classappend="${vistaActualEsPm} ? 'active'"
-         th:attr="aria-current=${vistaActualEsPm} ? 'page' : null">Project Manager</a>
-      <a class="segmented-btn" href="/colaborador/inicio.html" data-short="Colab."
-         th:classappend="${!vistaActualEsPm} ? 'active'"
-         th:attr="aria-current=${!vistaActualEsPm} ? 'page' : null">Colaborador</a>
-    </nav>
+    <!-- "Ver como" pasó al sidebar (fragments/sidebar.html) y el Asistente IA
+         se abre desde Bridgie, al pie del sidebar. -->
 
-    <!-- ASISTENTE IA -->
 
-    <a
-            class="topbar-ai-btn"
-            href="asistente-ia.html">
-
-      <svg class="icon">
-        <use href="/img/icons.svg#icon-sparkles"></use>
-      </svg>
-
-      <span>
-        Asistente IA
-      </span>
-
-    </a>
 
 
     <!-- TEMA CLARO / OSCURO -->
@@ -262,6 +236,14 @@
   </div>
 
 </header>
+
+  <!-- Bridgie para celular: con el sidebar oculto en un cajón, queda flotando abajo a la izquierda.
+       Va FUERA del <header>: su backdrop-filter atraparía un position: fixed. -->
+  <a class="bridgie-fab" th:href="@{'/' + ${rolSlug} + '/asistente-ia.html'}"
+     aria-label="Abrir Bridgie, tu asistente de IA" title="Bridgie, tu asistente de IA">
+    <img src="/img/bridgie.png" alt="" width="52" height="52">
+  </a>
+</th:block>
 
 </body>
 </html>

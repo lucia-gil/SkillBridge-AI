@@ -33,4 +33,15 @@ public class NavItem {
     public void setBadge(Integer badge) {
         this.badge = badge;
     }
+
+    /** true = empieza un grupo nuevo: el sidebar dibuja una línea separadora antes. */
+    private boolean nuevoGrupo;
+    /** true = va fijo al pie del sidebar (Notificaciones, Configuración). */
+    private boolean alPie;
+
+    public boolean isNuevoGrupo() { return nuevoGrupo; }
+    public boolean isAlPie() { return alPie; }
+
+    public NavItem nuevoGrupo() { this.nuevoGrupo = true; return this; }
+    public NavItem alPie() { this.alPie = true; return this; }
 }

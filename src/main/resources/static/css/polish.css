@@ -969,3 +969,85 @@ html.tema-cambiando *, html.tema-cambiando *::before, html.tema-cambiando *::aft
   .gs-panel { right: auto; width: max(100%, min(560px, calc(100vw - 340px))); }
 }
 .gs-item-sub { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* =====================================================================
+   Sidebar organizado + Bridgie (propuesta B elegida por el equipo)
+   - Menú agrupado con líneas separadoras (NavService.nuevoGrupo()).
+   - "Ver como" (PM | Colaborador) dentro del sidebar, en lugar del rol.
+   - Pie fijo: Notificaciones/Configuración (alPie()) y Bridgie.
+   - Topbar: sin botón de IA ni selector; buscador compacto a la derecha.
+   ===================================================================== */
+.sidebar-nav { gap: 1px; }
+.sidebar-nav-item { padding-top: 9px; padding-bottom: 9px; }
+.sidebar-sep { flex-shrink: 0; height: 1px; margin: 8px 12px; background: rgba(255, 255, 255, .08); }
+
+.sidebar-view-switch {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  margin: 0 var(--space-5) var(--space-4); padding: 3px; border-radius: 10px;
+  background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12);
+}
+.sidebar-view-switch a {
+  padding: 7px 4px; border-radius: 8px; text-align: center; white-space: nowrap; text-decoration: none;
+  font-size: 11px; font-weight: var(--fw-semibold); line-height: 1.1; color: rgba(255, 255, 255, .72);
+  transition: background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
+}
+.sidebar-view-switch a:hover { color: #fff; background: rgba(255, 255, 255, .07); text-decoration: none; }
+.sidebar-view-switch a.active { background: #fff; color: var(--navy-900); }
+
+.sidebar-foot {
+  display: flex; flex-direction: column; gap: 1px; flex-shrink: 0;
+  padding: 8px var(--space-3) 14px; border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+/* Bridgie: pastilla al pie del sidebar */
+.bridgie-pill {
+  display: flex; align-items: center; gap: 10px; margin-top: 8px;
+  padding: 5px 14px 5px 5px; border-radius: 999px; color: #fff; text-decoration: none;
+  background: linear-gradient(135deg, #1B355C 0%, #24406B 55%, #5B3FBF 100%);
+  box-shadow: 0 10px 24px -12px rgba(124, 92, 255, .75), inset 0 0 0 1px rgba(255, 255, 255, .12);
+  transition: transform var(--dur-fast) var(--ease-standard), filter var(--dur-fast) var(--ease-standard);
+}
+.bridgie-pill:hover { color: #fff; text-decoration: none; filter: brightness(1.1); transform: translateY(-1px); }
+.bridgie-pill.active { box-shadow: 0 0 0 2px #9CC0FF, 0 10px 24px -12px rgba(124, 92, 255, .75); }
+.bridgie-face {
+  position: relative; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%;
+  overflow: hidden; border: 2px solid rgba(255, 255, 255, .85); background: #0B1F3A;
+}
+.bridgie-face img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.bridgie-text { min-width: 0; font-size: var(--fs-sm); font-weight: var(--fw-semibold); line-height: 1.15; }
+.bridgie-text small { display: block; margin-top: 1px; font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, .72); }
+
+/* Bridgie flotante: solo en celular (el sidebar se vuelve un cajón oculto) */
+.bridgie-fab { display: none; }
+
+/* Topbar más limpio: el buscador va compacto a la derecha, junto a las acciones
+   (solo en escritorio; en celular el buscador ya tiene su propio comportamiento). */
+@media (min-width: 861px) {
+  .topbar .gs { margin-left: auto; flex: 0 1 340px; max-width: 340px; }
+}
+/* Buscador reducido a lupa (celular): el botón de IA aparece recién al abrirlo. */
+@media (max-width: 480px) {
+  .gs:not(.open):not(:focus-within) .gs-ia-btn { display: none; }
+}
+
+/* Sidebar colapsado (861–1180 px, solo íconos) */
+@media (min-width: 861px) and (max-width: 1180px) {
+  .sidebar-view-switch { grid-template-columns: 1fr; margin: 0 10px var(--space-3); }
+  .sidebar-view-switch a span { display: none; }
+  .sidebar-view-switch a::after { content: attr(data-short); }
+  .sidebar-sep { margin: 8px 16px; }
+  .bridgie-pill { justify-content: center; width: 52px; margin: 8px auto 0; padding: 4px; }
+  .bridgie-text { display: none; }
+}
+
+/* Celular */
+@media (max-width: 860px) {
+  .bridgie-fab {
+    display: block; position: fixed; left: 16px; bottom: 16px; z-index: 800;
+    width: 56px; height: 56px; padding: 3px; border-radius: 50%;
+    background: conic-gradient(from 210deg, #8B5CF6, #5B8DEF, #22D3EE, #8B5CF6);
+    box-shadow: 0 12px 26px -10px rgba(76, 60, 200, .6), 0 4px 10px rgba(11, 31, 58, .2);
+  }
+  .bridgie-fab img { display: block; width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
+  body.sidebar-open .bridgie-fab { display: none; }
+}
