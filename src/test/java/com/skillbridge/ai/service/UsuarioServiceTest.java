@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,10 +44,12 @@ class UsuarioServiceTest {
     @Mock private AsignacionRepository asignacionRepository;
     @Mock private ProyectoService proyectoService;
     @Mock private NotificacionService notificacionService;
+    // Firma el enlace de invitación (/auth/registro.html?correo=...&firma=...).
+    @Mock private IdentidadDniService identidadDni;
 
     // Mockito crea un UsuarioService real e inyecta los @Mock de arriba
-    // en su constructor automaticamente (son 9 parametros - sin esto
-    // habria que instanciarlo a mano pasando los 9 mocks).
+    // en su constructor automaticamente (son 10 parametros - sin esto
+    // habria que instanciarlo a mano pasando los 10 mocks).
     @InjectMocks
     private UsuarioService usuarioService;
 
@@ -98,6 +101,7 @@ class UsuarioServiceTest {
                 .thenReturn("gmail.com, pucp.edu.pe");
         when(usuarioRepository.existsByCorreoIgnoreCase("cbb4tob@gmail.com")).thenReturn(false);
         when(correoAutorizadoRepository.existsByCorreoIgnoreCase("cbb4tob@gmail.com")).thenReturn(false);
+        when(identidadDni.firmarInvitacion(any())).thenReturn(Optional.of("firma-de-prueba"));
 
         usuarioService.invitar("CBB4Tob@Gmail.com", "NINGUNO", ACTOR_ID); // con mayusculas a proposito
 
@@ -129,6 +133,7 @@ class UsuarioServiceTest {
         when(configuracionService.valor(any(), eq("dominio_correo_permitido"), any())).thenReturn("*");
         when(usuarioRepository.existsByCorreoIgnoreCase("alguien@otraempresa.io")).thenReturn(false);
         when(correoAutorizadoRepository.existsByCorreoIgnoreCase("alguien@otraempresa.io")).thenReturn(false);
+        when(identidadDni.firmarInvitacion(any())).thenReturn(Optional.of("firma-de-prueba"));
 
         assertDoesNotThrow(() -> usuarioService.invitar("alguien@otraempresa.io", "NINGUNO", ACTOR_ID));
         verify(correoAutorizadoRepository).saveAndFlush(any());
