@@ -307,10 +307,10 @@
 .cx-detail-cover-in { position: absolute; inset: 14px 14px auto; display: flex; justify-content: space-between; align-items: center; }
 .cx-detail-cover .modal-close { background: rgba(10,20,40,.45); color: #fff; border-radius: 10px; }
 .cx-detail { padding: 20px 24px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
-.cx-detail-plat { display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); color: var(--text-tertiary); font-weight: 600; margin-top: -40px; }
-.cx-detail-plat .cx-plat { --s: 48px; border-radius: 14px; box-shadow: 0 0 0 4px var(--surface), 0 10px 20px -10px rgba(0,0,0,.5); }
-.cx-detail-plat > span:first-of-type { margin-top: 22px; }
-.cx-detail-plat > span ~ span { margin-top: 22px; }
+/* Logo de la plataforma DEBAJO de la portada (antes iba montado sobre ella y
+   chocaba con portadas cargadas), alineado con "Plataforma · Categoría". */
+.cx-detail-plat { display: flex; align-items: center; gap: 10px; font-size: var(--fs-xs); color: var(--text-tertiary); font-weight: 600; }
+.cx-detail-plat .cx-plat { --s: 40px; border-radius: 12px; flex-shrink: 0; box-shadow: 0 6px 14px -8px rgba(0,0,0,.45); }
 .cx-detail h2 { font-size: var(--fs-xl); line-height: 1.2; letter-spacing: -.02em; color: var(--text-primary); }
 .cx-detail > p { color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.6; }
 .cx-dot { opacity: .5; }
