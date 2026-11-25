@@ -107,7 +107,7 @@ Detalles del agente (herramientas por rol, confirmación de escrituras, límites
 
 ### Mensajes directos
 
-Además de las salas de proyecto, el chat tiene **mensajes directos** entre dos personas (tablas `chat_salas` con `tipo = 'directo'` y `chat_participantes`), que solo ven ellas dos. El Resource Manager y el Administrador pueden escribirle a cualquier cuenta activa (menú **Mensajes**, o **Enviar mensaje** en el perfil de un colaborador); un Colaborador o PM puede escribirle a un Resource Manager con **Nuevo mensaje** y siempre puede responder. Entre Miembros se usan los chats y foros de proyecto. El primer mensaje sin leer avisa con una notificación (y correo).
+Además de las salas de proyecto, el chat tiene **mensajes directos** entre dos personas (tablas `chat_salas` con `tipo = 'directo'` y `chat_participantes`), que solo ven ellas dos. El Resource Manager y el Administrador pueden escribirle a cualquier cuenta activa (menú **Mensajes**, o **Enviar mensaje** en el perfil de un colaborador); un Colaborador o PM puede escribirle a un Resource Manager con **Nuevo mensaje** y siempre puede responder. Entre Miembros se usan los chats y foros de proyecto. Los mensajes no van a la campana de notificaciones: se avisan con el contador de no leídos del ítem **Chat** / **Mensajes** del menú lateral, que se actualiza al cargar cada página y cada 30 segundos.
 
 ### Chat de proyectos (RF07)
 

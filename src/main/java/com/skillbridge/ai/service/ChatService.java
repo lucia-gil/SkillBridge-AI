@@ -18,8 +18,6 @@ import com.skillbridge.ai.util.Roles;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,13 +50,6 @@ import java.util.Set;
 public class ChatService {
 
     public static final int MAX_CARACTERES = 2000;
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ChatService.class);
-    /** Un hilo para crear las notificaciones de mensajes directos sin hacer esperar al chat. */
-    private final java.util.concurrent.ExecutorService avisos = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "chat-avisos");
-        t.setDaemon(true);
-        return t;
-    });
     private static final int PAGINA = 40;
     private static final Set<String> PROYECTO_CERRADO = Set.of("completado", "cancelado");
     private static final Locale ES = new Locale("es", "PE");
@@ -98,16 +89,13 @@ public class ChatService {
     private final AsistenteIaService asistenteIaService;
     private final PerfilRepository perfilRepository;
     private final com.skillbridge.ai.repository.ChatParticipanteRepository participanteRepository;
-    private final NotificacionService notificacionService;
 
     public ChatService(ChatSalaRepository salaRepository, ChatMensajeRepository mensajeRepository,
                        ChatLecturaRepository lecturaRepository, AsignacionRepository asignacionRepository,
                        ProyectoRepository proyectoRepository, AsistenteIaService asistenteIaService,
                        PerfilRepository perfilRepository,
-                       com.skillbridge.ai.repository.ChatParticipanteRepository participanteRepository,
-                       NotificacionService notificacionService) {
+                       com.skillbridge.ai.repository.ChatParticipanteRepository participanteRepository) {
         this.participanteRepository = participanteRepository;
-        this.notificacionService = notificacionService;
         this.salaRepository = salaRepository;
         this.mensajeRepository = mensajeRepository;
         this.lecturaRepository = lecturaRepository;
@@ -223,27 +211,8 @@ public class ChatService {
         // Hibernate lo reutiliza tal cual en consultas de esta transacción):
         // se arma la respuesta con el perfil leído aparte.
         Perfil autor = perfilRepository.findById(perfilId).orElseThrow();
-        // Mensaje directo: se avisa solo con el primer mensaje sin leer, para no
-        // llenar la campana con una notificación por cada mensaje. La
-        // notificación también manda correo (Gmail SMTP), así que se crea en
-        // segundo plano después de guardar: el chat no espera al correo.
-        if (otro != null && noLeidos(salaId, otro.getId()) == 1) {
-            Long destino = otro.getId();
-            String titulo = "Nuevo mensaje de " + autor.getUsuario().getNombreCompleto();
-            String detalle = recortar(texto, 120);
-            String enlace = "chat.html?sala=" + salaId;   // relativo: la campana y el correo le ponen la vista de cada rol
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override public void afterCommit() {
-                    avisos.submit(() -> {
-                        try {
-                            notificacionService.crear(destino, "info", titulo, detalle, enlace);
-                        } catch (RuntimeException e) {
-                            log.warn("No se pudo notificar el mensaje directo: {}", e.getMessage());
-                        }
-                    });
-                }
-            });
-        }
+        // Los mensajes no van a la campana de notificaciones: se avisan con el
+        // contador de no leídos del ítem "Chat" del menú (GET /api/chat/no-leidos).
         return vista(m, autor, perfilId);
     }
 

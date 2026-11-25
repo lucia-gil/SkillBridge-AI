@@ -82,7 +82,8 @@
   document.addEventListener("DOMContentLoaded", function () {
     if (window.SBAI.dropdown) window.SBAI.dropdown.init(document);
 
-    // Contador de mensajes sin leer del chat (ítem "Chat" del sidebar), cada 30 s.
+    // Contador de mensajes sin leer del chat (ítem "Chat" del sidebar): al cargar
+    // la página y luego cada 30 s. Es el único aviso de mensajes (no van a la campana).
     // En la propia página del chat lo actualiza js/chat.js.
     var itemChat = document.querySelector('.sidebar-nav-item[href$="chat.html"]');
     if (itemChat && window.SBAI.api && !document.getElementById("chat-app")) {
@@ -96,6 +97,7 @@
           } else if (badge) badge.remove();
         });
       };
+      refrescarChat();
       setInterval(refrescarChat, 30000);
     }
 
