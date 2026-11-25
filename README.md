@@ -57,7 +57,7 @@ Abrir `http://localhost:8080/`.
 
 ### Cuentas de demo
 
-Todas usan la contraseña **`admin123`**.
+Todas usan la contraseña **`admin123`**, solo para desarrollo local. Con el perfil `prod` esa contraseña queda bloqueada al iniciar sesión (`app.seguridad.bloquear-clave-demo=true`): si el script de ejemplo se cargó en el servidor, cada cuenta debe crear una contraseña nueva con «¿Olvidaste tu contraseña?».
 
 | Rol | Correo |
 |---|---|

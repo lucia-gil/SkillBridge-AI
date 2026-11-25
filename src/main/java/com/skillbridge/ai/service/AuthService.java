@@ -74,6 +74,13 @@ public class AuthService {
     @Value("${app.base-url:}")
     private String baseUrl;
 
+    /** Contraseña de las cuentas de ejemplo de db/skillbridge_db.sql (publicada en el README). */
+    static final String CLAVE_DEMO = "admin123";
+
+    /** En producción (application-prod.properties) no se puede entrar con la contraseña de ejemplo. */
+    @Value("${app.seguridad.bloquear-clave-demo:false}")
+    private boolean bloquearClaveDemo;
+
     /** Vigencia de un enlace de "olvide mi contraseña" (ver recuperar-password.html). */
     private static final long RECUPERACION_MINUTOS = 30;
 
@@ -212,6 +219,14 @@ public class AuthService {
         }
 
         Usuario usuario = ou.get();
+
+        if (bloquearClaveDemo && CLAVE_DEMO.equals(contrasena)) {
+            registrarIntentoFallido(ip);
+            auditoriaService.registrar(usuario.getId(), "LOGIN_BLOQUEADO",
+                    "Contraseña de ejemplo deshabilitada en producción (ip=" + ip + ")");
+            return ResultadoLogin.error("Esta cuenta todavía usa la contraseña de ejemplo, que no está permitida en producción. "
+                    + "Usa «¿Olvidaste tu contraseña?» para crear una nueva.");
+        }
 
         if (!usuario.isActivo()) {
             auditoriaService.registrar(usuario.getId(), "LOGIN_BLOQUEADO", "Cuenta inactiva (ip=" + ip + ")");
