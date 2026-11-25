@@ -188,13 +188,16 @@ CREATE TABLE correos_autorizados (
                                      id                  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                                      correo              VARCHAR(150) NOT NULL UNIQUE,
                                      autorizado_por_id   BIGINT UNSIGNED NOT NULL,
-                                     origen_carga        ENUM('individual','masiva_csv') NOT NULL DEFAULT 'individual',
+                                     origen_carga        ENUM('individual','masiva_csv','masiva_excel') NOT NULL DEFAULT 'individual',
                                      utilizado           BOOLEAN NOT NULL DEFAULT FALSE,
                                      fecha_autorizacion  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                      fecha_uso           DATETIME NULL,
     -- v7: rol organizacional con el que se invitó (NULL = Miembro). Al
     -- registrarse, la cuenta nace con ese rol.
                                      rol_asignado        ENUM('administrador','resource_manager') NULL,
+    -- Estado y fecha del último correo de invitación enviado (carga masiva y reenvíos).
+                                     estado_envio        VARCHAR(32) NULL,
+                                     ultimo_envio        DATETIME NULL,
                                      CONSTRAINT fk_correoaut_admin FOREIGN KEY (autorizado_por_id) REFERENCES usuarios(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -798,7 +801,10 @@ CREATE TABLE tipos_audiencia (
                                  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                                  codigo      VARCHAR(40) NOT NULL UNIQUE,
                                  nombre      VARCHAR(80) NOT NULL,
-                                 descripcion VARCHAR(255) NULL
+                                 descripcion VARCHAR(255) NULL,
+    -- Regla de visibilidad de una audiencia creada por el Administrador
+    -- (las audiencias base usan su propio código como regla).
+                                 politica    VARCHAR(40) NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -865,6 +871,28 @@ CREATE TABLE eventos_personales (
                                   CONSTRAINT fk_evento_personal_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
                                   CONSTRAINT fk_evento_personal_tipo FOREIGN KEY (tipo_id) REFERENCES tipos_evento(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Identidad por DNI (Consulta Perú): huella del DNI verificado, ligada a la
+-- invitación mientras se registra y luego al usuario.
+CREATE TABLE IF NOT EXISTS identidad_dni (
+    huella BINARY(32) PRIMARY KEY,
+    usuario_id BIGINT UNSIGNED NULL UNIQUE,
+    invitacion_id BIGINT UNSIGNED NULL UNIQUE,
+    terminacion CHAR(4) CHARACTER SET ascii NOT NULL,
+    verificado_en DATETIME NULL,
+    CONSTRAINT fk_identidad_dni_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    CONSTRAINT fk_identidad_dni_invitacion FOREIGN KEY (invitacion_id) REFERENCES correos_autorizados(id) ON DELETE CASCADE,
+    CONSTRAINT chk_identidad_dni_estado CHECK (
+        (usuario_id IS NULL AND invitacion_id IS NOT NULL AND verificado_en IS NULL)
+        OR (usuario_id IS NOT NULL AND invitacion_id IS NULL AND verificado_en IS NOT NULL)
+    )
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS identidad_dni_config (
+    id TINYINT UNSIGNED PRIMARY KEY,
+    huella_clave BINARY(32) NOT NULL,
+    CONSTRAINT chk_identidad_dni_config CHECK (id = 1)
+) ENGINE=InnoDB;
 
 -- Creacion de la tabla de certificados para que se puedan subir pdfs y mas para vlaidars
 -- CORREGIDA en v4.1: CertificadoHabilidad.java soporta DOS formas de
