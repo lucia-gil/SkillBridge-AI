@@ -393,7 +393,11 @@
   }
   function reproductor(id, titulo, url) {
     abrirModal('<div class="cx-player-head"><strong>' + esc(titulo) + '</strong><button type="button" class="modal-close" data-modal-close aria-label="Cerrar">' + icono("icon-x") + "</button></div>" +
-      '<div class="cx-player"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(id) + '?autoplay=1&rel=0" title="' + esc(titulo) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>' +
+      '<div class="cx-player"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(id) + '?autoplay=1&rel=0" title="' + esc(titulo) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen' +
+        // YouTube exige saber desde qué sitio se incrusta el video (si no, "Error 153").
+        // El sitio usa Referrer-Policy: same-origin; solo este iframe envía el origen
+        // (dominio, sin la ruta).
+        ' referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' +
       '<div class="cx-player-foot"><a class="btn btn-secondary btn-sm" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + icono("icon-external-link") + "Abrir en YouTube</a></div>", "is-player");
   }
 
