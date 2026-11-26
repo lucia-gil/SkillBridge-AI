@@ -87,8 +87,10 @@
       } else if (marcadas.length === 1) {
         trigger.innerHTML = "<span>" + esc(marcadas[0].text) + "</span>";
       } else {
-        trigger.innerHTML = "<span>" + marcadas.length + " " + esc(noun) + ' seleccionados</span>';
+        trigger.innerHTML = "<span>" + marcadas.length + " " + esc(noun) + "</span>";
       }
+      // Nombres completos al pasar el mouse (el texto del selector se recorta).
+      trigger.title = marcadas.map(function (o) { return o.text; }).join(", ");
       chips.innerHTML = marcadas.length > 1 ? marcadas.map(function (o) {
         return '<span class="ms-chip">' + esc(o.text) + '<button type="button" aria-label="Quitar ' + esc(o.text) +
           '" data-ms-remove="' + esc(o.value) + '">×</button></span>';

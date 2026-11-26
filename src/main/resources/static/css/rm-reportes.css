@@ -41,6 +41,9 @@
 .rr-filters-title p { margin-top: 1px; font-size: var(--fs-xs); color: var(--text-tertiary); }
 .rr-filters-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .rr-filters-grid { display: grid; grid-template-columns: 1.3fr repeat(4, minmax(0, 1fr)) .9fr; gap: 14px; padding: 14px 18px 16px; align-items: end; }
+/* Selección múltiple: lo elegido se ve en el selector ("4 proyectos…") y en la línea "Filtros" de arriba;
+   las etiquetas debajo estiraban la columna y desalineaban toda la fila. */
+.rr-filters-grid .ms-chips { display: none; }
 @media (max-width: 1250px) { .rr-filters-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .rr-filters-grid { grid-template-columns: minmax(0, 1fr); } }
 .rr-f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
