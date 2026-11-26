@@ -174,6 +174,7 @@ public class AsistenteIaController {
     private AsistenteConversacionService.Respuesta enviarLimitado(UsuarioSesion usuario,Long id,String mensaje,List<MultipartFile> archivos) {
         UsuarioSesion actor=new UsuarioSesion();
         actor.setUsuarioId(usuario.getUsuarioId());actor.setPerfilId(usuario.getPerfilId());actor.setRolEfectivo(usuario.getRolEfectivo());
+        actor.setNombreCompleto(usuario.getNombreCompleto());   // solo para dirigirse a la persona en las instrucciones de Bridgie
         String lease=limite.adquirir(actor.getUsuarioId());
         try { return conversacionService.enviar(actor,id,mensaje,archivos); }
         finally { limite.liberar(usuario.getUsuarioId(),lease); }

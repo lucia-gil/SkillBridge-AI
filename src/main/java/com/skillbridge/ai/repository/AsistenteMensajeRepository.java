@@ -9,4 +9,10 @@ public interface AsistenteMensajeRepository extends JpaRepository<AsistenteMensa
     List<AsistenteMensaje> findByConversacionIdOrderByIdAsc(Long conversacionId);
     List<AsistenteMensaje> findTop12ByConversacionIdOrderByIdDesc(Long conversacionId);
     long countByConversacionId(Long conversacionId);
+
+    /** Mensajes que un usuario le envió al asistente desde una fecha (tope diario). */
+    @org.springframework.data.jpa.repository.Query("select count(m) from AsistenteMensaje m, AsistenteConversacion c "
+            + "where c.id = m.conversacionId and c.usuarioId = :usuarioId and m.autor = 'usuario' and m.fecha >= :desde")
+    long contarDeUsuarioDesde(@org.springframework.data.repository.query.Param("usuarioId") Long usuarioId,
+                              @org.springframework.data.repository.query.Param("desde") java.time.LocalDateTime desde);
 }

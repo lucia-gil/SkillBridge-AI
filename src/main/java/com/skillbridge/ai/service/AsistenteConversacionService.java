@@ -54,6 +54,9 @@ public class AsistenteConversacionService {
     public static final long MAX_BYTES = 5L * 1024 * 1024;
     /** Archivos por usuario y por día (cuida el uso de la API de IA). */
     public static final int MAX_ADJUNTOS_DIA = 20;
+    /** Mensajes por usuario y por día (agente.mensajes-dia): tope de gasto de la API de IA. */
+    @org.springframework.beans.factory.annotation.Value("${agente.mensajes-dia:150}")
+    private int maxMensajesDia = 150;
     private static final int MAX_TEXTO_ARCHIVO = 15000;
 
     private static final String TITULO_BORRADOR = "Nueva conversación";
@@ -244,6 +247,8 @@ public class AsistenteConversacionService {
         String motivo = motivoIndisponible();
         if (!motivo.isEmpty()) throw new OperacionInvalidaException(motivo);
         String mensaje = texto == null ? "" : texto.trim();
+        if (mensajeRepository.contarDeUsuarioDesde(s.getUsuarioId(), LocalDate.now().atStartOfDay()) >= maxMensajesDia)
+            throw new OperacionInvalidaException("Llegaste al máximo de " + maxMensajesDia + " mensajes por día con Bridgie. Vuelve a escribirle mañana.");
         List<MultipartFile> validos = archivos == null ? List.of() : archivos.stream().filter(f -> f != null && !f.isEmpty()).toList();
         // Adjuntos: el agente los lee en modo SOLO LECTURA (ver AsistenteIaService.conversarConHerramientas).
         if (validos.size() > MAX_ADJUNTOS) throw new OperacionInvalidaException("Puedes adjuntar hasta " + MAX_ADJUNTOS + " archivos por mensaje.");
