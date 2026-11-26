@@ -331,3 +331,8 @@ a.as-file:hover b { color: var(--blue-link); }
 .as-adj-aviso { display: flex; align-items: flex-start; gap: 6px; margin: 6px 2px 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--text-secondary); }
 .as-adj-aviso[hidden] { display: none; }
 .as-adj-aviso .icon { flex-shrink: 0; margin-top: 1px; color: var(--violet-fg); }
+
+/* Bridgie: avatar redondo en la cabecera y en cada respuesta (antes, cuadrado con esquinas redondeadas) */
+.as-bot-avatar, .as-bot-avatar.sm { position: relative; overflow: hidden; border-radius: 50%; }
+.as-bot-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.as-bot-avatar:has(img) { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px #8B5CF6, 0 6px 16px -8px rgba(80, 60, 220, .7); }

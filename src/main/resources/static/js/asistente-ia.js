@@ -39,8 +39,8 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
-  // Mascota del asistente: la imagen va encima del ícono; si el archivo no está, se ve el ícono.
-  var MASCOTA = '<img src="/img/chatcito.jpg" alt="">';
+  // Bridgie, la mascota del asistente: la imagen va encima del ícono; si el archivo no está, se ve el ícono.
+  var MASCOTA = '<img src="/img/bridgie.png" alt="">';
   function sinImagen(img) { if (img && img.parentNode) img.parentNode.removeChild(img); }
   document.addEventListener("error", function (e) {
     var t = e.target;
