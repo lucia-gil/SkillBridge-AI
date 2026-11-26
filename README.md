@@ -1,4 +1,5 @@
 # SkillBridge AI
+<img width="1535" height="658" alt="image" src="https://github.com/user-attachments/assets/516f842f-540d-4148-ad01-e07d88e3e434" />
 
 Plataforma de gestión de talento y proyectos con IA: usuarios y roles, catálogo de habilidades, proyectos, asignaciones con AI Talent Matching, entregables, foros, calendario, reportes y un Asistente IA (agente) conectado a Claude (Anthropic Messages API).
 
