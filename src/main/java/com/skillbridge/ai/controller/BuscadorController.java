@@ -21,10 +21,13 @@ public class BuscadorController {
 
     private final BuscadorService buscadorService;
     private final com.skillbridge.ai.service.BuscadorIaService buscadorIaService;
+    private final com.skillbridge.ai.service.BuscadorColaboradorService buscadorColaborador;
 
-    public BuscadorController(BuscadorService buscadorService, com.skillbridge.ai.service.BuscadorIaService buscadorIaService) {
+    public BuscadorController(BuscadorService buscadorService, com.skillbridge.ai.service.BuscadorIaService buscadorIaService,
+                              com.skillbridge.ai.service.BuscadorColaboradorService buscadorColaborador) {
         this.buscadorService = buscadorService;
         this.buscadorIaService = buscadorIaService;
+        this.buscadorColaborador = buscadorColaborador;
     }
 
     public record PreguntaRequest(String q) {}
@@ -48,6 +51,13 @@ public class BuscadorController {
     @GetMapping("/cuenta/buscar")
     public List<Map<String, Object>> buscar(@RequestParam(name = "q", defaultValue = "") String q, HttpSession session) {
         UsuarioSesion sesion = (UsuarioSesion) session.getAttribute(SesionKeys.USUARIO);
-        return buscadorService.buscar(q, sesion);
+        List<Map<String, Object>> base = buscadorService.buscar(q, sesion);
+        if (!com.skillbridge.ai.service.BuscadorColaboradorService.aplica(sesion)) return base;
+        // Vista Colaborador: primero las páginas de su menú, luego proyectos y
+        // habilidades, y después sus entregables, foros, eventos y cursos.
+        List<Map<String, Object>> todo = new java.util.ArrayList<>(buscadorColaborador.paginas(q, sesion));
+        todo.addAll(base);
+        todo.addAll(buscadorColaborador.contenido(q, sesion));
+        return todo;
     }
 }

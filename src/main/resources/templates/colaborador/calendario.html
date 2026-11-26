@@ -766,7 +766,21 @@
       }
     }
 
+    // ?evento=ID (desde el buscador global): va al día del evento y abre su detalle.
+    var eventoPedido = null;
+    try {
+      var idPedido = new URLSearchParams(window.location.search).get("evento");
+      if (idPedido) {
+        eventoPedido = eventos.filter(function (e) { return e.el.dataset.id === idPedido; })[0] || null;
+        if (eventoPedido) {
+          var p = eventoPedido.key.split("-");
+          cursor = new Date(+p[0], +p[1] - 1, +p[2]);
+        }
+      }
+    } catch (e) { eventoPedido = null; }
+
     render();
+    if (eventoPedido) abrirModalDetalle(eventoPedido.el);
   });
 </script>
 <script src="/js/global-search.js"></script>

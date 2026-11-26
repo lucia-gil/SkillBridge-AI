@@ -63,12 +63,13 @@ public class BuscadorIaService {
     private final PerfilHabilidadRepository perfilHabilidadRepository;
     private final HabilidadRepository habilidadRepository;
     private final ObjectMapper objectMapper;
+    private final BuscadorColaboradorService buscadorColaborador;
 
     public BuscadorIaService(BuscadorService buscadorService, AsistenteIaService asistenteIaService,
                              ProyectoService proyectoService, DemandaHabilidadesService demandaService,
                              TalentMatchingService talentMatchingService, PerfilRepository perfilRepository,
                              PerfilHabilidadRepository perfilHabilidadRepository, HabilidadRepository habilidadRepository,
-                             ObjectMapper objectMapper) {
+                             ObjectMapper objectMapper, BuscadorColaboradorService buscadorColaborador) {
         this.buscadorService = buscadorService;
         this.asistenteIaService = asistenteIaService;
         this.proyectoService = proyectoService;
@@ -78,6 +79,7 @@ public class BuscadorIaService {
         this.perfilHabilidadRepository = perfilHabilidadRepository;
         this.habilidadRepository = habilidadRepository;
         this.objectMapper = objectMapper;
+        this.buscadorColaborador = buscadorColaborador;
     }
 
     @Transactional(readOnly = true)
@@ -92,8 +94,31 @@ public class BuscadorIaService {
         // 1) Filtros: primero la IA; si no responde, palabras clave.
         Filtros f = null;
         String aviso = null;
-        AsistenteIaService.Resultado r = asistenteIaService.consultar(prompt(catalogo, vePersonas), q, 350);
-        if (r.ok()) f = desdeJson(leerJson(r.texto()), catalogo);
+        boolean colaborador = BuscadorColaboradorService.aplica(s);
+        AsistenteIaService.Resultado r = asistenteIaService.consultar(prompt(catalogo, vePersonas, colaborador), q, 350);
+        JsonNode json = r.ok() ? leerJson(r.texto()) : null;
+
+        // Vista Colaborador: entregables, foros, eventos y cursos (lo de sus pantallas).
+        if (colaborador) {
+            String tipo = json != null && BuscadorColaboradorService.TIPOS.contains(json.path("buscar").asText()) ? json.path("buscar").asText() : null;
+            boolean tipoPorIa = tipo != null;
+            if (tipo == null) tipo = BuscadorColaboradorService.tipoPorPalabras(q);
+            if (tipo != null) {
+                List<String> estados = new ArrayList<>();
+                if (tipoPorIa) {
+                    for (JsonNode e : json.path("estadoEntrega")) {
+                        if (BuscadorColaboradorService.ESTADOS_ENTREGA.contains(e.asText())) estados.add(e.asText());
+                    }
+                } else {
+                    estados.addAll(BuscadorColaboradorService.estadosPorPalabras(q));
+                }
+                String texto = tipoPorIa && json.path("texto").isTextual() && !json.path("texto").asText().isBlank()
+                        ? json.path("texto").asText().trim() : null;
+                return buscadorColaborador.preguntar(tipo, estados, texto, tipoPorIa, s);
+            }
+        }
+
+        if (json != null) f = desdeJson(json, catalogo);
         boolean porIa = f != null;
         if (f == null) {
             f = porPalabras(q, catalogo);
@@ -111,13 +136,30 @@ public class BuscadorIaService {
 
         // Sin ningún filtro y sin pedir un listado ("holi", "asdf"): no se
         // devuelve a todo el mundo, se pide reformular.
+        if (colaborador && sinFiltros(f) && !pideListado(q)) {
+            // Sin filtros de proyecto: se busca la pregunta en todo lo del colaborador.
+            List<Map<String, Object>> todo = buscadorColaborador.general(q, s);
+            if (!todo.isEmpty()) {
+                return new Respuesta("Encontré " + todo.size() + " resultado(s) en tus proyectos, entregables, foros, calendario y cursos.",
+                        List.of("Todo lo tuyo"), porIa, "Solo se muestra lo de los proyectos en los que participas.", todo);
+            }
+        }
         if (sinFiltros(f) && !pideListado(q)) {
             return new Respuesta("No entendí qué buscas.", List.of(), porIa,
-                    "Prueba con algo como «¿quién sabe Docker y está libre?» o «proyectos atrasados».", List.of());
+                    colaborador ? "Prueba con algo como «mis entregables por corregir», «reuniones de esta semana» o «cursos de Java»."
+                            : "Prueba con algo como «¿quién sabe Docker y está libre?» o «proyectos atrasados».", List.of());
         }
 
         // 2) Java busca con datos reales.
         List<Map<String, Object>> resultados = "personas".equals(f.buscar()) ? personas(f, s, catalogo) : proyectos(f, s, catalogo);
+        if (colaborador && resultados.isEmpty()) {
+            // Ningún proyecto suyo coincide: se busca lo mismo en sus entregables, foros, calendario y cursos.
+            List<Map<String, Object>> todo = buscadorColaborador.general(q, s);
+            if (!todo.isEmpty()) {
+                return new Respuesta("Ninguno de tus proyectos coincide, pero encontré " + todo.size() + " resultado(s) en tus entregables, foros, calendario y cursos.",
+                        chips(f), porIa, "Solo se muestra lo de los proyectos en los que participas.", todo);
+            }
+        }
         return new Respuesta(interpretacion(f, resultados.size()), chips(f), porIa, aviso, resultados);
     }
 
@@ -221,7 +263,7 @@ public class BuscadorIaService {
 
     // ───────────────────────── Interpretación ─────────────────────────
 
-    private static String prompt(List<Habilidad> catalogo, boolean vePersonas) {
+    private static String prompt(List<Habilidad> catalogo, boolean vePersonas, boolean colaborador) {
         return "Convierte la pregunta de un usuario de SkillBridge AI (gestión de talento y proyectos) en filtros de búsqueda. "
                 + "Habilidades del catálogo: " + catalogo.stream().map(Habilidad::getNombre).sorted().collect(Collectors.joining(", ")) + ". "
                 + "Traduce términos generales a habilidades del catálogo (\"nube\" → AWS, Docker, Kubernetes; \"frontend\" → React, Angular; "
@@ -233,7 +275,12 @@ public class BuscadorIaService {
                 + "\"enBanca\":true si pide personas sin ningún proyecto,"
                 + "\"estados\":[valores de planificacion, activo, en_pausa, completado, cancelado],"
                 + "\"atrasados\":true si pide proyectos atrasados o vencidos,\"conVacantes\":true si pide proyectos con vacantes,"
-                + "\"texto\":palabra libre a buscar en nombres o null}.";
+                + "\"texto\":palabra libre a buscar en nombres o null}."
+                + (colaborador ? " El usuario es un Colaborador: además de \"proyectos\", \"buscar\" puede ser \"entregables\", \"foros\", "
+                + "\"eventos\" (calendario, reuniones, hitos) o \"cursos\". Si busca entregables agrega \"estadoEntrega\": "
+                + "[valores de pendiente, vencido, por_revisar, requiere_ajustes, rehacer, completado] (\"por corregir\" = requiere_ajustes y rehacer; "
+                + "\"pendientes\" = pendiente y vencido). En \"texto\" pon solo el tema o nombre concreto que busca (por ejemplo el nombre de un "
+                + "proyecto o \"docker\"), o null si pide un listado general." : "");
     }
 
     private Filtros desdeJson(JsonNode j, List<Habilidad> catalogo) {
