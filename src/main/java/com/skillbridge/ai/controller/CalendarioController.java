@@ -72,10 +72,29 @@ public class CalendarioController {
      * "Extraer con IA" (mismo patrón que /project-manager/proyectos/extraer-ia):
      * sube un documento con los datos de un evento y devuelve un borrador
      * JSON para pre-llenar el formulario "Nuevo evento". No crea nada.
+     * Disponible para los tres roles que tienen "Nuevo evento" en su calendario
+     * (colaborador, project-manager y resource-manager): mismo servicio de
+     * extracción para los tres, solo cambia la ruta.
      */
+    @PostMapping(value = "/colaborador/calendario/extraer-ia", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    public ResponseEntity<?> extraerIaColaborador(@RequestParam("archivo") MultipartFile archivo) {
+        return extraerIa(archivo);
+    }
+
     @PostMapping(value = "/project-manager/calendario/extraer-ia", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseBody
-    public ResponseEntity<?> extraerIa(@RequestParam("archivo") MultipartFile archivo) {
+    public ResponseEntity<?> extraerIaProjectManager(@RequestParam("archivo") MultipartFile archivo) {
+        return extraerIa(archivo);
+    }
+
+    @PostMapping(value = "/resource-manager/calendario/extraer-ia", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    public ResponseEntity<?> extraerIaResourceManager(@RequestParam("archivo") MultipartFile archivo) {
+        return extraerIa(archivo);
+    }
+
+    private ResponseEntity<?> extraerIa(MultipartFile archivo) {
         try {
             EventoExtraidoIa borrador = extraccionEventoIaService.extraer(archivo);
             return ResponseEntity.ok(borrador);
