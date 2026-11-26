@@ -17,10 +17,12 @@ import com.skillbridge.ai.repository.UsuarioRepository;
 import com.skillbridge.ai.service.AsistenteContextoService;
 import com.skillbridge.ai.service.EventoService;
 import com.skillbridge.ai.service.ProyectoService;
+import com.skillbridge.ai.service.ResumenProfesionalIaService;
 import com.skillbridge.ai.service.TalentMatchingService;
 import com.skillbridge.ai.service.UsuarioService;
 import com.skillbridge.ai.util.Roles;
 import jakarta.validation.Validator;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -54,7 +56,10 @@ public class HerramientasAgente {
             new Definicion("listar_mis_proyectos", "Lista IDs y nombres de proyectos liderados.", Roles.PROJECT_MANAGER, false, Vacio.class),
             new Definicion("buscar_candidatos", "Ranking explicado para un proyecto propio.", Roles.PROJECT_MANAGER, false, Candidatos.class),
             new Definicion("listar_solicitudes", "Lista propuestas pendientes de asignación.", Roles.RESOURCE_MANAGER, false, Vacio.class),
-            new Definicion("consultar_mi_agenda", "Consulta los próximos eventos de la agenda personal y los hitos y entregables de los proyectos en curso.", Roles.RESOURCE_MANAGER, false, Vacio.class),
+            new Definicion("consultar_mi_agenda", "Consulta los próximos eventos de la agenda personal (con id y editable=true) y los hitos y entregables de los proyectos en curso (editable=false).", Roles.RESOURCE_MANAGER, false, Vacio.class),
+            new Definicion("consultar_mi_agenda", "Consulta los eventos próximos (desde hoy, máximo 30) de los proyectos donde participa, con su id, y la lista de esos proyectos con su id para poder agendar.", Roles.PROJECT_MANAGER, false, Vacio.class),
+            new Definicion("consultar_mi_agenda", "Consulta los eventos próximos (desde hoy, máximo 30) de los proyectos donde participa, con su id, y la lista de esos proyectos con su id para poder agendar.", Roles.COLABORADOR, false, Vacio.class),
+            new Definicion("consultar_mi_resumen_profesional_ia", "Consulta el resumen profesional IA propio ya generado (titular, resumen, fortalezas, sugerencias). Solo lectura.", Roles.COLABORADOR, false, Vacio.class),
             new Definicion("listar_cuentas", "Lista hasta 30 cuentas: ID, nombre, rol y estado; sin secretos.", Roles.ADMINISTRADOR, false, Vacio.class),
             new Definicion("consultar_auditoria_agente", "Últimas 30 operaciones del agente, sin prompts ni argumentos.", Roles.ADMINISTRADOR, false, Vacio.class),
             new Definicion("actualizar_mi_biografia", "PREPARA actualización de presentación profesional propia; no cambia resumen IA validado. Requiere botón de confirmación.", Roles.COLABORADOR, true, Biografia.class),
@@ -65,6 +70,16 @@ public class HerramientasAgente {
             new Definicion("crear_evento_agenda", "PREPARA un evento en la agenda personal del Resource Manager (solo él lo ve). "
                     + "tipo: reunion, entregable o hito. fechaInicio: yyyy-MM-ddTHH:mm en hora de Lima. "
                     + "ubicacion, enlace (http/https) y descripcion pueden ir vacíos. Requiere confirmación.", Roles.RESOURCE_MANAGER, true, EventoAgenda.class),
+            new Definicion("crear_evento_proyecto", "PREPARA un evento en un proyecto donde participa (proyectoId de consultar_mi_agenda); avisa al equipo según la audiencia. "
+                    + "tipo: reunion, entregable o hito. fechaInicio: yyyy-MM-ddTHH:mm en hora de Lima. audiencia: todos, solo_pm o solo_colaboradores (por defecto todos). "
+                    + "ubicacion, enlace (http/https) y descripcion pueden ir vacíos. Requiere confirmación.", Roles.PROJECT_MANAGER, true, EventoProyectoNuevo.class),
+            new Definicion("crear_evento_proyecto", "PREPARA un evento en un proyecto donde participa (proyectoId de consultar_mi_agenda); avisa al equipo según la audiencia. "
+                    + "tipo: reunion, entregable o hito. fechaInicio: yyyy-MM-ddTHH:mm en hora de Lima. audiencia: todos, solo_pm o solo_colaboradores (por defecto todos). "
+                    + "ubicacion, enlace (http/https) y descripcion pueden ir vacíos. Requiere confirmación.", Roles.COLABORADOR, true, EventoProyectoNuevo.class),
+            new Definicion("editar_evento_agenda", "PREPARA el cambio de un evento de la agenda personal (eventoId de consultar_mi_agenda con editable=true); "
+                    + "envía todos los campos con sus valores finales, también los que no cambian. Requiere confirmación.", Roles.RESOURCE_MANAGER, true, EventoAgendaEdicion.class),
+            new Definicion("eliminar_evento_agenda", "PREPARA borrar un evento de la agenda personal (eventoId de consultar_mi_agenda con editable=true). Requiere confirmación.",
+                    Roles.RESOURCE_MANAGER, true, EventoId.class),
             new Definicion("cambiar_estado_cuenta", "PREPARA activar/suspender cuenta. No fuerza salida de proyectos. Requiere confirmación.", Roles.ADMINISTRADOR, true, EstadoCuenta.class)
     );
 
@@ -84,6 +99,7 @@ public class HerramientasAgente {
     private final ProyectoRepository proyectoRepository;
     private final AgenteAuditoriaRepository auditoriaRepository;
     private final EventoService eventos;
+    private final ResumenProfesionalIaService resumenIa;
     private final Validator validator;
     private final ObjectMapper mapper;
 
@@ -92,8 +108,10 @@ public class HerramientasAgente {
                               AsignacionRepository asignacionRepository, PropuestaAsignacionRepository propuestaRepository,
                               UsuarioRepository usuarioRepository, PerfilRepository perfilRepository,
                               ProyectoRepository proyectoRepository, AgenteAuditoriaRepository auditoriaRepository,
-                              EventoService eventos, Validator validator, ObjectMapper mapper) {
+                              EventoService eventos, @Lazy ResumenProfesionalIaService resumenIa,
+                              Validator validator, ObjectMapper mapper) {
         this.eventos = eventos;
+        this.resumenIa = resumenIa;
         this.politica = politica;
         this.contexto = contexto;
         this.matching = matching;
@@ -187,15 +205,33 @@ public class HerramientasAgente {
         if (a instanceof Candidatos x) politica.proyecto(s, x.proyectoId());
         if (a instanceof Propuesta x) politica.proyecto(s, x.proyectoId());
         if (a instanceof ProyectoEdicion x) politica.proyecto(s, x.proyectoId());
-        if (a instanceof EventoAgenda x) {
-            if (!x.tipo().matches("reunion|entregable|hito")) throw new IllegalArgumentException("Tipo de evento no válido.");
-            try {
-                java.time.LocalDateTime.parse(x.fechaInicio());
-            } catch (java.time.format.DateTimeParseException e) {
-                throw new IllegalArgumentException("Fecha no válida.");
-            }
-            if (!x.enlace().isBlank() && !x.enlace().matches("(?i)https?://\\S+")) throw new IllegalArgumentException("Enlace no válido.");
+        if (a instanceof EventoAgenda x) validarEvento(x.tipo(), x.fechaInicio(), x.enlace());
+        if (a instanceof EventoAgendaEdicion x) {
+            validarEvento(x.tipo(), x.fechaInicio(), x.enlace());
+            eventoPersonalPropio(s, x.eventoId());
         }
+        if (a instanceof EventoId x) eventoPersonalPropio(s, x.eventoId());
+        if (a instanceof EventoProyectoNuevo x) {
+            validarEvento(x.tipo(), x.fechaInicio(), x.enlace());
+            // Mismo criterio que el calendario: solo proyectos con asignación activa del actor.
+            if (eventos.misProyectos(s.getPerfilId()).stream().noneMatch(p -> p.id().equals(x.proyectoId()))) {
+                throw new AccessDeniedException("Solo puedes agendar en tus proyectos.");
+            }
+        }
+    }
+
+    private static void validarEvento(String tipo, String fechaInicio, String enlace) {
+        if (!tipo.matches("reunion|entregable|hito")) throw new IllegalArgumentException("Tipo de evento no válido.");
+        try {
+            java.time.LocalDateTime.parse(fechaInicio);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException("Fecha no válida.");
+        }
+        if (!enlace.isBlank() && !enlace.matches("(?i)https?://\\S+")) throw new IllegalArgumentException("Enlace no válido.");
+    }
+
+    private void eventoPersonalPropio(UsuarioSesion s, Long eventoId) {
+        if (!eventos.esPersonalDe(eventoId, s.getUsuarioId())) throw new AccessDeniedException("Ese evento no está en tu agenda.");
     }
 
     /** Ejecuta una herramienta de lectura y devuelve el resultado en JSON (sin secretos). */
@@ -218,7 +254,8 @@ public class HerramientasAgente {
                 case "listar_solicitudes" -> propuestaRepository.pendientesParaAgente(MAXIMO_FILAS);
                 case "listar_cuentas" -> usuarioRepository.cuentasParaAgente(MAXIMO_FILAS);
                 case "consultar_auditoria_agente" -> auditoriaRepository.ultimas(MAXIMO_FILAS);
-                case "consultar_mi_agenda" -> agendaDesdeHoy(s);
+                case "consultar_mi_agenda" -> Roles.RESOURCE_MANAGER.equals(s.getRolEfectivo()) ? agendaDesdeHoy(s) : agendaDeProyectos(s);
+                case "consultar_mi_resumen_profesional_ia" -> miResumenIa(s);
                 default -> throw new AccessDeniedException("Herramienta no autorizada.");
             };
         }
@@ -229,22 +266,72 @@ public class HerramientasAgente {
         }
     }
 
-    /** Agenda del RM desde hoy (hasta 30 eventos): lo propio y los hitos de proyectos, sin datos de más. */
+    /**
+     * Agenda del RM desde hoy (hasta 30 eventos): lo propio, con su id y los
+     * datos para poder moverlo, y los hitos de proyectos (solo lectura, sin id).
+     */
     private List<Map<String, Object>> agendaDesdeHoy(UsuarioSesion s) {
-        String hoy = java.time.LocalDate.now(java.time.ZoneId.of("America/Lima")).toString();
-        return eventos.listarResourceManager(s.getUsuarioId()).stream()
-                .filter(e -> e.getFechaInicioIso().compareTo(hoy) >= 0)
-                .limit(30)
-                .map(e -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("titulo", e.getTitulo());
-                    m.put("tipo", e.getTipoCodigo());
-                    m.put("fecha", e.getFechaInicioIso());
-                    m.put("origen", e.getProyectoNombre());
-                    m.put("ubicacion", e.getUbicacionLabel());
-                    return m;
-                })
-                .toList();
+        return desdeHoy(eventos.listarResourceManager(s.getUsuarioId())).map(e -> {
+            Map<String, Object> m = filaAgenda(e);
+            m.put("origen", e.getProyectoNombre());
+            m.put("editable", e.isPuedeGestionar());
+            if (e.isPuedeGestionar()) {
+                m.put("id", e.getId());
+                m.put("ubicacionTexto", valor(e.getUbicacion()));
+                m.put("enlace", valor(e.getEnlaceVirtual()));
+                m.put("descripcion", valor(e.getDescripcion()));
+            }
+            return m;
+        }).toList();
+    }
+
+    /** Agenda de colaborador o PM: eventos visibles de sus proyectos desde hoy y los proyectos donde puede agendar. */
+    private Map<String, Object> agendaDeProyectos(UsuarioSesion s) {
+        boolean esPm = Roles.PROJECT_MANAGER.equals(s.getRolEfectivo());
+        List<Map<String, Object>> filas = desdeHoy(eventos.listar(s.getPerfilId(), esPm, s.getRolOrganizacional())).map(e -> {
+            Map<String, Object> m = filaAgenda(e);
+            m.put("proyecto", e.getProyectoNombre());
+            m.put("audiencia", e.getAudienciaLabel());
+            return m;
+        }).toList();
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("eventos", filas);
+        r.put("proyectosDondePuedeAgendar", eventos.misProyectos(s.getPerfilId()).stream()
+                .map(p -> Map.of("proyectoId", p.id(), "nombre", p.nombre())).toList());
+        return r;
+    }
+
+    private static java.util.stream.Stream<com.skillbridge.ai.dto.EventoFila> desdeHoy(List<com.skillbridge.ai.dto.EventoFila> filas) {
+        String hoy = LocalDate.now(java.time.ZoneId.of("America/Lima")).toString();
+        return filas.stream()
+                .filter(e -> e.getFechaInicioIso() != null && e.getFechaInicioIso().compareTo(hoy) >= 0)
+                .sorted(java.util.Comparator.comparing(com.skillbridge.ai.dto.EventoFila::getFechaInicioIso))
+                .limit(30);
+    }
+
+    private static Map<String, Object> filaAgenda(com.skillbridge.ai.dto.EventoFila e) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("titulo", e.getTitulo());
+        m.put("tipo", e.getTipoCodigo());
+        m.put("fecha", e.getFechaInicioIso());
+        m.put("ubicacion", e.getUbicacionLabel());
+        return m;
+    }
+
+    private static String valor(String v) { return v == null ? "" : v; }
+
+    /** Resumen profesional IA propio (el validado): solo lo que el colaborador ya ve en su pantalla. */
+    private Map<String, Object> miResumenIa(UsuarioSesion s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        resumenIa.obtener(s.getPerfilId()).ifPresentOrElse(r -> {
+            m.put("existe", true);
+            m.put("titular", valor(r.getTitular()));
+            m.put("resumen", valor(r.getResumen()));
+            m.put("fortalezas", r.getFortalezas());
+            m.put("sugerencias", r.getSugerencias());
+            m.put("desactualizado", r.isDesactualizado());
+        }, () -> m.put("existe", false));
+        return m;
     }
 
     /** Solo la invoca ConfirmacionAgenteService, dentro de su transacción y con la confirmación bloqueada. */
@@ -274,6 +361,13 @@ public class HerramientasAgente {
             matching.resolver(x.propuestaId(), x.aprobar(), x.motivo(), s.getPerfilId(), s.getUsuarioId());
         } else if (a instanceof EventoAgenda x) {
             eventos.crearPersonal(s.getUsuarioId(), x.tipo(), x.titulo(), x.descripcion(), x.fechaInicio(), x.ubicacion(), x.enlace());
+        } else if (a instanceof EventoProyectoNuevo x) {
+            eventos.crear(s.getPerfilId(), x.proyectoId(), x.tipo(), x.titulo(), x.descripcion(), x.fechaInicio(),
+                    x.ubicacion(), x.enlace(), x.audiencia());
+        } else if (a instanceof EventoAgendaEdicion x) {
+            eventos.editarPersonal(x.eventoId(), s.getUsuarioId(), x.tipo(), x.titulo(), x.descripcion(), x.fechaInicio(), x.ubicacion(), x.enlace());
+        } else if (a instanceof EventoId x) {
+            eventos.eliminarPersonal(x.eventoId(), s.getUsuarioId());
         } else if (a instanceof EstadoCuenta x) {
             usuarios.cambiarEstado(x.cuentaId(), x.activar(), x.motivo(), false, s.getUsuarioId());
         } else {

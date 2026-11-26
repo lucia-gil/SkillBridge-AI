@@ -208,6 +208,12 @@ public class EventoService {
         return personalRepository.save(e);
     }
 
+    /** Si el evento existe en la agenda personal de ese usuario. */
+    @Transactional(readOnly = true)
+    public boolean esPersonalDe(Long eventoId, Long usuarioId) {
+        return personalRepository.findByIdAndUsuarioId(eventoId, usuarioId).isPresent();
+    }
+
     /** Elimina un evento de la agenda personal; solo su dueño puede hacerlo. */
     @Transactional
     public void eliminarPersonal(Long eventoId, Long usuarioId) {

@@ -642,13 +642,19 @@
 (function ($) {
   "use strict";
   var panel = $('<section aria-live="polite" class="as-confirmaciones"></section>');
+  var NOMBRES = {
+    actualizar_mi_biografia: 'Actualizar tu biografía', crear_proyecto: 'Crear proyecto', editar_proyecto: 'Editar proyecto',
+    proponer_candidato: 'Proponer candidato', resolver_propuesta: 'Resolver solicitud', crear_evento_agenda: 'Agendar evento',
+    crear_evento_proyecto: 'Agendar evento en el proyecto', editar_evento_agenda: 'Mover o cambiar evento',
+    eliminar_evento_agenda: 'Eliminar evento de tu agenda', cambiar_estado_cuenta: 'Cambiar estado de cuenta'
+  };
   $("#as-form").before(panel);
   function cargar() {
     $.getJSON('/api/asistente/confirmaciones').done(function (filas) {
       panel.empty();
       filas.forEach(function (p) {
         var caja=$('<div class="as-bubble"></div>').appendTo(panel);
-        $('<strong></strong>').text('Revisa antes de confirmar: '+p.herramienta).appendTo(caja);
+        $('<strong></strong>').text('Revisa antes de confirmar: '+(Object.prototype.hasOwnProperty.call(NOMBRES,p.herramienta)?NOMBRES[p.herramienta]:p.herramienta)).appendTo(caja);
         var argumentos;try{argumentos=JSON.stringify(JSON.parse(p.argumentos),null,2);}catch(e){argumentos='Datos inválidos';return;}
         $('<pre style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>').text(argumentos).appendTo(caja);
         $('<p></p>').text('Esta acción utiliza exactamente estos datos. Caduca en cinco minutos.').appendTo(caja);

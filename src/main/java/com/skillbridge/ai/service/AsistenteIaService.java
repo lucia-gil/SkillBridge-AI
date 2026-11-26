@@ -480,11 +480,15 @@ public class AsistenteIaService {
             case Roles.ADMINISTRADOR -> "Administrador: ve cifras globales de la plataforma, la lista de cuentas y la auditoría del "
                     + "asistente, y puede preparar la activación o suspensión de cuentas.";
             case Roles.RESOURCE_MANAGER -> "Resource Manager: ve la capacidad y carga de todo el equipo, la banca, las solicitudes de "
-                    + "asignación y su agenda; puede preparar la aprobación o rechazo de solicitudes y eventos de su agenda.";
+                    + "asignación y su agenda; puede preparar la aprobación o rechazo de solicitudes y crear, mover o borrar eventos de su "
+                    + "agenda personal (para mover o borrar, consulta antes la agenda y usa el id del evento).";
             case Roles.PROJECT_MANAGER -> "Project Manager: ve solo los proyectos que lidera, su equipo y sus entregables; puede "
-                    + "buscar candidatos, preparar propuestas al Resource Manager y crear o editar sus proyectos. No asigna personas.";
+                    + "buscar candidatos, preparar propuestas al Resource Manager, crear o editar sus proyectos, consultar su agenda y "
+                    + "agendar eventos en los proyectos donde participa. No asigna personas.";
             default -> "Colaborador: ve solo sus propios datos (perfil, habilidades, carga, proyectos y entregables) y puede "
-                    + "preparar la actualización de su biografía. No ve datos de otras personas.";
+                    + "preparar la actualización de su biografía, consultar su agenda y agendar eventos en los proyectos donde participa. "
+                    + "Si pide escribir su biografía a partir de su resumen profesional IA, consulta primero ese resumen y "
+                    + "redacta una presentación breve en primera persona basada solo en él. No ve datos de otras personas.";
         };
         return "Eres Bridgie, el asistente de IA de SkillBridge AI, una plataforma de gestión de talento y proyectos. "
                 + "Hablas con " + nombre + ", que usa la plataforma como " + alcance + " "
