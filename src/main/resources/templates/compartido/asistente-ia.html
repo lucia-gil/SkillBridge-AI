@@ -111,7 +111,30 @@
 
         <!-- Contexto -->
         <aside class="as-ctx" id="as-contexto" aria-label="Contexto que conoce el asistente">
-          <p class="as-label">Contexto cargado <span class="as-live">en vivo</span></p>
+          <section class="as-caps" aria-labelledby="as-caps-titulo">
+            <p class="as-label" id="as-caps-titulo">Qué puede hacer Bridgie</p>
+            <p class="as-ctx-hint">Toca una idea para escribirla y ajústala antes de enviar.</p>
+            <p class="as-caps-grupo"><svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-zap"></use></svg>Hace por ti
+              <span class="as-caps-badge" title="Bridgie prepara el cambio y tú lo apruebas con un botón">con tu confirmación</span></p>
+            <ul class="as-caps-list">
+              <li th:each="c : ${capacidades}" th:if="${c.accion()}">
+                <button type="button" class="as-cap" data-tono="accion" th:attr="data-as-cap=${c.ejemplo()}" th:disabled="${!motivo.isEmpty()}">
+                  <span class="as-ctx-icon"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${c.icono()}"></use></svg></span>
+                  <span class="as-ctx-text"><b th:text="${c.titulo()}">Acción</b><small th:text="'«' + ${c.ejemplo()} + '»'">Ejemplo</small></span>
+                </button>
+              </li>
+            </ul>
+            <p class="as-caps-grupo"><svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-search"></use></svg>Te responde al momento</p>
+            <ul class="as-caps-list">
+              <li th:each="c : ${capacidades}" th:unless="${c.accion()}">
+                <button type="button" class="as-cap" data-tono="consulta" th:attr="data-as-cap=${c.ejemplo()}" th:disabled="${!motivo.isEmpty()}">
+                  <span class="as-ctx-icon"><svg class="icon icon-sm"><use th:attr="href='/img/icons.svg#' + ${c.icono()}"></use></svg></span>
+                  <span class="as-ctx-text"><b th:text="${c.titulo()}">Consulta</b><small th:text="'«' + ${c.ejemplo()} + '»'">Ejemplo</small></span>
+                </button>
+              </li>
+            </ul>
+          </section>
+          <p class="as-label as-ctx-titulo">Contexto cargado <span class="as-live">en vivo</span></p>
           <p th:unless="${asistenteAdmin}" class="as-ctx-hint">Datos de SkillBridge disponibles en esta vista.</p>
           <ul class="as-ctx-list">
             <li th:each="t : ${tarjetas}" th:attr="data-tono=${t.tono()}">

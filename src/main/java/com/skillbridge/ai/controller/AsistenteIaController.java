@@ -70,6 +70,7 @@ public class AsistenteIaController {
         model.addAttribute("maxAdjuntos", AsistenteConversacionService.MAX_ADJUNTOS);
         model.addAttribute("motivo", conversacionService.motivoIndisponible());
         model.addAttribute("alcance", alcance(rol));
+        model.addAttribute("capacidades", capacidades(rol));
         boolean asistenteAdmin = Roles.ADMINISTRADOR.equals(rol);
         model.addAttribute("asistenteAdmin", asistenteAdmin);
         if (asistenteAdmin) {
@@ -206,6 +207,44 @@ public class AsistenteIaController {
             case Roles.PROJECT_MANAGER -> "Contexto: tus proyectos, tu equipo y sus entregables";
             case Roles.ADMINISTRADOR -> "Contexto: usuarios, proyectos y catálogo de la plataforma";
             default -> "Contexto: tus proyectos, tus habilidades y tus entregables";
+        };
+    }
+
+    /**
+     * Lo que Bridgie puede hacer en este rol, para el panel derecho. Es solo una
+     * guía visual con frases de ejemplo: los permisos reales los aplica
+     * HerramientasAgente en el servidor. Mantener alineado con sus definiciones.
+     */
+    public record Capacidad(String icono, String titulo, String ejemplo, boolean accion) {}
+
+    static List<Capacidad> capacidades(String rol) {
+        return switch (rol == null ? "" : rol) {
+            case Roles.ADMINISTRADOR -> List.of(
+                    new Capacidad("icon-user-x", "Activar o suspender una cuenta", "Quiero suspender una cuenta, ¿cuáles están activas?", true),
+                    new Capacidad("icon-bar-chart", "Métricas de la plataforma", "Dame las métricas globales de la plataforma", false),
+                    new Capacidad("icon-users", "Cuentas y roles", "Lista las cuentas inactivas", false),
+                    new Capacidad("icon-shield", "Auditoría de Bridgie", "¿Qué operaciones hizo el asistente hoy?", false));
+            case Roles.RESOURCE_MANAGER -> List.of(
+                    new Capacidad("icon-check-circle", "Aprobar o rechazar solicitudes", "Revisa las solicitudes pendientes y ayúdame a resolverlas", true),
+                    new Capacidad("icon-calendar", "Agendar en tu agenda", "Agéndame una reunión con el equipo el jueves a las 3 pm", true),
+                    new Capacidad("icon-refresh", "Mover o borrar un evento", "Mueve mi próxima reunión al lunes a las 10 am", true),
+                    new Capacidad("icon-list", "Solicitudes pendientes", "¿Qué solicitudes de asignación están pendientes?", false),
+                    new Capacidad("icon-activity", "Capacidad del equipo", "¿Quién tiene disponibilidad esta semana?", false),
+                    new Capacidad("icon-clock", "Tu agenda", "¿Qué tengo en mi agenda esta semana?", false));
+            case Roles.PROJECT_MANAGER -> List.of(
+                    new Capacidad("icon-plus-circle", "Crear un proyecto", "Crea un proyecto llamado App de Reservas del 1 al 31 de enero", true),
+                    new Capacidad("icon-edit", "Editar tu proyecto", "Cambia la fecha de fin de mi proyecto al 15 de febrero", true),
+                    new Capacidad("icon-user-check", "Proponer un candidato", "Propón al mejor candidato para mi proyecto con 50 % de dedicación", true),
+                    new Capacidad("icon-calendar", "Agendar un evento", "Agenda una reunión de equipo en mi proyecto el lunes a las 9 am", true),
+                    new Capacidad("icon-search-check", "Buscar candidatos", "¿Quiénes son los mejores candidatos para mi proyecto?", false),
+                    new Capacidad("icon-users", "Cobertura del equipo", "¿Cómo va mi equipo y qué me falta cubrir?", false),
+                    new Capacidad("icon-clock", "Tu agenda", "¿Qué eventos tengo esta semana?", false));
+            default -> List.of(
+                    new Capacidad("icon-calendar", "Agendar un evento", "Agéndame una reunión de seguimiento el viernes a las 10 am en mi proyecto", true),
+                    new Capacidad("icon-edit", "Escribir tu biografía", "Redacta mi biografía usando mi resumen profesional", true),
+                    new Capacidad("icon-clock", "Tu agenda", "¿Qué eventos tengo esta semana?", false),
+                    new Capacidad("icon-file-text", "Entregables y carga", "¿Qué entregables tengo pendientes?", false),
+                    new Capacidad("icon-award", "Tu resumen profesional", "¿Qué fortalezas destaca mi resumen profesional?", false));
         };
     }
 

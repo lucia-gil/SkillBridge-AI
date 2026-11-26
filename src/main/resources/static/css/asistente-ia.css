@@ -138,6 +138,22 @@
 .as-ctx-text small { font-size: 11.5px; color: var(--text-tertiary); }
 .as-ctx-go { color: var(--text-tertiary); }
 
+/* ── Qué puede hacer Bridgie (panel derecho) ───────────────── */
+.as-caps { margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle); }
+.as-caps-grupo { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 12px 0 8px; font-size: 12px; font-weight: 650; color: var(--text-secondary); }
+.as-caps-grupo .icon { color: var(--violet-fg); }
+.as-caps-badge { padding: 2px 8px; border-radius: 999px; background: var(--violet-bg); color: var(--violet-fg); font-size: 10.5px; font-weight: 600; }
+.as-caps-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.as-cap { --t-bg: var(--blue-bg); --t-fg: var(--blue-fg); width: 100%; display: flex; align-items: flex-start; gap: 10px; padding: 9px 11px; border: 1px solid var(--border-subtle);
+  border-radius: 12px; background: var(--surface); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.as-cap[data-tono="accion"] { --t-bg: var(--violet-bg); --t-fg: var(--violet-fg); }
+.as-cap:hover:not(:disabled) { border-color: var(--t-fg); box-shadow: var(--shadow-1); transform: translateY(-1px); }
+.as-cap:focus-visible { outline: 2px solid var(--t-fg); outline-offset: 2px; }
+.as-cap:disabled { opacity: .55; cursor: not-allowed; }
+.as-cap .as-ctx-text b { white-space: normal; }
+.as-cap .as-ctx-text small { margin-top: 2px; line-height: 1.4; font-style: italic; }
+.as-ctx-titulo { margin-top: 4px; }
+
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 1280px) {
   .as { grid-template-columns: 240px minmax(0, 1fr); }

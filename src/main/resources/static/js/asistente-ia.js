@@ -521,6 +521,13 @@
     $send.prop("disabled", this.disabled || (!$.trim(this.value) && !estado.archivos.length) || estado.enviando);
   });
   $msgs.on("click", "[data-as-sug]", function () { enviar($(this).text()); });
+  // Ideas del panel "Qué puede hacer Bridgie": se escriben en el cuadro para ajustarlas antes de enviar.
+  $(document).on("click", "[data-as-cap]", function () {
+    if ($input.prop("disabled")) return;
+    var texto = String($(this).attr("data-as-cap") || "");
+    $input.val(texto).trigger("input").trigger("focus");
+    var el = $input.get(0); if (el && el.setSelectionRange) el.setSelectionRange(texto.length, texto.length);
+  });
   $lista.on("click", ".as-hist-item", function () { abrir(Number($(this).data("id"))); });
   $("#as-nueva").on("click", function () {
     if (estado.enviando) return;
