@@ -39,8 +39,9 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
-  // Bridgie, la mascota del asistente: la imagen va encima del ícono; si el archivo no está, se ve el ícono.
-  var MASCOTA = '<img src="/img/bridgie.png" alt="">';
+  // Bridgie en las respuestas: versión sin la mano levantada (la que saluda va en el título del chat).
+  // La imagen va encima del ícono; si el archivo no está, se ve el ícono.
+  var MASCOTA = '<img src="/img/bridgie-respuesta.png" alt="">';
   function sinImagen(img) { if (img && img.parentNode) img.parentNode.removeChild(img); }
   document.addEventListener("error", function (e) {
     var t = e.target;
