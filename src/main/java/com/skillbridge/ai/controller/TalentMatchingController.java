@@ -109,6 +109,9 @@ public class TalentMatchingController {
         try {
             boolean aprobar = "aprobar".equals(decision);
             if (!aprobar && !"rechazar".equals(decision)) throw new OperacionInvalidaException("Decisión no reconocida.");
+            if (!aprobar && (motivo == null || motivo.isBlank())) {
+                throw new OperacionInvalidaException("Escribe un comentario para el Project Manager al rechazar la propuesta.");
+            }
             matchingService.resolver(id, aprobar, motivo, sesion.getPerfilId(), sesion.getUsuarioId());
             ra.addFlashAttribute("exito", aprobar ? "Propuesta aprobada y colaborador asignado." : "Propuesta rechazada.");
         } catch (OperacionInvalidaException ex) { ra.addFlashAttribute("error", ex.getMessage()); }

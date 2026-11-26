@@ -59,7 +59,9 @@
     return '<li class="mia-card' + (c.recomendado ? " is-top" : "") + '" data-perfil="' + c.perfilId + '">' +
         '<div class="mia-card-top"><span class="avatar avatar-sm">' + esc(c.iniciales) + "</span>" +
         '<div class="mia-who">' + nombre + "<small>" + esc(c.cargo) + "</small></div>" +
-        (c.recomendado ? '<span class="mia-top-tag">' + icon("icon-star", "icon-sm") + "Recomendado</span>" : "") +
+        (c.recomendado ? '<span class="mia-top-tag">' + icon("icon-star", "icon-sm") + "Recomendado</span>"
+            : (c.habilidades && c.habilidades.length && c.scoreHabilidades < 50
+                ? '<span class="mia-gap-tag" title="Cumple menos de la mitad de las habilidades pedidas">' + icon("icon-alert-triangle", "icon-sm") + "Brecha técnica</span>" : "")) +
         '<span class="mia-score" style="--p:' + c.score + '"><b>' + c.score + "</b></span></div>" +
         '<p class="mia-why' + (a.ia ? " is-ia" : "") + '">' + icon(a.ia ? "icon-sparkles" : "icon-info", "icon-sm") + "<span>" + esc(c.explicacion) + "</span></p>" +
         (skills ? '<ul class="mia-skills">' + skills + "</ul>" : "") +
@@ -73,8 +75,13 @@
     return a.candidatos.map(function (c) { return tarjeta(c, a, opts); }).join("");
   }
 
+  function brecha(a) {
+    return a.brecha ? '<div class="mia-brecha" role="note">' + icon("icon-alert-triangle") + "<div><b>Brecha de habilidades</b><p>" + esc(a.brecha) +
+        '</p><a href="/' + (a.area || "resource-manager") + '/cursos.html">Ver cursos para capacitar ' + icon("icon-chevron-right", "icon-sm") + "</a></div></div>" : "";
+  }
+
   function resumen(a) {
-    return '<div class="mia-resumen' + (a.ia ? " is-ia" : "") + '">' + icon(a.ia ? "icon-sparkles" : "icon-info") +
+    return brecha(a) + '<div class="mia-resumen' + (a.ia ? " is-ia" : "") + '">' + icon(a.ia ? "icon-sparkles" : "icon-info") +
         "<div><b>" + (a.ia ? "Análisis de la IA" : "Análisis del sistema") + "</b><p>" + esc(a.resumen) + "</p>" +
         (a.aviso ? '<small class="mia-aviso">' + esc(a.aviso) + "</small>" : "") + "</div></div>";
   }
@@ -131,6 +138,7 @@
       cargando($out, "Interpretando tu petición y calculando el ranking…");
       window.SBAI.api.post("/api/matching/consulta", { texto: texto })
         .done(function (a) {
+          a.area = opts.area;
           var i = a.interpretacion || {};
           var chips = '<span class="mia-chip is-proj">' + icon("icon-folder", "icon-sm") + esc(a.proyecto) + "</span>" +
               (i.habilidades && i.habilidades.length

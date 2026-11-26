@@ -331,10 +331,24 @@ public class TalentMatchingService {
     }
 
     @Transactional(readOnly = true)
-    public List<PropuestaAsignacionFila> pendientes() { return propuestaRepository.listarPendientes().stream().map(this::fila).toList(); }
+    public List<PropuestaAsignacionFila> pendientes() {
+        List<PropuestaAsignacion> lista = propuestaRepository.listarPendientes();
+        // Ranking de cada proyecto una sola vez (por dedicación), para comparar cada propuesta con el resto.
+        Map<String, List<MatchingCandidato>> rankings = new HashMap<>();
+        int[] pesos = pesosConfigurados();
+        return lista.stream().map(p -> {
+            List<MatchingCandidato> ranking = rankings.computeIfAbsent(p.getProyectoId() + ":" + p.getDedicacionPorcentaje(),
+                    k -> rankear(p.getProyecto(), p.getDedicacionPorcentaje(), pesos[0], pesos[1], pesos[2]));
+            Set<Long> yaPropuestos = lista.stream().filter(o -> o.getProyectoId().equals(p.getProyectoId()))
+                    .map(PropuestaAsignacion::getCandidatoPerfilId).collect(Collectors.toSet());
+            return fila(p, ranking, yaPropuestos);
+        }).toList();
+    }
 
     @Transactional(readOnly = true)
-    public List<PropuestaAsignacionFila> resueltas() { return propuestaRepository.listarResueltas().stream().limit(20).map(this::fila).toList(); }
+    public List<PropuestaAsignacionFila> resueltas() {
+        return propuestaRepository.listarResueltas().stream().limit(20).map(p -> fila(p, null, Set.of())).toList();
+    }
 
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void resolverAutomaticamente(Long id) {
@@ -364,17 +378,47 @@ public class TalentMatchingService {
                 "{\"estado\":\"" + p.getEstado() + "\"}", p.getProyecto().getNombre());
     }
 
-    private PropuestaAsignacionFila fila(PropuestaAsignacion p) {
+    private PropuestaAsignacionFila fila(PropuestaAsignacion p, List<MatchingCandidato> ranking, Set<Long> yaPropuestos) {
+        Integer scoreActual = null;
+        int[] subActuales = null;
+        List<MatchingHabilidad> habilidadesCandidato = List.of();
+        PropuestaAsignacionFila.Alternativa alternativa = null;
+        if (ranking != null) {
+            MatchingCandidato propio = ranking.stream().filter(c -> c.getPerfilId().equals(p.getCandidatoPerfilId())).findFirst().orElse(null);
+            if (propio != null) {
+                scoreActual = propio.getScoreTotal();
+                subActuales = new int[]{propio.getScoreHabilidades(), propio.getScoreExperiencia(), propio.getScoreDisponibilidad()};
+                habilidadesCandidato = propio.getHabilidades();
+            }
+            int referencia = scoreActual != null ? scoreActual : p.getScoreTotal();
+            int habilidadesReferencia = subActuales != null ? subActuales[0] : Optional.ofNullable(p.getScoreHabilidades()).orElse(0);
+            // Alternativa: alguien libre (carga compatible), no propuesto ya, con al menos 5 puntos más.
+            alternativa = ranking.stream()
+                    .filter(c -> c.isCargaCompatible() && !yaPropuestos.contains(c.getPerfilId()) && c.getScoreTotal() >= referencia + 5
+                            && c.getScoreHabilidades() >= habilidadesReferencia)
+                    .findFirst()
+                    .map(c -> new PropuestaAsignacionFila.Alternativa(c.getPerfilId(), c.getNombre(), c.getCargo(), c.getScoreTotal(),
+                            c.getScoreHabilidades(), c.getCargaProyectada()))
+                    .orElse(null);
+        }
+        return fila(p, scoreActual, subActuales, habilidadesCandidato, alternativa, ranking != null ? vacantes(p.getProyecto()) : 0);
+    }
+
+    private PropuestaAsignacionFila fila(PropuestaAsignacion p, Integer scoreActual, int[] subActuales, List<MatchingHabilidad> habilidadesCandidato,
+                                         PropuestaAsignacionFila.Alternativa alternativa, long vacantesProyecto) {
         int carga = Optional.ofNullable(asignacionRepository.sumarCargaActivaDePerfil(p.getCandidatoPerfilId())).orElse(0);
         var cfg = configuracionService.obtenerMapa();
         int limiteCarga = proyectoService.limiteCargaConfigurado();
         return new PropuestaAsignacionFila(p.getId(), p.getProyecto().getNombre(), p.getCandidato().getUsuario().getNombreCompleto(),
                 InicialesUtil.de(p.getCandidato().getUsuario().getNombreCompleto()),
                 Optional.ofNullable(p.getCandidato().getCargo()).orElse("Colaborador"), p.getSolicitante().getUsuario().getNombreCompleto(),
-                p.getDedicacionPorcentaje(), p.getScoreTotal(), p.getScoreHabilidades(), p.getScoreExperiencia(),
-                p.getScoreDisponibilidad(), carga, carga + p.getDedicacionPorcentaje(), carga + p.getDedicacionPorcentaje() <= limiteCarga,
+                // En pendientes, los subpuntajes son los de hoy (coinciden con el match y las habilidades que se muestran).
+                p.getDedicacionPorcentaje(), p.getScoreTotal(),
+                subActuales != null ? subActuales[0] : p.getScoreHabilidades(),
+                subActuales != null ? subActuales[1] : p.getScoreExperiencia(),
+                subActuales != null ? subActuales[2] : p.getScoreDisponibilidad(), carga, carga + p.getDedicacionPorcentaje(), carga + p.getDedicacionPorcentaje() <= limiteCarga,
                 p.getEstado(), p.getFechaSolicitud() != null ? p.getFechaSolicitud().format(FECHA) : "", p.getMotivoResolucion(),
-                p.getOrigen());
+                p.getOrigen(), p.getProyectoId(), p.getCandidatoPerfilId(), vacantesProyecto, scoreActual, habilidadesCandidato, alternativa);
     }
 
     /**

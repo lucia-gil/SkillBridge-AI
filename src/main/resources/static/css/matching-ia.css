@@ -98,3 +98,11 @@
 .mia-panel + .card { margin-top: var(--space-6); }
 .pd-sug .pd-card-head { flex-wrap: wrap; }
 .pd-sug .pd-card-head h3 { white-space: nowrap; }
+
+/* Brecha de habilidades: nadie libre cumple lo pedido */
+.mia-brecha { display: flex; gap: 12px; margin: 0 0 12px; padding: 14px 16px; border: 1px solid var(--amber-border); border-radius: 12px; background: var(--amber-bg); color: var(--amber-fg-strong); }
+.mia-brecha > .icon { flex-shrink: 0; color: var(--amber-fg); margin-top: 2px; }
+.mia-brecha b { display: block; font-size: var(--fs-sm); }
+.mia-brecha p { margin: 2px 0 6px; font-size: var(--fs-sm); line-height: 1.5; }
+.mia-brecha a { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: inherit; }
+.mia-gap-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--amber-bg); color: var(--amber-fg-strong); font-size: 11px; font-weight: 600; white-space: nowrap; }

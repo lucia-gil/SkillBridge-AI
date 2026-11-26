@@ -57,7 +57,11 @@ public class MatchingIaService {
     public record Interpretacion(List<String> habilidades, Integer cantidad, Integer dedicacion, boolean porIa) {}
 
     public record Analisis(Long proyectoId, String proyecto, long vacantes, int dedicacion, String resumen,
-                           boolean ia, String aviso, List<CandidatoIa> candidatos, Interpretacion interpretacion) {}
+                           boolean ia, String aviso, List<CandidatoIa> candidatos, Interpretacion interpretacion,
+                           String brecha) {}
+
+    /** Desde este % de coincidencia técnica una persona puede figurar como "Recomendada". */
+    static final int HABILIDADES_MINIMAS_RECOMENDAR = 50;
 
     private record ProyectoOpcion(Long id, String nombre, long vacantes) {}
 
@@ -189,7 +193,7 @@ public class MatchingIaService {
         if (ranking.isEmpty()) {
             return new Analisis(proyectoId, p.getNombre(), vacantes, dedicacion,
                     "No encontré personas con capacidad libre para " + dedicacion + "% de dedicación en \"" + p.getNombre() + "\".",
-                    false, null, List.of(), interpretacion);
+                    false, null, List.of(), interpretacion, null);
         }
 
         Map<Long, String> explicaciones = new HashMap<>();
@@ -210,6 +214,16 @@ public class MatchingIaService {
         boolean ia = json != null && !explicaciones.isEmpty();
         if (resumen == null) resumen = resumenJava(p, ranking, dedicacion);
 
+        // Brecha: se piden habilidades y nadie libre llega al mínimo. Se avisa y no se recomienda a nadie.
+        boolean conRequisitos = ranking.stream().anyMatch(c -> !c.getHabilidades().isEmpty());
+        String brecha = null;
+        if (conRequisitos && ranking.stream().noneMatch(MatchingIaService::cubreHabilidades)) {
+            List<String> faltan = ranking.get(0).getHabilidades().stream().map(MatchingHabilidad::nombre).distinct().limit(4).toList();
+            brecha = "Nadie con capacidad libre cumple " + (faltan.isEmpty() ? "las habilidades pedidas" : String.join(", ", faltan))
+                    + " al nivel pedido. Te muestro a las personas más cercanas por experiencia y disponibilidad: "
+                    + "considera capacitarlas con un curso, bajar el nivel pedido o buscar fuera del equipo.";
+        }
+        int recomendados = 0;
         List<CandidatoIa> candidatos = new ArrayList<>();
         for (int i = 0; i < ranking.size(); i++) {
             MatchingCandidato c = ranking.get(i);
@@ -219,12 +233,23 @@ public class MatchingIaService {
                     c.getDisponibilidad(), c.getCargaActual(), c.getCargaProyectada(),
                     c.getHabilidades().stream().map(h -> new HabilidadIa(h.nombre(), h.nivelCandidato() >= h.nivelRequerido(),
                             h.requeridoLabel(), h.candidatoLabel())).toList(),
-                    explicacion, i < cantidad));
+                    explicacion, recomendar(c, recomendados, cantidad)));
+            if (recomendar(c, recomendados, cantidad)) recomendados++;
             if (solicitantePerfilId != null) {
                 logRepository.save(new RecomendacionIaLog(proyectoId, c.getPerfilId(), solicitantePerfilId, c.getScoreTotal(), explicacion));
             }
         }
-        return new Analisis(proyectoId, p.getNombre(), vacantes, dedicacion, resumen, ia, aviso, candidatos, interpretacion);
+        return new Analisis(proyectoId, p.getNombre(), vacantes, dedicacion, resumen, ia, aviso, candidatos, interpretacion, brecha);
+    }
+
+    /** Cumple lo técnico: el proyecto no pide habilidades o la coincidencia llega al mínimo. */
+    static boolean cubreHabilidades(MatchingCandidato c) {
+        return c.getHabilidades().isEmpty() || c.getScoreHabilidades() >= HABILIDADES_MINIMAS_RECOMENDAR;
+    }
+
+    /** "Recomendado" solo para los primeros N que además cumplen lo técnico. */
+    private static boolean recomendar(MatchingCandidato c, int yaRecomendados, int cantidad) {
+        return yaRecomendados < cantidad && cubreHabilidades(c);
     }
 
     private static final String PROMPT_EXPLICAR =
@@ -236,7 +261,9 @@ public class MatchingIaService {
             + "\"resumen\": máximo 2 oraciones que comparen a los mejores y digan a quién conviene priorizar y por qué. "
             + "\"explicacion\": 1 o 2 oraciones (máximo 45 palabras) por candidato, en español, con sus fortalezas concretas "
             + "para ESTE proyecto (habilidades que cumple, experiencia, disponibilidad) y, si aplica, una advertencia "
-            + "(habilidad con nivel menor al pedido, carga alta tras asignarlo). Sin saludos.";
+            + "(habilidad con nivel menor al pedido, carga alta tras asignarlo). Si su coincidencia de habilidades es menor a 50, "
+            + "dilo claramente y no lo presentes como buena opción técnica; si nadie llega a 50, el resumen debe decir que "
+            + "hay una brecha de habilidades en el equipo. Sin saludos.";
 
     private String contexto(Proyecto p, List<MatchingCandidato> ranking, int dedicacion, String peticion) {
         StringBuilder sb = new StringBuilder();
