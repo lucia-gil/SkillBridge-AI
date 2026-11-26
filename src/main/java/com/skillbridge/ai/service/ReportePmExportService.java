@@ -17,6 +17,7 @@ import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
+import com.skillbridge.ai.dto.FichaProyecto;
 import com.skillbridge.ai.dto.ReportePmDatos;
 import com.skillbridge.ai.dto.ReportePmFila;
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -45,7 +46,13 @@ public class ReportePmExportService {
     };
 
     public void escribirExcel(ReportePmDatos datos, OutputStream salida) throws IOException {
+        escribirExcel(datos, List.of(), salida);
+    }
+
+    /** Hoja "Reporte" con la tabla comparativa y, después, una hoja por proyecto con su ficha completa. */
+    public void escribirExcel(ReportePmDatos datos, List<FichaProyecto> fichas, OutputStream salida) throws IOException {
         try (XSSFWorkbook libro = new XSSFWorkbook()) {
+            Map<Long, Cell> celdasProyecto = new java.util.HashMap<>();
             Sheet hoja = libro.createSheet("Reporte");
             hoja.setDisplayGridlines(false);
             hoja.createFreezePane(0, 12);
@@ -99,7 +106,9 @@ public class ReportePmExportService {
             int filaN = 12;
             for (ReportePmFila fila : datos.getFilas()) {
                 Row row = hoja.createRow(filaN++);
-                row.createCell(0).setCellValue(fila.getProyecto());
+                Cell nombreProyecto = row.createCell(0);
+                nombreProyecto.setCellValue(fila.getProyecto());
+                celdasProyecto.put(fila.getProyectoId(), nombreProyecto);
                 row.createCell(1).setCellValue(fila.getEstado());
                 row.createCell(2).setCellValue(fila.getFechaInicioLabel());
                 row.createCell(3).setCellValue(fila.getFechaFinLabel());
@@ -117,11 +126,27 @@ public class ReportePmExportService {
             int[] anchos = {34, 18, 16, 20, 19, 17, 18, 20};
             for (int i = 0; i < anchos.length; i++) hoja.setColumnWidth(i, anchos[i] * 256);
             hoja.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(11, Math.max(11, filaN - 1), 0, 7));
+
+            // Una hoja por proyecto; el nombre en la tabla lleva a su hoja.
+            if (!fichas.isEmpty()) {
+                Row nota = hoja.createRow(9);
+                nota.createCell(0).setCellValue("Cada proyecto tiene su propia hoja con la ficha completa: haz clic en su nombre.");
+                Map<Long, String> nombres = FichaProyectoExport.hojas(libro, fichas);
+                nombres.forEach((id, nombreHoja) -> {
+                    Cell c = celdasProyecto.get(id);
+                    if (c != null) FichaProyectoExport.enlazar(libro, c, nombreHoja);
+                });
+            }
             libro.write(salida);
         }
     }
 
     public void escribirPdf(ReportePmDatos datos, OutputStream salida) throws IOException {
+        escribirPdf(datos, List.of(), salida);
+    }
+
+    /** Portada con indicadores y tabla comparativa y, después, una página por proyecto. */
+    public void escribirPdf(ReportePmDatos datos, List<FichaProyecto> fichas, OutputStream salida) throws IOException {
         Document documento = new Document(PageSize.A4.rotate(), 28, 28, 28, 28);
         try {
             PdfWriter writer = PdfWriter.getInstance(documento, salida);
@@ -185,6 +210,12 @@ public class ReportePmExportService {
             tabla.addCell(vacia);
         }
             documento.add(tabla);
+            if (!fichas.isEmpty()) {
+                documento.add(new Paragraph(" "));
+                documento.add(new Paragraph("En las páginas siguientes: una ficha completa por proyecto ("
+                        + fichas.size() + ").", subtitulo));
+                FichaProyectoExport.paginas(documento, fichas);
+            }
         } catch (DocumentException ex) {
             throw new IOException("No se pudo generar el reporte PDF.", ex);
         } finally {

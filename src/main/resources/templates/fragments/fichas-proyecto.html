@@ -1,0 +1,76 @@
+<!--
+  fragments/fichas-proyecto.html — Ficha completa de cada proyecto en los
+  reportes (PM y RM). Mismo contenido que la hoja de Excel y la página de PDF
+  de cada proyecto. El botón "Generar resúmenes IA" lo maneja
+  js/fichas-proyecto.js contra la URL que recibe el fragmento.
+-->
+<section th:fragment="lista(fichas, maxFichas, iaUrl, total)" class="fp" data-fp th:attr="data-fp-ia=${iaUrl}">
+  <div class="fp-head">
+    <div>
+      <h2>Fichas de proyectos</h2>
+      <p>De qué trata cada proyecto, su equipo, habilidades, entregables y alertas. Es lo mismo que trae cada hoja del Excel y cada página del PDF.</p>
+      <p class="fp-tope" th:if="${total > maxFichas}" th:text="'Se muestran los ' + ${maxFichas} + ' proyectos más recientes de ' + ${total} + '. Usa los filtros para acotar.'">tope</p>
+    </div>
+    <button type="button" class="btn btn-secondary" data-fp-generar th:disabled="${fichas.isEmpty()}">
+      <svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg><span>Generar resúmenes IA</span></button>
+  </div>
+
+  <p class="fp-vacio" th:if="${fichas.isEmpty()}">No hay proyectos con estos filtros.</p>
+
+  <div class="fp-grid">
+    <article class="card fp-card" th:each="f : ${fichas}" th:attr="data-fp-id=${f.id()},data-riesgo=${f.riesgo()}">
+      <header class="fp-card-head">
+        <div>
+          <h3 th:text="${f.nombre()}">Proyecto</h3>
+          <p th:text="${f.fechaInicio()} + ' → ' + ${f.fechaFin()} + ' · PM: ' + ${f.projectManager()}">fechas</p>
+        </div>
+        <div class="fp-badges">
+          <span class="badge badge-neutral" th:text="${f.estado()}">Estado</span>
+          <span class="badge" th:classappend="${f.riesgo() == 'Alto'} ? 'badge-red' : (${f.riesgo() == 'Medio'} ? 'badge-amber' : 'badge-green')"
+                th:text="'Riesgo ' + ${f.riesgo()}" th:unless="${f.riesgo() == 'No aplica'}">Riesgo</span>
+        </div>
+      </header>
+
+      <div class="fp-ia" data-fp-ia-texto th:hidden="${f.resumenIa() == null}">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-sparkles"></use></svg>
+        <p th:text="${f.resumenIa()}"></p>
+      </div>
+
+      <p class="fp-desc" th:text="${f.descripcion()}">Descripción</p>
+      <ul class="fp-tags" th:unless="${f.tecnologias().isEmpty()}"><li th:each="t : ${f.tecnologias()}" th:text="${t}">Tec</li></ul>
+
+      <dl class="fp-stats">
+        <div><dt>Avance</dt><dd th:text="${f.avance()} + '%'">0%</dd></div>
+        <div><dt>Equipo</dt><dd th:text="${f.equipo().size()}">0</dd></div>
+        <div><dt>Vacantes</dt><dd th:text="${f.vacantes()}">0</dd></div>
+        <div><dt>Habilidades</dt><dd th:text="${f.habilidadesCubiertas()} + '/' + ${f.habilidades().size()}">0/0</dd></div>
+        <div><dt>Entregables</dt><dd th:text="${f.entregablesTotal()}">0</dd></div>
+        <div th:classappend="${f.entregablesVencidos() > 0} ? 'is-warn'"><dt>Vencidos</dt><dd th:text="${f.entregablesVencidos()}">0</dd></div>
+      </dl>
+
+      <details class="fp-more">
+        <summary>Ver equipo, habilidades y próximas fechas</summary>
+        <div class="fp-cols">
+          <div>
+            <h4>Equipo</h4>
+            <p class="fp-empty" th:if="${f.equipo().isEmpty()}">Sin integrantes activos.</p>
+            <ul class="fp-list"><li th:each="m : ${f.equipo()}"><b th:text="${m.nombre()}">Nombre</b><span th:text="${m.rol()} + ' · ' + ${m.dedicacion()} + '%'">rol</span></li></ul>
+            <h4>Próximas fechas</h4>
+            <p class="fp-empty" th:if="${f.proximos().isEmpty()}">Sin fechas próximas.</p>
+            <ul class="fp-list"><li th:each="h : ${f.proximos()}"><b th:text="${h.titulo()}">Título</b><span th:text="${h.tipo()} + ' · ' + ${h.fecha()}">fecha</span></li></ul>
+          </div>
+          <div>
+            <h4>Habilidades requeridas</h4>
+            <p class="fp-empty" th:if="${f.habilidades().isEmpty()}">Sin habilidades requeridas.</p>
+            <ul class="mia-skills"><li th:each="h : ${f.habilidades()}" th:classappend="${h.cubierta()} ? 'is-ok'" th:text="${h.nombre()}"
+                th:attr="title='Pide ' + ${h.nivelRequerido()} + ' · mejor del equipo: ' + ${h.mejorNivel()} + ' (' + ${h.quien()} + ')'">Skill</li></ul>
+          </div>
+        </div>
+      </details>
+
+      <ul class="fp-alertas" th:unless="${f.alertas().isEmpty()}">
+        <li th:each="a : ${f.alertas()}"><svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-alert-triangle"></use></svg><span th:text="${a}">alerta</span></li>
+      </ul>
+    </article>
+  </div>
+</section>

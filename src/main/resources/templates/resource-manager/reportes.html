@@ -20,6 +20,13 @@
   <link rel="stylesheet" href="/css/kpi-hero.css">
   <link rel="stylesheet" href="/css/colaboradores-rm.css">
   <link rel="stylesheet" href="/css/rm-reportes.css">
+  <link rel="stylesheet" href="/css/matching-ia.css">
+  <link rel="stylesheet" href="/css/fichas-proyecto.css">
+  <style>
+    .rr-fichas{padding-top:var(--space-4)}.rr-fichas-nota{margin:0 0 var(--space-3);font-size:var(--fs-sm);color:var(--text-tertiary)}
+    .rr-export-ia{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.88);cursor:pointer}
+    .rr-export-ia input{accent-color:#8B7CF6;width:15px;height:15px}
+  </style>
 </head>
 <body>
 <div class="app-shell">
@@ -37,8 +44,10 @@
             <p class="kpi-hero-sub" th:text="'Carga frente al límite de ' + ${d.limiteCarga()} + '%, proyectos en riesgo, brechas de habilidades y decisiones de asignación. Generado el ' + ${d.generado()} + '.'">Resumen</p>
           </div>
           <div class="rr-hero-actions" role="group" aria-label="Descargar el reporte con estos filtros">
-            <a class="kpi-hero-action" th:href="@{'/resource-manager/reportes.xlsx' + ${queryExport}}"><svg class="icon"><use href="/img/icons.svg#icon-download"></use></svg><span>Excel</span></a>
-            <a class="kpi-hero-action" th:href="@{'/resource-manager/reportes.pdf' + ${queryExport}}"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg><span>PDF ejecutivo</span></a>
+            <a class="kpi-hero-action" data-export title="Hojas por tema y una hoja por proyecto" th:href="@{'/resource-manager/reportes.xlsx' + ${queryExport}}"><svg class="icon"><use href="/img/icons.svg#icon-download"></use></svg><span>Excel</span></a>
+            <a class="kpi-hero-action" data-export th:href="@{'/resource-manager/reportes.pdf' + ${queryExport}}"><svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg><span>PDF ejecutivo</span></a>
+            <label class="rr-export-ia" title="Cada ficha del Excel y del PDF incluye un resumen escrito por la IA (tarda unos segundos más)">
+              <input type="checkbox" id="export-ia" checked><span>Resumen IA por proyecto</span></label>
           </div>
         </div>
         <div class="kpi-hero-grid rr-kpis">
@@ -118,13 +127,12 @@
               <option th:each="c : ${d.opciones().cargos()}" th:value="${c}" th:text="${c}" th:selected="${c == filtros.cargo()}">Cargo</option>
             </select>
           </label>
-          <label class="rr-f">
-            <span class="rr-f-label">Proyecto</span>
-            <select class="select" name="proyecto" data-rr-auto>
-              <option value="">Todos</option>
-              <option th:each="p : ${d.opciones().proyectos()}" th:value="${p.valor()}" th:text="${p.etiqueta()}" th:selected="${filtros.proyectoId() != null and p.valor() == '' + filtros.proyectoId()}">Proyecto</option>
+          <div class="rr-f">
+            <span class="rr-f-label" id="rr-l-proyectos">Proyectos</span>
+            <select class="select" name="proyecto" id="rr-proyectos" multiple data-multiselect data-placeholder="Todos" data-noun="proyectos" aria-labelledby="rr-l-proyectos">
+              <option th:each="p : ${d.opciones().proyectos()}" th:value="${p.valor()}" th:text="${p.etiqueta()}" th:selected="${filtros.proyectoIds().![toString()].contains(p.valor())}">Proyecto</option>
             </select>
-          </label>
+          </div>
           <label class="rr-f">
             <span class="rr-f-label">Categoría de habilidad</span>
             <select class="select" name="categoria" data-rr-auto>
@@ -152,6 +160,8 @@
             <svg class="icon icon-sm"><use href="/img/icons.svg#icon-target"></use></svg>Habilidades<span class="rr-tab-n is-warn" th:if="${k.habilidadesConBrecha() > 0}" th:text="${k.habilidadesConBrecha()}">0</span></button>
           <button type="button" role="tab" id="t-decisiones" aria-controls="p-decisiones" aria-selected="false" data-tab="decisiones">
             <svg class="icon icon-sm"><use href="/img/icons.svg#icon-check-circle"></use></svg>Decisiones<span class="rr-tab-n" th:if="${de.pendientes() > 0}" th:text="${de.pendientes()}">0</span></button>
+          <button type="button" role="tab" id="t-fichas" aria-controls="p-fichas" aria-selected="false" data-tab="fichas">
+            <svg class="icon icon-sm"><use href="/img/icons.svg#icon-book"></use></svg>Fichas<span class="rr-tab-n" th:text="${fichas.size()}">0</span></button>
         </nav>
 
         <!-- ── Resumen ── -->
@@ -391,6 +401,12 @@
             </div>
           </article>
         </div>
+
+        <!-- ── Fichas por proyecto ── -->
+        <div class="rr-fichas" role="tabpanel" id="p-fichas" aria-labelledby="t-fichas" data-panel="fichas" hidden>
+          <p class="rr-fichas-nota" th:if="${!filtros.porProyecto()}">Sin proyectos elegidos en el filtro se muestran los proyectos en curso. Elige uno o varios en <b>Proyectos</b> para comparar solo esos.</p>
+          <div th:replace="~{fragments/fichas-proyecto :: lista(${fichas}, ${maxFichas}, '/resource-manager/reportes/fichas-ia' + ${queryExport}, ${totalFichas})}"></div>
+        </div>
       </section>
 
       <div class="rr-tooltip" id="rr-tooltip" role="tooltip" hidden></div>
@@ -418,6 +434,7 @@
 <script src="/js/topbar-actions.js"></script>
 <script src="/js/tech-icons.js"></script>
 <script src="/js/rm-reportes.js"></script>
+<script src="/js/fichas-proyecto.js"></script>
 <script src="/js/global-search.js"></script>
 <script src="/js/paginacion.js"></script>
 <script src="/js/mobile-nav.js"></script>

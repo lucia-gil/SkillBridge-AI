@@ -83,6 +83,11 @@ public class RmReporteExportService {
     // ═════════════════════════════ EXCEL ═════════════════════════════
 
     public void excel(ReporteRm d, OutputStream salida) throws IOException {
+        excel(d, List.of(), salida);
+    }
+
+    /** Las hojas por tema de siempre y, al final, una hoja por proyecto con su ficha completa. */
+    public void excel(ReporteRm d, List<com.skillbridge.ai.dto.FichaProyecto> fichas, OutputStream salida) throws IOException {
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             Estilos s = new Estilos(wb);
             XSSFSheet resumen = wb.createSheet("Resumen");
@@ -110,6 +115,17 @@ public class RmReporteExportService {
                 h.getPrintSetup().setFitHeight((short) 0);
                 h.getFooter().setLeft("SkillBridge AI · Reporte del Resource Manager");
                 h.getFooter().setRight("Página &P de &N");
+            }
+            if (!fichas.isEmpty()) {
+                // Índice en el resumen: cada proyecto enlaza a su hoja.
+                Map<Long, String> hojas = FichaProyectoExport.hojas(wb, fichas);
+                int fila = Math.max(resumen.getLastRowNum() + 3, 2);
+                resumen.createRow(fila++).createCell(0).setCellValue("Fichas por proyecto (una hoja por proyecto):");
+                for (com.skillbridge.ai.dto.FichaProyecto f : fichas) {
+                    org.apache.poi.ss.usermodel.Cell c = resumen.createRow(fila++).createCell(0);
+                    c.setCellValue(f.nombre() + " · " + f.estado());
+                    FichaProyectoExport.enlazar(wb, c, hojas.get(f.id()));
+                }
             }
             wb.setActiveSheet(0);
             wb.write(salida);
@@ -643,6 +659,11 @@ public class RmReporteExportService {
     private static final Font F_H_DET = FontFactory.getFont(FontFactory.HELVETICA, 7.5f, new Color(70, 78, 96));
 
     public void pdf(ReporteRm d, OutputStream salida) throws IOException {
+        pdf(d, List.of(), salida);
+    }
+
+    /** El reporte ejecutivo de siempre y, después, una página por proyecto. */
+    public void pdf(ReporteRm d, List<com.skillbridge.ai.dto.FichaProyecto> fichas, OutputStream salida) throws IOException {
         Document doc = new Document(PageSize.A4.rotate(), 30, 30, 30, 38);
         try {
             PdfWriter writer = PdfWriter.getInstance(doc, salida);
@@ -805,6 +826,7 @@ public class RmReporteExportService {
                 tr.setSpacingBefore(8);
                 doc.add(tr);
             }
+            if (!fichas.isEmpty()) FichaProyectoExport.paginas(doc, fichas);
         } catch (DocumentException ex) {
             throw new IOException("No se pudo generar el reporte PDF.", ex);
         } finally {

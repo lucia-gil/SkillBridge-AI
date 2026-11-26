@@ -226,6 +226,8 @@
     form.querySelector('input[name="brecha"]').addEventListener("change", enviar);
     form.querySelectorAll("select[data-rr-auto]").forEach(function (s) { s.addEventListener("change", enviar); });
     document.getElementById("rr-estado").addEventListener("change", function () { clearTimeout(espera); espera = setTimeout(enviar, 900); });
+    var proyectos = document.getElementById("rr-proyectos");
+    if (proyectos) proyectos.addEventListener("change", function () { clearTimeout(espera); espera = setTimeout(enviar, 900); });
   }
 
   /* ---------------- Paginación (8 filas) ---------------- */

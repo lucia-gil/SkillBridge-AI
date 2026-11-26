@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/matching-ia.css">
+<link rel="stylesheet" href="/css/fichas-proyecto.css">
 <link rel="stylesheet" href="/css/kpi-hero.css">
 <style>
   .report-hero{background:linear-gradient(135deg,var(--navy-900),var(--navy-700));border-radius:var(--radius-lg);padding:var(--space-6);color:white;display:flex;justify-content:space-between;gap:var(--space-5);align-items:center;box-shadow:var(--shadow-2)}
@@ -32,6 +34,13 @@
   .pm-switch-track::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:white;box-shadow:var(--shadow-1);transition:left .15s}
   .pm-switch input:checked + .pm-switch-track{background:var(--navy-700)}
   .pm-switch input:checked + .pm-switch-track::after{left:17px}
+  .pm-quick{display:flex;flex-wrap:wrap;gap:var(--space-3) var(--space-6);align-items:center;margin-bottom:var(--space-4)}
+  .pm-quick-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pm-quick-group .field-label{margin:0 4px 0 0}
+  .pm-chip input{position:absolute;opacity:0;width:0;height:0}.pm-chip span{display:inline-block;padding:5px 12px;border:1px solid var(--border-subtle);border-radius:999px;font-size:12.5px;color:var(--text-secondary);cursor:pointer;background:var(--surface)}
+  .pm-chip input:checked+span{background:var(--navy-700);border-color:var(--navy-700);color:#fff}.pm-chip input:focus-visible+span{outline:2px solid var(--blue-fg);outline-offset:2px}
+  .pm-quick-group .field-label{display:inline-block;margin:0 4px 0 0}.pm-quick-group .select{width:auto;min-width:200px}
+  .pm-export-ia{flex-basis:100%;justify-content:flex-end;color:rgba(255,255,255,.88)!important}
+  .pm-export-ia .pm-switch-track{background:rgba(255,255,255,.28)}.pm-export-ia input:checked + .pm-switch-track{background:#8B7CF6}
   .report-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:var(--space-3);align-items:start}.report-filters>.btn{margin-top:22px}.report-filters .field{margin:0}.report-filters .field-label{font-size:var(--fs-xs)}
   @media(max-width:1050px){.report-filters{grid-template-columns:1fr 1fr}.report-filters .btn{width:100%}}
   @media(max-width:700px){.report-filters{grid-template-columns:1fr}}
@@ -116,11 +125,27 @@
               </label>
             </div>
           </div>
+          <div class="pm-quick">
+            <div class="pm-quick-group" role="radiogroup" aria-label="Periodo">
+              <span class="field-label">Periodo</span>
+              <label class="pm-chip"><input type="radio" name="periodo" value="" th:checked="${periodo == ''}" data-pm-periodo><span>Todo</span></label>
+              <label class="pm-chip"><input type="radio" name="periodo" value="6m" th:checked="${periodo == '6m'}" data-pm-periodo><span>Últimos 6 meses</span></label>
+              <label class="pm-chip"><input type="radio" name="periodo" value="1a" th:checked="${periodo == '1a'}" data-pm-periodo><span>Último año</span></label>
+              <label class="pm-chip"><input type="radio" name="periodo" value="3a" th:checked="${periodo == '3a'}" data-pm-periodo><span>Últimos 3 años</span></label>
+            </div>
+            <label class="pm-quick-group"><span class="field-label">Mostrar</span>
+              <select class="select select-sm" name="ultimos" data-autoenviar>
+                <option value="" th:selected="${ultimos == null}">Todos los proyectos</option>
+                <option value="5" th:selected="${ultimos == 5}">Últimos 5 proyectos</option>
+                <option value="10" th:selected="${ultimos == 10}">Últimos 10 proyectos</option>
+                <option value="20" th:selected="${ultimos == 20}">Últimos 20 proyectos</option>
+              </select></label>
+          </div>
           <div class="report-filters">
             <div class="field"><span class="field-label">Proyectos</span><select class="select" name="proyectoId" multiple data-multiselect data-placeholder="Todos los proyectos" data-noun="proyectos"><option th:each="p : ${proyectosDisponibles}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${proyectoId != null and proyectoId.contains(p.id)}">Proyecto</option></select></div>
             <label class="field"><span class="field-label">Estado</span><select class="select" name="estado"><option value="">Todos</option><option value="planificacion" th:selected="${estado == 'planificacion'}">Planificación</option><option value="activo" th:selected="${estado == 'activo'}">Activo</option><option value="en_pausa" th:selected="${estado == 'en_pausa'}">En pausa</option><option value="completado" th:selected="${estado == 'completado'}">Completado</option><option value="cancelado" th:selected="${estado == 'cancelado'}">Cancelado</option></select></label>
-            <label class="field"><span class="field-label">Inicio desde</span><input class="input" type="date" name="desde" th:value="${desde}"></label>
-            <label class="field"><span class="field-label">Inicio hasta</span><input class="input" type="date" name="hasta" th:value="${hasta}"></label>
+            <label class="field"><span class="field-label">Activos desde</span><input class="input" type="date" name="desde" th:value="${desde}" title="Proyectos que estuvieron activos en algún momento del rango"></label>
+            <label class="field"><span class="field-label">Activos hasta</span><input class="input" type="date" name="hasta" th:value="${hasta}"></label>
             <button class="btn btn-primary" type="submit"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-filter"></use></svg>Aplicar</button>
           </div>
         </form>
@@ -133,8 +158,10 @@
         </div>
         <div class="report-actions">
           <button type="button" class="btn btn-secondary" id="resumen-ia-btn"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-sparkles"></use></svg>Generar resumen con IA</button>
-          <a class="btn btn-secondary" th:href="'reportes.xlsx' + ${queryExport}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar Excel</a>
-          <a class="btn btn-secondary" th:href="'reportes.pdf' + ${queryExport}"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar PDF</a>
+          <a class="btn btn-secondary" data-export th:href="'reportes.xlsx' + ${queryExport}" title="Una hoja de resumen y una hoja por proyecto"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar Excel</a>
+          <a class="btn btn-secondary" data-export th:href="'reportes.pdf' + ${queryExport}" title="Portada con el resumen y una página por proyecto"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Exportar PDF</a>
+          <label class="pm-switch pm-export-ia" title="Cada ficha del Excel y del PDF incluye un resumen escrito por la IA (tarda unos segundos más)">
+            <input type="checkbox" id="export-ia" checked><span class="pm-switch-track" aria-hidden="true"></span><span>Incluir resumen IA por proyecto</span></label>
         </div>
       </section>
 
@@ -214,6 +241,8 @@
           <svg class="icon icon-sm"><use href="/img/icons.svg#icon-grid"></use></svg>Resumen</button>
         <button type="button" role="tab" id="pm-t-proyectos" aria-controls="pm-p-proyectos" aria-selected="false" data-pm-tab="proyectos">
           <svg class="icon icon-sm"><use href="/img/icons.svg#icon-folder"></use></svg>Proyectos<span class="pm-tab-n" th:text="${datos.totalProyectos}">0</span></button>
+        <button type="button" role="tab" id="pm-t-fichas" aria-controls="pm-p-fichas" aria-selected="false" data-pm-tab="fichas">
+          <svg class="icon icon-sm"><use href="/img/icons.svg#icon-book"></use></svg>Fichas<span class="pm-tab-n" th:text="${fichas.size()}">0</span></button>
         <button type="button" role="tab" id="pm-t-equipo" aria-controls="pm-p-equipo" aria-selected="false" data-pm-tab="equipo">
           <svg class="icon icon-sm"><use href="/img/icons.svg#icon-users"></use></svg>Equipo</button>
         <button type="button" role="tab" id="pm-t-entregables" aria-controls="pm-p-entregables" aria-selected="false" data-pm-tab="entregables">
@@ -324,6 +353,11 @@
       </div>
 
       <!-- ── Entregables ── -->
+      <!-- ── Fichas por proyecto ── -->
+      <div class="pm-panel" role="tabpanel" id="pm-p-fichas" aria-labelledby="pm-t-fichas" data-pm-panel="fichas" hidden>
+        <div th:replace="~{fragments/fichas-proyecto :: lista(${fichas}, ${maxFichas}, 'reportes/fichas-ia' + ${queryExport}, ${datos.totalProyectos})}"></div>
+      </div>
+
       <div class="pm-panel" role="tabpanel" id="pm-p-entregables" aria-labelledby="pm-t-entregables" data-pm-panel="entregables" hidden>
         <section class="card card-pad pm-entregables-card">
           <div>
@@ -363,6 +397,16 @@
     });
   })();
 </script>
+<script th:nonce="${cspNonce}">
+  (function(){
+    // Periodo rápido: limpia el rango manual (si no, el rango manual manda) y aplica.
+    document.querySelectorAll('[data-pm-periodo]').forEach(function(r){
+      r.addEventListener('change', function(){
+        var f = r.form; f.querySelector('[name=desde]').value = ''; f.querySelector('[name=hasta]').value = ''; f.submit();
+      });
+    });
+  })();
+</script>
 <script th:inline="javascript" th:nonce="${cspNonce}">
   (function(){
     var btn = document.getElementById('resumen-ia-btn');
@@ -393,6 +437,7 @@
 </script>
 <script src="/js/toast.js"></script><script src="/js/dropdown.js"></script><script src="/js/multiselect.js"></script><script src="/js/topbar-actions.js"></script>
 <script src="/js/global-search.js"></script>
+<script src="/js/fichas-proyecto.js"></script>
 <script src="/js/predictive.js"></script>
 <script src="/js/battery-progress.js"></script>
 <script src="/js/paginar-lista.js"></script>

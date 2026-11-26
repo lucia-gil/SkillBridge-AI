@@ -99,17 +99,27 @@ public class RmReporteService {
      * @param minimo     ocupación mínima (%)
      * @param soloBrecha solo habilidades sin cobertura o ajustadas
      */
-    public record Filtros(String q, List<String> estados, String cargo, Long proyectoId, Long categoriaId,
+    public record Filtros(String q, List<String> estados, String cargo, List<Long> proyectoIds, Long categoriaId,
                           int minimo, boolean soloBrecha) {
         public Filtros {
+            proyectoIds = proyectoIds == null ? List.of() : proyectoIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
             q = q == null ? "" : q.trim();
             cargo = cargo == null || cargo.isBlank() ? null : cargo.trim();
             estados = estados == null ? List.of() : estados.stream().filter(e -> e != null && !e.isBlank()).distinct().toList();
             minimo = Math.max(0, Math.min(100, minimo));
         }
 
+        /** true si se eligió al menos un proyecto (o sea, el reporte se acota a esos proyectos). */
+        public boolean porProyecto() { return !proyectoIds.isEmpty(); }
+
+        /** Condición SQL "AND alias.proyecto_id IN (…)" (ids numéricos, ya validados como Long). */
+        public String sqlProyectos(String columna) {
+            return proyectoIds.isEmpty() ? "" : " AND " + columna + " IN (" + proyectoIds.stream().map(String::valueOf)
+                    .collect(java.util.stream.Collectors.joining(",")) + ")";
+        }
+
         public boolean vacios() {
-            return q.isEmpty() && estados.isEmpty() && cargo == null && proyectoId == null && categoriaId == null && minimo == 0 && !soloBrecha;
+            return q.isEmpty() && estados.isEmpty() && cargo == null && proyectoIds.isEmpty() && categoriaId == null && minimo == 0 && !soloBrecha;
         }
     }
 
@@ -179,7 +189,7 @@ public class RmReporteService {
         List<Persona> base = todas.stream()
                 .filter(x -> q.isEmpty() || normalizar(x.nombre() + " " + x.cargo()).contains(q))
                 .filter(x -> f.cargo() == null || f.cargo().equals(x.cargo()))
-                .filter(x -> f.proyectoId() == null || proyectoIdsDe.getOrDefault(x.perfilId(), Set.of()).contains(f.proyectoId()))
+                .filter(x -> !f.porProyecto() || proyectoIdsDe.getOrDefault(x.perfilId(), Set.of()).stream().anyMatch(f.proyectoIds()::contains))
                 .filter(x -> x.carga() >= f.minimo())
                 .toList();
         List<Persona> personas = base.stream().filter(x -> f.estados().isEmpty() || f.estados().contains(x.estadoClave())).toList();
@@ -199,7 +209,7 @@ public class RmReporteService {
                 .sorted(Comparator.comparing(Proyecto::getNombre, String.CASE_INSENSITIVE_ORDER)).toList();
         List<ProyectoFila> proyectos = new ArrayList<>();
         for (Proyecto p : vigentes) {
-            if (f.proyectoId() != null && !f.proyectoId().equals(p.getId())) continue;
+            if (f.porProyecto() && !f.proyectoIds().contains(p.getId())) continue;
             ProyectoVistaService.Vista v = proyectoVistaService.vista(p.getId());
             int total = v.cobertura().size();
             int cobPct = total == 0 ? 100 : (int) Math.round(v.coberturaCompleta() * 100.0 / total);
@@ -231,7 +241,7 @@ public class RmReporteService {
 
         // ── Habilidades: oferta contra demanda ───────────────────────────
         List<Proyecto> conDemanda = vigentes.stream().filter(p -> CON_DEMANDA.contains(p.getEstado()))
-                .filter(p -> f.proyectoId() == null || f.proyectoId().equals(p.getId())).toList();
+                .filter(p -> !f.porProyecto() || f.proyectoIds().contains(p.getId())).toList();
         Map<Long, Map<Long, Integer>> requisitos = demandaService.requisitosPorProyecto(conDemanda, catalogo);
         Map<Long, Integer> nivelPedido = new HashMap<>();
         Map<Long, List<String>> laPiden = new HashMap<>();
@@ -297,7 +307,7 @@ public class RmReporteService {
                 + "JOIN perfiles pc ON pc.id = pa.candidato_perfil_id JOIN usuarios uc ON uc.id = pc.usuario_id "
                 + "JOIN perfiles ps ON ps.id = pa.solicitado_por_perfil_id JOIN usuarios us ON us.id = ps.usuario_id "
                 + "ORDER BY pa.fecha_solicitud DESC", rs -> {
-            if (f.proyectoId() != null && f.proyectoId() != rs.getLong(11)) return;
+            if (f.porProyecto() && !f.proyectoIds().contains(rs.getLong(11))) return;
             String estado = rs.getString(8);
             Timestamp sol = rs.getTimestamp(1), res = rs.getTimestamp(9);
             switch (estado) { case "aprobada" -> cont[0]++; case "rechazada" -> cont[1]++; default -> cont[2]++; }
@@ -321,14 +331,14 @@ public class RmReporteService {
 
         // ── Entregas: cumplimiento ───────────────────────────────────────
         Entregas entregas = jdbc.queryForObject("SELECT "
-                + "(SELECT COUNT(*) FROM entregables e WHERE e.estado <> 'cancelado'" + (f.proyectoId() != null ? " AND e.proyecto_id = " + f.proyectoId() : "") + "), "
+                + "(SELECT COUNT(*) FROM entregables e WHERE e.estado <> 'cancelado'" + f.sqlProyectos("e.proyecto_id") + "), "
                 + "COUNT(en.id), SUM(CASE WHEN en.fecha_entrega <= e.fecha_cierre THEN 1 ELSE 0 END), "
                 + "SUM(CASE WHEN en.estado IN ('completado','requiere_ajustes','rehacer') THEN 1 ELSE 0 END), "
                 + "SUM(CASE WHEN en.estado = 'completado' THEN 1 ELSE 0 END), "
                 + "(SELECT COUNT(*) FROM entregables e2 WHERE e2.estado = 'activo' AND e2.fecha_cierre < NOW()"
-                + (f.proyectoId() != null ? " AND e2.proyecto_id = " + f.proyectoId() : "") + ") "
+                + f.sqlProyectos("e2.proyecto_id") + ") "
                 + "FROM entregas en JOIN entregables e ON e.id = en.entregable_id WHERE e.estado <> 'cancelado'"
-                + (f.proyectoId() != null ? " AND e.proyecto_id = " + f.proyectoId() : ""), (rs, i) -> {
+                + f.sqlProyectos("e.proyecto_id"), (rs, i) -> {
             int total = rs.getInt(2), aTiempo = rs.getInt(3), revisadas = rs.getInt(4), completadas = rs.getInt(5);
             return new Entregas(rs.getInt(1), total, aTiempo, total == 0 ? 0 : (int) Math.round(aTiempo * 100.0 / total),
                     revisadas, revisadas == 0 ? 0 : (int) Math.round(completadas * 100.0 / revisadas), rs.getInt(6));
@@ -422,7 +432,9 @@ public class RmReporteService {
         if (!f.q().isEmpty()) partes.add("búsqueda \"" + f.q() + "\"");
         if (!f.estados().isEmpty()) partes.add("estado de carga: " + f.estados().stream().map(RmReporteService::etiquetaEstado).collect(Collectors.joining(", ")));
         if (f.cargo() != null) partes.add("cargo: " + f.cargo());
-        if (f.proyectoId() != null) partes.add("proyecto: " + o.proyectos().stream().filter(p -> p.valor().equals(String.valueOf(f.proyectoId()))).map(Opcion::etiqueta).findFirst().orElse("#" + f.proyectoId()));
+        if (f.porProyecto()) partes.add((f.proyectoIds().size() == 1 ? "proyecto: " : "proyectos: ") + o.proyectos().stream()
+                .filter(p -> f.proyectoIds().stream().anyMatch(id -> p.valor().equals(String.valueOf(id))))
+                .map(Opcion::etiqueta).collect(java.util.stream.Collectors.joining(", ")));
         if (f.categoriaId() != null) partes.add("categoría: " + o.categorias().stream().filter(c -> c.valor().equals(String.valueOf(f.categoriaId()))).map(Opcion::etiqueta).findFirst().orElse("#" + f.categoriaId()));
         if (f.minimo() > 0) partes.add("ocupación desde " + f.minimo() + "%");
         if (f.soloBrecha()) partes.add("solo habilidades con brecha");

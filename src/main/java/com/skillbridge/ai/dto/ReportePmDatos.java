@@ -32,11 +32,20 @@ public class ReportePmDatos {
     private final LocalDate desde;
     private final LocalDate hasta;
     private final String generado;
+    private final Integer ultimos;
 
     public ReportePmDatos(List<ReportePmFila> filas, Map<String, Long> porEstado,
                           String proyectoFiltro, String estadoFiltro,
                           LocalDate desde, LocalDate hasta,
                           long entregablesVencidos, boolean soloRiesgo) {
+        this(filas, porEstado, proyectoFiltro, estadoFiltro, desde, hasta, entregablesVencidos, soloRiesgo, null);
+    }
+
+    public ReportePmDatos(List<ReportePmFila> filas, Map<String, Long> porEstado,
+                          String proyectoFiltro, String estadoFiltro,
+                          LocalDate desde, LocalDate hasta,
+                          long entregablesVencidos, boolean soloRiesgo, Integer ultimos) {
+        this.ultimos = ultimos;
         this.filas = List.copyOf(filas);
         this.porEstado = Collections.unmodifiableMap(new LinkedHashMap<>(porEstado));
         this.avancePromedio = filas.isEmpty() ? 0
@@ -121,11 +130,14 @@ public class ReportePmDatos {
     public LocalDate getDesde() { return desde; }
     public LocalDate getHasta() { return hasta; }
     public String getGenerado() { return generado; }
+    public Integer getUltimos() { return ultimos; }
 
     public String getFiltrosLabel() {
+        java.time.format.DateTimeFormatter f = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
         String rango = desde == null && hasta == null ? "Todas las fechas"
-                : (desde != null ? desde.toString() : "inicio") + " a " + (hasta != null ? hasta.toString() : "hoy");
-        return "Proyecto: " + proyectoFiltro + " | Estado: " + estadoFiltro + " | Inicio: " + rango;
+                : (desde != null ? desde.format(f) : "el inicio") + " a " + (hasta != null ? hasta.format(f) : "hoy");
+        return "Proyecto: " + proyectoFiltro + " | Estado: " + estadoFiltro + " | Activos entre: " + rango
+                + (ultimos != null ? " | Últimos " + ultimos + " proyectos" : "");
     }
 
     /** Una porción de la gráfica circular / fila de la leyenda de "Resumen por estado". */
