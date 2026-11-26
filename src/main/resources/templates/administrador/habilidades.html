@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Catálogo de habilidades · SkillBridge AI</title>
 <link rel="stylesheet" href="/css/tokens.css">
@@ -233,7 +233,7 @@
 </div>
 
 <!-- Datos para los modales (crear/editar) y avisos del último POST. -->
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
   var CATEGORIAS = /*[[${categoriasParaSelect}]]*/ [];
   var SK_EXITO = /*[[${exito}]]*/ null;
   var SK_ERROR = /*[[${error}]]*/ null;

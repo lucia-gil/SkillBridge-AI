@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Proyectos · SkillBridge AI</title>
 <link rel="stylesheet" href="/css/tokens.css">
@@ -157,7 +157,7 @@
                     <a th:href="@{'/archivos-proyecto/' + ${a.id}}" target="_blank" rel="noopener" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" th:text="${a.nombre}">archivo.pdf</a>
                     <span class="text-tertiary" th:text="${a.fechaSubidaLabel}">fecha</span>
                     <form th:action="@{'/project-manager/proyectos/' + ${d.id} + '/archivos/' + ${a.id} + '/eliminar'}" method="post" style="margin:0;">
-                      <button type="submit" class="btn-icon danger" title="Eliminar archivo" style="padding:2px;" onclick="return confirm('¿Eliminar este archivo?')">
+                      <button type="submit" class="btn-icon danger" title="Eliminar archivo" style="padding:2px;" data-confirmar="¿Eliminar este archivo?">
                         <svg class="icon icon-sm"><use href="/img/icons.svg#icon-trash"></use></svg>
                       </button>
                     </form>
@@ -249,7 +249,7 @@
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 window.SBAI_DISPONIBLES = /*[[${colaboradoresDisponibles}]]*/ 0;
 window.SBAI_CATALOGO_TEC = /*[[${catalogoTecnologias}]]*/ [];

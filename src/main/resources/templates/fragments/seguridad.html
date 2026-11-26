@@ -13,7 +13,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="csrf">
-  <script th:inline="javascript">
+  <script th:inline="javascript" th:nonce="${cspNonce}">
     window.SBAI_CSRF = {
       token: /*[[${_csrf?.token}]]*/ null,
       header: /*[[${_csrf?.headerName}]]*/ "X-CSRF-TOKEN",
@@ -21,6 +21,8 @@
     };
   </script>
   <script src="/js/csrf.js"></script>
+  <!-- Acciones declaradas con data-* (la CSP no permite onclick/onerror en línea). -->
+  <script src="/js/acciones.js"></script>
   <!-- jQuery (local, sin CDN) + ayudante AJAX con CSRF para los servicios REST (ver js/sbai-api.js). -->
   <script src="/js/vendor/jquery-3.7.1.min.js"></script>
   <script src="/js/sbai-api.js"></script>

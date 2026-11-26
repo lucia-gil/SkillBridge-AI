@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reportes · SkillBridge AI</title>
 <link rel="stylesheet" href="/css/tokens.css">
@@ -110,7 +110,7 @@
             </div>
             <div class="pm-filters-actions">
               <label class="pm-switch">
-                <input type="checkbox" name="soloRiesgo" value="true" th:checked="${datos.soloRiesgo}" onchange="document.getElementById('pm-filtros').submit()">
+                <input type="checkbox" name="soloRiesgo" value="true" th:checked="${datos.soloRiesgo}" data-autoenviar>
                 <span class="pm-switch-track" aria-hidden="true"></span>
                 <span>Solo en riesgo</span>
               </label>
@@ -350,7 +350,7 @@
     </main>
   </div>
 </div>
-<script>
+<script th:nonce="${cspNonce}">
   (function(){
     var tabs = document.querySelectorAll('.pm-tabs [data-pm-tab]');
     var panels = document.querySelectorAll('.pm-panel[data-pm-panel]');
@@ -363,7 +363,7 @@
     });
   })();
 </script>
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
   (function(){
     var btn = document.getElementById('resumen-ia-btn');
     if (!btn) return;

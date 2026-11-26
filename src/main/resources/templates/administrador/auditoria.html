@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org"><head>
-<meta charset="UTF-8"><script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script><meta name="viewport" content="width=device-width, initial-scale=1"><title>Auditoría · SkillBridge AI</title>
+<meta charset="UTF-8"><script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script><meta name="viewport" content="width=device-width, initial-scale=1"><title>Auditoría · SkillBridge AI</title>
 <link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/layout.css"><link rel="stylesheet" href="/css/polish.css"><link rel="stylesheet" href="/css/kpi-hero.css"><link rel="stylesheet" href="/css/admin.css">
 <link rel="stylesheet" href="/css/admin-visual.css">
 </head><body class="admin-app"><div class="app-shell"><div th:replace="~{fragments/sidebar :: sidebar}"></div><div class="main-content"><div th:replace="~{fragments/topbar :: topbar}"></div>

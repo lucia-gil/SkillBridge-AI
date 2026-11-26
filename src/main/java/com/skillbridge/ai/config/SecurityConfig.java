@@ -103,6 +103,8 @@ public class SecurityConfig {
                     // Públicas: landing, login, registro, verificación 2FA, recuperar contraseña
                     .requestMatchers(antMatcher("/"), antMatcher("/bienvenida.html"),
                             antMatcher("/auth/**"), antMatcher("/error")).permitAll()
+                    // Informes de la Content-Security-Policy (los envía el navegador)
+                    .requestMatchers(antMatcher("/csp-report")).permitAll()
                     // Por rol (modelo v7, ver SesionSegura.autoridades)
                     .requestMatchers(antMatcher("/administrador/**")).hasAuthority(Roles.ADMINISTRADOR)
                     .requestMatchers(antMatcher("/resource-manager/**")).hasAuthority(Roles.RESOURCE_MANAGER)
@@ -135,7 +137,8 @@ public class SecurityConfig {
                     .logoutSuccessUrl("/auth/login.html?salir")
                     .permitAll())
 
-            .csrf(csrf -> csrf.csrfTokenRequestHandler(csrfHandler))
+            .csrf(csrf -> csrf.csrfTokenRequestHandler(csrfHandler)
+                    .ignoringRequestMatchers(antMatcher("/csp-report")))
 
             .sessionManagement(sesion -> sesion
                     .sessionFixation(fixation -> fixation.changeSessionId()))
@@ -145,8 +148,8 @@ public class SecurityConfig {
 
             .headers(headers -> headers
                     .frameOptions(frame -> frame.sameOrigin())
-                    .contentSecurityPolicy(csp -> csp.policyDirectives(
-                            "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"))
+                    // La Content-Security-Policy (con nonce por respuesta) la pone
+                    // security/PoliticaContenidoFilter.
                     .referrerPolicy(referrer -> referrer.policy(
                             ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN)))
 

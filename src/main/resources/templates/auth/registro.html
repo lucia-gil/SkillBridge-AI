@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Crear cuenta · SkillBridge AI</title>
 <link rel="icon" type="image/png" href="/img/logo-icon.png">
@@ -199,7 +199,7 @@
     </div>
 </div>
 
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
   var ERROR_HABILIDADES = /*[[${errores != null and errores['habilidades'] != null}]]*/ false;
 </script>
 <script src="/js/mock-data.js"></script>
@@ -208,7 +208,7 @@
 <script src="/js/select-ui.js"></script>
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
 document.addEventListener("DOMContentLoaded", function () {
   var addedSkills = [];
   /* ---- Correo autorizado (consulta correos_autorizados en la BD) ----

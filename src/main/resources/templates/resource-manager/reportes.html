@@ -9,7 +9,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reportes · SkillBridge AI</title>
   <link rel="stylesheet" href="/css/tokens.css">
@@ -398,7 +398,7 @@
   </div>
 </div>
 
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
   window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
   window.RR_DATA = {
     limite: /*[[${d.limiteCarga()}]]*/ 100,

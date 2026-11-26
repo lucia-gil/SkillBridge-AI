@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mis proyectos · SkillBridge AI</title>
   <link rel="stylesheet" href="/css/tokens.css">
@@ -143,7 +143,7 @@
 <script src="/js/dropdown.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
   window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("[data-view-project]").forEach(function (btn) {

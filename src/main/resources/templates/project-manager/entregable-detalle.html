@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Revisar entregable · SkillBridge AI</title>
 <link rel="stylesheet" href="/css/tokens.css">
@@ -90,7 +90,7 @@
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 var ENTREGABLE_ID = /*[[${entregable.id}]]*/ 0;
 document.addEventListener("DOMContentLoaded", function () {

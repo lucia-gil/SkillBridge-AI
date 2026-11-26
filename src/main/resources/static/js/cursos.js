@@ -186,7 +186,7 @@
       : '<button type="button" class="cx-save' + (guardado(c.id) ? " is-on" : "") + '" data-guardar="' + c.id + '" aria-pressed="' + guardado(c.id) + '" aria-label="' + (guardado(c.id) ? "Quitar de guardados" : "Guardar para después") + '">' + icono("icon-bookmark") + "</button>";
     var fondo;
     if (c.youtubeId) {
-      fondo = '<img class="cx-thumb" loading="lazy" alt="" src="https://i.ytimg.com/vi/' + esc(c.youtubeId) + '/hqdefault.jpg" onerror="this.remove()">' +
+      fondo = '<img class="cx-thumb" loading="lazy" alt="" src="https://i.ytimg.com/vi/' + esc(c.youtubeId) + '/hqdefault.jpg" data-quitar-si-falla>' +
         '<button type="button" class="cx-play" data-reproducir="' + c.id + '" aria-label="Reproducir ' + esc(c.titulo) + '">' + icono("icon-play") + "</button>";
     } else {
       var lg = tech(c.habilidad);
@@ -418,7 +418,7 @@
         }).join("") + "</ol>" : "";
     var bd = abrirModal(
       '<div class="cx-detail-cover" style="--plat:' + plat(c.plataforma).color + '">' +
-        (c.youtubeId ? '<img alt="" src="https://i.ytimg.com/vi/' + esc(c.youtubeId) + '/hqdefault.jpg" onerror="this.remove()">' : "") +
+        (c.youtubeId ? '<img alt="" src="https://i.ytimg.com/vi/' + esc(c.youtubeId) + '/hqdefault.jpg" data-quitar-si-falla>' : "") +
         '<div class="cx-detail-cover-in"><span class="cx-type">' + icono(t.icon) + esc(t.label) + "</span>" +
         '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar">' + icono("icon-x") + "</button></div></div>" +
       '<div class="cx-detail">' +
@@ -643,7 +643,7 @@
     var clave = form.elements.plataforma.value || (url ? detectarPlataforma(url) : "");
     var yt = youtubeId(url), caja = document.getElementById("cx-preview");
     if (!url && !form.elements.plataforma.value) { caja.innerHTML = '<span class="cx-preview-empty">' + icono("icon-globe") + "La plataforma aparecerá aquí al pegar el enlace</span>"; return; }
-    caja.innerHTML = (yt ? '<img alt="" src="https://i.ytimg.com/vi/' + esc(yt) + '/mqdefault.jpg" onerror="this.remove()">' : "") +
+    caja.innerHTML = (yt ? '<img alt="" src="https://i.ytimg.com/vi/' + esc(yt) + '/mqdefault.jpg" data-quitar-si-falla>' : "") +
       '<span class="cx-preview-plat">' + logoPlataforma(clave) + "<span><b>" + esc(plat(clave).nombre) + "</b><small>" +
       (form.elements.plataforma.value ? "Elegida a mano" : "Detectada por el enlace") + (yt ? " · video de YouTube" : "") + "</small></span></span>";
   }

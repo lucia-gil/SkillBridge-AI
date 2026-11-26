@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Usuarios y roles · SkillBridge AI</title>
 <link rel="stylesheet" href="/css/tokens.css">
@@ -255,7 +255,7 @@
           <span class="text-tertiary" style="font-size:var(--fs-xs)">Mostrando <span id="correos-visible-count">0</span> de <span id="correos-filtered-count">0</span> correos</span>
           <div class="pagination"><button class="page-btn" id="correos-prev" type="button" aria-label="Página anterior">‹</button><span class="text-tertiary" id="correos-page-label" style="font-size:var(--fs-xs)">Página 1</span><button class="page-btn" id="correos-next" type="button" aria-label="Página siguiente">›</button></div>
         </div>
-        <script>
+        <script th:nonce="${cspNonce}">
         (function () {
           var rows = Array.prototype.slice.call(document.querySelectorAll("[data-correo-row]"));
           if (!rows.length) return;
@@ -302,7 +302,7 @@
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
 document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.dropdown.init(document);
   window.SBAI.tableFilter.init(document);

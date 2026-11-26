@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Resumen profesional · SkillBridge AI</title>
   <link rel="stylesheet" href="/css/tokens.css">
@@ -235,7 +235,7 @@
               </div>
             </div>
             <div class="rp-actions">
-              <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()" title="Guardar como PDF o imprimir">
+              <button type="button" class="btn btn-secondary btn-sm" data-imprimir title="Guardar como PDF o imprimir">
                 <svg class="icon icon-sm"><use href="/img/icons.svg#icon-download"></use></svg>Descargar PDF</button>
             </div>
           </div>
@@ -328,7 +328,7 @@
 <script src="/js/modal.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script src="/js/tech-icons.js"></script>
-<script th:inline="javascript">
+<script th:inline="javascript" th:nonce="${cspNonce}">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 var RP_ACTUALIZANDO = /*[[${actualizando}]]*/ false;
 document.addEventListener("DOMContentLoaded", function () {

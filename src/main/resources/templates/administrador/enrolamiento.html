@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Activa la verificación en dos pasos · SkillBridge AI</title>
   <link rel="icon" type="image/png" href="/img/logo-icon.png">
@@ -182,7 +182,7 @@
   </div>
 </div>
 <script src="/js/vendor-qrcode.js"></script>
-<script>
+<script th:nonce="${cspNonce}">
   (function () {
     var codigo = document.getElementById("enr-codigo");
     codigo.addEventListener("input", function () { codigo.value = codigo.value.replace(/\D/g, "").slice(0, 6); });

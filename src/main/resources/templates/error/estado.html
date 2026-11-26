@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org" th:fragment="pagina(titulo, mensaje, icono)">
 <head>
   <meta charset="UTF-8">
-  <script>try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title th:text="|${titulo} · SkillBridge AI|">Acceso denegado · SkillBridge AI</title>
   <link rel="icon" type="image/png" href="/img/logo-icon.png" th:href="@{/img/logo-icon.png}">
