@@ -8,8 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -38,7 +36,7 @@ public class ExtraccionEntregableIaService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record ExtraccionCruda(String titulo, String descripcion, String fechaApertura,
-                                    String fechaCierre, String puntajeMaximo) {}
+                                    String fechaCierre) {}
 
     public EntregableExtraidoIa extraer(MultipartFile archivo) {
         String texto = ExtractorDocumentoUtil.extraerTexto(archivo);
@@ -51,14 +49,12 @@ public class ExtraccionEntregableIaService {
                 + "pre-llenar un formulario. Responde SOLO con un JSON valido (sin markdown, sin texto "
                 + "adicional, sin ```), con esta forma exacta:\n"
                 + "{\"titulo\": string|null, \"descripcion\": string|null, "
-                + "\"fechaApertura\": \"yyyy-MM-ddTHH:mm\"|null, \"fechaCierre\": \"yyyy-MM-ddTHH:mm\"|null, "
-                + "\"puntajeMaximo\": number|null}\n"
+                + "\"fechaApertura\": \"yyyy-MM-ddTHH:mm\"|null, \"fechaCierre\": \"yyyy-MM-ddTHH:mm\"|null}\n"
                 + "Reglas: las fechas deben ir en formato yyyy-MM-ddTHH:mm (24 horas); si el documento no da "
                 + "una hora exacta, usa 23:59. \"fechaApertura\" es cuando se habilita el entregable y "
                 + "\"fechaCierre\" es la fecha límite de entrega; fechaCierre siempre debe ser posterior a "
-                + "fechaApertura. \"puntajeMaximo\" es el puntaje máximo sobre el que se calificará (si el "
-                + "documento no lo menciona, usa null y se completará 20 por defecto en el formulario). Si el "
-                + "documento no trae un dato, usa null. No inventes datos que no estén en el texto.";
+                + "fechaApertura. No extraigas notas ni puntajes: el entregable se revisa por "
+                + "estados (Completado, Requiere ajustes, Rehacer), no con nota. Si el documento no trae un dato, usa null. No inventes datos que no estén en el texto.";
 
         AsistenteIaService.Resultado r = asistenteIaService.consultar(promptSistema, texto, MAX_OUTPUT_TOKENS);
         if (!r.ok()) {
@@ -95,15 +91,6 @@ public class ExtraccionEntregableIaService {
         }
         salida.setFechaApertura(apertura == null ? null : apertura.toString());
         salida.setFechaCierre(cierre == null ? null : cierre.toString());
-
-        if (cruda.puntajeMaximo() != null && !cruda.puntajeMaximo().isBlank()) {
-            try {
-                BigDecimal puntaje = new BigDecimal(cruda.puntajeMaximo().trim()).setScale(2, RoundingMode.HALF_UP);
-                salida.setPuntajeMaximo(puntaje.toPlainString());
-            } catch (NumberFormatException ex) {
-                advertencias.add("No se pudo interpretar el puntaje máximo detectado; revísalo manualmente.");
-            }
-        }
 
         if (salida.getTitulo() == null) advertencias.add("No se encontró un título claro para el entregable; complétalo manualmente.");
         salida.setAdvertencias(advertencias);

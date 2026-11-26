@@ -1,7 +1,6 @@
 package com.skillbridge.ai.model;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -58,12 +57,13 @@ public class Entrega {
     @Column(name = "fecha_entrega", insertable = false, updatable = false)
     private LocalDateTime fechaEntrega;
 
-    /** 'enviado' | 'revisado' (revisado = el PM ya calificó/comentó). */
+    /**
+     * 'enviado' (por revisar) | 'completado' | 'requiere_ajustes' | 'rehacer'.
+     * Los tres últimos los pone el PM/Administrador al revisar, siempre con comentario.
+     */
     @Column(name = "estado", nullable = false, length = 20)
     private String estado = "enviado";
 
-    @Column(name = "calificacion")
-    private BigDecimal calificacion;
 
     @Column(name = "comentario_pm")
     private String comentarioPm;
@@ -94,8 +94,6 @@ public class Entrega {
     public LocalDateTime getFechaEntrega() { return fechaEntrega; }
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
-    public BigDecimal getCalificacion() { return calificacion; }
-    public void setCalificacion(BigDecimal calificacion) { this.calificacion = calificacion; }
     public String getComentarioPm() { return comentarioPm; }
     public void setComentarioPm(String comentarioPm) { this.comentarioPm = comentarioPm; }
     public Long getRevisadoPorId() { return revisadoPorId; }

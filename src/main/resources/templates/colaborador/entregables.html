@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/css/polish.css">
 <style>
   /* ── Resumen (KPIs) ── */
-  .me-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+  .me-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
   .me-kpi { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
   .me-kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .me-kpi-icon .icon { width: 20px; height: 20px; }
@@ -39,7 +39,7 @@
 
   /* ── Tarjetas de entregable ── */
   .me-list { display: flex; flex-direction: column; }
-  .me-item { display: grid; grid-template-columns: auto minmax(0, 1fr) 160px 90px 136px; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-subtle); transition: background .15s; }
+  .me-item { display: grid; grid-template-columns: auto minmax(0, 1fr) 160px 128px 136px; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-subtle); transition: background .15s; }
   .me-item:hover { background: var(--surface-sunken); }
   .me-item-icon { width: 42px; height: 42px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; }
   .me-item-icon .icon { width: 20px; height: 20px; }
@@ -54,7 +54,14 @@
   .me-deadline-left.is-soon { color: #B26A00; font-weight: 600; }
   .me-deadline-left.is-late { color: var(--red-fg); font-weight: 600; }
   .me-score { text-align: center; }
-  .me-score-num { font-family: var(--font-mono, monospace); font-size: var(--fs-md, 1rem); font-weight: 700; color: var(--text-primary); }
+  .me-score-num { font-size: var(--fs-sm); font-weight: 700; color: var(--text-tertiary); display: inline-flex; align-items: center; gap: 5px; }
+  .me-score-num .icon { width: 15px; height: 15px; }
+  .me-score-num.rev-completado { color: #1E8E4E; }
+  .me-score-num.rev-requiere_ajustes { color: #B26A00; }
+  .me-score-num.rev-rehacer { color: var(--red-fg); }
+  .me-score-num.rev-enviado { color: var(--blue-fg); }
+  :root[data-theme="dark"] .me-score-num.rev-completado { color: #4ADE80; }
+  :root[data-theme="dark"] .me-score-num.rev-requiere_ajustes { color: #FBBF24; }
   .me-score-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-tertiary); }
   .me-item .btn { white-space: nowrap; width: 100%; justify-content: center; }
 
@@ -83,8 +90,12 @@
           <div><div class="me-kpi-num" th:text="${entregables.?[miEntrega != null and miEntrega.estadoCrudo == 'enviado'].size()}">0</div><div class="me-kpi-label">Entregados, en revisión</div></div>
         </div>
         <div class="me-kpi">
+          <span class="me-kpi-icon tone-amber"><svg class="icon"><use href="/img/icons.svg#icon-refresh"></use></svg></span>
+          <div><div class="me-kpi-num" th:text="${entregables.?[miEntrega != null and miEntrega.pideReenvio].size()}">0</div><div class="me-kpi-label">Por corregir (ajustes o rehacer)</div></div>
+        </div>
+        <div class="me-kpi">
           <span class="me-kpi-icon tone-green"><svg class="icon"><use href="/img/icons.svg#icon-check"></use></svg></span>
-          <div><div class="me-kpi-num" th:text="${entregables.?[miEntrega != null and miEntrega.estadoCrudo == 'revisado'].size()}">0</div><div class="me-kpi-label">Revisados y calificados</div></div>
+          <div><div class="me-kpi-num" th:text="${entregables.?[miEntrega != null and miEntrega.completada].size()}">0</div><div class="me-kpi-label">Completados</div></div>
         </div>
         <div class="me-kpi">
           <span class="me-kpi-icon tone-red"><svg class="icon"><use href="/img/icons.svg#icon-alert-triangle"></use></svg></span>
@@ -97,8 +108,9 @@
           <div class="me-tabs" role="tablist" aria-label="Filtrar por estado">
             <button type="button" class="me-tab active" data-me-tab="todos">Todos <span class="me-tab-count" data-me-count="todos">0</span></button>
             <button type="button" class="me-tab" data-me-tab="pendiente">Pendientes <span class="me-tab-count" data-me-count="pendiente">0</span></button>
-            <button type="button" class="me-tab" data-me-tab="enviado">Entregados <span class="me-tab-count" data-me-count="enviado">0</span></button>
-            <button type="button" class="me-tab" data-me-tab="revisado">Revisados <span class="me-tab-count" data-me-count="revisado">0</span></button>
+            <button type="button" class="me-tab" data-me-tab="enviado">En revisión <span class="me-tab-count" data-me-count="enviado">0</span></button>
+            <button type="button" class="me-tab" data-me-tab="corregir">Por corregir <span class="me-tab-count" data-me-count="corregir">0</span></button>
+            <button type="button" class="me-tab" data-me-tab="completado">Completados <span class="me-tab-count" data-me-count="completado">0</span></button>
             <button type="button" class="me-tab" data-me-tab="vencido">Vencidos <span class="me-tab-count" data-me-count="vencido">0</span></button>
           </div>
           <label class="me-search">
@@ -115,11 +127,11 @@
 
         <div class="me-list" th:unless="${entregables.isEmpty()}">
           <div class="me-item" th:each="e : ${entregables}" data-me-row
-               th:attr="data-estado=${e.miEntrega != null ? e.miEntrega.estadoCrudo : (e.vencido ? 'vencido' : 'pendiente')},
+               th:attr="data-estado=${e.miEntrega != null ? (e.miEntrega.pideReenvio ? 'corregir' : e.miEntrega.estadoCrudo) : (e.vencido ? 'vencido' : 'pendiente')},
                         data-cierre=${e.fechaCierreLabel},
                         data-buscar=${e.titulo + ' ' + e.proyectoNombre}">
             <span class="me-item-icon"
-                  th:classappend="${e.miEntrega != null ? (e.miEntrega.estadoCrudo == 'revisado' ? 'tone-green' : 'tone-blue') : (e.vencido ? 'tone-red' : 'tone-amber')}">
+                  th:classappend="${e.miEntrega != null ? (e.miEntrega.completada ? 'tone-green' : (e.miEntrega.pideReenvio ? (e.miEntrega.estadoCrudo == 'rehacer' ? 'tone-red' : 'tone-amber') : 'tone-blue')) : (e.vencido ? 'tone-red' : 'tone-amber')}">
               <svg class="icon"><use href="/img/icons.svg#icon-file-text"></use></svg>
             </span>
 
@@ -130,7 +142,7 @@
                 <span>·</span>
                 <span class="badge badge-neutral" th:if="${e.miEntrega == null and !e.vencido}">Sin entregar</span>
                 <span class="badge badge-red" th:if="${e.miEntrega == null and e.vencido}">Vencido</span>
-                <span class="badge" th:if="${e.miEntrega != null}" th:classappend="${e.miEntrega.estadoBadgeClass}" th:text="${e.miEntrega.estadoLabel}">Estado</span>
+                <span class="badge" th:if="${e.miEntrega != null}" th:classappend="${e.miEntrega.atrasado ? 'badge-amber' : 'badge-neutral'}" th:text="${e.miEntrega.atrasado ? 'Entregado (atrasado)' : 'Entregado'}">Entregado</span>
               </div>
             </div>
 
@@ -140,13 +152,17 @@
             </div>
 
             <div class="me-score">
-              <div class="me-score-num" th:text="${e.miEntrega != null ? e.miEntrega.calificacionLabel : '—'} + ' / ' + ${e.puntajeMaximoLabel}">— / 20</div>
-              <div class="me-score-label">Nota</div>
+              <div class="me-score-num" th:if="${e.miEntrega != null}" th:classappend="'rev-' + ${e.miEntrega.estadoCrudo}">
+                <svg class="icon" aria-hidden="true"><use th:href="${e.miEntrega.completada ? '/img/icons.svg#icon-check-circle' : (e.miEntrega.pideReenvio ? '/img/icons.svg#icon-refresh' : '/img/icons.svg#icon-clock')}" href="/img/icons.svg#icon-clock"></use></svg>
+                <span th:text="${e.miEntrega.estadoLabel}">Por revisar</span>
+              </div>
+              <div class="me-score-num" th:if="${e.miEntrega == null}">—</div>
+              <div class="me-score-label">Revisión</div>
             </div>
 
-            <a class="btn btn-sm" th:classappend="${e.miEntrega == null ? 'btn-primary' : 'btn-secondary'}"
+            <a class="btn btn-sm" th:classappend="${e.miEntrega == null or e.miEntrega.pideReenvio ? 'btn-primary' : 'btn-secondary'}"
                th:href="@{'/colaborador/entregables/' + ${e.id} + '.html'}"
-               th:text="${e.miEntrega == null ? 'Entregar' : 'Ver mi entrega'}">Entregar</a>
+               th:text="${e.miEntrega == null ? 'Entregar' : (e.miEntrega.pideReenvio ? 'Corregir entrega' : 'Ver mi entrega')}">Entregar</a>
           </div>
         </div>
 
@@ -188,7 +204,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var dias = Math.round(Math.abs(ms) / 86400000);
     var horas = Math.round(Math.abs(ms) / 3600000);
     var cuanto = dias >= 1 ? dias + (dias === 1 ? " día" : " días") : horas + (horas === 1 ? " hora" : " horas");
-    if (estado === "enviado" || estado === "revisado") {
+    if (estado === "enviado" || estado === "corregir" || estado === "completado") {
       el.textContent = ms >= 0 ? "Cierra en " + cuanto : "Cerrado";
     } else if (ms < 0) {
       el.textContent = "Venció hace " + cuanto;
@@ -200,7 +216,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Contadores por pestaña
-  var conteo = { todos: rows.length, pendiente: 0, enviado: 0, revisado: 0, vencido: 0 };
+  var conteo = { todos: rows.length, pendiente: 0, enviado: 0, corregir: 0, completado: 0, vencido: 0 };
   rows.forEach(function (r) { if (conteo[r.dataset.estado] !== undefined) conteo[r.dataset.estado]++; });
   document.querySelectorAll("[data-me-count]").forEach(function (c) { c.textContent = conteo[c.dataset.meCount] || 0; });
 

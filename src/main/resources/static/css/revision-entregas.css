@@ -1,0 +1,57 @@
+/* Revisión de entregas por estados (PM, Administrador y vista del Colaborador). */
+
+.rev-modal { max-width: 560px; }
+.rev-opciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.rev-opcion {
+  position: relative; display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3); border: 1.5px solid var(--border-default); border-radius: var(--radius-md);
+  background: var(--surface); cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.rev-opcion:hover { border-color: var(--border-strong); }
+.rev-opcion input { position: absolute; opacity: 0; pointer-events: none; }
+.rev-opcion-icono {
+  width: 30px; height: 30px; border-radius: var(--radius-full); display: inline-flex;
+  align-items: center; justify-content: center;
+}
+.rev-opcion-icono .icon { width: 16px; height: 16px; }
+.rev-opcion-texto { display: flex; flex-direction: column; gap: 2px; }
+.rev-opcion-texto strong { font-size: var(--fs-sm); color: var(--text-primary); }
+.rev-opcion-texto small { font-size: var(--fs-2xs); color: var(--text-tertiary); line-height: 1.35; }
+.rev-opcion:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--blue-bg); }
+
+.rev-completado .rev-opcion-icono { background: var(--green-bg); color: var(--green-fg); }
+.rev-requiere_ajustes .rev-opcion-icono { background: var(--amber-bg); color: var(--amber-fg); }
+.rev-rehacer .rev-opcion-icono { background: var(--red-bg); color: var(--red-fg); }
+.rev-completado:has(input:checked) { border-color: var(--green-fg); background: var(--green-bg); }
+.rev-requiere_ajustes:has(input:checked) { border-color: var(--amber-fg); background: var(--amber-bg); }
+.rev-rehacer:has(input:checked) { border-color: var(--red-fg); background: var(--red-bg); }
+
+.rev-obligatorio { color: var(--text-tertiary); font-weight: 400; }
+.rev-sugerencias { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
+.rev-sugerencias-label { font-size: var(--fs-2xs); color: var(--text-tertiary); }
+.rev-chip { font-size: var(--fs-2xs); padding: 3px 10px; }
+.rev-textarea { height: auto; min-height: 96px; padding: var(--space-3) var(--space-4); resize: vertical; }
+.rev-pie { display: flex; justify-content: space-between; gap: var(--space-3); margin-top: 4px; font-size: var(--fs-2xs); }
+.rev-error { color: var(--red-fg); }
+.rev-contador { color: var(--text-tertiary); margin-left: auto; }
+.rev-contador-bajo { color: var(--amber-fg); }
+
+/* Celda "Revisión" en la tabla del PM/Admin */
+.rev-comentario-celda {
+  max-width: 260px; font-size: var(--fs-xs); color: var(--text-secondary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Tarjeta de retroalimentación del Colaborador */
+.rev-feedback { border-left: 3px solid var(--border-strong); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-sunken); }
+.rev-feedback.completado { border-left-color: var(--green-fg); background: var(--green-bg); }
+.rev-feedback.requiere_ajustes { border-left-color: var(--amber-fg); background: var(--amber-bg); }
+.rev-feedback.rehacer { border-left-color: var(--red-fg); background: var(--red-bg); }
+.rev-feedback-estado { display: flex; align-items: center; gap: var(--space-2); font-weight: 600; font-size: var(--fs-sm); }
+.rev-feedback-texto { margin-top: var(--space-2); font-size: var(--fs-sm); color: var(--text-primary); white-space: pre-wrap; }
+.rev-feedback-pie { margin-top: var(--space-2); font-size: var(--fs-2xs); color: var(--text-tertiary); }
+
+@media (max-width: 560px) {
+  .rev-opciones { grid-template-columns: 1fr; }
+  .rev-opcion { flex-direction: row; align-items: center; }
+}

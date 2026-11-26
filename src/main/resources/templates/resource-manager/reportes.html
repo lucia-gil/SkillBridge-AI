@@ -365,7 +365,7 @@
             </div>
             <dl class="rr-stats is-row">
               <div><dt>Entregas</dt><dd th:text="${d.entregas().entregas()}">0</dd></div>
-              <div><dt>Calificación</dt><dd th:text="${d.entregas().revisadas() > 0} ? ${d.entregas().calificacionPromedioPct()} + '%' : '—'">—</dd></div>
+              <div><dt>Completadas</dt><dd th:text="${d.entregas().revisadas() > 0} ? ${d.entregas().completadasPct()} + '% de las revisadas' : '—'">—</dd></div>
               <div><dt>Vencidos</dt><dd th:text="${d.entregas().vencidosSinEntrega()}">0</dd></div>
             </dl>
           </article>
