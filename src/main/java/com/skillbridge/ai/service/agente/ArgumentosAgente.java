@@ -35,7 +35,11 @@ public final class ArgumentosAgente {
      @NotNull @Size(max=150) String ubicacion, @NotNull @Size(max=255) String enlace,
      @NotNull @Size(max=1500) String descripcion){}
  public record EventoId(@NotNull @Positive Long eventoId){}
- public record ProyectoEdicion(@NotNull @Positive Long proyectoId,@NotBlank @Size(max=150) String nombre,
-     @NotNull @Size(max=3000) String descripcion,@NotNull @Size(max=15) List<@NotBlank @Size(max=60) String> tecnologias,
-     @NotNull LocalDate fechaInicio,@NotNull LocalDate fechaFin){}
+ /**
+  * Edición parcial: solo proyectoId es obligatorio; los campos que lleguen en
+  * null se conservan tal como están en el proyecto.
+  */
+ public record ProyectoEdicion(@NotNull @Positive Long proyectoId,@Size(min=1,max=150) String nombre,
+     @Size(max=3000) String descripcion,@Size(max=15) List<@NotBlank @Size(max=60) String> tecnologias,
+     LocalDate fechaInicio,LocalDate fechaFin){}
 }

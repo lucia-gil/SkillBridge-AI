@@ -484,7 +484,8 @@ public class AsistenteIaService {
                     + "agenda personal (para mover o borrar, consulta antes la agenda y usa el id del evento).";
             case Roles.PROJECT_MANAGER -> "Project Manager: ve solo los proyectos que lidera, su equipo y sus entregables; puede "
                     + "buscar candidatos, preparar propuestas al Resource Manager, crear o editar sus proyectos, consultar su agenda y "
-                    + "agendar eventos en los proyectos donde participa. No asigna personas.";
+                    + "agendar eventos en los proyectos donde participa. Puede ver el detalle completo de los proyectos que lidera; al "
+                    + "editar uno cambia solo lo que pidió y el resto se conserva, sin pedirle datos que no quiere cambiar. No asigna personas.";
             default -> "Colaborador: ve solo sus propios datos (perfil, habilidades, carga, proyectos y entregables) y puede "
                     + "preparar la actualización de su biografía, consultar su agenda y agendar eventos en los proyectos donde participa. "
                     + "Si pide escribir su biografía a partir de su resumen profesional IA, consulta primero ese resumen y "

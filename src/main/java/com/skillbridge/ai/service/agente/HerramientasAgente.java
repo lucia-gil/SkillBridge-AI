@@ -54,6 +54,7 @@ public class HerramientasAgente {
             new Definicion("consultar_capacidad_y_solicitudes", "Consulta disponibilidad y solicitudes organizacionales.", Roles.RESOURCE_MANAGER, false, Consulta.class),
             new Definicion("consultar_metricas_globales", "Consulta métricas agregadas.", Roles.ADMINISTRADOR, false, Consulta.class),
             new Definicion("listar_mis_proyectos", "Lista IDs y nombres de proyectos liderados.", Roles.PROJECT_MANAGER, false, Vacio.class),
+            new Definicion("ver_proyecto", "Detalle de un proyecto que lidera: nombre, descripción, tecnologías, fechas y estado.", Roles.PROJECT_MANAGER, false, ProyectoId.class),
             new Definicion("buscar_candidatos", "Ranking explicado para un proyecto propio.", Roles.PROJECT_MANAGER, false, Candidatos.class),
             new Definicion("listar_solicitudes", "Lista propuestas pendientes de asignación.", Roles.RESOURCE_MANAGER, false, Vacio.class),
             new Definicion("consultar_mi_agenda", "Consulta los próximos eventos de la agenda personal (con id y editable=true) y los hitos y entregables de los proyectos en curso (editable=false).", Roles.RESOURCE_MANAGER, false, Vacio.class),
@@ -64,7 +65,8 @@ public class HerramientasAgente {
             new Definicion("consultar_auditoria_agente", "Últimas 30 operaciones del agente, sin prompts ni argumentos.", Roles.ADMINISTRADOR, false, Vacio.class),
             new Definicion("actualizar_mi_biografia", "PREPARA actualización de presentación profesional propia; no cambia resumen IA validado. Requiere botón de confirmación.", Roles.COLABORADOR, true, Biografia.class),
             new Definicion("crear_proyecto", "PREPARA proyecto con el actor como PM. Requiere confirmación.", Roles.PROJECT_MANAGER, true, ProyectoNuevo.class),
-            new Definicion("editar_proyecto", "PREPARA edición de proyecto propio conservando GitHub y estado. Requiere confirmación.", Roles.PROJECT_MANAGER, true, ProyectoEdicion.class),
+            new Definicion("editar_proyecto", "PREPARA edición de un proyecto propio. Envía proyectoId y SOLO los campos que cambian "
+                    + "(fechas en yyyy-MM-dd); lo que no envíes se conserva, igual que GitHub y el estado. Requiere confirmación.", Roles.PROJECT_MANAGER, true, ProyectoEdicion.class),
             new Definicion("proponer_candidato", "PREPARA propuesta de candidato al RM, no asignación. Requiere confirmación.", Roles.PROJECT_MANAGER, true, Propuesta.class),
             new Definicion("resolver_propuesta", "PREPARA aprobación o rechazo; aprobar asigna según disponibilidad. Requiere confirmación.", Roles.RESOURCE_MANAGER, true, Resolucion.class),
             new Definicion("crear_evento_agenda", "PREPARA un evento en la agenda personal del Resource Manager (solo él lo ve). "
@@ -177,7 +179,9 @@ public class HerramientasAgente {
         return DEFINICIONES.stream().filter(d -> d.rol().equals(s.getRolEfectivo()))
                 .filter(d -> !soloLectura || !d.escritura()).map(d -> {
             Map<String, Object> props = new LinkedHashMap<>();
+            List<String> requeridos = new ArrayList<>();
             for (var c : d.tipo().getRecordComponents()) {
+                if (obligatorio(d.tipo(), c.getName())) requeridos.add(c.getName());
                 String tipo = tipoJson(c.getType());
                 props.put(c.getName(), "array".equals(tipo)
                         ? Map.of("type", tipo, "items", Map.of("type", "string"), "maxItems", 15)
@@ -185,8 +189,19 @@ public class HerramientasAgente {
             }
             return Map.<String, Object>of("name", d.nombre(), "description", d.descripcion(),
                     "input_schema", Map.of("type", "object", "properties", props,
-                            "required", new ArrayList<>(props.keySet()), "additionalProperties", false));
+                            "required", requeridos, "additionalProperties", false));
         }).toList();
+    }
+
+    /** Un campo es obligatorio para la IA si el record lo marca con @NotNull o @NotBlank. */
+    private static boolean obligatorio(Class<?> tipo, String campo) {
+        try {
+            var f = tipo.getDeclaredField(campo);
+            return f.isAnnotationPresent(jakarta.validation.constraints.NotNull.class)
+                    || f.isAnnotationPresent(jakarta.validation.constraints.NotBlank.class);
+        } catch (NoSuchFieldException e) {
+            return true;
+        }
     }
 
     private static String tipoJson(Class<?> tipo) {
@@ -204,7 +219,14 @@ public class HerramientasAgente {
     public void autorizarRecurso(UsuarioSesion s, Object a) {
         if (a instanceof Candidatos x) politica.proyecto(s, x.proyectoId());
         if (a instanceof Propuesta x) politica.proyecto(s, x.proyectoId());
-        if (a instanceof ProyectoEdicion x) politica.proyecto(s, x.proyectoId());
+        if (a instanceof ProyectoId x) politica.proyecto(s, x.proyectoId());
+        if (a instanceof ProyectoEdicion x) {
+            politica.proyecto(s, x.proyectoId());
+            if (x.nombre() == null && x.descripcion() == null && x.tecnologias() == null && x.fechaInicio() == null && x.fechaFin() == null) {
+                throw new IllegalArgumentException("No hay cambios que aplicar.");
+            }
+            if (x.nombre() != null && x.nombre().isBlank()) throw new IllegalArgumentException("Nombre vacío.");
+        }
         if (a instanceof EventoAgenda x) validarEvento(x.tipo(), x.fechaInicio(), x.enlace());
         if (a instanceof EventoAgendaEdicion x) {
             validarEvento(x.tipo(), x.fechaInicio(), x.enlace());
@@ -244,6 +266,8 @@ public class HerramientasAgente {
         Object resultado;
         if (a instanceof Consulta x) {
             resultado = contexto.construir(s, s.getRolEfectivo(), x.pregunta()).texto();
+        } else if (a instanceof ProyectoId x) {
+            resultado = detalleProyecto(x.proyectoId());
         } else if (a instanceof Candidatos x) {
             int[] pesos = matching.pesosConfigurados();
             resultado = matching.calcular(s.getPerfilId(), x.proyectoId(), x.dedicacion(), pesos[0], pesos[1], pesos[2])
@@ -320,6 +344,30 @@ public class HerramientasAgente {
 
     private static String valor(String v) { return v == null ? "" : v; }
 
+    private List<String> tecnologias(Proyecto p) {
+        try {
+            return p.getTecnologias() == null || p.getTecnologias().isBlank() ? List.of()
+                    : List.of(mapper.readValue(p.getTecnologias(), String[].class));
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    /** Detalle de un proyecto ya autorizado (el PM lo lidera); sin GitHub ni datos de personas. */
+    private Map<String, Object> detalleProyecto(Long proyectoId) {
+        Proyecto p = proyectoRepository.findById(proyectoId)
+                .orElseThrow(() -> new IllegalArgumentException("El proyecto no existe."));
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("proyectoId", p.getId());
+        m.put("nombre", p.getNombre());
+        m.put("descripcion", valor(p.getDescripcion()));
+        m.put("tecnologias", tecnologias(p));
+        m.put("fechaInicio", p.getFechaInicio() != null ? p.getFechaInicio().toString() : "sin definir");
+        m.put("fechaFin", p.getFechaFinEstimada() != null ? p.getFechaFinEstimada().toString() : "sin definir");
+        m.put("estado", p.getEstado());
+        return m;
+    }
+
     /** Resumen profesional IA propio (el validado): solo lo que el colaborador ya ve en su pantalla. */
     private Map<String, Object> miResumenIa(UsuarioSesion s) {
         Map<String, Object> m = new LinkedHashMap<>();
@@ -349,11 +397,16 @@ public class HerramientasAgente {
             proyectos.crear(x.nombre(), x.descripcion(), x.tecnologias(), x.fechaInicio(), x.fechaFin(),
                     x.colaboradores(), s.getPerfilId(), s.getUsuarioId(), null);
         } else if (a instanceof ProyectoEdicion x) {
-            // El agente no cambia el enlace de GitHub: se conserva el actual.
+            // Edición parcial: lo que no viene se toma del proyecto actual. GitHub y estado no se tocan.
             Proyecto p = proyectoRepository.bloquear(x.proyectoId())
                     .orElseThrow(() -> new IllegalArgumentException("El proyecto no existe."));
-            proyectos.editarProyecto(x.proyectoId(), x.nombre(), x.descripcion(), x.tecnologias(),
-                    x.fechaInicio(), x.fechaFin(), p.getGithubUrl(), s.getUsuarioId());
+            proyectos.editarProyecto(x.proyectoId(),
+                    x.nombre() != null ? x.nombre() : p.getNombre(),
+                    x.descripcion() != null ? x.descripcion() : p.getDescripcion(),
+                    x.tecnologias() != null ? x.tecnologias() : tecnologias(p),
+                    x.fechaInicio() != null ? x.fechaInicio() : p.getFechaInicio(),
+                    x.fechaFin() != null ? x.fechaFin() : p.getFechaFinEstimada(),
+                    p.getGithubUrl(), s.getUsuarioId());
         } else if (a instanceof Propuesta x) {
             matching.proponerManual(s.getPerfilId(), s.getUsuarioId(), x.proyectoId(), x.candidatoId(), x.dedicacion());
         } else if (a instanceof Resolucion x) {

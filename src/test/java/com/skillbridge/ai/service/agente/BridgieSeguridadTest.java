@@ -147,6 +147,24 @@ class BridgieSeguridadTest {
     }
 
     @Test
+    @DisplayName("Editar proyecto: basta con el campo que cambia, pero algo debe cambiar")
+    @SuppressWarnings("unchecked")
+    void edicionParcial() throws Exception {
+        var pm = sesion(Roles.PROJECT_MANAGER);
+        var d = herramientas.definir(pm, "editar_proyecto");
+        Map<String, Object> esquema = herramientas.catalogo(pm).stream().filter(m -> "editar_proyecto".equals(m.get("name")))
+                .findFirst().map(m -> (Map<String, Object>) m.get("input_schema")).orElseThrow();
+        assertEquals(List.of("proyectoId"), esquema.get("required"));
+        herramientas.autorizarRecurso(pm, herramientas.argumentos(d, json.readTree("{\"proyectoId\":3,\"fechaFin\":\"2027-02-15\"}")));
+        assertThrows(IllegalArgumentException.class, () -> herramientas.autorizarRecurso(pm,
+                herramientas.argumentos(d, json.readTree("{\"proyectoId\":3}"))), "sin cambios");
+        assertThrows(IllegalArgumentException.class, () -> herramientas.argumentos(d,
+                json.readTree("{\"proyectoId\":3,\"nombre\":\"\"}")), "nombre vacío");
+        assertTrue(nombres(Roles.PROJECT_MANAGER, false).contains("ver_proyecto"));
+        assertFalse(nombres(Roles.COLABORADOR, false).contains("ver_proyecto"));
+    }
+
+    @Test
     @DisplayName("El resumen IA que lee Bridgie es solo el propio")
     void resumenPropio() {
         org.mockito.Mockito.when(resumenIa.obtener(7L)).thenReturn(java.util.Optional.empty());
