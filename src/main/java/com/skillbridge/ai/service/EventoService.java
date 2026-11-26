@@ -5,10 +5,12 @@ import com.skillbridge.ai.dto.ProyectoOpcion;
 import com.skillbridge.ai.model.Asignacion;
 import com.skillbridge.ai.model.EventoPersonal;
 import com.skillbridge.ai.model.EventoProyecto;
+import com.skillbridge.ai.model.Proyecto;
 import com.skillbridge.ai.model.TipoAudiencia;
 import com.skillbridge.ai.model.TipoEvento;
 import com.skillbridge.ai.repository.AsignacionRepository;
 import com.skillbridge.ai.repository.EventoProyectoRepository;
+import com.skillbridge.ai.repository.ProyectoRepository;
 import com.skillbridge.ai.repository.TipoAudienciaRepository;
 import com.skillbridge.ai.repository.TipoEventoRepository;
 import com.skillbridge.ai.util.OperacionInvalidaException;
@@ -16,6 +18,7 @@ import com.skillbridge.ai.util.Roles;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
@@ -47,17 +50,20 @@ public class EventoService {
     private final AsignacionRepository asignacionRepository;
     private final NotificacionService notificacionService;
     private final com.skillbridge.ai.repository.EventoPersonalRepository personalRepository;
+    private final ProyectoRepository proyectoRepository;
 
     public EventoService(EventoProyectoRepository eventoRepository, TipoEventoRepository tipoEventoRepository,
                          TipoAudienciaRepository tipoAudienciaRepository, AsignacionRepository asignacionRepository,
                          NotificacionService notificacionService,
-                         com.skillbridge.ai.repository.EventoPersonalRepository personalRepository) {
+                         com.skillbridge.ai.repository.EventoPersonalRepository personalRepository,
+                         ProyectoRepository proyectoRepository) {
         this.personalRepository = personalRepository;
         this.eventoRepository = eventoRepository;
         this.tipoEventoRepository = tipoEventoRepository;
         this.tipoAudienciaRepository = tipoAudienciaRepository;
         this.asignacionRepository = asignacionRepository;
         this.notificacionService = notificacionService;
+        this.proyectoRepository = proyectoRepository;
     }
 
     private List<Long> proyectoIdsDe(Long perfilId) {
@@ -249,6 +255,30 @@ public class EventoService {
         e.setEnlaceVirtual(enlace);
     }
 
+    /**
+     * Valida que la fecha de un evento (reunion/entregable/hito) no exceda
+     * la fecha de fin estimada del proyecto, y que el proyecto no este ya
+     * caducado (fecha de fin estimada ya pasada). Si el proyecto no tiene
+     * fecha de fin estimada definida, no se aplica ninguna restriccion.
+     */
+    private void validarFechaDentroDeProyecto(Long proyectoId, LocalDateTime fechaEvento) {
+        if (proyectoId == null) return;
+        Proyecto proyecto = proyectoRepository.findById(proyectoId)
+                .orElseThrow(() -> new OperacionInvalidaException("El proyecto ya no existe."));
+        LocalDate finEstimada = proyecto.getFechaFinEstimada();
+        if (finEstimada == null) return;
+        if (LocalDate.now().isAfter(finEstimada)) {
+            throw new OperacionInvalidaException(
+                    "El proyecto ya alcanzo su fecha de fin estimada (" + finEstimada
+                            + "); no se pueden crear ni editar eventos en el.");
+        }
+        if (fechaEvento != null && fechaEvento.toLocalDate().isAfter(finEstimada)) {
+            throw new OperacionInvalidaException(
+                    "La fecha del evento no puede superar la fecha de fin estimada del proyecto ("
+                            + finEstimada + ").");
+        }
+    }
+
     @Transactional
     public EventoProyecto crear(Long perfilId, Long proyectoId, String tipoCodigo, String titulo, String descripcion,
                                 String fechaInicioIso, String ubicacion, String enlaceVirtual, String audienciaCodigo) {
@@ -273,6 +303,8 @@ public class EventoService {
         } catch (Exception ex) {
             throw new OperacionInvalidaException("Fecha u hora no valida.");
         }
+
+        validarFechaDentroDeProyecto(proyectoId, fecha);
 
         EventoProyecto e = new EventoProyecto();
         e.setProyectoId(proyectoId);
@@ -323,6 +355,8 @@ public class EventoService {
         } catch (Exception ex) {
             throw new OperacionInvalidaException("Fecha u hora no valida.");
         }
+
+        validarFechaDentroDeProyecto(e.getProyectoId(), fecha);
 
         e.setTipoId(tipo.getId());
         e.setTitulo(titulo.trim());
