@@ -19,7 +19,7 @@
 
   <div class="fp-grid">
     <article class="card fp-card" th:each="f : ${fichas}" th:attr="data-fp-id=${f.id()},data-riesgo=${f.riesgo()}">
-      <header class="fp-card-head">
+      <header class="fp-card-head"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png"><link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
         <div>
           <h3 th:text="${f.nombre()}">Proyecto</h3>
           <p th:text="${f.fechaInicio()} + ' → ' + ${f.fechaFin()} + ' · PM: ' + ${f.projectManager()}">fechas</p>

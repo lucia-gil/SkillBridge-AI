@@ -12,7 +12,7 @@
             th:text="${unreadCount > 99 ? '99+' : unreadCount}">1</span>
     </summary>
     <section class="an-popover" aria-label="Notificaciones recientes">
-      <header class="an-popover-head">
+      <header class="an-popover-head"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png"><link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
         <div><strong>Notificaciones</strong><p data-an-total th:text="${unreadCount > 0 ? unreadCount + ' sin leer' : 'Estás al día'}">Estás al día</p></div>
         <form data-an-mark-all th:attr="hidden=${unreadCount == 0 ? 'hidden' : null}" method="post" th:action="@{/notificaciones/marcar-todas}">
           <input type="hidden" name="volver" value="/administrador/notificaciones.html">
