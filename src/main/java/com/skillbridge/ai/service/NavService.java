@@ -70,7 +70,7 @@ public class NavService {
                 items.add(new NavItem("Chat", "icon-chat-bubble", "chat.html").nuevoGrupo());
                 items.add(new NavItem("Foros", "icon-message", "foros.html"));
                 items.add(new NavItem("Cursos", "icon-graduation", "cursos.html").nuevoGrupo());
-                items.add(new NavItem("Notificaciones", "icon-bell", "notificaciones.html").alPie());
+                // Sin "Notificaciones": ya están en la campanita del topbar (y su "Ver todas").
             }
         }
         return items;
