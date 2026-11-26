@@ -1,234 +1,123 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png"><link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<head>
   <meta charset="UTF-8">
-  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script th:nonce="${cspNonce}">try{if(localStorage.getItem("sbai-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Iniciar sesión · SkillBridge AI</title>
-  <link rel="stylesheet" href="/css/tokens.css">
-  <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/components.css">
-  <link rel="stylesheet" href="/css/layout.css">
-<link rel="stylesheet" href="/css/polish.css">
-<link rel="stylesheet" href="/css/auth-center.css">
-
-  <!--
-    Login rediseñado: sin panel lateral azul. Solo la card centrada sobre
-    un fondo gris claro (--canvas), en línea con el minimalismo del
-    landing (publico/landing.html). Estilos con alcance local a esta
-    página para no afectar registro.html / recuperar-password.html, que
-    siguen usando el layout de dos columnas por ahora.
-  -->
-  <style>
-    .login-page {
-      min-height: 100vh;
-      background: var(--canvas);
-      background-image:
-              radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 60%),
-              radial-gradient(circle at 1px 1px, rgba(22,33,58,0.06) 1px, transparent 0);
-      background-size: 100% 100%, 22px 22px;
-      background-position: center -10%, 0 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: var(--space-6);
-      position: relative;
-    }
-
-    .login-back-link {
-      position: fixed;
-      top: var(--space-6);
-      left: var(--space-6);
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-2);
-      font-size: var(--fs-sm);
-      font-weight: var(--fw-medium);
-      color: var(--text-secondary);
-      z-index: 5;
-    }
-    .login-back-link:hover { color: var(--text-primary); }
-    .login-back-link .icon { width: 16px; height: 16px; }
-
-    .auth-card {
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow-3);
-      padding: var(--space-8);
-      width: 100%;
-      max-width: 440px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .input-wrap .input {
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-default);
-      padding: var(--space-3) var(--space-4);
-      transition: box-shadow var(--dur-fast), border-color var(--dur-fast);
-    }
-
-    .input-wrap .input:focus {
-      border-color: #8B5CF6;
-      box-shadow: 0 0 0 4px rgba(139,92,246,0.16);
-      outline: none;
-    }
-
-    .auth-card-header {
-      text-align: center;
-      margin-bottom: var(--space-6);
-    }
-    .auth-card-header img {
-      height: 34px;
-      width: auto;
-      object-fit: contain;
-      margin: 0 auto;
-      display: block;
-    }
-
-    .auth-card-title,
-    .auth-card-sub {
-      text-align: center;
-    }
-    .auth-card-sub { margin-bottom: var(--space-6); }
-
-    .auth-card-body .field-row a {
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .auth-card .btn-primary {
-      background: linear-gradient(135deg, #8B5CF6 0%, #22D3EE 100%);
-      border: none;
-      box-shadow: 0 4px 14px rgba(139,92,246,0.28);
-    }
-    .auth-card .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
-    .auth-card .btn-primary:active:not(:disabled) { filter: brightness(0.96); }
-
-    .auth-divider { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-6) 0; }
-    .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
-    .auth-divider span { font-family: var(--font-mono); font-size: 10px; letter-spacing: var(--tracking-label); color: var(--text-tertiary); text-transform: uppercase; }
-
-    @media (max-width: 480px) {
-      .login-back-link { position: absolute; top: var(--space-4); left: var(--space-4); }
-      .auth-card { padding: var(--space-6); }
-    }
-  </style>
+  <link rel="icon" th:href="@{/favicon.ico}" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" th:href="@{/img/favicon-32.png}">
+  <link rel="icon" type="image/png" sizes="192x192" th:href="@{/img/favicon-192.png}">
+  <link rel="apple-touch-icon" th:href="@{/img/apple-touch-icon.png}">
+  <link rel="stylesheet" th:href="@{/css/tokens.css}">
+  <link rel="stylesheet" th:href="@{/css/login.css}">
 </head>
-<body>
-<button type="button" id="theme-toggle-btn" class="btn btn-secondary btn-icon-only" aria-label="Cambiar a modo oscuro" style="position:fixed; top:var(--space-4); right:var(--space-4); z-index:var(--z-topbar);"><svg class="icon tt-icon tt-moon" aria-hidden="true"><use href="/img/icons.svg#icon-moon"></use></svg><svg class="icon tt-icon tt-sun" aria-hidden="true"><use href="/img/icons.svg#icon-sun"></use></svg></button>
+<body class="login-page">
+  <header class="login-header">
+    <a class="login-back" th:href="@{/bienvenida.html}">
+      <svg class="login-icon" aria-hidden="true"><use th:href="@{/img/icons.svg#icon-arrow-left}"></use></svg>
+      Volver al inicio
+    </a>
+    <button type="button" id="theme-toggle-btn" class="login-theme" aria-label="Cambiar a modo oscuro">
+      <svg class="login-icon theme-moon" aria-hidden="true"><use th:href="@{/img/icons.svg#icon-moon}"></use></svg>
+      <svg class="login-icon theme-sun" aria-hidden="true"><use th:href="@{/img/icons.svg#icon-sun}"></use></svg>
+      <span class="theme-moon">Modo oscuro</span>
+      <span class="theme-sun">Modo claro</span>
+    </button>
+  </header>
 
-<svg style="display:none"><use></use></svg>
+  <main class="login-shell">
+    <section class="login-brand" aria-label="SkillBridge AI">
+      <div class="login-brand-content">
+        <img class="login-logo" th:src="@{/img/logo_blanco-tight.png}" width="542" height="162" alt="SkillBridge AI">
+        <p class="login-display">El talento detrás de cada proyecto<span>.</span></p>
+        <p class="login-description">Conecta habilidades, equipos y oportunidades de crecimiento en un solo lugar.</p>
+      </div>
 
-<div class="login-page">
-  <a class="login-back-link" th:href="@{/bienvenida.html}">
-    <svg class="icon"><use href="/img/icons.svg#icon-arrow-left"></use></svg>
-    Volver al inicio
-  </a>
-
-  <div class="auth-card card">
-
-    <div class="auth-card-header">
-      <img src="/img/logo-horizontal-tight.png" alt="SkillBridge AI">
-    </div>
-
-    <h2 class="auth-card-title">Iniciar sesión</h2>
-    <p class="auth-card-sub">Ingresa con tu correo y contraseña.</p>
-
-    <div th:if="${error}" th:text="${error}"
-         style="background:var(--red-bg); border:1px solid var(--red-border); color:var(--red-fg-strong); padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
-    <div th:if="${exito}" th:text="${exito}"
-         style="background:var(--green-bg); border:1px solid var(--green-border); color:var(--green-fg); padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:var(--fs-sm);"></div>
-
-    <form class="auth-card-body" id="login-form" th:action="@{/auth/login.html}" method="post" novalidate>
-      <div class="field" id="field-email">
-        <label class="field-label" for="login-email">Correo corporativo</label>
-        <div class="input-wrap">
-          <svg class="icon"><use href="/img/icons.svg#icon-mail"></use></svg>
-          <input class="input has-left-icon" type="email" id="login-email" name="email" placeholder="Ingresa tu correo electrónico"
-                 th:value="${correoIntentado} ?: ''" autocomplete="username" required>
+      <div class="login-network" aria-hidden="true">
+        <div class="network-axis"></div>
+        <div class="network-node">
+          <span class="network-icon"><svg class="login-icon"><use th:href="@{/img/icons.svg#icon-users}"></use></svg></span>
+          <span>Personas</span>
         </div>
-        <div class="field-error"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-alert-circle"></use></svg>Escribe un correo válido.</div>
-      </div>
-
-      <div class="field" id="field-password">
-        <label class="field-label" for="login-password">Contraseña</label>
-        <div class="input-wrap">
-          <svg class="icon"><use href="/img/icons.svg#icon-lock"></use></svg>
-          <input class="input has-left-icon" type="password" id="login-password" name="password" placeholder="••••••••••" autocomplete="current-password" required>
-          <button type="button" class="input-action" data-toggle-password="login-password">Mostrar</button>
+        <div class="network-node network-featured">
+          <span class="network-icon"><svg class="login-icon"><use th:href="@{/img/icons.svg#icon-sparkles}"></use></svg></span>
+          <span>Habilidades</span>
         </div>
-        <div class="field-error"><svg class="icon icon-sm"><use href="/img/icons.svg#icon-alert-circle"></use></svg>Ingresa tu contraseña.</div>
+        <div class="network-node">
+          <span class="network-icon"><svg class="login-icon"><use th:href="@{/img/icons.svg#icon-briefcase}"></use></svg></span>
+          <span>Proyectos</span>
+        </div>
       </div>
+    </section>
 
-      <div class="field-row" style="align-items:center; justify-content:space-between; margin-bottom: var(--space-6);">
-        <label class="checkbox-row" style="margin:0;">
-          <input type="checkbox" id="keep-session" checked>
-          <span class="checkbox-label">Mantener sesión activa</span>
-        </label>
-        <a href="recuperar-password.html" style="font-size:var(--fs-sm); font-weight:500;">¿Olvidaste tu contraseña?</a>
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="login-content">
+        <h1 id="login-title" th:text="${correoGoogle != null} ? 'Vincula tu cuenta' : 'Inicia sesión'">Inicia sesión</h1>
+        <p class="login-intro" th:if="${correoGoogle == null}">Accede a tu espacio de trabajo en SkillBridge AI.</p>
+        <p class="login-intro" th:if="${correoGoogle != null}">Confirma la contraseña de SkillBridge de este correo. Solo tendrás que hacerlo la primera vez.</p>
+
+        <div class="login-message login-message-error" role="alert" th:if="${error}" th:text="${error}"></div>
+        <div class="login-message login-message-success" role="status" th:if="${exito}" th:text="${exito}"></div>
+
+        <div class="login-alternative" th:if="${correoGoogle == null}">
+          <a class="login-google" th:if="${googleHabilitado}" th:href="@{/auth/google/iniciar/google}">
+            <img th:src="@{/img/google-g.png}" width="18" height="18" alt="">
+            Continuar con Google
+          </a>
+          <button class="login-google" th:unless="${googleHabilitado}" type="button" disabled aria-describedby="google-disabled">
+            <img th:src="@{/img/google-g.png}" width="18" height="18" alt="">
+            Continuar con Google
+          </button>
+          <p class="login-hint" id="google-disabled" th:unless="${googleHabilitado}">Google todavía no está habilitado.</p>
+          <div class="login-divider"><span>o con tu correo</span></div>
+        </div>
+
+        <form id="login-form" th:action="@{/auth/login.html}" method="post"
+              th:data-csrf-url="@{/auth/csrf}">
+          <input th:if="${correoGoogle != null}" type="hidden" name="vincularGoogle" value="1">
+          <div class="login-field">
+            <label for="login-email">Correo electrónico</label>
+            <div class="login-input">
+              <svg class="login-icon login-field-icon" aria-hidden="true"><use th:href="@{/img/icons.svg#icon-mail}"></use></svg>
+              <input type="email" id="login-email" name="email" placeholder="nombre@empresa.com"
+                     th:value="${correoGoogle != null ? correoGoogle : correoIntentado}"
+                     th:readonly="${correoGoogle != null}" maxlength="150" autocomplete="username" required>
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label for="login-password">Contraseña</label>
+            <div class="login-input login-input-password">
+              <svg class="login-icon login-field-icon" aria-hidden="true"><use th:href="@{/img/icons.svg#icon-lock}"></use></svg>
+              <input type="password" id="login-password" name="password" placeholder="Ingresa tu contraseña"
+                     autocomplete="current-password" required>
+              <button type="button" class="login-show" id="login-show" aria-controls="login-password"
+                      aria-label="Mostrar contraseña" aria-pressed="false" hidden>
+                <svg class="login-icon show-icon" aria-hidden="true"><use th:href="@{/img/icons.svg#icon-eye}"></use></svg>
+                <svg class="login-icon hide-icon" aria-hidden="true"><use th:href="@{/img/icons.svg#icon-eye-off}"></use></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="login-recovery">
+            <a th:href="@{/auth/recuperar-password.html}">¿Olvidaste tu contraseña?</a>
+          </div>
+          <button class="login-submit" type="submit">
+            <span th:text="${correoGoogle != null} ? 'Confirmar y continuar' : 'Iniciar sesión'">Iniciar sesión</span>
+            <svg class="login-icon" aria-hidden="true"><use th:href="@{/img/icons.svg#icon-arrow-right}"></use></svg>
+          </button>
+        </form>
+
+        <p class="login-footer" th:if="${correoGoogle == null}">¿Primera vez? Completa el registro desde tu invitación.</p>
+        <p class="login-footer" th:if="${correoGoogle != null}">
+          <a th:href="@{/auth/login.html(cancelarGoogle=true)}">Volver al acceso habitual</a>
+        </p>
       </div>
-
-      <button type="submit" class="btn btn-primary btn-block btn-lg">
-        Entrar
-        <svg class="icon icon-sm"><use href="/img/icons.svg#icon-chevron-right"></use></svg>
-      </button>
-
-      <div class="auth-divider"><span>o bien</span></div>
-
-      <button type="button" class="btn btn-secondary btn-block btn-lg" id="sso-btn">
-        Continuar con SSO corporativo
-        <svg class="icon icon-sm"><use href="/img/icons.svg#icon-external-link"></use></svg>
-      </button>
-    </form>
-  </div>
-</div>
-
-<script src="/js/toast.js"></script>
-<script th:nonce="${cspNonce}">
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[data-toggle-password]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var input = document.getElementById(btn.dataset.togglePassword);
-        var show = input.type === "password";
-        input.type = show ? "text" : "password";
-        btn.textContent = show ? "Ocultar" : "Mostrar";
-      });
-    });
-
-    function validateEmail() {
-      var el = document.getElementById("login-email");
-      var field = document.getElementById("field-email");
-      var ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim());
-      field.classList.toggle("has-error", !ok);
-      return ok;
-    }
-    function validatePassword() {
-      var el = document.getElementById("login-password");
-      var field = document.getElementById("field-password");
-      var ok = el.value.trim().length > 0;
-      field.classList.toggle("has-error", !ok);
-      return ok;
-    }
-    document.getElementById("login-email").addEventListener("blur", validateEmail);
-    document.getElementById("login-password").addEventListener("blur", validatePassword);
-
-    document.getElementById("login-form").addEventListener("submit", function (e) {
-      var okEmail = validateEmail();
-      var okPass = validatePassword();
-      if (!okEmail || !okPass) {
-        e.preventDefault();
-        SBAI.toast.show("Revisa los campos marcados antes de continuar.", { type: "error" });
-      }
-    });
-
-    document.getElementById("sso-btn").addEventListener("click", function () {
-      SBAI.toast.show("El inicio de sesión por SSO corporativo no está disponible en esta versión. Usa tu correo y contraseña.", { type: "error" });
-    });
-  });
-</script>
-<script src="/js/theme-toggle.js"></script>
-<script src="/js/csrf-fresco.js"></script>
+    </section>
+  </main>
+  <script th:src="@{/js/theme-toggle.js}" defer></script>
+  <script th:src="@{/js/login.js}" defer></script>
+  <script th:src="@{/js/csrf-fresco.js}" defer></script>
 </body>
 </html>

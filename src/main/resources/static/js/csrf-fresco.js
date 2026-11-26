@@ -22,7 +22,7 @@
 
     e.preventDefault();
     var boton = e.submitter || null;
-    fetch("/auth/csrf", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } })
+    fetch(form.dataset.csrfUrl || "/auth/csrf", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (t) {
         var campo = form.elements[t.param];

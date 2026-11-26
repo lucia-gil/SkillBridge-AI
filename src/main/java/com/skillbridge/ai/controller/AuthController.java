@@ -3,7 +3,10 @@ package com.skillbridge.ai.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillbridge.ai.dto.*;
+import com.skillbridge.ai.security.GoogleLoginHandler;
+import com.skillbridge.ai.security.IdentidadGoogle;
 import com.skillbridge.ai.security.SesionSegura;
+import com.skillbridge.ai.service.GoogleAccessService;
 import com.skillbridge.ai.service.AuthService;
 import com.skillbridge.ai.service.DobleFactorService;
 import com.skillbridge.ai.service.ConsultaPeruDniService;
@@ -14,7 +17,11 @@ import com.skillbridge.ai.util.SesionKeys;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,25 +45,33 @@ import java.util.concurrent.ConcurrentHashMap;
 @Controller
 public class AuthController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(AuthController.class);
+
     private final AuthService authService;
     private final ObjectMapper objectMapper;
     private final DobleFactorService dobleFactorService;
     private final SesionSegura sesionSegura;
     private final ConsultaPeruDniService consultaDni;
     private final IdentidadDniService identidadDni;
+    private final GoogleAccessService googleAccess;
+    private final boolean googleHabilitado;
 
     private static final String PENDIENTE_2FA = SesionKeys.PENDIENTE_2FA;
     private static final String INTENTOS_2FA = SesionKeys.INTENTOS_2FA;
 
     public AuthController(AuthService authService, ObjectMapper objectMapper,
                           DobleFactorService dobleFactorService, SesionSegura sesionSegura,
-                          ConsultaPeruDniService consultaDni, IdentidadDniService identidadDni) {
+                          ConsultaPeruDniService consultaDni, IdentidadDniService identidadDni,
+                          GoogleAccessService googleAccess,
+                          @Value("${app.auth.google.enabled:false}") boolean googleHabilitado) {
         this.authService = authService;
         this.objectMapper = objectMapper;
         this.dobleFactorService = dobleFactorService;
         this.sesionSegura = sesionSegura;
         this.consultaDni = consultaDni;
         this.identidadDni = identidadDni;
+        this.googleAccess = googleAccess;
+        this.googleHabilitado = googleHabilitado;
     }
 
     @GetMapping("/")
@@ -78,6 +93,7 @@ public class AuthController {
     @GetMapping("/auth/login.html")
     public String loginForm(HttpSession session,
                             @RequestParam(value = "salir", required = false) String salir,
+                            @RequestParam(value = "cancelarGoogle", defaultValue = "false") boolean cancelarGoogle,
                             Model model) {
         if (session.getAttribute(SesionKeys.USUARIO) != null) {
             return "redirect:" + homeDe((UsuarioSesion) session.getAttribute(SesionKeys.USUARIO));
@@ -88,6 +104,17 @@ public class AuthController {
         // "error", "correoIntentado" y "exito" llegan solos via flash attributes
         // cuando vienen de un redirect (POST /auth/login.html o /auth/registro.html);
         // en una entrada directa por GET simplemente no existen en el Model.
+        if (cancelarGoogle) {
+            session.removeAttribute(IdentidadGoogle.ATRIBUTO_PENDIENTE);
+            return "redirect:/auth/login.html";
+        }
+        model.addAttribute("googleHabilitado", googleHabilitado);
+        if (googleHabilitado) {
+            var vinculo = IdentidadGoogle.Pendiente.leer(session, IdentidadGoogle.ATRIBUTO_PENDIENTE);
+            if (vinculo != null) {
+                model.addAttribute("correoGoogle", vinculo.identidad().correo());
+            }
+        }
         return "auth/login";
     }
 
@@ -123,6 +150,24 @@ public class AuthController {
             return "redirect:/auth/login.html";
         }
         if (dobleFactorService.verificar(pendiente.getUsuarioId(), codigo)) {
+            if (session.getAttribute(IdentidadGoogle.ATRIBUTO_SEGUNDO_FACTOR) != null) {
+                var vinculo = IdentidadGoogle.Pendiente.leer(session, IdentidadGoogle.ATRIBUTO_SEGUNDO_FACTOR);
+                try {
+                    if (!googleHabilitado || vinculo == null) {
+                        throw new BadCredentialsException("La confirmación de Google expiró. Vuelve a elegir tu cuenta de Google.");
+                    }
+                    googleAccess.confirmarVinculo(vinculo.identidad(), pendiente.getUsuarioId());
+                } catch (BadCredentialsException ex) {
+                    SesionSegura.cerrar(request);
+                    redirectAttributes.addFlashAttribute("error", ex.getMessage());
+                    return "redirect:/auth/login.html";
+                } catch (RuntimeException ex) {
+                    LOG.error("Falló el vínculo con Google tras el segundo factor.", ex);
+                    SesionSegura.cerrar(request);
+                    redirectAttributes.addFlashAttribute("error", GoogleLoginHandler.ERROR);
+                    return "redirect:/auth/login.html";
+                }
+            }
             // Código correcto: recién aquí queda autenticado en Spring Security
             // (sesión nueva + SecurityContext guardado). Ver SesionSegura.
             sesionSegura.iniciarSesion(request, response, pendiente);

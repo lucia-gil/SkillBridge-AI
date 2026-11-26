@@ -3,6 +3,7 @@ package com.skillbridge.ai.config;
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.repository.UsuarioRepository;
 import com.skillbridge.ai.security.AccesoDenegadoHandler;
+import com.skillbridge.ai.security.GoogleLoginHandler;
 import com.skillbridge.ai.security.LoginExitosoHandler;
 import com.skillbridge.ai.security.LoginFallidoHandler;
 import com.skillbridge.ai.security.SesionSegura;
@@ -11,11 +12,23 @@ import com.skillbridge.ai.service.AuditoriaService;
 import com.skillbridge.ai.service.AuthService;
 import com.skillbridge.ai.util.Roles;
 import jakarta.servlet.DispatcherType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -26,6 +39,8 @@ import org.springframework.security.web.context.RequestAttributeSecurityContextR
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+
+import java.util.List;
 
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
@@ -76,6 +91,8 @@ public class SecurityConfig {
                                            SecurityContextRepository securityContextRepository,
                                            LoginExitosoHandler loginExitosoHandler,
                                            LoginFallidoHandler loginFallidoHandler,
+                                           GoogleLoginHandler googleLoginHandler,
+                                           ObjectProvider<ClientRegistrationRepository> oauthClients,
                                            AccesoDenegadoHandler accesoDenegadoHandler,
                                            SesionSegura sesionSegura,
                                            UsuarioRepository usuarioRepository,
@@ -156,6 +173,51 @@ public class SecurityConfig {
             .addFilterBefore(new SesionVigenteFilter(usuarioRepository, authService, sesionSegura, configuracion, dobleFactor, accesoDenegadoHandler),
                     AnonymousAuthenticationFilter.class);
 
+        ClientRegistrationRepository clientes = oauthClients.getIfAvailable();
+        if (clientes != null) {
+            var resolver = new DefaultOAuth2AuthorizationRequestResolver(clientes, GoogleOAuthConfig.INICIO);
+            resolver.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce()
+                    .andThen(builder -> builder.additionalParameters(params -> params.put("prompt", "select_account"))));
+
+            http.oauth2Login(oauth -> oauth
+                    .loginPage("/auth/login.html")
+                    .clientRegistrationRepository(clientes)
+                    .authorizedClientRepository(new SinTokensGoogle())
+                    .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(resolver))
+                    .redirectionEndpoint(endpoint -> endpoint.baseUri(GoogleOAuthConfig.RETORNO))
+                    .successHandler(googleLoginHandler)
+                    .failureHandler(googleLoginHandler)
+                    .userInfoEndpoint(userInfo -> userInfo.oidcUserService(
+                            userRequest -> new DefaultOidcUser(List.of(), userRequest.getIdToken())))
+                    // La sesión JDBC solo recibe UsuarioSesion, después de resolver la cuenta local.
+                    .withObjectPostProcessor(new ObjectPostProcessor<OAuth2LoginAuthenticationFilter>() {
+                        @Override
+                        public <T extends OAuth2LoginAuthenticationFilter> T postProcess(T filter) {
+                            filter.setSecurityContextRepository(new RequestAttributeSecurityContextRepository());
+                            return filter;
+                        }
+                    }));
+        }
+
         return http.build();
+    }
+
+    // OAuth se usa como autenticación, sin consumo posterior de APIs de Google.
+    private static final class SinTokensGoogle implements OAuth2AuthorizedClientRepository {
+        @Override
+        public <T extends OAuth2AuthorizedClient> T loadAuthorizedClient(String id, Authentication principal,
+                                                                         HttpServletRequest request) {
+            return null;
+        }
+
+        @Override
+        public void saveAuthorizedClient(OAuth2AuthorizedClient client, Authentication principal,
+                                         HttpServletRequest request, HttpServletResponse response) {
+        }
+
+        @Override
+        public void removeAuthorizedClient(String id, Authentication principal, HttpServletRequest request,
+                                           HttpServletResponse response) {
+        }
     }
 }

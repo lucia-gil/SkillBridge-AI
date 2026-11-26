@@ -1,6 +1,8 @@
 package com.skillbridge.ai.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.skillbridge.ai.model.Usuario;
@@ -12,6 +14,14 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     Optional<Usuario> findByCorreoIgnoreCase(String correo);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from Usuario u where u.id = :id")
+    Optional<Usuario> buscarParaVinculoGoogle(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from Usuario u where lower(u.correo) = :correo")
+    Optional<Usuario> buscarPorCorreoParaVinculoGoogle(@Param("correo") String correo);
 
     boolean existsByCorreoIgnoreCase(String correo);
 

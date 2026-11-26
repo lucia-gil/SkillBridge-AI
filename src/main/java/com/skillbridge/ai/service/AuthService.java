@@ -238,7 +238,15 @@ public class AuthService {
         }
 
         limpiarIntentos(ip);
+        UsuarioSesion sesion = prepararSesion(usuario);
 
+        auditoriaService.registrar(usuario.getId(), "LOGIN_EXITOSO",
+                "Login exitoso. Rol efectivo: " + sesion.getRolEfectivo() + " (ip=" + ip + ")");
+
+        return ResultadoLogin.exito(sesion);
+    }
+
+    UsuarioSesion prepararSesion(Usuario usuario) {
         Optional<Perfil> operfil = perfilRepository.findByUsuarioId(usuario.getId());
         Long perfilId = operfil.map(Perfil::getId).orElse(null);
         if (perfilId == null && Roles.ADMINISTRADOR.equals(usuario.getRolOrganizacional())) {
@@ -258,10 +266,7 @@ public class AuthService {
         sesion.setLideraProyectos(Roles.PROJECT_MANAGER.equals(rolEfectivo));
         sesion.setIniciales(iniciales(usuario.getNombreCompleto()));
 
-        auditoriaService.registrar(usuario.getId(), "LOGIN_EXITOSO",
-                "Login exitoso. Rol efectivo: " + rolEfectivo + " (ip=" + ip + ")");
-
-        return ResultadoLogin.exito(sesion);
+        return sesion;
     }
 
     /**
