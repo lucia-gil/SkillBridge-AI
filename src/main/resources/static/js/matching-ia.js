@@ -40,22 +40,12 @@
     var skills = (c.habilidades || []).map(function (h) {
       return '<li class="' + (h.cumple ? "is-ok" : "") + '" title="Pide ' + esc(h.requerido) + " · tiene " + esc(h.tiene) + '">' + esc(h.nombre) + "</li>";
     }).join("");
-    var volver = opts.volver;
-    var form;
-    if (esRm) {
-      form = '<form method="post" class="mia-form" action="/resource-manager/proyectos/' + a.proyectoId + '/asignar"' +
-          ' data-confirm-variant="primary" data-confirm-label="Asignar" data-confirm-title="¿Asignar a ' + esc(c.nombre) + '?"' +
-          ' data-confirm-desc="Se suma a ' + esc(a.proyecto) + " con " + a.dedicacion + "% de dedicación. Su carga pasaría de " + c.cargaActual + "% a " + c.cargaProyectada + '%."' +
-          ' data-carga-actual="' + c.cargaActual + '" data-proyecto="' + esc(a.proyecto) + '">' +
-          '<input type="hidden" name="perfilId" value="' + c.perfilId + '"><input type="hidden" name="volver" value="' + esc(volver) + '">' +
-          '<label><span>Dedicación</span><input type="number" class="input" name="cargaPorcentaje" min="1" max="100" value="' + a.dedicacion + '">%</label>' +
-          '<button type="submit" class="btn btn-primary btn-sm">Asignar</button></form>';
-    } else {
-      form = '<form method="post" class="mia-form" action="/project-manager/proyectos/' + a.proyectoId + '/proponer">' +
-          '<input type="hidden" name="perfilId" value="' + c.perfilId + '"><input type="hidden" name="volver" value="' + esc(volver) + '">' +
-          '<label><span>Dedicación</span><input type="number" class="input" name="cargaPorcentaje" min="1" max="100" value="' + a.dedicacion + '">%</label>' +
-          '<button type="submit" class="btn btn-secondary btn-sm">Proponer al RM</button></form>';
-    }
+    // Sin recargar la página: el análisis de la IA queda en pantalla y se puede elegir a varias personas.
+    var form = '<form class="mia-form" data-mia-accion="' + (esRm ? "asignar" : "proponer") + '" data-proyecto-id="' + a.proyectoId + '"' +
+        ' data-perfil="' + c.perfilId + '" data-nombre="' + esc(c.nombre) + '" data-proyecto="' + esc(a.proyecto) + '" data-carga-actual="' + c.cargaActual + '">' +
+        '<label><span>Dedicación</span><input type="number" class="input" name="cargaPorcentaje" min="1" max="100" value="' + a.dedicacion + '">%</label>' +
+        (esRm ? '<button type="submit" class="btn btn-primary btn-sm">Asignar</button>'
+              : '<button type="submit" class="btn btn-secondary btn-sm">Proponer al RM</button>') + "</form>";
     return '<li class="mia-card' + (c.recomendado ? " is-top" : "") + '" data-perfil="' + c.perfilId + '">' +
         '<div class="mia-card-top"><span class="avatar avatar-sm">' + esc(c.iniciales) + "</span>" +
         '<div class="mia-who">' + nombre + "<small>" + esc(c.cargo) + "</small></div>" +
@@ -86,10 +76,35 @@
         (a.aviso ? '<small class="mia-aviso">' + esc(a.aviso) + "</small>" : "") + "</div></div>";
   }
 
-  // Texto de confirmación de "Asignar" según la dedicación escrita
-  $(document).on("input", ".mia-form[data-carga-actual] input[name=cargaPorcentaje]", function () {
-    var $f = $(this).closest("form"), ded = parseInt(this.value, 10) || 0, actual = parseInt($f.attr("data-carga-actual"), 10) || 0;
-    $f.attr("data-confirm-desc", "Se suma a " + $f.attr("data-proyecto") + " con " + ded + "% de dedicación. Su carga pasaría de " + actual + "% a " + (actual + ded) + "%.");
+  // Proponer (PM) o asignar (RM) desde una tarjeta, por AJAX: la tarjeta queda marcada y el resto sigue disponible.
+  $(document).on("submit", "form.mia-form[data-mia-accion]", function (e) {
+    e.preventDefault();
+    var $f = $(this), accion = $f.data("mia-accion"), nombre = $f.attr("data-nombre"), proyecto = $f.attr("data-proyecto");
+    var ded = parseInt($f.find("input[name=cargaPorcentaje]").val(), 10);
+    if (!(ded >= 1 && ded <= 100)) { toast("La dedicación debe estar entre 1% y 100%.", "error"); return; }
+    function enviar() {
+      var $btn = $f.find("button[type=submit]").prop("disabled", true);
+      window.SBAI.api.post("/api/matching/proyectos/" + $f.attr("data-proyecto-id") + "/" + accion,
+          { perfilId: parseInt($f.attr("data-perfil"), 10), dedicacion: ded })
+        .done(function () {
+          var hecho = accion === "asignar" ? nombre + " quedó asignado a " + proyecto + " (" + ded + "%)."
+              : "Propuesta de " + nombre + " enviada al Resource Manager (" + ded + "%).";
+          $f.replaceWith('<p class="mia-hecho">' + icon("icon-check-circle", "icon-sm") +
+              (accion === "asignar" ? "Asignado al proyecto · " : "Propuesto al RM · ") + ded + "%</p>");
+          toast(hecho, "success");
+        })
+        .fail(function (xhr) { $btn.prop("disabled", false); toast(window.SBAI.api.mensajeError(xhr), "error"); });
+    }
+    if (accion === "asignar" && window.SBAI.modal && window.SBAI.modal.confirm) {
+      var actual = parseInt($f.attr("data-carga-actual"), 10) || 0;
+      window.SBAI.modal.confirm({
+        title: "¿Asignar a " + nombre + "?",
+        desc: "Se suma a " + proyecto + " con " + ded + "% de dedicación. Su carga pasaría de " + actual + "% a " + (actual + ded) + "%.",
+        confirmLabel: "Asignar", variant: "primary", onConfirm: enviar
+      });
+    } else {
+      enviar();
+    }
   });
 
   function cargando($donde, texto) {

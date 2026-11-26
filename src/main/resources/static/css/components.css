@@ -850,7 +850,7 @@ a.cell-link:hover { color: var(--blue-link); text-decoration: none; }
 .callout { display: flex; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); border: 1px solid; align-items: flex-start; }
 .callout-icon { flex-shrink: 0; margin-top: 1px; }
 .callout-body { flex: 1; font-size: var(--fs-sm); line-height: var(--lh-normal); }
-.callout-title { font-weight: var(--fw-semibold); margin-bottom: 2px; }
+.callout-title { display: block; font-weight: var(--fw-semibold); margin-bottom: 2px; }
 .callout-actions { display: flex; gap: var(--space-3); margin-top: var(--space-3); }
 .callout.warn { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-fg-strong); }
 .callout.warn .callout-icon { color: var(--amber-fg); }

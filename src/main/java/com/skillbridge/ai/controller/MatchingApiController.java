@@ -2,6 +2,8 @@ package com.skillbridge.ai.controller;
 
 import com.skillbridge.ai.dto.UsuarioSesion;
 import com.skillbridge.ai.service.MatchingIaService;
+import com.skillbridge.ai.service.ProyectoService;
+import com.skillbridge.ai.service.TalentMatchingService;
 import com.skillbridge.ai.service.ProyectoVistaService;
 import com.skillbridge.ai.util.OperacionInvalidaException;
 import com.skillbridge.ai.util.Roles;
@@ -23,6 +25,10 @@ import java.util.Map;
  * jQuery/AJAX (js/matching-ia.js):
  *  POST /api/matching/proyectos/{id}/analizar  {dedicacion}  → ranking + explicaciones
  *  POST /api/matching/consulta                 {texto}       → petición en lenguaje natural
+ *  POST /api/matching/proyectos/{id}/proponer  {perfilId, dedicacion} → propuesta al RM (PM)
+ *  POST /api/matching/proyectos/{id}/asignar   {perfilId, dedicacion} → asignación directa (RM)
+ * Proponer/asignar responden JSON para no recargar la página: así el análisis
+ * de la IA queda en pantalla y se puede elegir a más de una persona.
  * Lo usan el Resource Manager (cualquier proyecto) y el Project Manager
  * (solo los proyectos que lidera), según la vista activa.
  */
@@ -32,14 +38,20 @@ public class MatchingApiController {
 
     private final MatchingIaService matchingIaService;
     private final ProyectoVistaService proyectoVistaService;
+    private final TalentMatchingService talentMatchingService;
+    private final ProyectoService proyectoService;
 
-    public MatchingApiController(MatchingIaService matchingIaService, ProyectoVistaService proyectoVistaService) {
+    public MatchingApiController(MatchingIaService matchingIaService, ProyectoVistaService proyectoVistaService,
+                                 TalentMatchingService talentMatchingService, ProyectoService proyectoService) {
         this.matchingIaService = matchingIaService;
         this.proyectoVistaService = proyectoVistaService;
+        this.talentMatchingService = talentMatchingService;
+        this.proyectoService = proyectoService;
     }
 
     public record AnalizarRequest(Integer dedicacion) {}
     public record ConsultaRequest(String texto) {}
+    public record SeleccionRequest(Long perfilId, Integer dedicacion) {}
 
     static class AccesoDenegado extends RuntimeException {}
 
@@ -64,6 +76,33 @@ public class MatchingApiController {
         if (esRm(s)) return matchingIaService.consultar(body.texto(), s.getPerfilId(), null);
         if (esPm(s)) return matchingIaService.consultar(body.texto(), s.getPerfilId(), s.getPerfilId());
         throw new AccesoDenegado();
+    }
+
+    /** PM: propone a la persona al Resource Manager (solo en proyectos que lidera). */
+    @PostMapping("/proyectos/{id}/proponer")
+    public Map<String, Object> proponer(@PathVariable Long id, @RequestBody SeleccionRequest body, HttpSession session) {
+        UsuarioSesion s = sesion(session);
+        if (!esPm(s) || !proyectoVistaService.esPmDe(s.getPerfilId(), id)) throw new AccesoDenegado();
+        validar(body);
+        talentMatchingService.proponerManual(s.getPerfilId(), s.getUsuarioId(), id, body.perfilId(), body.dedicacion());
+        return Map.of("ok", true, "mensaje", "Propuesta enviada al Resource Manager.");
+    }
+
+    /** RM: asigna directamente a la persona al proyecto (mismas reglas de carga que la pantalla de Asignaciones). */
+    @PostMapping("/proyectos/{id}/asignar")
+    public Map<String, Object> asignar(@PathVariable Long id, @RequestBody SeleccionRequest body, HttpSession session) {
+        UsuarioSesion s = sesion(session);
+        if (!esRm(s)) throw new AccesoDenegado();
+        validar(body);
+        proyectoService.asignarColaborador(id, body.perfilId(), body.dedicacion(), null, s.getUsuarioId());
+        return Map.of("ok", true, "mensaje", "Asignado al proyecto.");
+    }
+
+    private static void validar(SeleccionRequest body) {
+        if (body == null || body.perfilId() == null || body.perfilId() < 1 || body.dedicacion() == null
+                || body.dedicacion() < 1 || body.dedicacion() > 100) {
+            throw new OperacionInvalidaException("Elige una persona y una dedicación entre 1% y 100%.");
+        }
     }
 
     @ExceptionHandler(AccesoDenegado.class)
