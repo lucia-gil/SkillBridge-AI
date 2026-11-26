@@ -14,7 +14,6 @@ public class EntregableExtraidoIa {
     private String descripcion;
     private String fechaApertura;
     private String fechaCierre;
-    private String puntajeMaximo;
     private List<String> advertencias;
 
     public String getTitulo() { return titulo; }
@@ -25,8 +24,6 @@ public class EntregableExtraidoIa {
     public void setFechaApertura(String fechaApertura) { this.fechaApertura = fechaApertura; }
     public String getFechaCierre() { return fechaCierre; }
     public void setFechaCierre(String fechaCierre) { this.fechaCierre = fechaCierre; }
-    public String getPuntajeMaximo() { return puntajeMaximo; }
-    public void setPuntajeMaximo(String puntajeMaximo) { this.puntajeMaximo = puntajeMaximo; }
     public List<String> getAdvertencias() { return advertencias; }
     public void setAdvertencias(List<String> advertencias) { this.advertencias = advertencias; }
 }

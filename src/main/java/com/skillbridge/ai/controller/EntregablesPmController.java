@@ -23,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -94,12 +93,11 @@ public class EntregablesPmController {
     public String crear(@PathVariable Long proyectoId, @RequestParam String titulo,
                         @RequestParam(required = false) String descripcion,
                         @RequestParam String fechaApertura, @RequestParam String fechaCierre,
-                        @RequestParam(defaultValue = "20") BigDecimal puntajeMaximo,
                         HttpSession session, RedirectAttributes ra) {
         UsuarioSesion sesion = sesion(session);
         try {
             entregableService.crear(proyectoId, sesion.getPerfilId(), sesion.getRolEfectivo(), sesion.getUsuarioId(),
-                    titulo, descripcion, fechaApertura, fechaCierre, puntajeMaximo);
+                    titulo, descripcion, fechaApertura, fechaCierre);
             ra.addFlashAttribute("exito", "Entregable creado.");
         } catch (OperacionInvalidaException ex) { ra.addFlashAttribute("error", ex.getMessage()); }
         return "redirect:/project-manager/proyectos/" + proyectoId + "/entregables.html";
@@ -109,12 +107,11 @@ public class EntregablesPmController {
     public String editar(@PathVariable Long id, @RequestParam Long proyectoId, @RequestParam String titulo,
                          @RequestParam(required = false) String descripcion,
                          @RequestParam String fechaApertura, @RequestParam String fechaCierre,
-                         @RequestParam(defaultValue = "20") BigDecimal puntajeMaximo,
-                         HttpSession session, RedirectAttributes ra) {
+                          HttpSession session, RedirectAttributes ra) {
         UsuarioSesion sesion = sesion(session);
         try {
             entregableService.editar(id, sesion.getPerfilId(), sesion.getRolEfectivo(), sesion.getUsuarioId(),
-                    titulo, descripcion, fechaApertura, fechaCierre, puntajeMaximo);
+                    titulo, descripcion, fechaApertura, fechaCierre);
             ra.addFlashAttribute("exito", "Entregable actualizado.");
         } catch (OperacionInvalidaException ex) { ra.addFlashAttribute("error", ex.getMessage()); }
         return "redirect:/project-manager/proyectos/" + proyectoId + "/entregables.html";
@@ -150,16 +147,17 @@ public class EntregablesPmController {
         return "project-manager/entregable-detalle";
     }
 
-    @PostMapping("/entregas/{id}/calificar")
-    public String calificar(@PathVariable Long id, @RequestParam Long entregableId,
-                            @RequestParam(required = false) BigDecimal calificacion,
-                            @RequestParam(required = false) String comentario,
+    /** Revisión por estados (Completado / Requiere ajustes / Rehacer) con comentario obligatorio. */
+    @PostMapping("/entregas/{id}/revisar")
+    public String revisar(@PathVariable Long id, @RequestParam Long entregableId,
+                          @RequestParam(required = false) String estado,
+                          @RequestParam(required = false) String comentario,
                             HttpSession session, RedirectAttributes ra) {
         UsuarioSesion sesion = sesion(session);
         try {
-            entregableService.calificar(id, sesion.getPerfilId(), sesion.getRolEfectivo(), sesion.getUsuarioId(),
-                    calificacion, comentario);
-            ra.addFlashAttribute("exito", "Entrega revisada.");
+            entregableService.revisar(id, sesion.getPerfilId(), sesion.getRolEfectivo(), sesion.getUsuarioId(),
+                    estado, comentario);
+            ra.addFlashAttribute("exito", "Revisión guardada: " + EntregableService.etiquetaEstado(estado) + ".");
         } catch (OperacionInvalidaException ex) { ra.addFlashAttribute("error", ex.getMessage()); }
         return "redirect:/project-manager/entregables/" + entregableId + ".html";
     }

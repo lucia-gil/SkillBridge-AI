@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/revision-entregas.css">
 <style>
   .ed-back { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-tertiary); text-decoration: none; margin-bottom: var(--space-4); }
   .ed-back:hover { color: var(--text-primary); }
@@ -34,7 +35,7 @@
   .ed-countdown.is-done { background: #E7F6EC; border-color: #BFE5CC; }
   .ed-countdown.is-done .ed-countdown-value { color: #1E8E4E; }
 
-  /* Progreso: Publicado → Entregado → Revisado */
+  /* Progreso: Publicado → Entregado → Revisión (Completado / Requiere ajustes / Rehacer) */
   .ed-steps { display: flex; align-items: center; margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border-subtle); }
   .ed-step { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .ed-step-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border-strong); color: var(--text-tertiary); display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-xs); font-weight: 700; background: var(--surface); }
@@ -47,6 +48,10 @@
   .ed-step.is-current .ed-step-text { color: var(--text-primary); }
   .ed-step-line { flex: 1; height: 2px; background: var(--border-subtle); margin: 0 var(--space-3); min-width: 24px; }
   .ed-step-line.is-done { background: #1E8E4E; }
+  .ed-step.is-warn .ed-step-dot { border-color: #B26A00; color: #B26A00; box-shadow: 0 0 0 4px #FFF4E0; }
+  .ed-step.is-warn .ed-step-text { color: var(--text-primary); }
+  .ed-step.is-bad .ed-step-dot { border-color: var(--red-fg); color: var(--red-fg); box-shadow: 0 0 0 4px var(--red-bg); }
+  .ed-step.is-bad .ed-step-text { color: var(--text-primary); }
 
   /* Layout de dos columnas */
   .ed-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-6); margin-top: var(--space-6); align-items: start; }
@@ -64,12 +69,7 @@
   .ed-fact-label { font-size: var(--fs-xs); color: var(--text-tertiary); }
   .ed-fact-value { font-size: var(--fs-sm); color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  /* Calificación */
-  .ed-grade { text-align: center; padding: var(--space-2) 0 var(--space-4); }
-  .ed-grade-num { font-size: 2.5rem; font-weight: 800; color: #1E8E4E; line-height: 1; font-variant-numeric: tabular-nums; }
-  .ed-grade-max { font-size: 1rem; color: var(--text-tertiary); font-weight: 600; }
-  .ed-grade-bar { height: 8px; border-radius: 999px; background: var(--surface-sunken); overflow: hidden; margin-top: var(--space-3); }
-  .ed-grade-bar span { display: block; height: 100%; background: #1E8E4E; border-radius: 999px; }
+  /* Revisión */
   .ed-quote { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-sunken); color: var(--text-secondary); font-size: var(--fs-sm); white-space: pre-wrap; line-height: 1.55; }
   .ed-pending { display: flex; gap: var(--space-3); align-items: flex-start; color: var(--text-secondary); font-size: var(--fs-sm); line-height: 1.5; }
   .ed-pending .icon { width: 18px; height: 18px; color: var(--text-tertiary); flex-shrink: 0; margin-top: 2px; }
@@ -156,13 +156,14 @@
             </span>
             <span class="ed-step-text">Entregado<small th:text="${fila.entrego} ? ${fila.fechaEntregaLabel} : 'Pendiente'">fecha</small></span>
           </div>
-          <span class="ed-step-line" th:classappend="${fila.estadoCrudo == 'revisado'} ? 'is-done'"></span>
-          <div class="ed-step" th:classappend="${fila.estadoCrudo == 'revisado'} ? 'is-done' : (${fila.entrego} ? 'is-current' : '')">
+          <span class="ed-step-line" th:classappend="${fila.revisada} ? 'is-done'"></span>
+          <div class="ed-step" th:classappend="${fila.completada} ? 'is-done' : (${fila.estadoCrudo == 'requiere_ajustes'} ? 'is-warn' : (${fila.estadoCrudo == 'rehacer'} ? 'is-bad' : (${fila.entrego} ? 'is-current' : '')))">
             <span class="ed-step-dot">
-              <svg class="icon" th:if="${fila.estadoCrudo == 'revisado'}"><use href="/img/icons.svg#icon-check"></use></svg>
-              <th:block th:unless="${fila.estadoCrudo == 'revisado'}">3</th:block>
+              <svg class="icon" th:if="${fila.completada}"><use href="/img/icons.svg#icon-check"></use></svg>
+              <svg class="icon" th:if="${fila.pideReenvio}"><use href="/img/icons.svg#icon-refresh"></use></svg>
+              <th:block th:unless="${fila.revisada}">3</th:block>
             </span>
-            <span class="ed-step-text">Revisado<small th:text="${fila.estadoCrudo == 'revisado'} ? 'Con nota del PM' : 'Por el Project Manager'">PM</small></span>
+            <span class="ed-step-text">Revisión<small th:text="${fila.revisada} ? ${fila.estadoLabel} : 'Por el Project Manager'">PM</small></span>
           </div>
         </div>
       </section>
@@ -190,15 +191,16 @@
               </a>
               <p th:if="${fila.texto}" class="ed-attach-text" th:text="${fila.texto}">texto</p>
             </div>
-            <div class="btn-group" style="margin-top:var(--space-4);">
+            <p th:if="${fila.completada}" class="field-hint" style="margin-top:var(--space-4);">Tu entrega fue marcada como completada: queda cerrada y ya no se puede reemplazar ni borrar.</p>
+            <div class="btn-group" style="margin-top:var(--space-4);" th:unless="${fila.completada}">
               <button type="button" class="btn btn-secondary btn-sm" id="borrar-entrega-btn">
                 <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-trash"></use></svg>Borrar entrega</button>
             </div>
           </section>
 
           <!-- Formulario: entregar (o reemplazar/editar la entrega ya hecha) -->
-          <section class="card card-pad">
-            <h2 class="ed-card-title"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-edit"></use></svg><span th:text="${fila.entrego ? 'Editar mi entrega' : 'Hacer mi entrega'}">Hacer mi entrega</span></h2>
+          <section class="card card-pad" th:hidden="${fila.completada}">
+            <h2 class="ed-card-title"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-edit"></use></svg><span th:text="${fila.pideReenvio ? 'Corregir y volver a entregar' : (fila.entrego ? 'Editar mi entrega' : 'Hacer mi entrega')}">Hacer mi entrega</span></h2>
             <p class="text-tertiary" style="font-size:var(--fs-sm); margin:-8px 0 var(--space-4);">Sube al menos uno: un comentario, un link o un archivo. Puedes combinarlos.</p>
 
             <div class="field"><label class="field-label" for="ent-texto">Comentario para el PM</label>
@@ -220,7 +222,7 @@
 
             <p class="field-hint" style="margin-top:var(--space-3);">Puedes volver a entregar antes o después del cierre; si ya pasó la fecha, tu entrega quedará marcada como atrasada.</p>
             <div class="btn-group" style="justify-content:flex-end; margin-top:var(--space-4);">
-              <button type="button" class="btn btn-primary" id="entregar-btn" th:text="${fila.entrego ? 'Guardar cambios' : 'Entregar'}">Entregar</button>
+              <button type="button" class="btn btn-primary" id="entregar-btn" th:text="${fila.pideReenvio ? 'Volver a entregar' : (fila.entrego ? 'Guardar cambios' : 'Entregar')}">Entregar</button>
             </div>
           </section>
         </div>
@@ -228,23 +230,25 @@
         <!-- Columna lateral -->
         <div>
           <section class="card card-pad">
-            <h2 class="ed-card-title"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-award"></use></svg>Calificación</h2>
-            <th:block th:if="${fila.estadoCrudo == 'revisado'}">
-              <div class="ed-grade">
-                <span class="ed-grade-num" data-num th:text="${fila.calificacionLabel}">17</span>
-                <span class="ed-grade-max">/ <span data-num th:text="${entregable.puntajeMaximo}">20</span></span>
-                <div class="ed-grade-bar"><span id="ed-grade-fill" style="width:0%"
-                     th:attr="data-nota=${fila.calificacionLabel}, data-max=${entregable.puntajeMaximo}"></span></div>
+            <h2 class="ed-card-title"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-message"></use></svg>Revisión del PM</h2>
+            <div th:if="${fila.revisada}" class="rev-feedback" th:classappend="${fila.estadoCrudo}">
+              <div class="rev-feedback-estado">
+                <svg class="icon" aria-hidden="true"><use th:href="${fila.completada ? '/img/icons.svg#icon-check-circle' : (fila.estadoCrudo == 'rehacer' ? '/img/icons.svg#icon-x' : '/img/icons.svg#icon-alert-triangle')}" href="/img/icons.svg#icon-check-circle"></use></svg>
+                <span th:text="${fila.estadoLabel}">Completado</span>
               </div>
-              <div th:if="${fila.comentarioPm}">
-                <p class="field-label" style="margin-bottom:4px;">Comentario del Project Manager</p>
-                <p class="ed-quote" th:text="${fila.comentarioPm}">Comentario</p>
+              <p class="rev-feedback-texto" th:text="${fila.comentarioPm}">Comentario</p>
+              <p class="rev-feedback-pie" th:if="${fila.pideReenvio}">Corrige lo indicado y vuelve a entregar: tu entrega pasará otra vez a «Por revisar».</p>
+            </div>
+            <th:block th:unless="${fila.revisada}">
+              <div class="ed-pending">
+                <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-clock"></use></svg>
+                <span th:text="${fila.entrego} ? 'Tu entrega está por revisar. El Project Manager la marcará como Completado, Requiere ajustes o Rehacer, y te dejará un comentario.' : 'Todavía no entregas. Cuando lo hagas, el Project Manager la revisará y verás aquí su estado y comentario.'">Pendiente</span>
+              </div>
+              <div th:if="${fila.entrego and fila.comentarioPm != null}" style="margin-top:var(--space-4);">
+                <p class="field-label" style="margin-bottom:4px;">Comentario de la revisión anterior</p>
+                <p class="ed-quote" style="margin-top:0;" th:text="${fila.comentarioPm}">Comentario</p>
               </div>
             </th:block>
-            <div class="ed-pending" th:unless="${fila.estadoCrudo == 'revisado'}">
-              <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-clock"></use></svg>
-              <span th:text="${fila.entrego} ? 'Tu entrega está en revisión. Cuando el Project Manager la califique, verás aquí tu nota y su comentario.' : 'Todavía no entregas. Cuando lo hagas y el Project Manager la revise, verás aquí tu nota.'">Pendiente</span>
-            </div>
           </section>
 
           <section class="card card-pad">
@@ -263,8 +267,8 @@
                 <div><div class="ed-fact-label">Cierre</div><div class="ed-fact-value" th:text="${fechaCierreLabel}">fecha</div></div>
               </div>
               <div class="ed-fact">
-                <span class="ed-fact-icon"><svg class="icon"><use href="/img/icons.svg#icon-star"></use></svg></span>
-                <div><div class="ed-fact-label">Puntaje máximo</div><div class="ed-fact-value"><span data-num th:text="${entregable.puntajeMaximo}">20</span> puntos</div></div>
+                <span class="ed-fact-icon"><svg class="icon"><use href="/img/icons.svg#icon-check-circle"></use></svg></span>
+                <div><div class="ed-fact-label">Forma de revisión</div><div class="ed-fact-value">Por estados, con comentario</div></div>
               </div>
             </div>
           </section>
@@ -297,24 +301,12 @@ document.addEventListener("DOMContentLoaded", function () {
     var dias = Math.round(Math.abs(ms) / 86400000), horas = Math.round(Math.abs(ms) / 3600000);
     var cuanto = dias >= 1 ? dias + (dias === 1 ? " día" : " días") : horas + (horas === 1 ? " hora" : " horas");
     var estado = box.dataset.estado;
-    if (estado === "revisado") { val.textContent = "Revisado"; box.classList.add("is-done"); }
+    if (estado === "completado") { val.textContent = "Completado"; box.classList.add("is-done"); }
+    else if (estado === "requiere_ajustes" || estado === "rehacer") { val.textContent = "Por corregir"; box.classList.add("is-soon"); }
     else if (estado === "enviado") { val.textContent = "Entregado"; box.classList.add("is-done"); }
     else if (ms < 0) { val.textContent = "Venció hace " + cuanto; box.classList.add("is-late"); }
     else { val.textContent = "Quedan " + cuanto; if (ms < 3 * 86400000) box.classList.add("is-soon"); }
   })();
-
-  // ── Números sin ceros de sobra (20.00 → 20, 17.50 → 17.5) ──
-  document.querySelectorAll("[data-num]").forEach(function (el) {
-    el.textContent = el.textContent.trim().replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
-  });
-
-  // ── Barra de la nota ──
-  var fill = document.getElementById("ed-grade-fill");
-  if (fill) {
-    var nota = parseFloat(String(fill.dataset.nota).replace(",", "."));
-    var max = parseFloat(String(fill.dataset.max).replace(",", "."));
-    if (nota >= 0 && max > 0) setTimeout(function () { fill.style.transition = "width .6s ease"; fill.style.width = Math.min(100, nota / max * 100) + "%"; }, 50);
-  }
 
   // ── Selector de archivo (clic o arrastrar) ──
   var fileInput = document.getElementById("ent-archivo");

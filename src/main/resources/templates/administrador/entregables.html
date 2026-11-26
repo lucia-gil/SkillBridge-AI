@@ -46,7 +46,7 @@
 
         <div class="table-scroll" th:unless="${entregables.isEmpty()}">
           <table class="data-table">
-            <thead><tr><th>Título</th><th>Apertura</th><th>Cierre</th><th>Entregas</th><th>Revisadas</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Título</th><th>Apertura</th><th>Cierre</th><th>Entregas</th><th>Completadas</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               <tr th:each="e : ${entregables}" data-filter-row="entregables-pm"
                   th:attr="data-f-estado=${e.vencido ? 'cerrado' : (e.estadoCrudo == 'cancelado' ? 'cancelado' : 'abierto')}">
@@ -57,11 +57,14 @@
                 <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${e.fechaAperturaLabel}">fecha</td>
                 <td class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${e.fechaCierreLabel}">fecha</td>
                 <td class="mono" th:text="${e.totalEntregados} + ' / ' + ${e.totalEquipo}">0 / 0</td>
-                <td class="mono" th:text="${e.totalRevisados} + ' / ' + ${e.totalEntregados}">0 / 0</td>
+                <td style="white-space:nowrap;">
+                  <span class="mono" th:text="${e.totalCompletados} + ' / ' + ${e.totalEntregados}" title="Entregas completadas / entregas recibidas">0 / 0</span>
+                  <span class="badge badge-blue" style="margin-left:4px;" th:if="${e.totalPorRevisar > 0}" th:text="${e.totalPorRevisar} + ' por revisar'">1 por revisar</span>
+                </td>
                 <td><span class="badge" th:classappend="${e.estadoBadgeClass}" th:text="${e.estadoLabel}">Estado</span></td>
                 <td class="cell-actions">
                   <a th:href="@{'/administrador/entregables/' + ${e.id} + '.html'}">Revisar</a>
-                  <button type="button" th:attr="data-editar=${e.id}, data-titulo=${e.titulo}, data-descripcion=${e.descripcion}, data-puntaje=${e.puntajeMaximoLabel}">Editar</button>
+                  <button type="button" th:attr="data-editar=${e.id}, data-titulo=${e.titulo}, data-descripcion=${e.descripcion}">Editar</button>
                   <button type="button" class="danger" th:if="${e.estadoCrudo != 'cancelado'}" th:attr="data-cancelar=${e.id}">Cancelar</button>
                 </td>
               </tr>
@@ -106,7 +109,7 @@ document.addEventListener("DOMContentLoaded", function () {
       '<div class="field"><label class="field-label">Apertura</label><input class="input" type="datetime-local" id="ent-apertura" value="' + (valores.apertura || "") + '"></div>' +
       '<div class="field"><label class="field-label">Cierre</label><input class="input" type="datetime-local" id="ent-cierre" value="' + (valores.cierre || "") + '"></div>' +
       '</div>' +
-      '<div class="field"><label class="field-label">Puntaje máximo</label><input class="input" type="number" min="1" step="0.5" id="ent-puntaje" value="' + (valores.puntaje || "20") + '"></div>' +
+      '<p class="text-tertiary" style="font-size:var(--fs-xs); margin-top:var(--space-2);">Sin nota: cada entrega se revisa como Completado, Requiere ajustes o Rehacer, con un comentario.</p>' +
       '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="ent-confirm">' + (valores.id ? "Guardar cambios" : "Crear entregable") + '</button></div></div>';
   }
 
@@ -122,8 +125,7 @@ document.addEventListener("DOMContentLoaded", function () {
         titulo: titulo,
         descripcion: backdrop.querySelector("#ent-desc").value,
         fechaApertura: apertura,
-        fechaCierre: cierre,
-        puntajeMaximo: backdrop.querySelector("#ent-puntaje").value
+        fechaCierre: cierre
       });
     });
   });
@@ -132,7 +134,7 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", function () {
       var id = btn.dataset.editar;
       var backdrop = SBAI.modal.open(formularioHtml("Editar entregable", {
-        id: id, titulo: btn.dataset.titulo, descripcion: btn.dataset.descripcion || "", puntaje: btn.dataset.puntaje
+        id: id, titulo: btn.dataset.titulo, descripcion: btn.dataset.descripcion || ""
       }));
       backdrop.querySelector("#ent-confirm").addEventListener("click", function () {
         var titulo = backdrop.querySelector("#ent-titulo").value.trim();
@@ -145,8 +147,7 @@ document.addEventListener("DOMContentLoaded", function () {
           titulo: titulo,
           descripcion: backdrop.querySelector("#ent-desc").value,
           fechaApertura: apertura,
-          fechaCierre: cierre,
-          puntajeMaximo: backdrop.querySelector("#ent-puntaje").value
+          fechaCierre: cierre
         });
       });
     });

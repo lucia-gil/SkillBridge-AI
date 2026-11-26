@@ -148,7 +148,7 @@ public class RmReporteExportService {
                 {"Tiempo de respuesta", de.tiempoMedioResolucion() != null ? de.tiempoMedioResolucion() : "—", "promedio para resolver una propuesta"},
                 {"Acierto de la IA", de.iaRecomendaciones() > 0 ? de.iaAciertoPct() + "%" : "—", de.iaAciertos() + " de " + de.iaRecomendaciones() + " recomendaciones asignadas"},
                 {"Entregas a tiempo", d.entregas().entregas() > 0 ? d.entregas().aTiempoPct() + "%" : "—", d.entregas().aTiempo() + " de " + d.entregas().entregas() + " entregas"},
-                {"Calificación promedio", d.entregas().revisadas() > 0 ? d.entregas().calificacionPromedioPct() + "%" : "—", d.entregas().revisadas() + " entregas revisadas"}};
+                {"Revisiones completadas", d.entregas().revisadas() > 0 ? d.entregas().completadasPct() + "%" : "—", d.entregas().revisadas() + " entregas revisadas"}};
         tarjetas(h, 4, fila1, s);
         tarjetas(h, 8, fila2, s);
 
@@ -687,7 +687,7 @@ public class RmReporteExportService {
             kpi(kpis, "TIEMPO DE RESPUESTA", Optional.ofNullable(de.tiempoMedioResolucion()).orElse("—"), "promedio por propuesta", "blue");
             kpi(kpis, "ACIERTO DE LA IA", de.iaRecomendaciones() > 0 ? de.iaAciertoPct() + "%" : "—", de.iaAciertos() + " de " + de.iaRecomendaciones() + " asignadas", "violet");
             kpi(kpis, "ENTREGAS A TIEMPO", d.entregas().entregas() > 0 ? d.entregas().aTiempoPct() + "%" : "—", d.entregas().aTiempo() + " de " + d.entregas().entregas(), "green");
-            kpi(kpis, "CALIFICACIÓN PROMEDIO", d.entregas().revisadas() > 0 ? d.entregas().calificacionPromedioPct() + "%" : "—", d.entregas().revisadas() + " revisadas", "blue");
+            kpi(kpis, "COMPLETADAS", d.entregas().revisadas() > 0 ? d.entregas().completadasPct() + "%" : "—", d.entregas().revisadas() + " revisadas", "blue");
             doc.add(kpis);
 
             seccion(doc, "Hallazgos clave", "Conclusiones calculadas con los datos actuales: por dónde empezar.");

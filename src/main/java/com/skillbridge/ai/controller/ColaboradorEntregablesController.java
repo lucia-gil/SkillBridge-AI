@@ -79,7 +79,7 @@ public class ColaboradorEntregablesController {
         // todavía no entregó, se pasa una fila "sin_entregar" vacía.
         EntregaFila mia = fila.getMiEntrega() != null ? fila.getMiEntrega()
                 : new EntregaFila(null, id, sesion.getPerfilId(), null, false, null, false, null, null,
-                        false, null, "sin_entregar", null, null);
+                        false, null, "sin_entregar", null);
         model.addAttribute("fila", mia);
         return "colaborador/entregable-detalle";
     }

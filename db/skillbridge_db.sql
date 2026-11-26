@@ -1140,9 +1140,11 @@ USE skillbridge_db;
 --  - "Atrasado" NO se guarda como columna: se calcula comparando
 --    entregas.fecha_entrega contra entregables.fecha_cierre (así nunca
 --    queda desincronizado si alguien cambia la fecha de cierre después).
---  - calificacion es DECIMAL(4,2) en escala 0.00–20.00 (PUCP), igual
---    que perfil_habilidad.nivel usa su propia escala 1-5: cada tabla
---    documenta la suya.
+--  - No hay nota: la entrega se revisa por ESTADOS. entregas.estado es
+--    'enviado' (por revisar) | 'completado' | 'requiere_ajustes' |
+--    'rehacer', y el PM deja siempre un comentario (comentario_pm). Con
+--    requiere_ajustes/rehacer el colaborador vuelve a entregar y la
+--    entrega regresa a 'enviado'; 'completado' la deja cerrada.
 -- =====================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -1158,13 +1160,11 @@ CREATE TABLE entregables (
                              descripcion         TEXT NULL,
                              fecha_apertura      DATETIME NOT NULL,
                              fecha_cierre        DATETIME NOT NULL,
-                             puntaje_maximo      DECIMAL(4,2) NOT NULL DEFAULT 20.00,
                              estado              ENUM('activo','cancelado') NOT NULL DEFAULT 'activo',
                              fecha_creacion      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                              CONSTRAINT fk_entregable_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE,
                              CONSTRAINT fk_entregable_creador FOREIGN KEY (creado_por_id) REFERENCES perfiles(id),
-                             CONSTRAINT ck_entregable_fechas CHECK (fecha_cierre > fecha_apertura),
-                             CONSTRAINT ck_entregable_puntaje CHECK (puntaje_maximo > 0)
+                             CONSTRAINT ck_entregable_fechas CHECK (fecha_cierre > fecha_apertura)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE INDEX idx_entregables_proyecto ON entregables(proyecto_id);
@@ -1183,16 +1183,14 @@ CREATE TABLE entregas (
                           archivo_nombre      VARCHAR(200) NULL,
                           archivo_tipo        VARCHAR(100) NULL,
                           fecha_entrega       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                          estado              ENUM('enviado','revisado') NOT NULL DEFAULT 'enviado',
-                          calificacion        DECIMAL(4,2) NULL,
+                          estado              ENUM('enviado','completado','requiere_ajustes','rehacer') NOT NULL DEFAULT 'enviado',
                           comentario_pm       TEXT NULL,
                           revisado_por_id     BIGINT UNSIGNED NULL,
                           fecha_revision      DATETIME NULL,
                           CONSTRAINT fk_entrega_entregable FOREIGN KEY (entregable_id) REFERENCES entregables(id) ON DELETE CASCADE,
                           CONSTRAINT fk_entrega_perfil FOREIGN KEY (perfil_id) REFERENCES perfiles(id),
                           CONSTRAINT fk_entrega_revisor FOREIGN KEY (revisado_por_id) REFERENCES perfiles(id),
-                          CONSTRAINT uq_entrega_entregable_perfil UNIQUE (entregable_id, perfil_id),
-                          CONSTRAINT ck_entrega_calificacion CHECK (calificacion IS NULL OR calificacion >= 0)
+                          CONSTRAINT uq_entrega_entregable_perfil UNIQUE (entregable_id, perfil_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE INDEX idx_entregas_entregable ON entregas(entregable_id);
@@ -1209,7 +1207,7 @@ WHERE NOT EXISTS (SELECT 1 FROM tipos_notificacion WHERE codigo = 'entregable_nu
 
 INSERT INTO tipos_notificacion (codigo, nombre, descripcion)
 SELECT * FROM (SELECT 'entregable_revisado' AS codigo, 'Entrega revisada' AS nombre,
-                      'El PM calificó o comentó tu entrega' AS descripcion) AS tmp
+                      'El PM revisó tu entrega: completado, requiere ajustes o rehacer' AS descripcion) AS tmp
 WHERE NOT EXISTS (SELECT 1 FROM tipos_notificacion WHERE codigo = 'entregable_revisado');
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,6 +1,5 @@
 package com.skillbridge.ai.dto;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -25,14 +24,14 @@ public class EntregaFila {
     private final String urlEntrega;
     private final boolean tieneArchivo;
     private final String archivoNombre;
-    private final String estadoCrudo; // "sin_entregar" | "enviado" | "revisado"
-    private final String calificacionLabel; // "—" si no calificado
+    // "sin_entregar" | "enviado" (por revisar) | "completado" | "requiere_ajustes" | "rehacer"
+    private final String estadoCrudo;
     private final String comentarioPm;
 
     public EntregaFila(Long entregaId, Long entregableId, Long perfilId, String nombre, boolean entrego,
                         LocalDateTime fechaEntrega, boolean atrasado, String texto, String urlEntrega,
                         boolean tieneArchivo, String archivoNombre, String estadoCrudo,
-                        BigDecimal calificacion, String comentarioPm) {
+                        String comentarioPm) {
         this.entregaId = entregaId;
         this.entregableId = entregableId;
         this.perfilId = perfilId;
@@ -46,7 +45,6 @@ public class EntregaFila {
         this.tieneArchivo = tieneArchivo;
         this.archivoNombre = archivoNombre;
         this.estadoCrudo = estadoCrudo;
-        this.calificacionLabel = calificacion != null ? calificacion.stripTrailingZeros().toPlainString() : "—";
         this.comentarioPm = comentarioPm;
     }
 
@@ -63,21 +61,35 @@ public class EntregaFila {
     public boolean isTieneArchivo() { return tieneArchivo; }
     public String getArchivoNombre() { return archivoNombre; }
     public String getEstadoCrudo() { return estadoCrudo; }
-    public String getCalificacionLabel() { return calificacionLabel; }
     public String getComentarioPm() { return comentarioPm; }
+
+    /** true cuando el PM ya la revisó (cualquiera de los tres estados de revisión). */
+    public boolean isRevisada() {
+        return "completado".equals(estadoCrudo) || "requiere_ajustes".equals(estadoCrudo) || "rehacer".equals(estadoCrudo);
+    }
+
+    /** Completada = cerrada: el colaborador ya no puede reemplazarla ni borrarla. */
+    public boolean isCompletada() { return "completado".equals(estadoCrudo); }
+
+    /** El PM pidió cambios (ajustes o rehacer): el colaborador debe volver a entregar. */
+    public boolean isPideReenvio() { return "requiere_ajustes".equals(estadoCrudo) || "rehacer".equals(estadoCrudo); }
 
     public String getEstadoLabel() {
         return switch (estadoCrudo) {
-            case "revisado" -> "Revisado";
-            case "enviado" -> atrasado ? "Entregado (atrasado)" : "Entregado";
+            case "completado" -> "Completado";
+            case "requiere_ajustes" -> "Requiere ajustes";
+            case "rehacer" -> "Rehacer";
+            case "enviado" -> atrasado ? "Por revisar (atrasado)" : "Por revisar";
             default -> "Sin entregar";
         };
     }
 
     public String getEstadoBadgeClass() {
         return switch (estadoCrudo) {
-            case "revisado" -> "badge-blue";
-            case "enviado" -> atrasado ? "badge-amber" : "badge-green";
+            case "completado" -> "badge-green";
+            case "requiere_ajustes" -> "badge-amber";
+            case "rehacer" -> "badge-red";
+            case "enviado" -> "badge-blue";
             default -> "badge-neutral";
         };
     }

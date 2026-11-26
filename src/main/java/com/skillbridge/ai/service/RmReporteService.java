@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  *  - proyectos: equipo, vacantes, cobertura de habilidades, plazo y riesgo;
  *  - habilidades: oferta contra demanda y brechas;
  *  - decisiones: propuestas (resultado, origen, tiempo de resolución) y acierto de la IA;
- *  - entregas: cumplimiento a tiempo y calificaciones;
+ *  - entregas: cumplimiento a tiempo y estado de revisión (completadas);
  *  - hallazgos: conclusiones automáticas para leer el reporte en 30 segundos.
  * Los filtros se aplican aquí para que pantalla, Excel y PDF coincidan.
  */
@@ -323,15 +323,15 @@ public class RmReporteService {
         Entregas entregas = jdbc.queryForObject("SELECT "
                 + "(SELECT COUNT(*) FROM entregables e WHERE e.estado <> 'cancelado'" + (f.proyectoId() != null ? " AND e.proyecto_id = " + f.proyectoId() : "") + "), "
                 + "COUNT(en.id), SUM(CASE WHEN en.fecha_entrega <= e.fecha_cierre THEN 1 ELSE 0 END), "
-                + "SUM(CASE WHEN en.estado = 'revisado' THEN 1 ELSE 0 END), "
-                + "AVG(CASE WHEN en.calificacion IS NOT NULL AND e.puntaje_maximo > 0 THEN en.calificacion * 100 / e.puntaje_maximo END), "
+                + "SUM(CASE WHEN en.estado IN ('completado','requiere_ajustes','rehacer') THEN 1 ELSE 0 END), "
+                + "SUM(CASE WHEN en.estado = 'completado' THEN 1 ELSE 0 END), "
                 + "(SELECT COUNT(*) FROM entregables e2 WHERE e2.estado = 'activo' AND e2.fecha_cierre < NOW()"
                 + (f.proyectoId() != null ? " AND e2.proyecto_id = " + f.proyectoId() : "") + ") "
                 + "FROM entregas en JOIN entregables e ON e.id = en.entregable_id WHERE e.estado <> 'cancelado'"
                 + (f.proyectoId() != null ? " AND e.proyecto_id = " + f.proyectoId() : ""), (rs, i) -> {
-            int total = rs.getInt(2), aTiempo = rs.getInt(3);
+            int total = rs.getInt(2), aTiempo = rs.getInt(3), revisadas = rs.getInt(4), completadas = rs.getInt(5);
             return new Entregas(rs.getInt(1), total, aTiempo, total == 0 ? 0 : (int) Math.round(aTiempo * 100.0 / total),
-                    rs.getInt(4), (int) Math.round(rs.getDouble(5)), rs.getInt(6));
+                    revisadas, revisadas == 0 ? 0 : (int) Math.round(completadas * 100.0 / revisadas), rs.getInt(6));
         });
 
         // ── Próximos días ────────────────────────────────────────────────
@@ -408,7 +408,7 @@ public class RmReporteService {
         if (d.iaRecomendaciones() > 0) h.add(new Hallazgo("violet", "icon-sparkles", "La IA acertó en " + d.iaAciertoPct() + "% de sus recomendaciones",
                 d.iaAciertos() + " de " + d.iaRecomendaciones() + " personas recomendadas por AI Talent Matching terminaron asignadas."));
         if (e.entregas() > 0) h.add(new Hallazgo(e.aTiempoPct() >= 80 ? "green" : "amber", "icon-check-circle", e.aTiempoPct() + "% de las entregas llegaron a tiempo",
-                e.entregas() + " entregas registradas" + (e.calificacionPromedioPct() > 0 ? ", con calificación promedio de " + e.calificacionPromedioPct() + "%" : "")
+                e.entregas() + " entregas registradas" + (e.revisadas() > 0 ? "; de las revisadas, " + e.completadasPct() + "% quedaron completadas" : "")
                         + (e.vencidosSinEntrega() > 0 ? "; " + e.vencidosSinEntrega() + " entregable(s) siguen abiertos con la fecha vencida." : ".")));
         if (h.isEmpty()) h.add(new Hallazgo("green", "icon-check-circle", "Sin alertas", "El equipo está dentro del límite y las habilidades pedidas están cubiertas."));
         return h.size() > 6 ? h.subList(0, 6) : h;

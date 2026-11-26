@@ -15,19 +15,19 @@ public class EntregableFila {
     private final String descripcion;
     private final String fechaAperturaLabel;
     private final String fechaCierreLabel;
-    private final String puntajeMaximoLabel;
     private final String estadoCrudo;
     private final boolean vencido;
     // Para PM/Admin: cobertura del equipo. Para Colaborador: su propia entrega (o null si no entregó).
     private final int totalEquipo;
     private final int totalEntregados;
-    private final int totalRevisados;
+    private final int totalRevisados;   // completado + requiere_ajustes + rehacer
+    private final int totalCompletados;
     private final EntregaFila miEntrega; // null si es la vista de gestión (PM/Admin) o si el colaborador no entregó
 
     public EntregableFila(Long id, Long proyectoId, String proyectoNombre, String titulo, String descripcion,
-                           LocalDateTime fechaApertura, LocalDateTime fechaCierre, String puntajeMaximoLabel,
+                           LocalDateTime fechaApertura, LocalDateTime fechaCierre,
                            String estadoCrudo, int totalEquipo, int totalEntregados, int totalRevisados,
-                           EntregaFila miEntrega) {
+                           int totalCompletados, EntregaFila miEntrega) {
         this.id = id;
         this.proyectoId = proyectoId;
         this.proyectoNombre = proyectoNombre;
@@ -35,12 +35,12 @@ public class EntregableFila {
         this.descripcion = descripcion;
         this.fechaAperturaLabel = fechaApertura.format(FORMATO);
         this.fechaCierreLabel = fechaCierre.format(FORMATO);
-        this.puntajeMaximoLabel = puntajeMaximoLabel;
         this.estadoCrudo = estadoCrudo;
         this.vencido = "activo".equals(estadoCrudo) && LocalDateTime.now().isAfter(fechaCierre);
         this.totalEquipo = totalEquipo;
         this.totalEntregados = totalEntregados;
         this.totalRevisados = totalRevisados;
+        this.totalCompletados = totalCompletados;
         this.miEntrega = miEntrega;
     }
 
@@ -51,12 +51,14 @@ public class EntregableFila {
     public String getDescripcion() { return descripcion; }
     public String getFechaAperturaLabel() { return fechaAperturaLabel; }
     public String getFechaCierreLabel() { return fechaCierreLabel; }
-    public String getPuntajeMaximoLabel() { return puntajeMaximoLabel; }
     public String getEstadoCrudo() { return estadoCrudo; }
     public boolean isVencido() { return vencido; }
     public int getTotalEquipo() { return totalEquipo; }
     public int getTotalEntregados() { return totalEntregados; }
     public int getTotalRevisados() { return totalRevisados; }
+    public int getTotalCompletados() { return totalCompletados; }
+    /** Entregas que esperan revisión del PM (estado "enviado"). */
+    public int getTotalPorRevisar() { return Math.max(0, totalEntregados - totalRevisados); }
     public EntregaFila getMiEntrega() { return miEntrega; }
 
     public String getEstadoLabel() {

@@ -85,7 +85,7 @@ public record ReporteRm(
     }
 
     public record Entregas(int entregables, int entregas, int aTiempo, int aTiempoPct, int revisadas,
-                           int calificacionPromedioPct, int vencidosSinEntrega) { }
+                           int completadasPct, int vencidosSinEntrega) { }
 
     public record Liberacion(String nombre, String proyecto, String fecha, long dias, int libera) { }
 

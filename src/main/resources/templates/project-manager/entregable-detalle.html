@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/polish.css">
+<link rel="stylesheet" href="/css/revision-entregas.css">
 </head>
 <body>
 <div class="app-shell">
@@ -26,7 +27,7 @@
         <p class="text-secondary" style="margin:var(--space-2) 0 var(--space-4);" th:text="${entregable.descripcion} ?: 'Sin descripción.'">Descripción</p>
         <div class="info-row"><span class="info-row-label">Apertura → Cierre</span>
           <span class="info-row-value" th:text="${fechaAperturaLabel} + ' → ' + ${fechaCierreLabel}">fechas</span></div>
-        <div class="info-row"><span class="info-row-label">Puntaje máximo</span><span class="info-row-value mono" th:text="${entregable.puntajeMaximo}">20</span></div>
+        <div class="info-row"><span class="info-row-label">Revisión</span><span class="info-row-value">Por estados: Completado · Requiere ajustes · Rehacer (con comentario)</span></div>
       </section>
 
       <section class="card" style="margin-top:var(--space-6);">
@@ -38,13 +39,13 @@
           <div class="table-filters">
             <select class="select" data-filter-scope="entregas-pm" data-filter-key="estado">
               <option value="todos">Estado: todos</option>
-              <option value="sin_entregar">Sin entregar</option><option value="enviado">Entregado</option><option value="revisado">Revisado</option>
+              <option value="sin_entregar">Sin entregar</option><option value="enviado">Por revisar</option><option value="completado">Completado</option><option value="requiere_ajustes">Requiere ajustes</option><option value="rehacer">Rehacer</option>
             </select>
           </div>
         </div>
         <div class="table-scroll">
           <table class="data-table">
-            <thead><tr><th>Colaborador</th><th>Fecha de entrega</th><th>Contenido</th><th>Estado</th><th>Calificación</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Colaborador</th><th>Fecha de entrega</th><th>Contenido</th><th>Estado</th><th>Comentario del revisor</th><th>Acciones</th></tr></thead>
             <tbody>
               <tr th:each="f : ${entregas}" data-filter-row="entregas-pm" th:attr="data-f-estado=${f.estadoCrudo}">
                 <td class="cell-person"><span class="avatar avatar-sm" th:text="${f.iniciales}">MR</span><span class="cell-person-name" th:text="${f.nombre}">Nombre</span></td>
@@ -61,10 +62,14 @@
                   </div>
                 </td>
                 <td><span class="badge" th:classappend="${f.estadoBadgeClass}" th:text="${f.estadoLabel}">Estado</span></td>
-                <td class="mono" th:text="${f.calificacionLabel} + ' / ' + ${entregable.puntajeMaximo}">— / 20</td>
+                <td>
+                  <span th:if="${f.revisada}" class="rev-comentario-celda" th:text="${f.comentarioPm}" th:title="${f.comentarioPm}">comentario</span>
+                  <span th:unless="${f.revisada}" class="text-tertiary" style="font-size:var(--fs-xs);" th:text="${f.entrego ? 'Pendiente de revisión' : '—'}">—</span>
+                </td>
                 <td class="cell-actions">
                   <button type="button" th:if="${f.entrego}"
-                          th:attr="data-calificar=${f.entregaId}, data-nombre=${f.nombre}, data-calificacion=${f.calificacionLabel != '—' ? f.calificacionLabel : ''}, data-comentario=${f.comentarioPm}">
+                          th:attr="data-revisar=${f.entregaId}, data-nombre=${f.nombre}, data-estado=${f.estadoCrudo}, data-comentario=${f.revisada ? f.comentarioPm : ''}"
+                          th:text="${f.revisada ? 'Cambiar revisión' : 'Revisar'}">
                     Revisar</button>
                 </td>
               </tr>
@@ -89,34 +94,15 @@
 <script src="/js/dropdown.js"></script>
 <script src="/js/table-filter.js"></script>
 <script src="/js/modal.js"></script>
+<script src="/js/revision-entrega.js"></script>
 <script src="/js/topbar-actions.js"></script>
 <script th:inline="javascript" th:nonce="${cspNonce}">
 window.SBAI_FLASH = { exito: /*[[${exito}]]*/ null, error: /*[[${error}]]*/ null };
 var ENTREGABLE_ID = /*[[${entregable.id}]]*/ 0;
 document.addEventListener("DOMContentLoaded", function () {
   window.SBAI.tableFilter.init(document);
-  var submitForm = window.SBAI.submitForm;
 
-  document.querySelectorAll("[data-calificar]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var entregaId = btn.dataset.calificar;
-      var html = '<div class="modal" role="dialog" aria-modal="true">' +
-        '<div class="modal-header"><div><h2>Revisar entrega</h2><p>' + btn.dataset.nombre + '</p></div>' +
-        '<button type="button" class="modal-close" data-modal-close aria-label="Cerrar"><svg class="icon"><use href="/img/icons.svg#icon-x"></use></svg></button></div>' +
-        '<div class="modal-body">' +
-        '<div class="field"><label class="field-label">Calificación</label><input class="input" type="number" min="0" step="0.5" id="cal-nota" value="' + (btn.dataset.calificacion || "") + '"></div>' +
-        '<div class="field"><label class="field-label">Comentario</label><textarea class="input" id="cal-comentario" rows="4" style="height:auto; padding:var(--space-3) var(--space-4);">' + (btn.dataset.comentario || "") + '</textarea></div>' +
-        '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button><button type="button" class="btn btn-primary" id="cal-confirm">Guardar revisión</button></div></div>';
-      var backdrop = SBAI.modal.open(html);
-      backdrop.querySelector("#cal-confirm").addEventListener("click", function () {
-        submitForm("/project-manager/entregas/" + entregaId + "/calificar", {
-          entregableId: ENTREGABLE_ID,
-          calificacion: backdrop.querySelector("#cal-nota").value,
-          comentario: backdrop.querySelector("#cal-comentario").value
-        });
-      });
-    });
-  });
+  SBAI.revisionEntrega.init({ base: "/project-manager", entregableId: ENTREGABLE_ID });
 
   (function () {
     var rows = Array.from(document.querySelectorAll('tr[data-filter-row="entregas-pm"]'));
