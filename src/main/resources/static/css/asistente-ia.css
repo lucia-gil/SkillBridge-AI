@@ -326,3 +326,8 @@ a.as-file:hover b { color: var(--blue-link); }
 }
 
 .as-hist-li > .as-rename { display: block; width: calc(100% - 34px); min-height: 34px; }
+
+/* Aviso al adjuntar archivos (solo lectura + no subir datos sensibles) */
+.as-adj-aviso { display: flex; align-items: flex-start; gap: 6px; margin: 6px 2px 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--text-secondary); }
+.as-adj-aviso[hidden] { display: none; }
+.as-adj-aviso .icon { flex-shrink: 0; margin-top: 1px; color: var(--violet-fg); }

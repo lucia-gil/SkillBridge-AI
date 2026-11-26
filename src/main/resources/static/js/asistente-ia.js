@@ -561,12 +561,13 @@
 
   /* ---------------- Adjuntos ---------------- */
   function tamano(b) { return b < 1024 ? b + " B" : b < 1048576 ? Math.round(b / 1024) + " KB" : (b / 1048576).toFixed(1) + " MB"; }
-  var TIPOS = /^(image\/(png|jpe?g|webp|gif)|application\/pdf|text\/.*|application\/json)$/;
-  var EXT = /\.(txt|csv|md|json|log|xml|sql|java|js|html|css|ya?ml|properties|png|jpe?g|webp|gif|pdf)$/i;
+  // Filtro rápido en el navegador; el servidor vuelve a revisar el tipo por el contenido del archivo.
+  var TIPOS = /^(image\/(png|jpe?g|webp|gif)|application\/pdf|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|text\/(plain|csv|markdown)|application\/json)$/;
+  var EXT = /\.(txt|csv|md|json|log|xml|sql|java|js|css|ya?ml|properties|png|jpe?g|webp|gif|pdf|xlsx)$/i;
   function agregarArchivos(lista) {
     Array.prototype.forEach.call(lista, function (f) {
       if (estado.archivos.length >= MAX_ADJ) { SBAI.toast.show("Puedes adjuntar hasta " + MAX_ADJ + " archivos por mensaje.", { type: "error" }); return; }
-      if (!TIPOS.test(f.type || "") && !EXT.test(f.name)) { SBAI.toast.show(f.name + ": tipo no admitido (imágenes, PDF o texto).", { type: "error" }); return; }
+      if (!TIPOS.test(f.type || "") && !EXT.test(f.name)) { SBAI.toast.show(f.name + ": tipo no admitido (imágenes, PDF, Excel .xlsx o texto).", { type: "error" }); return; }
       var total = estado.archivos.reduce(function (a, x) { return a + x.size; }, 0) + f.size;
       if (total > MAX_BYTES) { SBAI.toast.show("Los adjuntos de un mensaje pueden pesar hasta 5 MB en total.", { type: "error" }); return; }
       estado.archivos.push(f);
@@ -581,6 +582,7 @@
         '<span><b>' + esc(f.name) + "</b><small>" + tamano(f.size) + "</small></span>" +
         '<button type="button" data-quitar="' + i + '" aria-label="Quitar ' + esc(f.name) + '">' + icon("icon-x", "icon-sm") + "</button></li>";
     }).join(""));
+    $("#as-adj-aviso").prop("hidden", !estado.archivos.length);
     $input.trigger("input");
   }
   function limpiarAdjuntos() { estado.archivos = []; pintarAdjuntos(); $file.val(""); }
@@ -662,5 +664,5 @@
   }
   $(document).ajaxComplete(function(_e,_xhr,settings){if(settings.url==='/api/asistente/mensaje')cargar();});
   $(document).on('sbai:asistente-respondio', cargar);
-  $(function(){cargar(); $('#as-file').prop('disabled',true);});
+  $(function(){cargar();});
 })(jQuery);

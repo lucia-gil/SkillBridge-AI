@@ -146,8 +146,18 @@ public class HerramientasAgente {
 
     /** Catálogo de herramientas del rol, en el formato "tools" de la API de Claude. */
     public List<Map<String, Object>> catalogo(UsuarioSesion s) {
+        return catalogo(s, false);
+    }
+
+    /**
+     * Catálogo del rol; con {@code soloLectura} quedan solo las herramientas de
+     * consulta (se usa cuando el mensaje trae archivos: su contenido no es
+     * confiable y no debe poder llevar al agente a proponer cambios).
+     */
+    public List<Map<String, Object>> catalogo(UsuarioSesion s, boolean soloLectura) {
         politica.validar(s);
-        return DEFINICIONES.stream().filter(d -> d.rol().equals(s.getRolEfectivo())).map(d -> {
+        return DEFINICIONES.stream().filter(d -> d.rol().equals(s.getRolEfectivo()))
+                .filter(d -> !soloLectura || !d.escritura()).map(d -> {
             Map<String, Object> props = new LinkedHashMap<>();
             for (var c : d.tipo().getRecordComponents()) {
                 String tipo = tipoJson(c.getType());

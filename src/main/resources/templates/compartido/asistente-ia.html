@@ -89,19 +89,23 @@
 
           <form class="as-composer" id="as-form" autocomplete="off">
             <ul class="as-adjuntos" id="as-adjuntos" hidden aria-label="Archivos adjuntos"></ul>
+            <p class="as-adj-aviso" id="as-adj-aviso" hidden>
+              <svg class="icon icon-sm" aria-hidden="true"><use href="/img/icons.svg#icon-shield"></use></svg>
+              <span>Con archivos, el asistente solo los analiza y no hace cambios. No subas contraseñas ni datos personales: el contenido se envía al proveedor de IA.</span>
+            </p>
             <p class="as-provider" role="status" th:if="${!motivo.isEmpty()}">
               <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#icon-info"></use></svg>
               <span th:text="${motivo}"></span>
             </p>
             <div class="as-composer-row">
-              <button type="button" class="as-clip" id="as-clip" disabled hidden th:attr="data-max=${maxAdjuntos}" title="Adjuntos deshabilitados en el agente" aria-label="Adjuntar archivo">
+              <button type="button" class="as-clip" id="as-clip" th:disabled="${!motivo.isEmpty()}" th:attr="data-max=${maxAdjuntos}" title="Adjuntar imágenes, PDF, Excel o texto (máx. 5 MB). Con archivos, el asistente solo analiza: no hace cambios." aria-label="Adjuntar archivo">
                 <svg class="icon"><use href="/img/icons.svg#icon-paperclip"></use></svg></button>
-              <input type="file" id="as-file" disabled multiple hidden accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,.txt,.csv,.md,.json,.log,.xml,.sql,.java,.js,.html,.css,.yml,.yaml,.properties">
+              <input type="file" id="as-file" multiple hidden accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,.xlsx,.txt,.csv,.md,.json,.log,.xml,.sql,.java,.js,.css,.yml,.yaml,.properties">
               <textarea th:disabled="${!motivo.isEmpty()}" id="as-input" rows="1" th:attr="maxlength=${maxCaracteres}" placeholder="Pregunta sobre tus proyectos, tu equipo o tus habilidades…" aria-label="Mensaje para el Asistente IA"></textarea>
               <button type="submit" class="as-send" id="as-send" disabled aria-label="Enviar"><svg class="icon"><use href="/img/icons.svg#icon-arrow-up"></use></svg></button>
             </div>
           </form>
-          <div class="as-drop" id="as-drop" hidden><svg class="icon"><use href="/img/icons.svg#icon-paperclip"></use></svg><b>Suelta aquí tus archivos</b><small>Imágenes, PDF o texto · hasta 5 MB</small></div>
+          <div class="as-drop" id="as-drop" hidden><svg class="icon"><use href="/img/icons.svg#icon-paperclip"></use></svg><b>Suelta aquí tus archivos</b><small>Imágenes, PDF, Excel o texto · hasta 5 MB</small></div>
           <p class="as-foot"><span th:text="${alcance}">Alcance</span> <span class="as-keys"><kbd>Enter</kbd> envía · <kbd>Shift</kbd>+<kbd>Enter</kbd> nueva línea</span></p>
         </section>
 

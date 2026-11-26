@@ -50,11 +50,11 @@ public class AsistenteConversacionService {
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("d MMM", new Locale("es", "PE"));
 
     public static final int MAX_ADJUNTOS = 3;
+    /** Tamaño máximo de TODOS los adjuntos de un mensaje juntos. */
     public static final long MAX_BYTES = 5L * 1024 * 1024;
+    /** Archivos por usuario y por día (cuida el uso de la API de IA). */
+    public static final int MAX_ADJUNTOS_DIA = 20;
     private static final int MAX_TEXTO_ARCHIVO = 15000;
-    /** Lo que la IA puede leer: imágenes y PDF (Claude) y archivos de texto (se leen como texto). */
-    private static final Set<String> TIPOS_BINARIOS = Set.of("image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf");
-    private static final Set<String> EXT_TEXTO = Set.of("txt", "csv", "md", "json", "log", "xml", "java", "sql", "js", "html", "css", "yml", "yaml", "properties");
 
     private static final String TITULO_BORRADOR = "Nueva conversación";
 
@@ -245,12 +245,24 @@ public class AsistenteConversacionService {
         if (!motivo.isEmpty()) throw new OperacionInvalidaException(motivo);
         String mensaje = texto == null ? "" : texto.trim();
         List<MultipartFile> validos = archivos == null ? List.of() : archivos.stream().filter(f -> f != null && !f.isEmpty()).toList();
-        if (!validos.isEmpty()) throw new OperacionInvalidaException("Los adjuntos del asistente están deshabilitados. Escribe la información necesaria sin secretos.");
+        // Adjuntos: el agente los lee en modo SOLO LECTURA (ver AsistenteIaService.conversarConHerramientas).
         if (validos.size() > MAX_ADJUNTOS) throw new OperacionInvalidaException("Puedes adjuntar hasta " + MAX_ADJUNTOS + " archivos por mensaje.");
+        if (validos.stream().mapToLong(MultipartFile::getSize).sum() > MAX_BYTES)
+            throw new OperacionInvalidaException("Los adjuntos de un mensaje pueden pesar hasta 5 MB en total.");
+        if (!validos.isEmpty() && adjuntoRepository.contarDeUsuarioDesde(s.getUsuarioId(), LocalDate.now().atStartOfDay())
+                + validos.size() > MAX_ADJUNTOS_DIA)
+            throw new OperacionInvalidaException("Llegaste al máximo de " + MAX_ADJUNTOS_DIA + " archivos por día en el asistente. Vuelve a intentarlo mañana.");
+        List<byte[]> contenidos = new ArrayList<>();
+        List<String> tipos = new ArrayList<>();
         for (MultipartFile f : validos) {
-            if (f.getSize() > MAX_BYTES) throw new OperacionInvalidaException("\"" + f.getOriginalFilename() + "\" pesa más de 5 MB.");
-            if (tipoDe(f) == null) throw new OperacionInvalidaException("\"" + f.getOriginalFilename()
-                    + "\" no es un tipo admitido: imágenes (PNG, JPG, WEBP, GIF), PDF o archivos de texto (TXT, CSV, MD, JSON…).");
+            byte[] datos;
+            try { datos = f.getBytes(); } catch (IOException e) { throw new OperacionInvalidaException("No se pudo leer el archivo " + f.getOriginalFilename() + "."); }
+            // El tipo se decide por el CONTENIDO del archivo, no por la extensión.
+            String tipo = LectorAdjuntosIa.tipo(f.getOriginalFilename(), datos);
+            if (tipo == null) throw new OperacionInvalidaException("\"" + f.getOriginalFilename()
+                    + "\" no es un tipo admitido: imágenes (PNG, JPG, WEBP, GIF), PDF, Excel (.xlsx sin macros) o texto (TXT, CSV, MD, JSON…).");
+            contenidos.add(datos);
+            tipos.add(tipo);
         }
         if (mensaje.isEmpty() && validos.isEmpty()) throw new OperacionInvalidaException("Escribe un mensaje antes de enviar.");
         if (mensaje.length() > MAX_CARACTERES) throw new OperacionInvalidaException("El mensaje es demasiado largo (máximo " + MAX_CARACTERES + " caracteres).");
@@ -277,22 +289,25 @@ public class AsistenteConversacionService {
         }
         AsistenteMensaje guardado = mensajeRepository.save(new AsistenteMensaje(conv.getId(), AsistenteMensaje.USUARIO, mensaje));
 
-        // Adjuntos: se guardan; imágenes y PDF viajan a la IA, los de texto se leen y se agregan al mensaje
+        // Adjuntos: se guardan; imágenes y PDF viajan a la IA como bloques, Excel y texto
+        // se convierten a texto. Todo va marcado como DATOS del usuario, no instrucciones.
         List<AsistenteIaService.Archivo> paraIa = new ArrayList<>();
         StringBuilder textoArchivos = new StringBuilder();
         List<AdjuntoVista> adjuntosVista = new ArrayList<>();
-        for (MultipartFile f : validos) {
-            byte[] datos;
-            try { datos = f.getBytes(); } catch (IOException e) { throw new OperacionInvalidaException("No se pudo leer el archivo " + f.getOriginalFilename() + "."); }
-            String tipo = tipoDe(f), nombre = nombreSeguro(f.getOriginalFilename());
+        for (int i = 0; i < validos.size(); i++) {
+            byte[] datos = contenidos.get(i);
+            String tipo = tipos.get(i), nombre = nombreSeguro(validos.get(i).getOriginalFilename());
             AsistenteAdjunto a = adjuntoRepository.save(new AsistenteAdjunto(guardado.getId(), nombre, tipo, datos));
             adjuntosVista.add(vista(a.getId(), nombre, tipo, datos.length));
-            if (TIPOS_BINARIOS.contains(tipo)) {
+            if (LectorAdjuntosIa.BINARIOS.contains(tipo)) {
                 paraIa.add(new AsistenteIaService.Archivo(nombre, tipo, datos));
             } else {
-                String contenido = new String(datos, StandardCharsets.UTF_8);
+                String contenido = LectorAdjuntosIa.XLSX.equals(tipo) ? LectorAdjuntosIa.excelATexto(datos) : new String(datos, StandardCharsets.UTF_8);
                 if (contenido.length() > MAX_TEXTO_ARCHIVO) contenido = contenido.substring(0, MAX_TEXTO_ARCHIVO) + "\n[… archivo recortado]";
-                textoArchivos.append("\n\n--- Archivo adjunto: ").append(nombre).append(" ---\n").append(contenido);
+                // Se quita cualquier etiqueta de cierre falsa dentro del archivo, para que no "salga" del bloque de datos.
+                contenido = contenido.replace("</archivo_adjunto>", "");
+                textoArchivos.append("\n\n<archivo_adjunto nombre=\"").append(nombre.replace("\"", "'")).append("\">\n")
+                        .append(contenido).append("\n</archivo_adjunto>");
             }
         }
         String mensajeIa = (mensaje.isEmpty() ? "Revisa el archivo adjunto y dime qué contiene y qué me sirve para mi trabajo en SkillBridge." : mensaje)
@@ -344,18 +359,6 @@ public class AsistenteConversacionService {
     }
 
     // ───────────────────────── helpers ─────────────────────────
-
-    /** Tipo MIME aceptado o null. Los de texto se reconocen por extensión (los navegadores no siempre envían el tipo). */
-    private static String tipoDe(MultipartFile f) {
-        String ct = f.getContentType() == null ? "" : f.getContentType().toLowerCase(Locale.ROOT);
-        if (ct.equals("image/jpg")) ct = "image/jpeg";
-        if (TIPOS_BINARIOS.contains(ct)) return ct;
-        String n = f.getOriginalFilename() == null ? "" : f.getOriginalFilename().toLowerCase(Locale.ROOT);
-        String ext = n.contains(".") ? n.substring(n.lastIndexOf('.') + 1) : "";
-        if (ct.startsWith("text/") || EXT_TEXTO.contains(ext)) return "text/plain";
-        return switch (ext) { case "png" -> "image/png"; case "jpg", "jpeg" -> "image/jpeg"; case "webp" -> "image/webp";
-            case "gif" -> "image/gif"; case "pdf" -> "application/pdf"; default -> null; };
-    }
 
     private static String nombreSeguro(String original) {
         String n = original == null ? "archivo" : original.replaceAll("^.*[\\\\/]", "").replaceAll("[\\p{Cntrl}\"]", "").trim();
